@@ -157,3 +157,38 @@
 
 @media (max-width: 1000px) { .stage { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .stage { grid-template-columns: 1fr; gap: 14px; } }
+
+/* mini-games tied to a hunt */
+.games { margin: 18px 0 6px; }
+.gamesHead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.gamesHead h2 { font: 800 20px "Bricolage Grotesque", sans-serif; letter-spacing: -.02em; margin: 0; }
+.gamesHead span { font-size: 13px; color: var(--mute); }
+.gamesGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.game { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+.gameLive { border-color: rgba(239,68,68,.5); background: linear-gradient(135deg, rgba(239,68,68,.1), var(--panel) 60%); }
+.gameOff { opacity: .55; }
+.gameTop { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.gameIcon { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex: none; background: rgba(59,130,246,.15); color: var(--acc2); }
+.gameLive .gameIcon { background: rgba(239,68,68,.16); color: #fca5a5; }
+.gameTitle { flex: 1; min-width: 0; }
+.gameTitle b { display: block; font-size: 15px; }
+.gameTitle small { display: block; font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gChip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; flex: none; border: 1px solid var(--line); }
+.gChip i { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; animation: blink 1.6s ease-in-out infinite; }
+.gLive { color: #fca5a5; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.4); }
+.gClosed { color: var(--mute); background: rgba(255,255,255,.04); }
+.gDone { color: var(--gold); background: rgba(245,197,66,.1); border-color: rgba(245,197,66,.4); }
+.gameMid { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--mute); }
+.gameMid b { color: var(--text); }
+.gameWinner b { color: var(--gold); }
+.gameBtn { margin-top: auto; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text); font: 800 13px "DM Sans", sans-serif; cursor: pointer; }
+.gameBtn:hover { border-color: var(--acc); background: rgba(59,130,246,.15); }
+.gameLive .gameBtn { background: #ef4444; border-color: #ef4444; color: #fff; }
+.gameLive .gameBtn:hover { filter: brightness(1.1); }
+
+/* featured hunt: game chips */
+.fGames { display: flex; flex-wrap: wrap; gap: 8px; }
+.fChip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(11,14,20,.55); border: 1px solid var(--line); color: var(--mute); }
+.fChip em { font-style: normal; font-weight: 800; }
+.fChipLive { color: #fca5a5; border-color: rgba(239,68,68,.45); }
+@media (max-width: 1000px) { .gamesGrid { grid-template-columns: 1fr; } }

@@ -174,6 +174,7 @@ function FeaturedHunt({ hunt, entries, onClick }) {
           <div className={x.fBar}><i style={{ width: (st.total ? (st.opened.length / st.total) * 100 : 0) + '%' }} /></div>
           <span>{st.opened.length} of {st.total} bonuses opened</span>
         </div>
+        <FeaturedGameChips huntId={hunt.id} />
       </div>
       <div className={x.fStats}>
         <div className={x.fProfit}>
@@ -211,6 +212,107 @@ function HuntRow({ hunt, entries, onClick }) {
       <span className={x.rNum}><small>Total pay</small>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</span>
       <span className={`${x.rNum} ${x.rProfit} ${st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}`}><small>Profit</small>{st.hasResult ? money(st.profit) : '—'}</span>
     </button>
+  )
+}
+
+
+// ── Mini-games tied to a hunt ──────────────────────────────────────────────────
+const GAME_DEFS = [
+  { key: 'pick', label: 'Pick & Win',        route: '/mini-games/pick-win',  games: 'pick_games',      entries: 'picks',             blurb: 'Pick a slot from the hunt' },
+  { key: 'gtb',  label: 'Guess the Balance', route: '/mini-games/gtb',       games: 'gtb_games',       entries: 'gtb_entries',       blurb: 'Guess the final balance' },
+  { key: 'avg',  label: 'Avg Multi',         route: '/mini-games/avg-multi', games: 'avg_multi_games', entries: 'avg_multi_entries', blurb: 'Guess the average multiplier' },
+]
+const GAME_STATUS = {
+  open:     { label: 'Live',     cls: 'gLive' },
+  closed:   { label: 'Closed',   cls: 'gClosed' },
+  finished: { label: 'Finished', cls: 'gDone' },
+}
+
+function useHuntGames(huntId) {
+  const [list, setList] = useState(null)
+  useEffect(() => {
+    let off = false
+    setList(null)
+    ;(async () => {
+      const out = await Promise.all(GAME_DEFS.map(async (d) => {
+        const { data: gs, error } = await supabaseDash.from(d.games).select('*')
+          .eq('hunt_id', huntId).in('status', ['open', 'closed', 'finished'])
+          .order('created_at', { ascending: false }).limit(1)
+        const game = !error && gs?.[0] ? gs[0] : null
+        if (!game) return { ...d, game: null, count: 0, winner: null }
+        const { data: ents } = await supabaseDash.from(d.entries)
+          .select('twitch_username, rank, points_awarded').eq('game_id', game.id)
+        const rows = ents || []
+        const winner = rows.find(e => e.rank === 1) || null
+        return { ...d, game, count: rows.length, winner }
+      }))
+      if (!off) setList(out)
+    })()
+    return () => { off = true }
+  }, [huntId])
+  return list
+}
+
+const GameIcon = ({ k }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    {k === 'pick' && <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>}
+    {k === 'gtb'  && <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>}
+    {k === 'avg'  && <><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></>}
+  </svg>
+)
+
+function HuntMiniGames({ huntId, navigate }) {
+  const list = useHuntGames(huntId)
+  if (!list) return null
+  if (list.every(g => !g.game)) return null
+  return (
+    <section className={x.games} aria-label="Mini-games for this hunt">
+      <div className={x.gamesHead}><h2>Play along</h2><span>Mini-games tied to this hunt</span></div>
+      <div className={x.gamesGrid}>
+        {list.map(g => {
+          const st = g.game ? GAME_STATUS[g.game.status] : null
+          const live = g.game?.status === 'open'
+          return (
+            <div key={g.key} className={`${x.game} ${live ? x.gameLive : ''} ${!g.game ? x.gameOff : ''}`}>
+              <div className={x.gameTop}>
+                <span className={x.gameIcon}><GameIcon k={g.key} /></span>
+                <div className={x.gameTitle}><b>{g.label}</b><small>{g.blurb}</small></div>
+                {st ? <span className={`${x.gChip} ${x[st.cls]}`}>{live && <i />}{st.label}</span> : <span className={`${x.gChip} ${x.gClosed}`}>Not started</span>}
+              </div>
+              {g.game ? (
+                <div className={x.gameMid}>
+                  <span><b>{g.count}</b> {g.count === 1 ? 'entry' : 'entries'}</span>
+                  {g.game.status === 'finished' && g.winner && (
+                    <span className={x.gameWinner}>Winner <b>{g.winner.twitch_username}</b>{g.winner.points_awarded > 0 && <> · {Number(g.winner.points_awarded).toLocaleString('en-GB')} pts</>}</span>
+                  )}
+                  {g.game.status === 'finished' && g.game.result_avg != null && <span>Result <b>{Number(g.game.result_avg).toFixed(2)}x</b></span>}
+                </div>
+              ) : <div className={x.gameMid}><span>No game for this hunt.</span></div>}
+              {g.game && (
+                <button className={x.gameBtn} onClick={() => navigate ? navigate(g.route) : (window.location.href = g.route)}>
+                  {live ? 'Play now' : g.game.status === 'closed' ? 'See entries' : 'See results'}
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function FeaturedGameChips({ huntId }) {
+  const list = useHuntGames(huntId)
+  const active = (list || []).filter(g => g.game && g.game.status !== 'finished')
+  if (!active.length) return null
+  return (
+    <div className={x.fGames}>
+      {active.map(g => (
+        <span key={g.key} className={`${x.fChip} ${g.game.status === 'open' ? x.fChipLive : ''}`}>
+          <GameIcon k={g.key} />{g.label}<em>{g.game.status === 'open' ? 'Live' : 'Closed'}</em>
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -394,6 +496,8 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
           <div key={t.lbl} className={x.dTile}><span className={x.lbl}>{t.lbl}</span><b className={t.cls || ''}>{t.val}</b></div>
         ))}
       </div>
+
+      <HuntMiniGames huntId={hunt.id} navigate={navigate} />
 
       {!loading && (podium.length > 0 || nextUp) && (
         <div className={x.stage}>
