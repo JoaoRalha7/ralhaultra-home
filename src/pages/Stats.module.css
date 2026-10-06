@@ -307,3 +307,10 @@
   .table th:nth-child(7), .table td:nth-child(7) { display: none; }
   .tableScroll .table { min-width: 0; }
 }
+
+@media (max-width: 640px) {
+  .page { padding: 8px 0 60px; }
+  .thSlot { min-width: 0; }
+  .tdSlot { max-width: 150px; }
+}
+@media (max-width: 480px) { .page { padding: 8px 0 60px; } }
