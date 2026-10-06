@@ -1,21 +1,6 @@
 .footer { margin-top: auto; padding: 56px 0 0; color: var(--text-2); }
 .inner { display: flex; flex-direction: column; gap: 32px; }
 
-/* community band */
-.join { display: flex; flex-direction: column; gap: 18px; padding: 24px; border-radius: 20px; border: 1px solid var(--ru-line, #252b3a);
-  background: radial-gradient(60% 140% at 0% 0%, rgba(59,130,246,.16), transparent 70%), var(--ru-panel, #131720); }
-.joinHead h2 { font: 800 24px/1.1 "Bricolage Grotesque", sans-serif; letter-spacing: -.02em; color: #fff; margin: 0; }
-.joinHead p { margin: 6px 0 0; font-size: 14px; color: #8d96ab; }
-.socials { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.social { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 14px; border: 1px solid #252b3a; background: rgba(255,255,255,.03); color: #fff; text-decoration: none; transition: border-color .15s, transform .15s, background .15s; min-width: 0; }
-.social:hover { transform: translateY(-2px); background: rgba(255,255,255,.06); border-color: var(--c, #3b82f6); }
-.twitch { --c: #9146ff; } .discord { --c: #5865f2; } .instagram { --c: #e1306c; } .telegram { --c: #2aabee; }
-.sIcon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
-.sText { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.sText b { font-size: 14px; }
-.sText small { font-size: 12px; color: #8d96ab; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sCta { font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); flex: none; }
-
 /* brand + links */
 .top { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 48px; align-items: start; }
 .brandCol { display: flex; flex-direction: column; gap: 16px; }
@@ -51,14 +36,11 @@
 .toTop { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 10px; border: 1px solid #252b3a; background: transparent; color: #8d96ab; font: 600 13px "DM Sans", sans-serif; cursor: pointer; }
 .toTop:hover { color: #fff; border-color: #3b82f6; }
 
-@media (max-width: 1100px) { .socials { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 820px) {
   .top { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .linksCol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
-  .join { padding: 18px; }
-  .socials { grid-template-columns: minmax(0, 1fr); }
   .bottom { flex-direction: column-reverse; align-items: flex-start; }
 }
-@media (prefers-reduced-motion: reduce) { .statusLive .dot { animation: none; } .social { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .statusLive .dot { animation: none; } }
