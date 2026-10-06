@@ -201,3 +201,32 @@
 .viewOn{background:rgba(59,130,246,.14);border-color:rgba(59,130,246,.45);color:var(--acc2)}
 .viewLive{width:7px;height:7px;border-radius:50%;background:var(--pos);box-shadow:0 0 0 3px rgba(52,211,153,.2)}
 .embed>div{padding:12px 0 0 !important}
+
+/* progress strip: one cell per bonus */
+.strip{display:flex;gap:3px;height:12px}
+.strip i{flex:1;min-width:3px;border-radius:3px;background:rgba(255,255,255,.1)}
+.strip .sWin{background:var(--pos)}
+.strip .sLoss{background:var(--neg)}
+.strip .sPend{background:rgba(255,255,255,.12)}
+.strip .sSuper{box-shadow:0 0 0 1px var(--gold)}
+
+/* table + games rail */
+.split{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start;margin-top:6px}
+.split .games{margin:0;position:sticky;top:76px;order:2}
+.split .gamesGrid{grid-template-columns:1fr}
+.split .gamesHead{margin-bottom:8px}
+@media (max-width:1100px){.split{grid-template-columns:1fr}.split .games{position:static;order:-1}}
+
+/* history ribbon */
+.ribbon{margin-top:28px}
+.ribbonHead{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.ribbonHead h2{font:800 20px "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;margin:0}
+.ribbonHead span{font-size:13px;color:var(--mute)}
+.ribbonRow{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.rib{flex:none;min-width:120px;display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--text);cursor:pointer;font-family:"DM Sans",sans-serif}
+.rib small{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--mute)}
+.rib b{font:800 15px "Bricolage Grotesque",sans-serif}
+.rib em{font-style:normal;font-size:11px;color:var(--mute)}
+.ribWin b{color:var(--pos)}.ribLoss b{color:var(--neg)}
+.rib:hover{border-color:var(--acc)}
+.ribOn{border-color:var(--acc);background:rgba(59,130,246,.12);cursor:default}

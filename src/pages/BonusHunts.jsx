@@ -319,7 +319,7 @@ function FeaturedGameChips({ huntId }) {
 }
 
 // ── Hunt Detail ────────────────────────────────────────────────────────────────
-function HuntDetail({ hunt, hunts, onNavigate, onBack }) {
+function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const location = useLocation()
   const [gv, setGv] = useState(() => (location.state?.huntId === hunt.id && location.state?.view) || 'bonuses')
   const gameList = useHuntGames(hunt.id)
@@ -480,7 +480,13 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack }) {
           </div>
           <h1 className={x.dTitle}>Bonus Hunt #{hunt.id}</h1>
           <div className={x.fProgress}>
-            <div className={x.fBar}><i style={{ width: (entries.length ? (opened.length / entries.length) * 100 : 0) + '%' }} /></div>
+            <div className={x.strip} aria-hidden="true">
+              {entries.map(e => {
+                const m = mOf(e)
+                const st = !e.opened ? x.sPend : m >= 1 ? x.sWin : x.sLoss
+                return <i key={e.id} className={`${st} ${e.is_super ? x.sSuper : ''}`} title={`${e.slot?.name || '—'}${e.opened && m >= 0 ? ' · ' + m.toFixed(0) + 'x' : ''}`} />
+              })}
+            </div>
             <span>{opened.length} of {entries.length} opened</span>
           </div>
         </div>
@@ -515,7 +521,6 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack }) {
         })}
       </div>
 
-      {gv === 'bonuses' && gameList && <HuntMiniGames list={gameList} onOpen={setGv} />}
       {gv === 'pick' && <div className={x.embed}><MiniGame huntId={hunt.id} /></div>}
       {gv === 'gtb' && <div className={x.embed}><MiniGameGtb huntId={hunt.id} /></div>}
       {gv === 'avg' && <div className={x.embed}><MiniGameAvgMulti huntId={hunt.id} /></div>}
@@ -547,7 +552,8 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack }) {
         </div>
       )}
 
-      {gv === 'bonuses' && <div className={x.dBody}>
+      {gv === 'bonuses' && <div className={x.split}>
+      <div className={x.dBody}>
         <div className={x.chips} role="tablist">
           {[['all', 'All'], ['opened', 'Opened'], ['pending', 'Waiting'], ['super', 'Super']].map(([k, l]) => (
             <button key={k} role="tab" aria-selected={filter === k} className={`${x.chip} ${filter === k ? x.chipOn : ''}`} onClick={() => { setFilter(k); setPage(1) }}>
@@ -625,7 +631,26 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack }) {
             </>
           )}
         </div>
+      </div>
+      {gameList && <HuntMiniGames list={gameList} onOpen={setGv} />}
       </div>}
+
+      <section className={x.ribbon} aria-label="Hunt history">
+        <div className={x.ribbonHead}><h2>History</h2><span>Jump to another hunt</span></div>
+        <div className={x.ribbonRow}>
+          {hunts.slice(0, 24).map(h => {
+            const st = huntStats(h, (byHunt && byHunt[h.id]) || [])
+            const cur = h.id === hunt.id
+            return (
+              <button key={h.id} className={`${x.rib} ${cur ? x.ribOn : ''} ${st.hasResult ? (st.profit >= 0 ? x.ribWin : x.ribLoss) : ''}`} onClick={() => !cur && onNavigate(h)} aria-current={cur ? 'true' : undefined}>
+                <small>#{h.id}{h.active && <i className={x.liveDot} />}</small>
+                <b>{st.hasResult ? money(st.profit) : '—'}</b>
+                <em>{st.total} bonuses</em>
+              </button>
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }
@@ -681,6 +706,7 @@ export default function BonusHunts() {
       key={selectedHunt.id}
       hunt={selectedHunt}
       hunts={hunts}
+      byHunt={byHunt}
       onNavigate={setSelectedHunt}
       onBack={() => setSelectedHunt(null)}
     />
