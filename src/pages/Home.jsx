@@ -252,10 +252,11 @@ export default function Home() {
   const loadActivity = useCallback(async () => {
     try {
       const empty = { redeems: [] };
-      const [workerRes, shopRes, dailyRes, picks, gtb, avg] = await Promise.all([
+      const [workerRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
         fetch(`${SE_WORKER_URL}/redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
         supabase.from('shop_redeems').select('*, shop_products(name)').order('created_at', { ascending: false }).limit(10),
         fetch(`${SE_WORKER_URL}/daily-redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
+        fetch(`${SE_WORKER_URL}/casino-feed?limit=10`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
         supabaseDash.from('picks').select('twitch_username, cost_paid, picked_at, points_awarded, rank, awarded_at').order('picked_at', { ascending: false }).limit(10),
         supabaseDash.from('gtb_entries').select('twitch_username, cost_paid, created_at, rank, points_awarded, awarded_at').order('created_at', { ascending: false }).limit(10),
         supabaseDash.from('avg_multi_entries').select('twitch_username, cost_paid, created_at, rank, points_awarded, awarded_at').order('created_at', { ascending: false }).limit(10),
@@ -273,7 +274,16 @@ export default function Home() {
       const daily = (dailyRes.redeems || []).map((r) => ({
         _type: 'daily', action: r.action, username: r.username, created_at: r.created_at, points: r.points, status: 'AWARDED',
       }));
+      const CASINO_NAMES = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash' };
+      const casino = (casinoRes.rounds || []).map((r) => {
+        const net = (r.payout || 0) - (r.bet || 0);
+        return {
+          _type: 'casino', action: `${CASINO_NAMES[r.game] || r.game} - ${net > 0 ? 'Win' : net === 0 ? 'Push' : 'Loss'}`,
+          username: r.username, created_at: r.updated_at, points: net, status: net > 0 ? 'WON' : net === 0 ? 'PUSH' : 'LOST',
+        };
+      });
       const games = [
+        ...casino,
         ...gameRows(picks.data, 'pickwin', 'Pick & Win Entry', 'Pick & Win', 'picked_at'),
         ...gameRows(gtb.data, 'gtb', 'Guess the Balance Entry', 'Guess the Balance', 'created_at'),
         ...gameRows(avg.data, 'avgmulti', 'Avg Multi Entry', 'Avg Multi', 'created_at'),

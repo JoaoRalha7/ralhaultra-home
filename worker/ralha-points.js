@@ -845,6 +845,17 @@ export default {
         return json({ redeems })
       }
 
+      // ── GET /casino-feed (public: finished rounds only, no game state) ────────
+      if (pathname === '/casino-feed') {
+        const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
+        const r = await fetch(
+          `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=${limit}`,
+          { headers: sbHeaders }
+        )
+        if (!r.ok) return json({ rounds: [] })
+        return json({ rounds: await r.json() })
+      }
+
       // ── GET /leaderboard ─────────────────────────────────────────────────────
       if (pathname === '/leaderboard') {
         const limit  = Math.min(parseInt(searchParams.get('limit')  || '100'), 100)
