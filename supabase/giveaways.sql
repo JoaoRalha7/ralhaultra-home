@@ -47,3 +47,6 @@ alter table public.giveaways add column if not exists max_tickets integer; -- nu
 alter table public.giveaway_entries add column if not exists tickets integer not null default 1 check (tickets > 0);
 alter table public.giveaway_entries add column if not exists cost_paid integer not null default 0;
 alter table public.giveaway_entries drop constraint if exists giveaway_entries_giveaway_id_user_id_key;
+
+-- refresh the API schema cache so new columns are visible
+notify pgrst, 'reload schema';
