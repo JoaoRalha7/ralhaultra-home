@@ -174,137 +174,103 @@ export default function Leaderboard() {
 
   const podiumOrder = podium.length >= 3 ? [podium[1], podium[0], podium[2]] : []
   const podiumIdx   = [1, 0, 2]
+  const maxPts      = users[0]?.points || 1
+  const ahead       = myRank > 0 ? users[myRank - 1] : null
+  const gap         = ahead ? Math.max(0, (ahead.points || 0) - (users[myRank].points || 0)) : 0
+
+  const Ico = ({ d, size = 16, sw = 2 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
+  )
 
   return (
     <div className={styles.page}>
 
-      {/* ── HEADER ── */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <div className={styles.titleRow}>
-            <h1 className={styles.title}><TrophySVG />LEADERBOARD</h1>
-            {users.length > 0 && (
-              <div className={styles.statPills}>
-                <div className={styles.statPill}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="4" stroke="var(--blue)" strokeWidth="1.8"/><path d="M2 21c0-4 3.134-7 7-7s7 3 7 7" stroke="var(--blue)" strokeWidth="1.8" strokeLinecap="round"/><path d="M19 8v6M22 11h-6" stroke="var(--blue)" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                  <span className={styles.statPillVal}>{totalUsers.toLocaleString('en-GB')}</span>
-                  <span className={styles.statPillLbl}>users</span>
-                </div>
-                <div className={styles.statPill}>
-                  <CoinSVG size={13} />
-                  <span className={styles.statPillVal}>{formatK(totalPoints)}</span>
-                  <span className={styles.statPillLbl}>pts</span>
-                </div>
-                <div className={styles.statPill}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 12h18M8 7l-5 5 5 5" stroke="var(--green)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span className={styles.statPillVal}>{formatK(avgPoints)}</span>
-                  <span className={styles.statPillLbl}>avg</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <p className={styles.sub}>Top viewers ranked by points</p>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Leaderboard</h1>
+          <p className={styles.sub}>Top viewers ranked by points. Watch the stream to climb.</p>
         </div>
         <div className={styles.headerRight}>
-          {lastUpdated && (
-            <span className={styles.updated}>
-              Updated at {lastUpdated.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-          <button className={styles.refreshBtn} onClick={fetchLeaderboard} title="Refresh">
-            <i className="bx bx-refresh" />
+          {lastUpdated && <span className={styles.updated}>Updated {lastUpdated.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>}
+          <button className={styles.refreshBtn} onClick={fetchLeaderboard} title="Refresh" aria-label="Refresh">
+            <Ico d={<><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></>} />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* ── MY RANK ── */}
-      {myRank >= 0 && (
-        <div className={styles.myRank}>
-          <i className="bx bx-user" />
-          <span>Your rank: <strong>#{myRank + 1}</strong></span>
-          <span className={styles.myRankPoints}>
-            <CoinSVG size={14} /> {users[myRank].points?.toLocaleString('en-GB')} pts
-          </span>
+      {users.length > 0 && (
+        <div className={styles.stats}>
+          <div className={styles.stat}><span className={styles.statIco}><Ico d={<><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M17 4a4 4 0 0 1 0 8M22 21c0-3-2-5.5-5-6.5"/></>} size={18} /></span><div><b>{totalUsers.toLocaleString('en-GB')}</b><small>Players</small></div></div>
+          <div className={styles.stat}><span className={`${styles.statIco} ${styles.gold}`}><CoinSVG size={18} /></span><div><b>{formatK(totalPoints)}</b><small>Points in circulation</small></div></div>
+          <div className={styles.stat}><span className={`${styles.statIco} ${styles.green}`}><Ico d={<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>} size={18} /></span><div><b>{formatK(avgPoints)}</b><small>Average per player</small></div></div>
         </div>
       )}
 
-      {/* ── PÓDIO ── */}
-      {podiumOrder.length === 3 && (
+      {myRank >= 0 && (
+        <div className={styles.myRank}>
+          <div className={styles.myPos}><small>Your rank</small><b>#{myRank + 1}</b></div>
+          <div className={styles.myMid}>
+            <span className={styles.myPts}><CoinSVG size={16} />{users[myRank].points?.toLocaleString('en-GB')} pts</span>
+            {ahead
+              ? <span className={styles.myGap}>{gap.toLocaleString('en-GB')} pts to pass <b>{ahead.username}</b> (#{myRank})</span>
+              : <span className={styles.myGap}>You are leading the board.</span>}
+            {ahead && <div className={styles.myTrack}><i style={{ width: `${Math.min(100, ((users[myRank].points || 0) / Math.max(1, ahead.points || 1)) * 100)}%` }} /></div>}
+          </div>
+        </div>
+      )}
+
+      {podiumOrder.length === 3 && !search && (
         <div className={styles.podium}>
           {podiumOrder.map((p, i) => {
-            const colorIdx = podiumIdx[i]
-            const col      = PODIUM_COLORS[colorIdx]
-            const isFirst  = colorIdx === 0
+            const idx   = podiumIdx[i]
+            const col   = PODIUM_COLORS[idx]
+            const first = idx === 0
+            const mine  = p.username?.toLowerCase() === myUsername
             return (
-              <div key={p.username} className={`${styles.podiumCard} ${isFirst ? styles.podiumFirst : ''}`} style={{ '--glow': col.glow }}>
-                <div className={styles.podiumBadge} style={{ background: col.bg, color: '#000' }}>{col.label}</div>
-                
-                <div className={styles.podiumAvatarWrap} style={{ '--ring': col.ring, '--glow': col.glow }}>
-                  <TwitchAvatar username={p.username} size={isFirst ? 100 : 80} className={styles.podiumAvatar} />
+              <div key={p.username} className={`${styles.podiumCard} ${styles['pod' + idx]} ${mine ? styles.podMe : ''}`} style={{ '--c': col.bg, '--glow': col.glow }}>
+                {first && (
+                  <svg className={styles.crown} width="34" height="26" viewBox="0 0 34 26" aria-hidden="true">
+                    <path d="M2 22L5 6l8 8 4-11 4 11 8-8 3 16z" fill="currentColor" stroke="rgba(0,0,0,.35)" strokeWidth="1.2" strokeLinejoin="round"/>
+                  </svg>
+                )}
+                <div className={styles.podiumAvatarWrap}>
+                  <TwitchAvatar username={p.username} size={first ? 92 : 72} className={styles.podiumAvatar} />
+                  <span className={styles.podiumBadge}>{idx + 1}</span>
                 </div>
-                
                 <SlideText text={p.username} className={styles.podiumName} />
-                
-                <div className={styles.podiumPoints} style={{ color: col.bg }}>
-                  {p.points?.toLocaleString('en-GB')} <CoinSVG size={15} color={col.bg} />
-                </div>
+                <div className={styles.podiumPoints}>{p.points?.toLocaleString('en-GB')} <CoinSVG size={15} color={col.bg} /></div>
+                <div className={styles.step}><span>{col.label}</span></div>
               </div>
             )
           })}
         </div>
       )}
 
-      {/* ── SEARCH ── */}
       <div className={styles.searchWrap}>
         <div className={styles.searchBox}>
-          <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8"/>
-            <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-          </svg>
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder="Search player..."
-            value={search}
-            onChange={handleSearch}
-            spellCheck={false}
-          />
-          {search && (
-            <button className={styles.searchClear} onClick={() => { setSearch(''); setPage(1) }}>
-              <i className="bx bx-x" />
-            </button>
-          )}
+          <Ico d={<><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></>} />
+          <input className={styles.searchInput} type="text" placeholder="Search player..." value={search} onChange={handleSearch} spellCheck={false} />
+          {search && <button className={styles.searchClear} onClick={() => { setSearch(''); setPage(1) }} aria-label="Clear"><Ico d={<path d="M18 6L6 18M6 6l12 12"/>} size={14} sw={2.5} /></button>}
         </div>
-        {search && (
-          <span className={styles.searchCount}>
-            {tableUsers.length} result{tableUsers.length !== 1 ? 's' : ''}
-          </span>
-        )}
+        {search && <span className={styles.searchCount}>{tableUsers.length} result{tableUsers.length !== 1 ? 's' : ''}</span>}
       </div>
 
-      {/* ── TABELA ── */}
       {tableUsers.length > 0 ? (
         <>
           <div className={styles.table}>
-            <div className={styles.tableHeader}>
-              <span>#</span><span>PLAYER</span><span>POINTS</span>
-            </div>
-            {pageSlice.map((u, i) => {
+            <div className={styles.tableHeader}><span>#</span><span>Player</span><span>Points</span></div>
+            {pageSlice.map((u) => {
               const rank = users.findIndex(x => x.username === u.username) + 1
               const isMe = u.username?.toLowerCase() === myUsername
               return (
-                <div key={u.username} className={`${styles.tableRow} ${isMe ? styles.tableRowMe : ''}`}>
+                <div key={u.username} className={`${styles.tableRow} ${isMe ? styles.tableRowMe : ''}`} style={{ '--p': Math.max(2, ((u.points || 0) / maxPts) * 100) }}>
                   <span className={styles.colPos}>{rank}</span>
                   <div className={styles.colPlayer}>
-                    <div className={styles.rowAvatarWrap}>
-                      <TwitchAvatar username={u.username} size={36} className={styles.rowAvatar} />
-                    </div>
+                    <div className={styles.rowAvatarWrap}><TwitchAvatar username={u.username} size={36} className={styles.rowAvatar} /></div>
                     <SlideText text={u.username} className={styles.rowName} />
                     {isMe && <span className={styles.youBadge}>YOU</span>}
                   </div>
-                  <span className={styles.colPoints}>
-                    {u.points?.toLocaleString('en-GB')} <CoinSVG size={13} />
-                  </span>
+                  <span className={styles.colPoints}>{u.points?.toLocaleString('en-GB')} <CoinSVG size={13} /></span>
                 </div>
               )
             })}
@@ -312,9 +278,7 @@ export default function Leaderboard() {
 
           {totalPages > 1 && (
             <div className={styles.pagination}>
-              <button className={styles.pageBtn} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-                <i className="bx bx-chevron-left" />
-              </button>
+              <button className={styles.pageBtn} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} aria-label="Previous"><Ico d={<path d="M15 6l-6 6 6 6"/>} size={16} sw={2.5} /></button>
               {(() => {
                 const pages = []
                 const delta = 2
@@ -331,18 +295,13 @@ export default function Leaderboard() {
                     : <button key={n} className={`${styles.pageBtn} ${n === page ? styles.pageBtnActive : ''}`} onClick={() => setPage(n)}>{n}</button>
                 )
               })()}
-              <button className={styles.pageBtn} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-                <i className="bx bx-chevron-right" />
-              </button>
+              <button className={styles.pageBtn} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} aria-label="Next"><Ico d={<path d="M9 6l6 6-6 6"/>} size={16} sw={2.5} /></button>
             </div>
           )}
         </>
       ) : (
         <div className={styles.emptySearch}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="var(--muted2)" strokeWidth="1.8"/>
-            <path d="M20 20l-3-3" stroke="var(--muted2)" strokeWidth="1.8" strokeLinecap="round"/>
-          </svg>
+          <Ico d={<><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></>} size={34} />
           <p>No players found for "{search}"</p>
         </div>
       )}
