@@ -137,7 +137,7 @@ function ConfirmDialog({ bucket, guess, cost, points, onConfirm, onCancel, loadi
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
-export default function MiniGameAvgMulti({ huntId = null }) {
+export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
   const { user, profile } = useAuth()
 
   const [games,        setGames]        = useState([])
@@ -290,10 +290,10 @@ export default function MiniGameAvgMulti({ huntId = null }) {
     bucketCounts[key] = (bucketCounts[key] || 0) + 1
   }
 
-  if (loading) return <div className={styles.page}><div className={styles.loadWrap}><Spinner size={28} /></div></div>
+  if (loading) return <div className={`${styles.page}${compact ? ` ${styles.compact} ${avgStyles.compact}` : ''}`}><div className={styles.loadWrap}><Spinner size={28} /></div></div>
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page}${compact ? ` ${styles.compact} ${avgStyles.compact}` : ''}`}>
 
       {/* STATUS BAR */}
       <div className={styles.statusBar}>

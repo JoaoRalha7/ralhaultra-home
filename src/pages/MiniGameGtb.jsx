@@ -139,7 +139,7 @@ function ConfirmDialog({ guess, cost, points, onConfirm, onCancel, loading, cash
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
-export default function MiniGameGtb({ huntId = null }) {
+export default function MiniGameGtb({ huntId = null, compact = false }) {
   const { user, profile } = useAuth()
 
   const [games,       setGames]       = useState([])
@@ -303,11 +303,11 @@ export default function MiniGameGtb({ huntId = null }) {
     : [...entries].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
 
   if (loading) return (
-    <div className={styles.page}><div className={styles.loadWrap}><Spinner size={28} /></div></div>
+    <div className={`${styles.page}${compact ? ` ${styles.compact}` : ''}`}><div className={styles.loadWrap}><Spinner size={28} /></div></div>
   )
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page}${compact ? ` ${styles.compact}` : ''}`}>
 
       {/* STATUS BAR */}
       <div className={styles.statusBar}>

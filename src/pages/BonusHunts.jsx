@@ -264,45 +264,6 @@ const GameIcon = ({ k }) => (
   </svg>
 )
 
-function HuntMiniGames({ list, onOpen }) {
-  if (!list) return null
-  if (list.every(g => !g.game)) return null
-  return (
-    <section className={x.games} aria-label="Mini-games for this hunt">
-      <div className={x.gamesHead}><h2>Play along</h2><span>Mini-games tied to this hunt</span></div>
-      <div className={x.gamesGrid}>
-        {list.map(g => {
-          const st = g.game ? GAME_STATUS[g.game.status] : null
-          const live = g.game?.status === 'open'
-          return (
-            <div key={g.key} className={`${x.game} ${live ? x.gameLive : ''} ${!g.game ? x.gameOff : ''}`}>
-              <div className={x.gameTop}>
-                <span className={x.gameIcon}><GameIcon k={g.key} /></span>
-                <div className={x.gameTitle}><b>{g.label}</b><small>{g.blurb}</small></div>
-                {st ? <span className={`${x.gChip} ${x[st.cls]}`}>{live && <i />}{st.label}</span> : <span className={`${x.gChip} ${x.gClosed}`}>Not started</span>}
-              </div>
-              {g.game ? (
-                <div className={x.gameMid}>
-                  <span><b>{g.count}</b> {g.count === 1 ? 'entry' : 'entries'}</span>
-                  {g.game.status === 'finished' && g.winner && (
-                    <span className={x.gameWinner}>Winner <b>{g.winner.twitch_username}</b>{g.winner.points_awarded > 0 && <> · {Number(g.winner.points_awarded).toLocaleString('en-GB')} pts</>}</span>
-                  )}
-                  {g.game.status === 'finished' && g.game.result_avg != null && <span>Result <b>{Number(g.game.result_avg).toFixed(2)}x</b></span>}
-                </div>
-              ) : <div className={x.gameMid}><span>No game for this hunt.</span></div>}
-              {g.game && (
-                <button className={x.gameBtn} onClick={() => onOpen(g.key)}>
-                  {live ? 'Play now' : g.game.status === 'closed' ? 'See entries' : 'See results'}
-                </button>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </section>
-  )
-}
-
 function FeaturedGameChips({ huntId }) {
   const list = useHuntGames(huntId)
   const active = (list || []).filter(g => g.game && g.game.status !== 'finished')
@@ -321,9 +282,13 @@ function FeaturedGameChips({ huntId }) {
 // ── Hunt Detail ────────────────────────────────────────────────────────────────
 function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const location = useLocation()
-  const [gv, setGv] = useState(() => (location.state?.huntId === hunt.id && location.state?.view) || 'bonuses')
   const gameList = useHuntGames(hunt.id)
-  useEffect(() => { if (location.state?.huntId === hunt.id && location.state?.view) setGv(location.state.view) }, [location.key])
+  const wantView = location.state?.huntId === hunt.id ? location.state?.view : null
+  useEffect(() => {
+    if (!wantView || !gameList) return
+    const t = setTimeout(() => document.getElementById('game-' + wantView)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
+    return () => clearTimeout(t)
+  }, [wantView, !!gameList, location.key])
   const [entries,       setEntries]       = useState([])
   const [loading,       setLoading]       = useState(true)
   const [page,          setPage]          = useState(1)
@@ -464,6 +429,23 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
     )
   }
 
+  const gbox = (key, node) => {
+    const d = GAME_DEFS.find(q => q.key === key)
+    const g = (gameList || []).find(q => q.key === key)
+    if (!g?.game) return null
+    const live = g.game.status === 'open'
+    return (
+      <section id={'game-' + key} className={`${x.gbox} ${live ? x.gboxLive : ''}`} aria-label={d.label}>
+        <header className={x.gboxHead}>
+          <span className={x.gameIcon}><GameIcon k={key} /></span>
+          <div><b>{d.label}</b><small>{d.blurb}</small></div>
+          <span className={`${x.gChip} ${x[GAME_STATUS[g.game.status].cls]}`}>{live && <i />}{GAME_STATUS[g.game.status].label}</span>
+        </header>
+        <div className={x.gboxBody}>{node}</div>
+      </section>
+    )
+  }
+
   return (
     <div className={`${x.page} ${styles.detail}`}>
       <button className={x.back} onClick={onBack}><BackIcon /> All hunts</button>
@@ -509,23 +491,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         ))}
       </div>
 
-      <div className={x.views} role="tablist">
-        <button role="tab" aria-selected={gv === 'bonuses'} className={`${x.view} ${gv === 'bonuses' ? x.viewOn : ''}`} onClick={() => setGv('bonuses')}>Bonuses</button>
-        {GAME_DEFS.map(d => {
-          const g = (gameList || []).find(q => q.key === d.key)
-          return (
-            <button key={d.key} role="tab" aria-selected={gv === d.key} className={`${x.view} ${gv === d.key ? x.viewOn : ''}`} onClick={() => setGv(d.key)}>
-              <GameIcon k={d.key} />{d.label}{g?.game?.status === 'open' && <i className={x.viewLive} />}
-            </button>
-          )
-        })}
-      </div>
-
-      {gv === 'pick' && <div className={x.embed}><MiniGame huntId={hunt.id} /></div>}
-      {gv === 'gtb' && <div className={x.embed}><MiniGameGtb huntId={hunt.id} /></div>}
-      {gv === 'avg' && <div className={x.embed}><MiniGameAvgMulti huntId={hunt.id} /></div>}
-
-      {gv === 'bonuses' && !loading && (podium.length > 0 || nextUp) && (
+      {!loading && (podium.length > 0 || nextUp) && (
         <div className={x.stage}>
           {podium.map((e, i) => (
             <div key={e.id} className={`${x.pod} ${i === 0 ? x.podFirst : ''}`}>
@@ -552,7 +518,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         </div>
       )}
 
-      {gv === 'bonuses' && <div className={x.split}>
+      <div className={x.split}>
       <div className={x.dBody}>
         <div className={x.chips} role="tablist">
           {[['all', 'All'], ['opened', 'Opened'], ['pending', 'Waiting'], ['super', 'Super']].map(([k, l]) => (
@@ -632,8 +598,12 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
           )}
         </div>
       </div>
-      {gameList && <HuntMiniGames list={gameList} onOpen={setGv} />}
-      </div>}
+      <div className={x.rail}>
+        {gbox('gtb', <MiniGameGtb huntId={hunt.id} compact />)}
+        {gbox('avg', <MiniGameAvgMulti huntId={hunt.id} compact />)}
+      </div>
+      </div>
+      {gbox('pick', <MiniGame huntId={hunt.id} />)}
 
       <section className={x.ribbon} aria-label="Hunt history">
         <div className={x.ribbonHead}><h2>History</h2><span>Jump to another hunt</span></div>
