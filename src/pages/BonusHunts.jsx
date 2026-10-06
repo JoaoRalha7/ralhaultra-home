@@ -154,23 +154,8 @@ function huntStats(hunt, entries) {
 }
 const money = (n) => (n >= 0 ? '+' : '−') + '€' + Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-// One bar per bonus: height = multiplier, grey = not opened yet
-function BonusStrip({ entries, sorted, tall }) {
-  const bars = entries.map(e => {
-    const bet = parseBet(e.bet)
-    const open = e.opened && e.payment != null && bet > 0
-    return { open, multi: open ? parseBet(e.payment) / bet : 0, sup: e.is_super }
-  })
-  if (sorted) bars.sort((a, b) => b.multi - a.multi)
-  return (
-    <div className={`${x.strip} ${tall ? x.stripTall : ''}`} aria-hidden="true">
-      {bars.map((b, i) => (
-        <i key={i}
-          className={`${x.bar} ${!b.open ? x.barOff : b.multi >= 100 ? x.barGood : b.multi >= 40 ? x.barMid : x.barLow}`}
-          style={{ height: b.open ? Math.max(10, Math.min(100, Math.sqrt(b.multi / 300) * 100)) + '%' : '8%' }} />
-      ))}
-    </div>
-  )
+function SlotThumb({ slot, size = 40 }) {
+  return <img className={x.thumb} style={{ width: size, height: size }} src={slot?.image_url || ''} alt="" onError={ev => { ev.target.style.opacity = '.1' }} />
 }
 
 function FeaturedHunt({ hunt, entries, onClick }) {
@@ -200,7 +185,14 @@ function FeaturedHunt({ hunt, entries, onClick }) {
         <div><span className={x.lbl}>Avg multi</span><b>{st.avg > 0 ? st.avg.toFixed(2) + 'x' : '—'}</b></div>
         <div><span className={x.lbl}>Best</span><b className={x.gold}>{st.best ? st.best.multi.toFixed(0) + 'x' : '—'}</b>{st.best && <small>{st.best.slot?.name}</small>}</div>
       </div>
-      <BonusStrip entries={entries} sorted tall />
+      {st.best && (
+        <div className={x.fBest}>
+          <SlotThumb slot={st.best.slot} size={46} />
+          <div><small>Best bonus so far</small><b>{st.best.slot?.name || '—'}</b></div>
+          <strong>{st.best.multi.toFixed(0)}x</strong>
+          <span className={x.fBestWin}>€{parseBet(st.best.payment).toFixed(2)}</span>
+        </div>
+      )}
     </button>
   )
 }
@@ -211,7 +203,9 @@ function HuntRow({ hunt, entries, onClick }) {
     <button type="button" className={`${x.row} ${hunt.active ? x.rowLive : ''}`} onClick={onClick}>
       <span className={x.rId}>#{hunt.id}{hunt.active && <span className={x.liveDot} />}</span>
       <span className={x.rDate}>{fmtDate(hunt.date)}</span>
-      <span className={x.rStrip}><BonusStrip entries={entries} sorted /></span>
+      <span className={x.rBest}>
+        {st.best ? <><SlotThumb slot={st.best.slot} size={30} /><span><b>{st.best.slot?.name || '—'}</b><small>{st.best.multi.toFixed(0)}x best</small></span></> : <span className={x.rNone}>No bonuses opened</span>}
+      </span>
       <span className={x.rNum}><small>Bonuses</small>{st.total || '—'}{st.supers > 0 && <em>{st.supers} super</em>}</span>
       <span className={x.rNum}><small>Avg</small>{st.avg > 0 ? st.avg.toFixed(1) + 'x' : '—'}</span>
       <span className={x.rNum}><small>Total pay</small>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</span>
@@ -228,6 +222,8 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
   const [slotStats,     setSlotStats]     = useState({})
   const [avgBySlot,     setAvgBySlot]     = useState({})
   const [activePopover, setActivePopover] = useState(null)
+  const [filter, setFilter] = useState('all')
+  const [sort, setSort] = useState({ key: 'order', dir: 1 })
   const PER_PAGE = 10
 
   const currentIdx = hunts.findIndex(h => h.id === hunt.id)
@@ -237,6 +233,7 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
   useEffect(() => {
     setLoading(true)
     setPage(1)
+    setFilter('all'); setSort({ key: 'order', dir: 1 })
     setActivePopover(null)
     supabaseDash
       .from('bonus_entries').select('*, slot:slots(*)')
@@ -303,9 +300,28 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
   const best      = [...withMulti].sort((a, b) => b.multi - a.multi)[0] || null
   const isFinished = opened.length === entries.length && entries.length > 0
 
-  const totalPages  = Math.ceil(entries.length / PER_PAGE)
-  const pageEntries = entries.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const counts = {
+    all: entries.length,
+    opened: entries.filter(e => e.opened).length,
+    pending: entries.filter(e => !e.opened).length,
+    super: entries.filter(e => e.is_super).length,
+  }
+  const mOf = e => (parseBet(e.bet) > 0 && e.payment != null ? parseBet(e.payment) / parseBet(e.bet) : -1)
+  let view = entries.map((e, i) => ({ ...e, _n: i + 1 }))
+  if (filter === 'opened')  view = view.filter(e => e.opened)
+  if (filter === 'pending') view = view.filter(e => !e.opened)
+  if (filter === 'super')   view = view.filter(e => e.is_super)
+  if (sort.key === 'multi') view.sort((a, b) => (mOf(a) - mOf(b)) * sort.dir)
+  if (sort.key === 'win')   view.sort((a, b) => ((a.payment ?? -1) - (b.payment ?? -1)) * sort.dir)
+  if (sort.key === 'bet')   view.sort((a, b) => (parseBet(a.bet) - parseBet(b.bet)) * sort.dir)
+  const toggleSort = (key) => { setPage(1); setSort(sv => sv.key === key ? (sv.dir === -1 ? { key, dir: 1 } : { key: 'order', dir: 1 }) : { key, dir: -1 }) }
+  const arrow = (key) => sort.key === key ? (sort.dir === -1 ? ' ↓' : ' ↑') : ''
+  const totalPages  = Math.ceil(view.length / PER_PAGE)
+  const pageEntries = view.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
+  const podium = [...opened].map(e => ({ ...e, multi: parseBet(e.payment) / parseBet(e.bet) }))
+    .filter(e => e.multi > 0).sort((a, b) => b.multi - a.multi).slice(0, 3)
+  const nextUp = unopened[0] || null
   const hasResult = opened.length > 0
   const bestMulti = best ? best.multi : 0
   const stats = [
@@ -379,11 +395,41 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
         ))}
       </div>
 
-      {!loading && entries.length > 0 && (
-        <div className={x.dStrip}><BonusStrip entries={entries} tall /><span className={x.dStripLbl}>Each bar is one bonus, in the order they were collected</span></div>
+      {!loading && (podium.length > 0 || nextUp) && (
+        <div className={x.stage}>
+          {podium.map((e, i) => (
+            <div key={e.id} className={`${x.pod} ${i === 0 ? x.podFirst : ''}`}>
+              <span className={x.podRank}>{i + 1}</span>
+              <SlotThumb slot={e.slot} size={i === 0 ? 64 : 52} />
+              <div className={x.podTxt}>
+                <b>{e.slot?.name || '—'}</b>
+                <small>€{parseBet(e.bet).toFixed(2)} bet · €{parseBet(e.payment).toFixed(2)} win</small>
+              </div>
+              <strong className={x.podX}>{e.multi.toFixed(0)}x</strong>
+            </div>
+          ))}
+          {nextUp && (
+            <div className={`${x.pod} ${x.podNext}`}>
+              <span className={x.podTag}><span className={x.liveDot} />Next up</span>
+              <SlotThumb slot={nextUp.slot} size={52} />
+              <div className={x.podTxt}>
+                <b>{nextUp.slot?.name || '—'}</b>
+                <small>€{parseBet(nextUp.bet).toFixed(2)} bet · {unopened.length} left</small>
+              </div>
+              {nextUp.is_super && <span className={styles.superTag}>SUPER</span>}
+            </div>
+          )}
+        </div>
       )}
 
       <div className={x.dBody}>
+        <div className={x.chips} role="tablist">
+          {[['all', 'All'], ['opened', 'Opened'], ['pending', 'Waiting'], ['super', 'Super']].map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={filter === k} className={`${x.chip} ${filter === k ? x.chipOn : ''}`} onClick={() => { setFilter(k); setPage(1) }}>
+              {l}<span>{counts[k]}</span>
+            </button>
+          ))}
+        </div>
         <div className={`${styles.tablePanel} ${x.tbl}`}>
           {loading ? (
             <div className={styles.loading}><div className={styles.spinner} /> Loading...</div>
@@ -394,18 +440,20 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
                 <thead>
                   <tr>
                     <th>#</th><th>SLOT</th><th>PROVIDER</th>
-                    <th>BET</th><th>MULTI</th><th>WIN</th>
+                    <th className={x.sortTh} onClick={() => toggleSort('bet')}>BET{arrow('bet')}</th>
+                    <th className={x.sortTh} onClick={() => toggleSort('multi')}>MULTI{arrow('multi')}</th>
+                    <th className={x.sortTh} onClick={() => toggleSort('win')}>WIN{arrow('win')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageEntries.map((e, i) => {
-                    const idx   = (page - 1) * PER_PAGE + i + 1
+                    const idx   = e._n
                     const multi = parseBet(e.bet) > 0 && e.payment != null
                       ? parseBet(e.payment) / parseBet(e.bet) : null
                     const mc = multi === null ? '' : multi >= 100 ? styles.good : multi >= 40 ? styles.mid : styles.bad
                     const isOpen = activePopover?.id === e.id
                     return (
-                      <tr key={e.id} className={e.opened ? '' : styles.unopened}>
+                      <tr key={e.id} className={`${e.opened ? '' : styles.unopened} ${podium[0]?.id === e.id ? x.bestRow : ''}`}>
                         <td className={styles.numCell}>{idx}</td>
                         <td>
                           <div className={styles.slotCellWrap}>
@@ -475,7 +523,7 @@ export default function BonusHunts({ navigate }) {
     const ids = huntsData.map(h => h.id)
     const { data: allEntries } = await supabaseDash
       .from('bonus_entries')
-      .select('hunt_id, bet, payment, opened, is_super, slot:slots(name)')
+      .select('hunt_id, bet, payment, opened, is_super, slot:slots(name, image_url)')
       .in('hunt_id', ids)
     const map = {}
     ;(allEntries || []).forEach(e => {
