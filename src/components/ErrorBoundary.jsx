@@ -2,7 +2,7 @@ import { Component } from 'react';
 
 // Shows the real error on screen instead of a blank page.
 export default class ErrorBoundary extends Component {
-  state = { error: null };
+  state = { error: null, stack: '' };
 
   static getDerivedStateFromError(error) {
     return { error };
@@ -10,6 +10,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[RalhaUltra] Render error:', error, info?.componentStack);
+    this.setState({ stack: String(info?.componentStack || '').split('\n').slice(0, 10).join('\n') });
   }
 
   render() {
@@ -22,7 +23,8 @@ export default class ErrorBoundary extends Component {
         <pre style={{ whiteSpace: 'pre-wrap', background: '#1b0a0a', border: '1px solid #7a1f1f', borderRadius: 12, padding: 16 }}>
           {String(error?.message || error)}
           {'\n\n'}
-          {String(error?.stack || '').split('\n').slice(0, 8).join('\n')}
+          {'Page: ' + window.location.pathname}
+          {'\n\nComponents:' + this.state.stack}
         </pre>
         <button onClick={() => window.location.reload()} style={{ padding: '10px 16px', borderRadius: 10 }}>Reload</button>
       </div>
