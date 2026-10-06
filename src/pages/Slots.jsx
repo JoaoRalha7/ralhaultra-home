@@ -314,34 +314,70 @@ function SlotCard({ slot, badge, onClick }) {
   )
 }
 
-// ── Section Carousel (Agora com SVG Icon) ─────────────────────────────────────
-function Section({ icon, title, count, slots, badge, loading, onSlotClick }) {
-  const scrollRef = useRef(null)
-  const scroll = dir => {
-    const el = scrollRef.current
-    if (el) el.scrollBy({ left: dir * (el.clientWidth * 0.8), behavior: 'smooth' })
-  }
+// ── Coverflow carousel (same feel as Latest Streams on Home) ──────────────────
+function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, avgs, plays }) {
+  const [ci, setCi] = useState(0)
+  const dragX = useRef(null)
+  const go = d => setCi(c => Math.min(slots.length - 1, Math.max(0, c + d)))
+  useEffect(() => { setCi(0) }, [slots.length])
+  const Chev = ({ d }) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
         <div className={styles.sectionLeft}>
-          <h2 className={styles.sectionTitle}>
-            {icon}
-            {title}
-          </h2>
+          <h2 className={styles.sectionTitle}>{icon}{title}</h2>
           {count > 0 && <span className={styles.sectionCount}>{count}</span>}
         </div>
-        <div className={styles.sectionArrows}>
-          <button className={styles.arrow} onClick={() => scroll(-1)}><i className="bx bx-chevron-left" /></button>
-          <button className={styles.arrow} onClick={() => scroll(1)}><i className="bx bx-chevron-right" /></button>
-        </div>
       </div>
-      {loading
-        ? <div className={styles.carouselLoading}>{[...Array(7)].map((_, i) => <div key={i} className={styles.skeletonCard} />)}</div>
-        : <div className={styles.carousel} ref={scrollRef}>
-            {slots.map(slot => <SlotCard key={slot.id} slot={slot} badge={badge} onClick={() => onSlotClick(slot)} />)}
+      {loading || !slots.length ? (
+        <div className={styles.carouselLoading}>{[...Array(7)].map((_, i) => <div key={i} className={styles.skeletonCard} />)}</div>
+      ) : (
+        <div className={styles.cf}
+          onPointerDown={e => { dragX.current = e.clientX }}
+          onPointerUp={e => {
+            if (dragX.current == null) return
+            const dx = e.clientX - dragX.current; dragX.current = null
+            if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
+          }}>
+          <button type="button" className={`${styles.cfArr} ${styles.cfL}`} aria-label={`Previous ${title}`} onClick={() => go(-1)}><Chev d="M15 18l-6-6 6-6" /></button>
+          <div className={styles.cfStage}>
+            {slots.map((slot, i) => {
+              const off = i - ci
+              const a = Math.abs(off)
+              if (a > 3) return null
+              const avg = avgs[slot.id]
+              return (
+                <button type="button" key={slot.id}
+                  className={`${styles.cfCard} ${off === 0 ? styles.cfOn : ''}`}
+                  style={{ '--off': off, '--sc': 1 - a * 0.12, zIndex: 10 - a, opacity: a > 2 ? 0 : 1 }}
+                  onClick={() => (off === 0 ? onSlotClick(slot) : setCi(i))}
+                  aria-label={slot.name} tabIndex={a > 1 ? -1 : 0}>
+                  <div className={styles.cfImgWrap}>
+                    <img src={slot.image_url || ''} alt="" className={styles.slotImg} loading="lazy" draggable="false"
+                      onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
+                    <div className={styles.slotFallback} style={{ display: 'none' }}>{(slot.name || '?').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase()}</div>
+                    {badge && (
+                      <span className={`${styles.badge} ${styles['badge' + badge]}`}><span className={styles.badgeDot} />{badge}</span>
+                    )}
+                    {avg != null && <span className={styles.cfAvg}>{Math.round(avg).toLocaleString('pt-PT')}x</span>}
+                  </div>
+                  <div className={styles.cfInfo}>
+                    <p>{slot.name}</p>
+                    <small>{slot.provider || '-'}{plays[slot.id] ? ` · ${plays[slot.id]} bonus` : ''}</small>
+                  </div>
+                </button>
+              )
+            })}
           </div>
-      }
+          <button type="button" className={`${styles.cfArr} ${styles.cfR}`} aria-label={`Next ${title}`} onClick={() => go(1)}><Chev d="M9 6l6 6-6 6" /></button>
+          <div className={styles.cfDots} role="tablist" aria-label={title}>
+            {slots.map((slot, i) => (
+              <button type="button" key={slot.id} role="tab" aria-selected={i === ci} aria-label={`${title} ${i + 1}`}
+                className={i === ci ? styles.cfDotOn : ''} onClick={() => setCi(i)} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -494,7 +530,7 @@ export default function Slots() {
           ? <div className={styles.empty}><div className={styles.emptyIcon}>🎰</div><p>No slots found.</p></div>
           : <div className={styles.searchGrid}>{filtered.map(s => <SlotCard key={s.id} slot={s} onClick={() => setSelected(s)} />)}</div>
         : <>
-            <Section 
+            <CoverSection avgs={avgMultipliers} plays={playCounts} 
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
               title="Top Slots"   
               count={topSlots.length}   
@@ -503,7 +539,7 @@ export default function Slots() {
               loading={loading} 
               onSlotClick={setSelected} 
             />
-            <Section 
+            <CoverSection avgs={avgMultipliers} plays={playCounts} 
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
               title="Most played" 
               count={mostPlayed.length} 
@@ -511,7 +547,7 @@ export default function Slots() {
               loading={loading} 
               onSlotClick={setSelected} 
             />
-         <Section 
+         <CoverSection avgs={avgMultipliers} plays={playCounts} 
   icon={
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3l1.9 5.8a2 2 0 0 1 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 1-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 1-1.3-1.3L3 12l5.8-1.9a2 2 0 0 1 1.3-1.3L12 3z"/>
