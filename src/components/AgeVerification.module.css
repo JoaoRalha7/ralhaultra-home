@@ -39,7 +39,7 @@
 }
 
 .title {
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
   font-size: 22px; font-weight: 900;
   font-style: italic;
   letter-spacing: .05em;
@@ -49,7 +49,7 @@
 }
 
 .body {
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
   font-size: 13.5px; font-weight: 400;
   color: rgba(232,238,252,.5);
   text-align: center; line-height: 1.6;
@@ -67,7 +67,7 @@
   border: none;
   background: linear-gradient(90deg, #2563eb, #3b82f6);
   color: #fff;
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
   font-size: 13px; font-weight: 800;
   letter-spacing: .08em;
   cursor: pointer;
@@ -86,7 +86,7 @@
   border: 1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.04);
   color: rgba(232,238,252,.45);
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
   font-size: 12px; font-weight: 700;
   letter-spacing: .07em;
   cursor: pointer;
@@ -100,7 +100,7 @@
 }
 
 .footer {
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
   font-size: 10px; font-weight: 600;
   letter-spacing: .12em;
   color: rgba(232,238,252,.2);

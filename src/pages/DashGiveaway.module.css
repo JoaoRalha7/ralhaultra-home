@@ -1,6 +1,6 @@
 .page {
   padding: 28px 24px;
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
   max-width: 1100px;
 }
 
@@ -84,7 +84,7 @@
   flex: 1; background: rgba(255,255,255,.07);
   border: 1px solid rgba(124,111,255,.5); border-radius: 9px;
   padding: 6px 10px; color: #fff; font-size: .88em;
-  font-family: 'Rubik', sans-serif; font-weight: 700; outline: none;
+  font-family: var(--font); font-weight: 700; outline: none;
 }
 .kwInput:focus { border-color: #7c6fff; }
 .hint { font-size: .72em; color: rgba(255,255,255,.28); line-height: 1.5; margin-top: 6px; }
@@ -97,7 +97,7 @@
   border: 1px solid rgba(255,255,255,.1);
   background: rgba(255,255,255,.04);
   color: rgba(255,255,255,.5); font-size: .76em; font-weight: 700;
-  cursor: pointer; font-family: 'Rubik', sans-serif; transition: all .15s;
+  cursor: pointer; font-family: var(--font); transition: all .15s;
 }
 .presetBtn:hover { background: rgba(255,255,255,.08); color: #fff; }
 .presetActive {
@@ -110,7 +110,7 @@
   width: 100%; background: rgba(255,255,255,.05);
   border: 1px solid rgba(255,255,255,.1); border-radius: 9px;
   padding: 7px 10px; color: rgba(255,255,255,.7); font-size: .8em;
-  font-family: 'Rubik', sans-serif; outline: none;
+  font-family: var(--font); outline: none;
 }
 .customInput:focus { border-color: rgba(124,111,255,.4); }
 .customInput::placeholder { color: rgba(255,255,255,.2); }
@@ -143,7 +143,7 @@
   background: rgba(255,255,255,.05);
   color: rgba(255,255,255,.45); font-size: .74em;
   font-weight: 700; cursor: pointer;
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
   transition: background .15s;
 }
 .btnEdit:hover { background: rgba(255,255,255,.09); }
@@ -152,7 +152,7 @@
   padding: 6px 14px; border-radius: 9px; border: none;
   background: #7c6fff; color: #fff;
   font-size: .78em; font-weight: 800;
-  cursor: pointer; font-family: 'Rubik', sans-serif;
+  cursor: pointer; font-family: var(--font);
 }
 
 .btnStart {
@@ -160,7 +160,7 @@
   padding: 10px 0; border-radius: 11px; border: none;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #fff; font-weight: 800; font-size: .85em;
-  font-family: 'Rubik', sans-serif; cursor: pointer;
+  font-family: var(--font); cursor: pointer;
   box-shadow: 0 3px 16px rgba(245,158,11,.3);
   transition: opacity .15s;
 }
@@ -171,7 +171,7 @@
   padding: 10px 0; border-radius: 11px; border: none;
   background: linear-gradient(135deg, #7c6fff, #a78bfa);
   color: #fff; font-weight: 800; font-size: .85em;
-  font-family: 'Rubik', sans-serif; cursor: pointer;
+  font-family: var(--font); cursor: pointer;
   box-shadow: 0 3px 16px rgba(124,111,255,.3);
   transition: opacity .15s;
 }
@@ -183,7 +183,7 @@
   border: 1px solid rgba(255,255,255,.1);
   background: rgba(255,255,255,.05);
   color: rgba(255,255,255,.45); font-weight: 700; font-size: .82em;
-  font-family: 'Rubik', sans-serif; cursor: pointer;
+  font-family: var(--font); cursor: pointer;
   transition: background .15s;
 }
 .btnStop:hover { background: rgba(255,255,255,.09); }
@@ -243,7 +243,7 @@
 }
 .rouletteModal {
   display: flex; flex-direction: column; align-items: center; gap: 28px;
-  font-family: 'Rubik', sans-serif;
+  font-family: var(--font);
 }
 .rouletteTitle {
   display: flex; align-items: center; gap: 10px;
@@ -324,7 +324,7 @@
   padding: 12px 32px; border-radius: 12px; border: none;
   background: linear-gradient(135deg, #7c6fff, #a78bfa);
   color: #fff; font-weight: 800; font-size: 1em;
-  font-family: 'Rubik', sans-serif; cursor: pointer;
+  font-family: var(--font); cursor: pointer;
   box-shadow: 0 4px 20px rgba(124,111,255,.35);
   transition: opacity .2s;
 }
@@ -335,7 +335,7 @@
   border: 1px solid rgba(255,255,255,.1);
   background: rgba(255,255,255,.05);
   color: rgba(255,255,255,.5); font-weight: 700; font-size: .95em;
-  font-family: 'Rubik', sans-serif; cursor: pointer;
+  font-family: var(--font); cursor: pointer;
   transition: background .15s;
 }
 .btnClose:hover { background: rgba(255,255,255,.09); }

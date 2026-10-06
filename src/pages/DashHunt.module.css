@@ -149,13 +149,13 @@
 .superBtnOn     { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.4); color: #fbbf24; }
 .superBtnLocked { opacity: .22; cursor: default; pointer-events: none; }
 
-.betDisplay    { font-size: 13px; font-weight: 500; color: #edf0f7; text-align: right; font-family: 'Rubik', var(--font); }
+.betDisplay    { font-size: 13px; font-weight: 500; color: #edf0f7; text-align: right; font-family: var(--font); }
 .betDisplayDim { color: #5a6070; }
 
 .inp {
   width: 100%; background: #1e2230; border: 1px solid rgba(255,255,255,.11);
   border-radius: 6px; padding: 5px 8px; color: #edf0f7;
-  font-size: 12px; font-family: 'Rubik', var(--font); outline: none;
+  font-size: 12px; font-family: var(--font); outline: none;
   text-align: right; transition: border-color .15s, box-shadow .15s;
 }
 .inp:focus { border-color: rgba(59,130,246,.5); box-shadow: 0 0 0 3px rgba(59,130,246,.14); }
@@ -164,7 +164,7 @@
 .inpPay:focus { border-color: rgba(33,209,110,.5); box-shadow: 0 0 0 3px rgba(33,209,110,.12); }
 .inpLocked { opacity: .16; cursor: default; pointer-events: none; background: transparent; border-color: transparent; box-shadow: none; }
 
-.multiVal  { font-size: 13px; font-weight: 600; text-align: right; font-family: 'Rubik', var(--font); letter-spacing: -.01em; }
+.multiVal  { font-size: 13px; font-weight: 600; text-align: right; font-family: var(--font); letter-spacing: -.01em; }
 .multiGood { color: #21d16e; }
 .multiMid  { color: #f5a623; }
 .multiBad  { color: #f04f4f; }
@@ -201,7 +201,7 @@
   display: flex; flex-direction: column; gap: 3px;
 }
 .statCardLabel { font-size: 9px; font-weight: 700; color: #5a6070; text-transform: uppercase; letter-spacing: .07em; }
-.statCardVal   { font-size: 14px; font-weight: 700; color: #edf0f7; font-family: 'Rubik', var(--font); letter-spacing: -.02em; }
+.statCardVal   { font-size: 14px; font-weight: 700; color: #edf0f7; font-family: var(--font); letter-spacing: -.02em; }
 .statCardVal.green { color: #21d16e; }
 .statCardVal.amber { color: #f5a623; }
 .statCardVal.red   { color: #f04f4f; }
@@ -214,7 +214,7 @@
 }
 .profitLabel { font-size: 9px; font-weight: 700; color: #5a6070; text-transform: uppercase; letter-spacing: .07em; }
 .profitVal {
-  font-size: 22px; font-weight: 800; font-family: 'Rubik', var(--font);
+  font-size: 22px; font-weight: 800; font-family: var(--font);
   letter-spacing: -.04em; line-height: 1;
 }
 .profitVal.green { color: #21d16e; }
@@ -230,7 +230,7 @@
 .statInput {
   width: 100%; background: #161923; border: 1px solid rgba(255,255,255,.11);
   border-radius: 7px; padding: 6px 9px; color: #edf0f7;
-  font-size: 12px; font-family: 'Rubik', var(--font); outline: none;
+  font-size: 12px; font-family: var(--font); outline: none;
   transition: border-color .15s;
 }
 .statInput:focus { border-color: rgba(59,130,246,.5); }
@@ -253,7 +253,7 @@
 }
 .progressTop { display: flex; justify-content: space-between; align-items: center; }
 .progressLabel { font-size: 9px; font-weight: 700; color: #5a6070; text-transform: uppercase; letter-spacing: .07em; }
-.progressVal   { font-size: 12px; font-weight: 700; color: #edf0f7; font-family: 'Rubik', var(--font); }
+.progressVal   { font-size: 12px; font-weight: 700; color: #edf0f7; font-family: var(--font); }
 .progBar  { height: 4px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden; }
 .progFill { height: 100%; background: #3b82f6; border-radius: 2px; transition: width .5s cubic-bezier(.4,0,.2,1); }
 
@@ -272,7 +272,7 @@
 .bwRow   { display: flex; align-items: center; gap: 8px; }
 .bwThumb { width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0; object-fit: cover; background: #1e2230; border: 1px solid rgba(255,255,255,.06); }
 .bwName  { font-size: 11px; font-weight: 600; color: #edf0f7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bwSub   { font-size: 10px; color: rgb(237 237 237 / 0.85); margin-top: 1px; font-family: 'Rubik', var(--font); }
+.bwSub   { font-size: 10px; color: rgb(237 237 237 / 0.85); margin-top: 1px; font-family: var(--font); }
 
 /* Keep old classes for compatibility */
 .statsPanelHead { display: none; }
@@ -292,7 +292,7 @@
 .statInput {
   width: 100%; background: #161923; border: 1px solid rgba(255,255,255,.11);
   border-radius: 8px; padding: 7px 10px; color: #edf0f7;
-  font-size: 13px; font-family: 'Rubik', var(--font); outline: none; margin-top: 6px;
+  font-size: 13px; font-family: var(--font); outline: none; margin-top: 6px;
   transition: border-color .15s;
 }
 .statInput:focus { border-color: rgba(59,130,246,.5); }
@@ -321,7 +321,7 @@
 .bwRow   { display: flex; align-items: center; gap: 10px; }
 .bwThumb { width: 32px; height: 32px; border-radius: 7px; flex-shrink: 0; object-fit: cover; background: #1e2230; border: 1px solid rgba(255,255,255,.06); }
 .bwName  { font-size: 12px; font-weight: 600; color: #edf0f7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bwSub   { font-size: 10px; color: rgb(237 237 237 / 0.85); margin-top: 2px; font-family: 'Rubik', var(--font); }
+.bwSub   { font-size: 10px; color: rgb(237 237 237 / 0.85); margin-top: 2px; font-family: var(--font); }
 
 /* ── HISTORY ── */
 .historyWrap { display: flex; flex-direction: column; height: 100%; overflow: hidden; }

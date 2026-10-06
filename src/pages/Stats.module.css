@@ -1,6 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Sora:wght@700;800;900&display=swap');
 
-:root {
+.page {
   --bg: #090C15; 
   --surface: rgba(255,255,255,0.02); 
   --surface2: rgba(255,255,255,0.04);
@@ -14,8 +13,7 @@
   --red: #f87171; 
   --yellow: #fbbf24; 
   --blue: #38bdf8; 
-  --font: 'Rubik', system-ui, sans-serif; 
-  --display: 'Sora', sans-serif;
+  --display: var(--font-head);
 }
 
 /* ── BASE ── */
