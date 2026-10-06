@@ -1,40 +1,19 @@
 export const KENO = { size: 40, draw: 10, max: 10, edge: 0.99, cap: 1000 }
-export const KENO_RISK = { low: { alpha: 0.75, min: 1 }, classic: { alpha: 0.3, min: 0.3 }, medium: { alpha: 0, min: 1.5 }, high: { alpha: -0.5, min: 3 } }
-const C = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r }
-export function kenoProbs(n) { const t = C(KENO.size, KENO.draw); return Array.from({ length: n + 1 }, (_, h) => C(n, h) * C(KENO.size - n, KENO.draw - h) / t) }
-// Exact 10-pick paytables copied from a reference casino (RTP 98.8% to 99.0%). Other pick counts are generated below.
-export const KENO_EXACT = {
-  10: {
-    classic: [0, 0, 0, 1.4, 2.25, 4.5, 8, 17, 50, 80, 100],
-    low: [0, 0, 1.1, 1.2, 1.3, 1.8, 3.5, 13, 50, 250, 1000],
-    medium: [0, 0, 0, 1.6, 2, 4, 7, 26, 100, 500, 1000],
-    high: [0, 0, 0, 0, 3.5, 8, 13, 63, 500, 800, 1000],
-  },
+export const KENO_RISK = { classic: 1, low: 1, medium: 1, high: 1 } // risk levels, in display order
+// Paytables per picks (1-10) and risk, indexed by hits (0..picks). Multipliers include the stake. RTP 98.7% to 99.1%.
+const KENO_TABLES = {
+  1: { classic: [0.0, 3.96], low: [0.7, 1.85], medium: [0.4, 2.75], high: [0.0, 3.96] },
+  2: { classic: [0.0, 1.9, 4.5], low: [0.0, 2.0, 3.8], medium: [0.0, 1.8, 5.1], high: [0.0, 0.0, 17.1] },
+  3: { classic: [0.0, 1.0, 3.1, 10.4], low: [0.0, 1.1, 1.38, 26.0], medium: [0.0, 0.0, 2.8, 50.0], high: [0.0, 0.0, 0.0, 81.5] },
+  4: { classic: [0.0, 0.8, 1.8, 5.0, 22.5], low: [0.0, 0.0, 2.2, 7.9, 90.0], medium: [0.0, 0.0, 1.7, 10.0, 100.0], high: [0.0, 0.0, 0.0, 10.0, 259.0] },
+  5: { classic: [0.0, 0.25, 1.4, 4.1, 16.5, 36.0], low: [0.0, 0.0, 1.5, 4.2, 13.0, 300.0], medium: [0.0, 0.0, 1.4, 4.0, 14.0, 390.0], high: [0.0, 0.0, 0.0, 4.5, 48.0, 450.0] },
+  6: { classic: [0.0, 0.0, 1.0, 3.68, 7.0, 16.5, 40.0], low: [0.0, 0.0, 1.1, 2.0, 6.2, 100.0, 700.0], medium: [0.0, 0.0, 0.0, 3.0, 9.0, 180.0, 710.0], high: [0.0, 0.0, 0.0, 0.0, 11.0, 350.0, 710.0] },
+  7: { classic: [0.0, 0.0, 0.47, 3.0, 4.5, 14.0, 31.0, 60.0], low: [0.0, 0.0, 1.1, 1.6, 3.5, 15.0, 225.0, 700.0], medium: [0.0, 0.0, 0.0, 2.0, 7.0, 30.0, 400.0, 800.0], high: [0.0, 0.0, 0.0, 0.0, 7.0, 90.0, 400.0, 800.0] },
+  8: { classic: [0.0, 0.0, 0.0, 2.2, 4.0, 13.0, 22.0, 55.0, 70.0], low: [0.0, 0.0, 1.1, 1.5, 2.0, 5.5, 39.0, 100.0, 800.0], medium: [0.0, 0.0, 0.0, 2.0, 4.0, 11.0, 67.0, 400.0, 900.0], high: [0.0, 0.0, 0.0, 0.0, 5.0, 20.0, 270.0, 600.0, 900.0] },
+  9: { classic: [0.0, 0.0, 0.0, 1.55, 3.0, 8.0, 15.0, 44.0, 60.0, 85.0], low: [0.0, 0.0, 1.1, 1.3, 1.7, 2.5, 7.5, 50.0, 250.0, 1000.0], medium: [0.0, 0.0, 0.0, 2.0, 2.5, 5.0, 15.0, 100.0, 500.0, 1000.0], high: [0.0, 0.0, 0.0, 0.0, 4.0, 11.0, 56.0, 500.0, 800.0, 1000.0] },
+  10: { classic: [0.0, 0.0, 0.0, 1.4, 2.25, 4.5, 8.0, 17.0, 50.0, 80.0, 100.0], low: [0.0, 0.0, 1.1, 1.2, 1.3, 1.8, 3.5, 13.0, 50.0, 250.0, 1000.0], medium: [0.0, 0.0, 0.0, 1.6, 2.0, 4.0, 7.0, 26.0, 100.0, 500.0, 1000.0], high: [0.0, 0.0, 0.0, 0.0, 3.5, 8.0, 13.0, 63.0, 500.0, 800.0, 1000.0] },
 }
 export function kenoTable(n, risk = 'classic') {
-  if (KENO_EXACT[n]?.[risk]) return [...KENO_EXACT[n][risk]]
-  const R = KENO_RISK[risk] || KENO_RISK.classic
-  const P = kenoProbs(n)
-  // multipliers only make sense from the most likely hit count upwards (they must grow as hits get rarer)
-  let lo = 1
-  for (let h = 1; h <= n; h++) if (P[h] > P[lo]) lo = h
-  for (;;) {
-    const S = []; for (let h = lo; h <= n; h++) S.push(h)
-    const capped = new Set(), mult = {}
-    for (;;) {
-      const used = [...capped].reduce((a, h) => a + KENO.cap * P[h], 0)
-      const free = S.filter((h) => !capped.has(h))
-      const W = free.map((h) => Math.pow(P[h], R.alpha)); const sum = W.reduce((a, b) => a + b, 0)
-      free.forEach((h, i) => { mult[h] = Math.max(0, KENO.edge - used) * (W[i] / sum) / P[h] })
-      const over = free.filter((h) => mult[h] > KENO.cap)
-      if (!over.length) break
-      over.forEach((h) => capped.add(h))
-      if (capped.size === S.length) break
-    }
-    S.forEach((h) => { if (capped.has(h)) mult[h] = KENO.cap })
-    if (lo < n && mult[lo] < R.min) { lo++; continue }
-    const t = new Array(n + 1).fill(0)
-    S.forEach((h) => { t[h] = Math.min(KENO.cap, Math.floor(mult[h] * 100) / 100) })
-    return t
-  }
+  const t = KENO_TABLES[n]
+  return [...(t?.[risk] || t?.classic || [])]
 }
