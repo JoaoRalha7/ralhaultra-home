@@ -255,3 +255,30 @@ button.vbig,button.vi{font:inherit;color:inherit;text-align:left;cursor:pointer}
 .stt.rejected,.stt.refunded{background:#2a1115;color:#f87171}
 .val.pos{color:#4ade80}
 .empty{padding:22px;text-align:center;color:var(--mute);font-size:13px}
+
+/* Latest Streams carousel + Top points */
+.lsx{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.carWrap{position:relative;min-width:0}
+.car{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}
+.car::-webkit-scrollbar{display:none}
+.scard{flex:0 0 calc(50% - 8px);scroll-snap-align:start;text-align:left;background:transparent;border:0;color:inherit;font:inherit;padding:0;cursor:pointer;min-width:0}
+.scard .th{height:210px}
+.scard p{margin:10px 2px 2px;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scard small{display:block;margin-left:2px;color:var(--mute)}
+.scard:hover .th{border-color:var(--acc)}
+.carArr{position:absolute;top:92px;z-index:3;width:38px;height:38px;border-radius:50%;background:#0b0e14e6;border:1px solid var(--line);color:var(--text);display:grid;place-items:center;cursor:pointer}
+.carArr:hover{border-color:var(--acc);background:#17305f}
+.carArr.l{left:-12px}.carArr.r{right:-12px}
+.lbp{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.lbh{display:flex;justify-content:space-between;align-items:center;font:800 16px "Bricolage Grotesque",sans-serif;margin-bottom:10px}
+.lbh a{font:700 12px "DM Sans",sans-serif;color:var(--acc2)}
+.lbp ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lbp li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.lbp li:first-child{border-top:0}
+.lbp li b{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbr{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;font:800 12px "Bricolage Grotesque",sans-serif;background:#1a1f2b;color:var(--mute)}
+.lbr.r1{background:#f5c542;color:#1a1405}.lbr.r2{background:#cbd5e1;color:#0b0e14}.lbr.r3{background:#d6894b;color:#1a0f05}
+.lbp2{display:inline-flex;align-items:center;gap:6px;font:800 14px "Bricolage Grotesque",sans-serif}
+.lbn{color:var(--mute);font-size:13px;margin:6px 0 0}
+@media (max-width:1100px){.lsx{grid-template-columns:1fr}.carArr.l{left:4px}.carArr.r{right:4px}}
+@media (max-width:640px){.scard{flex-basis:86%}.scard .th{height:180px}}

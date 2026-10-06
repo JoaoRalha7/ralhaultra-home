@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import OfferRow from '../components/OfferRow';
@@ -122,6 +122,8 @@ export default function Home() {
   const [showFeatured, setShowFeatured] = useState(false);
   const [player, setPlayer] = useState(null);
   const [streams, setStreams] = useState([]);
+  const [board, setBoard] = useState([]);
+  const carRef = useRef(null);
   const [activity, setActivity] = useState(null);
 
   // Featured offer popup, shown every time Home loads
@@ -152,6 +154,10 @@ export default function Home() {
         (data || []).forEach((m) => { by[m.slug] = { name: m.name, icon_url: m.icon_url }; });
         setMethodsBySlug(by);
       });
+    fetch(`${SE_WORKER_URL}/leaderboard?limit=5`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.users) setBoard(d.users); })
+      .catch(() => {});
     fetch(`${STATUS_WORKER_URL}/streams?limit=8`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d?.streams?.length) setStreams(d.streams); })
@@ -221,8 +227,8 @@ export default function Home() {
 
   const feedRows = activity ? activity[tab] : [];
   const vids = streams.length ? streams : null;
-  const big = vids ? vids[0] : VIDEO_FALLBACK[0];
-  const list = vids ? vids.slice(1, 5) : VIDEO_FALLBACK.slice(1);
+  
+  
   const thumbStyle = (v) => (thumbOf(v) ? { backgroundImage: `url(${thumbOf(v)})` } : undefined);
   const thumbCls = (v, i) => `th ${v.thumbnail_url ? 'img' : v.tone || `v${(i % 5) + 1}`}`;
 
@@ -258,28 +264,39 @@ export default function Home() {
       </section>
 
       <section>
-        <SectionHead icon="tv" title="Latest Videos" tag="Twitch" showAll="/stream" />
-        <div className="vgrid">
-          <button type="button" className="vbig" onClick={() => vids && play(big)}>
-            <div className={thumbCls(big, 0)} style={thumbStyle(big)}>
-              {vids && <span className="new">{ago(big.created_at)}</span>}
-              {big.duration && <span className="dur">{parseDuration(big.duration)}</span>}
-              <svg><use href="#play" /></svg>
-            </div>
-            <p>{big.title}</p>
-            {vids && <small>{(big.view_count ?? 0).toLocaleString('en-GB')} views</small>}
-          </button>
-          <div className="vl">
-            {list.map((v, i) => (
-              <button type="button" key={v.id} className="vi" onClick={() => vids && play(v)}>
-                <div className={thumbCls(v, i + 1)} style={thumbStyle(v)}><svg><use href="#play" /></svg></div>
-                <div>
+        <SectionHead icon="tv" title="Latest Streams" tag="Twitch" showAll="/stream" />
+        <div className="lsx">
+          <div className="carWrap">
+            <button type="button" className="carArr l" aria-label="Previous streams" onClick={() => carRef.current?.scrollBy({ left: -carRef.current.clientWidth * 0.8, behavior: 'smooth' })}><Icon name="left" size={18} /></button>
+            <div className="car" ref={carRef}>
+              {(vids || VIDEO_FALLBACK).map((v, i) => (
+                <button type="button" key={v.id} className="scard" onClick={() => vids && play(v)}>
+                  <div className={thumbCls(v, i)} style={thumbStyle(v)}>
+                    {vids && <span className="new">{ago(v.created_at)}</span>}
+                    {v.duration && <span className="dur">{parseDuration(v.duration)}</span>}
+                    <svg><use href="#play" /></svg>
+                  </div>
                   <p>{v.title}</p>
-                  {vids && <small>{ago(v.created_at)} · {(v.view_count ?? 0).toLocaleString('en-GB')} views</small>}
-                </div>
-              </button>
-            ))}
+                  {vids && <small>{(v.view_count ?? 0).toLocaleString('en-GB')} views</small>}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="carArr r" aria-label="Next streams" onClick={() => carRef.current?.scrollBy({ left: carRef.current.clientWidth * 0.8, behavior: 'smooth' })}><Icon name="right" size={18} /></button>
           </div>
+          <aside className="lbp" aria-label="Top points">
+            <div className="lbh"><span>Top points</span><Link to="/leaderboard">View all</Link></div>
+            {board.length === 0 ? <p className="lbn">Leaderboard unavailable right now.</p> : (
+              <ol>
+                {board.slice(0, 5).map((u, i) => (
+                  <li key={u.username}>
+                    <span className={`lbr r${i + 1}`}>{i + 1}</span>
+                    <b>{u.username}</b>
+                    <span className="lbp2">{Number(u.points || 0).toLocaleString('en-GB')}<span className="coin" /></span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </aside>
         </div>
       </section>
 
