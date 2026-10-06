@@ -332,11 +332,23 @@ export default function Home() {
           </div>
         </article>
         <article className="hc b">
-          <h2>Wager Race</h2>
-          <p>Climb the board and win your share of the prize pool.</p>
+          <h2>Leaderboard</h2>
+          {board.length > 0 ? (
+            <ol className="hcb">
+              {board.slice(0, 3).map((u, i) => (
+                <li key={u.username}>
+                  <span className={`lbr r${i + 1}`}>{i + 1}</span>
+                  <b>{u.username}</b>
+                  <span>{Number(u.points || 0).toLocaleString('en-GB')}<span className="coin" /></span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>Top viewers ranked by points. Where do you stand?</p>
+          )}
           <div className="act">
             <Round />
-            <Link className="pill" to="/leaderboard"><Icon name="trophy" size={16} />Leaderboard</Link>
+            <Link className="pill" to="/leaderboard"><Icon name="trophy" size={16} />View ranking</Link>
           </div>
         </article>
         <article className="hc c">
