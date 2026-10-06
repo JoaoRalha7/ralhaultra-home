@@ -39,3 +39,11 @@ create policy "entries insert own" on public.giveaway_entries for insert
 drop policy if exists "entries admin delete" on public.giveaway_entries;
 create policy "entries admin delete" on public.giveaway_entries for delete
   using (auth.uid() = '13878854-d588-4c49-ad36-1428920902bd');
+
+-- v2: points-based tickets (safe to run again)
+alter table public.giveaways add column if not exists description text;
+alter table public.giveaways add column if not exists ticket_cost integer not null default 0;
+alter table public.giveaways add column if not exists max_tickets integer; -- null = unlimited
+alter table public.giveaway_entries add column if not exists tickets integer not null default 1 check (tickets > 0);
+alter table public.giveaway_entries add column if not exists cost_paid integer not null default 0;
+alter table public.giveaway_entries drop constraint if exists giveaway_entries_giveaway_id_user_id_key;
