@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const dashUrl = import.meta.env.VITE_SUPABASE_DASH_URL;
-const dashKey = import.meta.env.VITE_SUPABASE_DASH_KEY || import.meta.env.VITE_SUPABASE_DASH_ANON_KEY;
+// Trim spaces and surrounding quotes so a sloppy .env still works.
+const clean = (v) => (v ? String(v).trim().replace(/^["']|["']$/g, '') : '');
+
+const url = clean(import.meta.env.VITE_SUPABASE_URL);
+const key = clean(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const dashUrl = clean(import.meta.env.VITE_SUPABASE_DASH_URL);
+const dashKey = clean(import.meta.env.VITE_SUPABASE_DASH_KEY || import.meta.env.VITE_SUPABASE_DASH_ANON_KEY);
 
 export const isConfigured = Boolean(url && key && dashUrl && dashKey);
 
@@ -21,7 +24,14 @@ if (missingEnv.length) {
 }
 
 // Placeholders keep the pages from crashing when .env is missing (requests just fail).
-const make = (u, k) => createClient(u || 'http://localhost:54321', k || 'missing-anon-key');
+const make = (u, k) => {
+  try {
+    return createClient(u || 'http://localhost:54321', k || 'missing-anon-key');
+  } catch (e) {
+    console.error('[RalhaUltra] Invalid Supabase URL/key:', u, e);
+    return createClient('http://localhost:54321', 'missing-anon-key');
+  }
+};
 
 // Public instance: auth, profiles, casinos, shop
 export const supabase = make(url, key);
