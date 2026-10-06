@@ -283,6 +283,13 @@ function FeaturedGameChips({ huntId }) {
 function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const location = useLocation()
   const gameList = useHuntGames(hunt.id)
+  const [pickOpen, setPickOpen] = useState(false)
+  useEffect(() => {
+    if (!pickOpen) return
+    const k = (e) => e.key === 'Escape' && setPickOpen(false)
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [pickOpen])
   const wantView = location.state?.huntId === hunt.id ? location.state?.view : null
   useEffect(() => {
     if (!wantView || !gameList) return
@@ -501,7 +508,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         ))}
       </div>
 
-      {!loading && (podium.length > 0 || nextUp) && (
+      {!loading && podium.length > 0 && (
         <div className={x.stage}>
           {podium.map((e, i) => (
             <div key={e.id} className={`${x.pod} ${i === 0 ? x.podFirst : ''}`}>
@@ -514,17 +521,6 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
               <strong className={x.podX}>{e.multi.toFixed(0)}x</strong>
             </div>
           ))}
-          {nextUp && (
-            <div className={`${x.pod} ${x.podNext}`}>
-              <span className={x.podTag}><span className={x.liveDot} />Next up</span>
-              <SlotThumb slot={nextUp.slot} size={52} />
-              <div className={x.podTxt}>
-                <b>{nextUp.slot?.name || '—'}</b>
-                <small>€{parseBet(nextUp.bet).toFixed(2)} bet · {unopened.length} left</small>
-              </div>
-              {nextUp.is_super && <span className={styles.superTag}>SUPER</span>}
-            </div>
-          )}
         </div>
       )}
 
@@ -611,9 +607,33 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
       <div className={x.rail}>
         {gbox('gtb', <MiniGameGtb huntId={hunt.id} compact />)}
         {gbox('avg', <MiniGameAvgMulti huntId={hunt.id} compact />)}
+        {gbox('pick', (() => {
+          const g = (gameList || []).find(q => q.key === 'pick')
+          const st = g?.game?.status
+          return (
+            <div className={x.pickSum}>
+              <div className={x.pickStats}>
+                <span><b>{g?.count ?? 0}</b> picks so far</span>
+                {st === 'finished' && g?.winner && <span>Winner <b>{g.winner.twitch_username}</b></span>}
+              </div>
+              <button className={x.pickBtn} onClick={() => setPickOpen(true)}>
+                {st === 'open' ? 'Pick your slot' : st === 'closed' ? 'See picks' : 'See results'}
+              </button>
+            </div>
+          )
+        })())}
       </div>
       </div>
-      {gbox('pick', <MiniGame huntId={hunt.id} />)}
+      {pickOpen && (
+        <div className={x.modalBack} onClick={() => setPickOpen(false)} role="dialog" aria-modal="true" aria-label="Pick & Win">
+          <div className={x.modal} onClick={e => e.stopPropagation()}>
+            <button className={x.modalX} onClick={() => setPickOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <MiniGame huntId={hunt.id} />
+          </div>
+        </div>
+      )}
 
       <section className={x.ribbon} aria-label="Hunt history">
         <div className={x.ribbonHead}><h2>History</h2><span>Jump to another hunt</span></div>
