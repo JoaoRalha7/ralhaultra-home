@@ -367,3 +367,4 @@ button.vbig,button.vi{font:inherit;color:inherit;text-align:left;cursor:pointer}
 .top .logout:hover{background:#2a1416;border-color:#f8717166;color:#fca5a5}
 .top .logout.login{background:var(--acc);border-color:var(--acc);color:#fff}
 .top .logout.login:hover{background:#2563eb;border-color:#2563eb;color:#fff}
+@media (min-width:1100px){.top .pts{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}}
