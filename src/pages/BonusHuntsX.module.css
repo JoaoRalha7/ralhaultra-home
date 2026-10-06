@@ -330,3 +330,7 @@
 @media (min-width:1101px){
   .dBody{position:sticky;top:76px;align-self:start;height:calc(100vh - 96px);min-height:440px}
 }
+
+@media (min-width:1101px){
+  .dBody{height:auto;min-height:0;max-height:calc(100vh - 96px)}
+}
