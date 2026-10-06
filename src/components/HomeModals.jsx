@@ -94,3 +94,61 @@ export function TwitchPlayerModal({ type, id, title, meta, onClose }) {
     </div>
   )
 }
+
+export function FeaturedOfferModal({ casino: c, onClose, onRedirect }) {
+  const accent = c.featured_accent_color || '#3b82f6'
+
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const handleClaim = () => {
+    onRedirect(c.claim_url, c.promo_code)
+    onClose()
+  }
+
+  return (
+    <div className={styles.featuredOverlay} onClick={onClose}>
+      <div
+        className={styles.featuredBox}
+        onClick={e => e.stopPropagation()}
+        style={{ '--accent': accent }}
+      >
+        <div className={styles.featuredGlow} />
+        <div className={styles.featuredTopBar}>
+          <i className="bx bxs-star" /> EXCLUSIVE OFFER <i className="bx bxs-star" />
+        </div>
+        <button className={styles.featuredClose} onClick={onClose}>
+          <i className="bx bx-x" />
+        </button>
+
+        <div className={styles.featuredBody}>
+          <img src={c.logo_url} alt={c.name} className={styles.featuredLogo} />
+
+          <div className={styles.featuredOfferBox}>
+            <span className={styles.featuredOfferTag}>
+              <i className="bx bx-gift" /> {c.featured_offer_title || 'Exclusive Bonus'}
+            </span>
+            <p className={styles.featuredOfferAmount}>{c.featured_offer_amount}</p>
+            {c.featured_offer_details && (
+              <p className={styles.featuredOfferDetails}>{c.featured_offer_details}</p>
+            )}
+
+            {c.promo_code && (
+              <div className={styles.featuredPromoWrap}>
+                <span className={styles.featuredPromoLabel}>Promo Code</span>
+                <span className={styles.featuredPromoCode}>{c.promo_code}</span>
+              </div>
+            )}
+          </div>
+
+          <button className={styles.featuredCta} onClick={handleClaim}>
+            Claim {c.featured_offer_amount || 'Bonus'} Now <i className="bx bx-chevron-right" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -30,9 +30,38 @@ async function getProfilePic(username) {
   } catch { return null }
 }
 
+// ─── Efeito Ping-Pong (Clean Style) ───────────────────────────────────────
+function SlideText({ text, className }) {
+  const containerRef = useRef(null)
+  const textRef = useRef(null)
+  const [slideDist, setSlideDist] = useState(0)
+
+  useEffect(() => {
+    if (containerRef.current && textRef.current) {
+      const cWidth = containerRef.current.clientWidth
+      const tWidth = textRef.current.scrollWidth
+      if (tWidth > cWidth) {
+        setSlideDist(cWidth - tWidth - 6) 
+      } else {
+        setSlideDist(0)
+      }
+    }
+  }, [text])
+
+  return (
+    <div className="slide-wrap" ref={containerRef}>
+      <div 
+        className={`slide-inner ${slideDist < 0 ? 'anim-ping-pong' : ''}`}
+        style={{ '--slide-dist': `${slideDist}px` }}
+      >
+        <span className={className} ref={textRef}>{text}</span>
+      </div>
+    </div>
+  )
+}
+
 // ─── TwitchAvatar ─────────────────────────────────────────────────────────
-// Aceita src pré-carregado para nunca mostrar a letra primeiro
-function TwitchAvatar({ username, src, size = 44, borderColor = 'rgba(124,111,255,.35)' }) {
+function TwitchAvatar({ username, src, size = 44, borderColor = 'var(--border2)' }) {
   const color  = hslFromName(username)
   const [imgSrc, setImgSrc] = useState(src || profileCache[username] || null)
 
@@ -74,7 +103,6 @@ function useAutoScroll({ count, visible, rowH, gap, interval = 6000 }) {
 }
 
 // ─── AnimatedSection ──────────────────────────────────────────────────────
-// Expande/colapsa com animação de altura — sem flick
 function AnimatedSection({ show, children }) {
   const ref     = useRef(null)
   const prevRef = useRef(show)
@@ -120,7 +148,7 @@ function AnimatedSection({ show, children }) {
 
 // ─── Constantes ───────────────────────────────────────────────────────────
 const PAY_ROW_H   = 38
-const PAY_GAP     = 5
+const PAY_GAP     = 6
 const PAY_VISIBLE = 2
 const RK_ROW_H    = 46
 const RK_GAP      = 0
@@ -128,89 +156,113 @@ const RK_VISIBLE  = 4
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&family=Sora:wght@700;800&display=swap');
+
+:root {
+  --bg: #090C15; --surface: rgba(255,255,255,0.02); --surface2: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.04); --border2: rgba(255,255,255,0.08);
+  --text: #eeeef5; --muted: #64748b; --muted2: #94a3b8;
+  --accent: #c084fc; --accent-dim: rgba(192,132,252,0.15);
+  --green: #34d399; --green-dim: rgba(52,211,153,0.15);
+  --red: #f87171; --red-dim: rgba(248,113,113,0.15);
+  --yellow: #fbbf24; --yellow-dim: rgba(251,191,36,0.15);
+  --blue: #38bdf8; --blue-dim: rgba(56,189,248,0.15);
+}
+
 html, body { background: transparent !important; margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 .root-wrap { width: 100vw; height: 100vh; display: flex; align-items: flex-start; justify-content: flex-start; }
 .root { width: 460px; height: 480px; transform-origin: top left; transform: scale(var(--scale, 1)); font-family: 'Rubik', sans-serif; -webkit-font-smoothing: antialiased; }
-.card { background: #07090f; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; overflow: hidden; }
 
-.hd { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
-.hd-info { flex: 1; min-width: 0; }
-.hd-tag  { font-size: 10px; font-weight: 800; color: rgba(255,255,255,.35); letter-spacing: .12em; text-transform: uppercase; }
-.hd-user { font-size: 18px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hd-user.dim { font-size: 14px; color: rgba(255,255,255,.3); font-weight: 500; }
-.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; animation: pulse 1.4s ease-in-out infinite; }
-.wait-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.15); flex-shrink: 0; animation: blink 2.2s ease-in-out infinite; }
+/* ── ESTILO APP PREMIUM ── */
+.card { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
 
-.slot-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
-.slot-img    { width: 54px; height: 54px; border-radius: 10px; object-fit: cover; background: #1a1d2e; border: 1px solid rgba(255,255,255,.08); flex-shrink: 0; }
-.slot-img-ph { width: 54px; height: 54px; border-radius: 10px; background: #1a1d2e; border: 1px solid rgba(255,255,255,.08); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.slot-name { font-size: 14px; font-weight: 800; color: #fff; }
-.slot-sub  { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; }
-.slot-bet  { font-size: 13px; font-weight: 700; color: #fff; margin-top: 3px; }
-.slot-bet b { color: #f59e0b; font-weight: 900; font-size: 15px; }
-.total-wrap { margin-left: auto; text-align: right; flex-shrink: 0; }
-.total-lbl  { font-size: 10px; color: rgba(255,255,255,.3); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.total-val  { font-size: 28px; font-weight: 900; color: #22c55e; line-height: 1; }
+.hd { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.hd-info { flex: 1; min-width: 0; overflow: hidden; }
+.hd-tag  { font-size: 10px; font-weight: 800; color: var(--muted2); letter-spacing: .12em; text-transform: uppercase; }
+.hd-user { font-size: 18px; font-weight: 900; color: var(--text); }
+.hd-user.dim { font-size: 14px; color: var(--muted); font-weight: 500; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; animation: blink-dot 1.5s infinite; box-shadow: 0 0 6px var(--red); }
+.wait-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; animation: blink-dot 2.2s infinite; }
+
+.slot-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.slot-img    { width: 54px; height: 54px; border-radius: 12px; object-fit: cover; background: var(--surface2); border: 1px solid var(--border2); flex-shrink: 0; }
+.slot-img-ph { width: 54px; height: 54px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.slot-info-wrap { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+.slot-name { font-size: 14px; font-weight: 800; color: var(--text); }
+.slot-sub  { font-size: 11px; color: var(--muted2); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
+.slot-bet  { font-size: 11px; font-weight: 800; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+.slot-bet b { color: var(--text); font-family: 'Sora', sans-serif; font-size: 13px; }
+.total-wrap { margin-left: auto; text-align: right; flex-shrink: 0; background: var(--green-dim); border: 1px solid rgba(52,211,153,0.3); padding: 6px 12px; border-radius: 12px; }
+.total-lbl  { font-size: 9px; color: var(--green); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.total-val  { font-size: 20px; font-weight: 900; font-family: 'Sora', sans-serif; color: var(--green); line-height: 1; margin-top: 2px; }
 
 .pays-outer { padding: 8px 12px; }
 .pays-inner { display: flex; flex-direction: column; gap: ${PAY_GAP}px; transition: transform .6s cubic-bezier(.4,0,.2,1); }
-.pay-row { display: flex; align-items: center; gap: 9px; padding: 7px 11px; border-radius: 9px; background: rgba(255,255,255,.04); flex-shrink: 0; height: ${PAY_ROW_H}px; }
-.pay-ico { width: 24px; height: 24px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.pay-ico.bonus { background: rgba(245,158,11,.15); }
-.pay-ico.win   { background: rgba(124,111,255,.15); }
-.pay-type { font-size: 12px; font-weight: 700; flex: 1; }
-.pay-type.bonus { color: #f59e0b; }
-.pay-type.win   { color: #a78bfa; }
-.pay-multi { font-size: 10px; color: rgba(255,255,255,.28); margin-left: 4px; }
-.pay-val { font-size: 13px; font-weight: 900; color: #fff; }
+.pay-row { display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); flex-shrink: 0; height: ${PAY_ROW_H}px; }
+.pay-ico { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pay-ico.bonus { background: var(--yellow-dim); color: var(--yellow); }
+.pay-ico.win   { background: var(--accent-dim); color: var(--accent); }
+.pay-type { font-size: 12px; font-weight: 800; flex: 1; text-transform: uppercase; letter-spacing: .05em; }
+.pay-type.bonus { color: var(--yellow); }
+.pay-type.win   { color: var(--accent); }
+.pay-multi { font-size: 10px; color: var(--muted2); margin-left: 6px; }
+.pay-val { font-size: 14px; font-weight: 900; font-family: 'Sora', sans-serif; color: var(--text); }
 
-.divider { border-top: 1px solid rgba(255,255,255,.06); }
+.divider { border-top: 1px solid var(--border); }
 
-.rk-hd { display: flex; align-items: center; gap: 8px; padding: 7px 16px; border-bottom: 1px solid rgba(255,255,255,.05); background: rgba(255,255,255,.015); }
-.rk-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.4); letter-spacing: .1em; text-transform: uppercase; }
-.rk-date  { margin-left: auto; font-size: 10px; color: rgba(255,255,255,.2); font-weight: 600; }
+.rk-hd { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.rk-title { font-size: 10px; font-weight: 800; color: var(--muted2); letter-spacing: .15em; text-transform: uppercase; }
+.rk-date  { margin-left: auto; font-size: 9px; color: var(--muted); font-weight: 700; }
 .rk-inner { display: flex; flex-direction: column; transition: transform .6s cubic-bezier(.4,0,.2,1); }
-.rk-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,.03); height: ${RK_ROW_H}px; flex-shrink: 0; }
-.rk-row.r0 { background: rgba(251,191,36,.05); }
-.rk-row.r1 { background: rgba(200,200,200,.02); }
-.rk-row.r2 { background: rgba(180,100,50,.02); }
-.rk-pos { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.rk-pos-num { font-size: 11px; font-weight: 800; color: rgba(255,255,255,.22); }
-.rk-slot { width: 34px; height: 34px; border-radius: 8px; background: #1a1d2e; border: 1px solid rgba(255,255,255,.07); flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.rk-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--border); height: ${RK_ROW_H}px; flex-shrink: 0; }
+.rk-row.r0 { background: var(--yellow-dim); }
+.rk-row.r1 { background: rgba(255,255,255,.03); }
+.rk-row.r2 { background: rgba(205,124,77,.05); }
+.rk-pos { width: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rk-pos-num { font-size: 11px; font-weight: 800; font-family: 'Sora', sans-serif; color: var(--muted); }
+.rk-slot { width: 30px; height: 30px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .rk-slot img { width: 100%; height: 100%; object-fit: cover; }
-.rk-name { font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
-.rk-amt { font-size: 13px; font-weight: 900; white-space: nowrap; flex-shrink: 0; }
-.rk-amt.r0 { color: #fbbf24; }
+.rk-name-wrap { flex: 1; min-width: 0; overflow: hidden; }
+.rk-name { font-size: 13px; font-weight: 800; color: var(--text); }
+.rk-amt { font-size: 14px; font-weight: 900; font-family: 'Sora', sans-serif; white-space: nowrap; flex-shrink: 0; }
+.rk-amt.r0 { color: var(--yellow); }
 .rk-amt.r1 { color: #cbd5e1; }
 .rk-amt.r2 { color: #cd7c4d; }
-.rk-amt.rn { color: #fff; }
+.rk-amt.rn { color: var(--text); }
 
-.waiting-body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; gap: 8px; }
-.waiting-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.3); }
-.waiting-sub   { font-size: 11px; color: rgba(255,255,255,.15); font-weight: 500; }
+.waiting-body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; gap: 8px; }
+.waiting-title { font-size: 13px; font-weight: 800; color: var(--muted2); text-transform: uppercase; letter-spacing: .05em; }
+.waiting-sub   { font-size: 11px; color: var(--muted); font-weight: 600; }
 
-@keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
-@keyframes blink  { 0%,100%{opacity:.15} 50%{opacity:.5} }
-@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+/* ── PING PONG ANIMATION ── */
+.slide-wrap { width: 100%; overflow: hidden; white-space: nowrap; mask-image: linear-gradient(to right, black 90%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); }
+.slide-inner { display: inline-flex; align-items: center; width: fit-content; }
+.anim-ping-pong { animation: text-ping-pong 4s ease-in-out infinite alternate; }
+@keyframes text-ping-pong { 
+  0%, 20% { transform: translateX(0); } 
+  80%, 100% { transform: translateX(var(--slide-dist)); } 
+}
+
+@keyframes blink-dot  { 0%,100%{opacity:1} 50%{opacity:.2} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 `
 
 const TrophyIcon = ({ color }) => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
     <path d="M12 17v4"/><path d="M8 21h8"/>
     <path d="M6 9a6 6 0 0 0 12 0V3H6v6z"/>
   </svg>
 )
-const trophyColors = ['#fbbf24', '#cbd5e1', '#cd7c4d']
+const trophyColors = ['var(--yellow)', '#cbd5e1', '#cd7c4d']
 
 export default function MinigamePlaying() {
   const [session,    setSession]    = useState(undefined)
   const [ranking,    setRanking]    = useState([])
   const [slots,      setSlots]      = useState({})
-  const [sessionPic, setSessionPic] = useState(null)  // foto pré-carregada do jogador atual
-  const [rankPics,   setRankPics]   = useState({})    // fotos pré-carregadas do ranking
+  const [sessionPic, setSessionPic] = useState(null) 
+  const [rankPics,   setRankPics]   = useState({})   
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -220,7 +272,6 @@ export default function MinigamePlaying() {
         .eq('status', 'playing').eq('stream_date', today)
         .order('created_at', { ascending: false }).limit(1).single()
 
-      // pré-carrega foto ANTES de mostrar a sessão — sem flicker de letra
       if (sess?.username) {
         const pic = await getProfilePic(sess.username)
         setSessionPic(pic)
@@ -235,7 +286,6 @@ export default function MinigamePlaying() {
       setRanking(rk || [])
 
       if (rk?.length) {
-        // pré-carrega fotos do ranking em paralelo
         const pics = {}
         await Promise.allSettled(rk.map(async r => {
           const pic = await getProfilePic(r.username)
@@ -262,7 +312,6 @@ export default function MinigamePlaying() {
     return () => supabase.removeChannel(ch)
   }, [])
 
-  // scale OBS
   useEffect(() => {
     const update = () => {
       const scale = Math.min(window.innerWidth / 460, window.innerHeight / 480)
@@ -290,19 +339,20 @@ export default function MinigamePlaying() {
         <div className="root">
           <div className="card">
 
-            {/* HEADER — key muda quando muda o jogador para forçar animação */}
+            {/* HEADER */}
             <div className="hd" key={session?.id || 'waiting'} style={{ animation: 'fadeIn .35s ease' }}>
               {hasSession ? (
-                <TwitchAvatar username={session.username} src={sessionPic} size={44} borderColor="rgba(124,111,255,.35)" />
+                <TwitchAvatar username={session.username} src={sessionPic} size={44} borderColor="var(--accent)" />
               ) : (
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
               )}
               <div className="hd-info">
                 <div className="hd-tag">{hasSession ? 'Now Playing' : 'Minigame'}</div>
                 <div className={`hd-user${hasSession ? '' : ' dim'}`}>
-                  {hasSession ? session.username : 'Waiting for player…'}
+                  {/* Ping pong adaptado também ao username caso o viewer tenha um nome abusado */}
+                  <SlideText text={hasSession ? session.username : 'Waiting for player…'} className={`hd-user${hasSession ? '' : ' dim'}`} />
                 </div>
               </div>
               {hasSession ? <div className="live-dot" /> : <div className="wait-dot" />}
@@ -314,10 +364,10 @@ export default function MinigamePlaying() {
                 <div className="slot-row">
                   {session.slot?.image_url
                     ? <img className="slot-img" src={session.slot.image_url} alt="" onError={e => e.target.style.opacity = '.3'} />
-                    : <div className="slot-img-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
+                    : <div className="slot-img-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
                   }
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="slot-name">{session.slot?.name || '—'}</div>
+                  <div className="slot-info-wrap">
+                    <SlideText text={session.slot?.name || '—'} className="slot-name" />
                     <div className="slot-sub">{session.slot?.provider}</div>
                     <div className="slot-bet">BET: <b>{session.bet}€</b></div>
                   </div>
@@ -334,15 +384,15 @@ export default function MinigamePlaying() {
               {hasSession && payments.length > 0 && (
                 <div className="pays-outer">
                   <div style={{ position: 'relative', height: PAY_VISIBLE * PAY_ROW_H + (PAY_VISIBLE - 1) * PAY_GAP, overflow: 'hidden' }}>
-                    {payScroll.fadeTop    && <div style={{ position: 'absolute', top: 0,    left: 0, right: 0, height: 18, background: 'linear-gradient(to bottom, #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-                    {payScroll.fadeBottom && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to top,    #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    {payScroll.fadeTop    && <div style={{ position: 'absolute', top: 0,    left: 0, right: 0, height: 18, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    {payScroll.fadeBottom && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to top,    var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
                     <div className="pays-inner" ref={payScroll.innerRef}>
                       {payments.map((p, i) => (
                         <div key={i} className="pay-row">
                           <div className={`pay-ico ${p.type}`}>
                             {p.type === 'bonus'
-                              ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                              : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+                              ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                              : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
                             }
                           </div>
                           <div className={`pay-type ${p.type}`}>
@@ -364,15 +414,15 @@ export default function MinigamePlaying() {
                 <>
                   <div className="divider" />
                   <div className="rk-hd">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                     </svg>
                     <div className="rk-title">Ranking</div>
                     <div className="rk-date">{today}</div>
                   </div>
                   <div style={{ position: 'relative', height: RK_VISIBLE * RK_ROW_H, overflow: 'hidden' }}>
-                    {rkScroll.fadeTop    && <div style={{ position: 'absolute', top: 0,    left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
-                    {rkScroll.fadeBottom && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to top,    #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    {rkScroll.fadeTop    && <div style={{ position: 'absolute', top: 0,    left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    {rkScroll.fadeBottom && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to top,    var(--bg), transparent)', zIndex: 1, pointerEvents: 'none' }} />}
                     <div className="rk-inner" ref={rkScroll.innerRef}>
                       {ranking.map((r, i) => {
                         const slot = slots[r.username]
@@ -388,11 +438,16 @@ export default function MinigamePlaying() {
                             <div className="rk-slot">
                               {slot?.image_url
                                 ? <img src={slot.image_url} alt="" onError={e => e.target.style.opacity = '.3'} />
-                                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+                                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
                               }
                             </div>
-                            <TwitchAvatar username={r.username} src={rankPics[r.username] || null} size={30} borderColor={i < 3 ? `${trophyColors[i]}50` : 'rgba(255,255,255,.15)'} />
-                            <div className="rk-name">{r.username}</div>
+                            <TwitchAvatar username={r.username} src={rankPics[r.username] || null} size={30} borderColor={i < 3 ? `${trophyColors[i]}50` : 'var(--border2)'} />
+                            
+                            {/* Nome do jogador no ranking também com ping pong */}
+                            <div className="rk-name-wrap">
+                              <SlideText text={r.username} className="rk-name" />
+                            </div>
+
                             <div className={`rk-amt ${ac}`}>{fmt(r.total_won)}</div>
                           </div>
                         )
@@ -403,7 +458,7 @@ export default function MinigamePlaying() {
               )}
             </AnimatedSection>
 
-            {/* Waiting — só quando não há sessão nem ranking */}
+            {/* Waiting */}
             <AnimatedSection show={!hasSession && !hasRanking}>
               {!hasSession && !hasRanking && (
                 <div className="waiting-body">

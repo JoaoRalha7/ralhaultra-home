@@ -107,63 +107,40 @@ const SlotCard = memo(function SlotCard({ entry, index }) {
           </div>
         )}
       </div>
-     
+      
     </div>
   )
 })
 
-// ─── ticker vertical ──────────────────────────────────────────────────────────
+// ─── ticker vertical (Otimizado via CSS) ──────────────────────────────────────
 const TickerVertical = memo(function TickerVertical({ entries }) {
   const slots        = entries.filter(e => e.slot)
   const containerRef = useRef(null)
-  const firstHalfRef = useRef(null)
   const wrapRef      = useRef(null)
-  const posRef       = useRef(0)
-  const rafRef       = useRef(null)
-  const loopRef      = useRef(0)
   const [needsScroll, setNeedsScroll] = useState(false)
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      const first = firstHalfRef.current
-      const wrap  = wrapRef.current
-      if (!first || !wrap) return
-      setNeedsScroll(first.scrollHeight > wrap.clientHeight)
-    }, 100)
-    return () => clearTimeout(t)
+    const wrap = wrapRef.current
+    const container = containerRef.current
+    if (!wrap || !container) return
+    
+    const observer = new ResizeObserver(() => {
+      const wrapHeight = wrap.clientHeight
+      const singleHeight = container.scrollHeight / 2
+      
+      if (singleHeight > wrapHeight && singleHeight > 0) {
+        setNeedsScroll(true)
+        const speed = 40 // Pixels por segundo (ajusta para mais rápido/lento)
+        container.style.setProperty('--v-scroll-dur', `${singleHeight / speed}s`)
+      } else {
+        setNeedsScroll(false)
+      }
+    })
+    
+    observer.observe(container)
+    observer.observe(wrap)
+    return () => observer.disconnect()
   }, [slots.length])
-
-  useEffect(() => {
-    const el = firstHalfRef.current
-    if (!el) return
-    const measure = () => { loopRef.current = el.getBoundingClientRect().height }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [slots.length])
-
-  useEffect(() => {
-    if (!needsScroll) return
-    const el = containerRef.current
-    if (!el) return
-    posRef.current = 0
-    el.style.willChange = 'transform'
-    el.style.backfaceVisibility = 'hidden'
-    let lastTs = 0
-    function tick(ts) {
-      const dt = lastTs ? Math.min(ts - lastTs, 33) : 16.7
-      lastTs = ts
-      posRef.current += 0.5 * (dt / 16.7)
-      const lp = loopRef.current
-      if (lp > 0 && posRef.current >= lp) posRef.current -= lp
-      const y = posRef.current
-      el.style.transform = `translate3d(0, ${-y}px, 0)`
-      rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [needsScroll])
 
   const Item = ({ e, i }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '4px 0', flexShrink: 0 }}>
@@ -181,15 +158,19 @@ const TickerVertical = memo(function TickerVertical({ entries }) {
 
   return (
     <div ref={wrapRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-      <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', willChange: 'transform' }}>
-        <div ref={firstHalfRef} style={{ display: 'flex', flexDirection: 'column' }}>
+      <div 
+        ref={containerRef} 
+        className={needsScroll ? 'css-scroll-v' : ''}
+        style={{ display: 'flex', flexDirection: 'column' }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', flexDirection: 'column', padding: '5px 0' }}>
             {slots.map((e, i) => <Item key={`a-${e.id}`} e={e} i={i} />)}
           </div>
           {needsScroll && <Divider />}
         </div>
         {needsScroll && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', ariaHidden: 'true' }}>
             <div style={{ display: 'flex', flexDirection: 'column', padding: '5px 0' }}>
               {slots.map((e, i) => <Item key={`b-${e.id}`} e={e} i={i} />)}
             </div>
@@ -224,47 +205,25 @@ const CardDivider = () => (
   }} />
 )
 
-// ─── horizontal scroll ────────────────────────────────────────────────────────
+// ─── horizontal scroll (Otimizado via CSS) ────────────────────────────────────
 function HorizontalScroller({ slots, shouldScroll }) {
-  const trackRef     = useRef(null)
-  const firstHalfRef = useRef(null)
-  const posRef       = useRef(0)
-  const rafRef       = useRef(null)
-  const loopRef      = useRef(0)
-  const pauseRef     = useRef(false)
+  const trackRef = useRef(null)
 
   useEffect(() => {
-    const el = firstHalfRef.current
-    if (!el || !shouldScroll) return
-    const measure = () => { loopRef.current = el.getBoundingClientRect().width }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [shouldScroll, slots.length])
-
-  useEffect(() => {
-    if (!shouldScroll) return
-    const el = trackRef.current
-    if (!el) return
-    el.style.willChange = 'transform'
-    el.style.backfaceVisibility = 'hidden'
-    let lastTs = 0
-    function tick(ts) {
-      const dt = lastTs ? Math.min(ts - lastTs, 33) : 16.7
-      lastTs = ts
-      if (!pauseRef.current) {
-        posRef.current += 1.0 * (dt / 16.7)
-        const lp = loopRef.current
-        if (lp > 0 && posRef.current >= lp) posRef.current -= lp
-        const x = posRef.current
-        el.style.transform = `translate3d(${-x}px, 0, 0)`
+    const track = trackRef.current
+    if (!shouldScroll || !track) return
+    
+    const observer = new ResizeObserver(() => {
+      const singleW = track.scrollWidth / 2
+      if (singleW > 0) {
+        const speed = 70 // Pixels por segundo para o horizontal (ajusta se quiseres)
+        track.style.setProperty('--h-scroll-dur', `${singleW / speed}s`)
       }
-      rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [shouldScroll])
+    })
+    
+    observer.observe(track)
+    return () => observer.disconnect()
+  }, [shouldScroll, slots.length])
 
   const Cards = ({ prefix }) =>
     slots.map((entry, i) => (
@@ -282,19 +241,19 @@ function HorizontalScroller({ slots, shouldScroll }) {
   }
 
   return (
-    <div
-      style={{ overflow: 'hidden', height: '100%', display: 'flex', alignItems: 'stretch', cursor: 'default' }}
-      onMouseEnter={() => { pauseRef.current = true }}
-      onMouseLeave={() => { pauseRef.current = false }}
-    >
-      <div ref={trackRef} style={{ display: 'flex', alignItems: 'stretch', willChange: 'transform', userSelect: 'none', WebkitUserSelect: 'none' }}>
-        <div ref={firstHalfRef} style={{ display: 'flex', alignItems: 'stretch' }}>
+    <div style={{ overflow: 'hidden', height: '100%', display: 'flex', alignItems: 'stretch', cursor: 'default' }}>
+      <div 
+        ref={trackRef} 
+        className="css-scroll-h"
+        style={{ display: 'flex', alignItems: 'stretch', userSelect: 'none', WebkitUserSelect: 'none' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <div style={{ display: 'flex', alignItems: 'stretch', gap: 21, padding: '11px 21px' }}>
             <Cards prefix="a" />
           </div>
           <CardDivider />
         </div>
-        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch', ariaHidden: 'true' }}>
           <div style={{ display: 'flex', alignItems: 'stretch', gap: 14, padding: '11px 21px' }}>
             <Cards prefix="b" />
           </div>
@@ -305,7 +264,7 @@ function HorizontalScroller({ slots, shouldScroll }) {
   )
 }
 
-// ─── styles ───────────────────────────────────────────────────────────────────
+// ─── styles globais + animações CSS ───────────────────────────────────────────
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700;900&family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
   html, body { background: transparent !important; margin: 0; padding: 0; }
@@ -314,57 +273,47 @@ const GLOBAL_CSS = `
     -moz-osx-font-smoothing: grayscale;
     text-rendering: geometricPrecision;
   }
-  /* Elements that move via transform must stay on their own compositor layer
-     to prevent 2K sub-pixel shimmer in OBS Browser Source */
-  [style*="translate3d"], [style*="translateX"], [style*="translateY"] {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform-style: preserve-3d;
-  }
-
+  
+  /* Mantém as tuas animações de slot card e fadeIn originais */
   .slot-card { -webkit-transition: -webkit-transform .2s ease; transition: transform .2s ease; }
   .slot-card:hover { -webkit-transform: translateY(-4px); transform: translateY(-4px); }
 
-  @-webkit-keyframes shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
-  }
-  @keyframes shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
-  }
+  @-webkit-keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
   .shimmer {
-    background: -webkit-linear-gradient(left, rgba(255,255,255,.04) 25%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 75%);
     background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 75%);
-    background-size: 800px 100%;
-    -webkit-animation: shimmer 1.6s infinite linear;
-    animation: shimmer 1.6s infinite linear;
+    background-size: 800px 100%; animation: shimmer 1.6s infinite linear;
   }
 
-  @-webkit-keyframes fadeIn {
-    from { opacity: 0; -webkit-transform: translateY(4px); transform: translateY(4px); }
-    to   { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .overlay-root { -webkit-animation: fadeIn .4s ease both; animation: fadeIn .4s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .overlay-root { animation: fadeIn .4s ease both; }
 
-  @-webkit-keyframes pulse-border {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: .5; }
-  }
-  @keyframes pulse-border {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: .5; }
-  }
+  @keyframes pulse-border { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
   .live-dot {
-    width: 16px; height: 16px; border-radius: 50%;
-    background: #ef4444;
-    -webkit-animation: pulse-border 1.4s ease-in-out infinite;
-    animation: pulse-border 1.4s ease-in-out infinite;
-    box-shadow: 0 0 11px rgba(239,68,68,.7);
+    width: 16px; height: 16px; border-radius: 50%; background: #ef4444;
+    animation: pulse-border 1.4s ease-in-out infinite; box-shadow: 0 0 11px rgba(239,68,68,.7);
+  }
+
+  /* ── Classes injetadas para Scroll Fluído GPU-Accelerated ── */
+  .css-scroll-v {
+    animation: scrollVertical var(--v-scroll-dur, 20s) linear infinite;
+    will-change: transform;
+  }
+  @keyframes scrollVertical {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+
+  .css-scroll-h {
+    animation: scrollHorizontal var(--h-scroll-dur, 30s) linear infinite;
+    will-change: transform;
+  }
+  .css-scroll-h:hover {
+    animation-play-state: paused;
+  }
+  @keyframes scrollHorizontal {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
 `
 
@@ -407,18 +356,6 @@ const S = {
     fontFamily: '"JetBrains Mono", monospace',
     letterSpacing: '.04em',
   },
-  badge: (color, bg) => ({
-    fontSize: 18,
-    fontWeight: 800,
-    letterSpacing: '.6px',
-    padding: '3px 10px',
-    borderRadius: 7,
-    background: bg,
-    color,
-    border: `1px solid ${color}55`,
-    textTransform: 'uppercase',
-    lineHeight: 1.4,
-  }),
 }
 
 // ─── main ─────────────────────────────────────────────────────────────────────
@@ -498,8 +435,8 @@ export default function Overlay() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, padding: '13px 13px 0' }}>
             <StatBox icon={<IconTarget />} label="TARGET"    value={balStart ? fmt(balStart, 0) + '€' : '—'}    color="#22c55e" borderColor="rgba(34,197,94,.25)"    iconBg="rgba(34,197,94,.15)"   />
             <StatBox icon={<IconScale />}  label="BREAKEVEN" value={be > 0 ? be.toFixed(1) + 'x' : '—'}        color="#f59e0b" borderColor="rgba(245,158,11,.25)"   iconBg="rgba(245,158,11,.15)"  />
-            <StatBox icon={<IconGift />}   label="BONUS"     value={entries.length}                              color="#a78bfa" borderColor="rgba(167,139,250,.25)" iconBg="rgba(167,139,250,.15)" />
-            <StatBox icon={<IconStar />}   label="SUPERS"    value={supers}                                      color="#fbbf24" borderColor="rgba(251,191,36,.25)"   iconBg="rgba(251,191,36,.15)"  />
+            <StatBox icon={<IconGift />}   label="BONUS"     value={entries.length}                             color="#a78bfa" borderColor="rgba(167,139,250,.25)" iconBg="rgba(167,139,250,.15)" />
+            <StatBox icon={<IconStar />}   label="SUPERS"    value={supers}                                     color="#fbbf24" borderColor="rgba(251,191,36,.25)"   iconBg="rgba(251,191,36,.15)"  />
           </div>
 
           {/* Ticker */}

@@ -11,6 +11,7 @@ import MiniGame from './pages/MiniGame';
 import MiniGameAvgMulti from './pages/MiniGameAvgMulti';
 import MiniGameGtb from './pages/MiniGameGtb';
 import MiniGamesLanding from './pages/MiniGamesLanding';
+import Blackjack from './pages/Blackjack';
 import Offers from './pages/Offers';
 import Placeholder from './pages/Placeholder';
 import Shop from './pages/Shop';
@@ -28,7 +29,7 @@ import OverlayOverlay from './overlay/Overlay';
 import OverlaySlotStats from './overlay/SlotStats';
 import PickOverlay from './overlay/PickOverlay';
 import MinigamePlaying from './overlay/Minigameplaying';
-import MinigameRanking from './overlay/Minigameranking';
+import OverlaySlotStatsH from './overlay/SlotStatsHorizontal';
 import TorneioOverlay from './overlay/Torneiooverlay';
 
 // OBS overlays: transparent page, no layout, no age check.
@@ -73,11 +74,11 @@ export default function App() {
       <Route path="overlay/opening" element={<Overlay page><OverlayOpening /></Overlay>} />
       <Route path="overlay/hunt" element={<Overlay page><OverlayOverlay /></Overlay>} />
       <Route path="overlay/slotstats" element={<Overlay page><OverlaySlotStats /></Overlay>} />
+      <Route path="overlay/slotstatsH" element={<Overlay page><OverlaySlotStatsH /></Overlay>} />
       <Route path="overlay/pick" element={<Overlay page><PickOverlay /></Overlay>} />
       <Route path="overlay/barra" element={<Overlay><OverlayBarra /></Overlay>} />
       <Route path="overlay/chatbox" element={<Overlay><ChatBox /></Overlay>} />
       <Route path="overlay/minigame" element={<Overlay><MinigamePlaying /></Overlay>} />
-      <Route path="overlay/ranking" element={<Overlay><MinigameRanking /></Overlay>} />
       <Route path="overlay/torneio" element={<Overlay><TorneioOverlay /></Overlay>} />
       <Route path="overlay/bracket" element={<Overlay><BracketOverlay /></Overlay>} />
 
@@ -95,6 +96,7 @@ export default function App() {
         <Route path="mini-games/pick-win" element={<MiniGame />} />
         <Route path="mini-games/gtb" element={<MiniGameGtb />} />
         <Route path="mini-games/avg-multi" element={<MiniGameAvgMulti />} />
+        <Route path="blackjack" element={<Blackjack />} />
         <Route path="terms" element={<Legal />} />
         <Route path="privacy" element={<Legal />} />
         <Route path="cookies" element={<Legal />} />

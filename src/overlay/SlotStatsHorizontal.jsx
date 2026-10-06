@@ -1,53 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabaseDash as supabase } from '../lib/supabase.js'
 
-const CHANNEL      = import.meta.env.VITE_TWITCH_CHANNEL || 'jralha_'
-const WORKER_URL   = 'https://ralha-status.jppralha.workers.dev'
 const DASHBOARD_ID = 'aa9660ca-4c53-4d4d-b81b-b3d231660420'
-
-// ─── Chat helpers ─────────────────────────────────────────────────────────────
-function hslFromName(name) {
-  let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff
-  return `hsl(${h % 360}, 60%, 65%)`
-}
-let badgeMap = {}
-async function loadBadges() {
-  try {
-    const res  = await fetch(`${WORKER_URL}/badges`)
-    const data = await res.json()
-    if (data?.badges) badgeMap = data.badges
-  } catch {}
-}
-function parseBadges(str) {
-  if (!str || !Object.keys(badgeMap).length) return []
-  return str.split(',').map(b => {
-    const [set, ver] = b.split('/')
-    const url = badgeMap[`${set}/${ver}`] || badgeMap[`${set}/0`] || badgeMap[`${set}/1`] || null
-    return url ? { key: b, url } : null
-  }).filter(Boolean)
-}
-function parseEmotes(text, emotesTag) {
-  if (!emotesTag) return [{ type: 'text', v: text }]
-  const ranges = []
-  for (const entry of emotesTag.split('/')) {
-    const [id, positions] = entry.split(':')
-    if (!id || !positions) continue
-    for (const pos of positions.split(',')) {
-      const [s, e] = pos.split('-').map(Number)
-      ranges.push({ id, s, e, name: text.slice(s, e + 1) })
-    }
-  }
-  if (!ranges.length) return [{ type: 'text', v: text }]
-  ranges.sort((a, b) => a.s - b.s)
-  const parts = []; let cursor = 0
-  for (const r of ranges) {
-    if (r.s > cursor) parts.push({ type: 'text', v: text.slice(cursor, r.s) })
-    parts.push({ type: 'emote', id: r.id, name: r.name })
-    cursor = r.e + 1
-  }
-  if (cursor < text.length) parts.push({ type: 'text', v: text.slice(cursor) })
-  return parts
-}
 
 function fmtStat(val, dec = 2) {
   if (val === null || val === undefined || isNaN(val) || !isFinite(val)) return '—'
@@ -74,15 +28,18 @@ function fmtDate(isoStr) {
   return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
-const IconTarget   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-const IconPercent  = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-const IconFlame    = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+const IconTarget     = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+const IconPercent    = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+const IconFlame      = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+const IconTrendingUp = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+const IconGift       = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+
 const IconCalendar = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 const IconTrophy   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
 const IconStar     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 const IconDollar   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
 
-export default function AppSlotStats() {
+export default function AppSlotStatsHorizontal() {
   const [slot,             setSlot]             = useState(null)
   const [stats,            setStats]            = useState(null)
   const [animate,          setAnimate]          = useState(false)
@@ -96,7 +53,6 @@ export default function AppSlotStats() {
   const [multiAnimKey,     setMultiAnimKey]     = useState(0)
   
   const [sessionTime, setSessionTime] = useState(0)
-  const [chatMsgs,    setChatMsgs]    = useState([])
 
   const prevBestWin      = useRef(null)
   const prevBestMulti    = useRef(null)
@@ -107,8 +63,6 @@ export default function AppSlotStats() {
   const prevCheckedSlot  = useRef(null)
   const chipTimer        = useRef(null)
   const multiChipTimer   = useRef(null)
-  const chatEndRef       = useRef(null)
-  const seenIds          = useRef(new Set())
   
   const slotStartedAt    = useRef(null)
   const timerInterval    = useRef(null)
@@ -124,55 +78,8 @@ export default function AppSlotStats() {
   }
 
   useEffect(() => {
-    loadBadges()
     startSlotTimer()
     return () => clearInterval(timerInterval.current)
-  }, [])
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chatMsgs])
-
-  useEffect(() => {
-    let ws, retryTimer
-    const connect = () => {
-      ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443')
-      ws.onopen = () => {
-        ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands')
-        ws.send('PASS oauth:ralhaoverlayanon2026')
-        ws.send('NICK justinfan12345')
-        ws.send(`JOIN #${CHANNEL.toLowerCase()}`)
-      }
-      ws.onmessage = (e) => {
-        const lines = String(e.data).split('\r\n').filter(Boolean)
-        for (const line of lines) {
-          if (line.includes('PING')) { ws.send('PONG :tmi.twitch.tv'); continue }
-          const match = line.match(/^@([^ ]+) :([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.+)/)
-          if (!match) continue
-          const tags    = Object.fromEntries(match[1].split(';').map(kv => { const [k, ...v] = kv.split('='); return [k, v.join('=')] }))
-          const msgId   = tags['id'] || null
-          if (msgId) {
-            if (seenIds.current.has(msgId)) continue
-            seenIds.current.add(msgId)
-            if (seenIds.current.size > 400) {
-              const it = seenIds.current.values()
-              for (let i = 0; i < 100; i++) seenIds.current.delete(it.next().value)
-            }
-          }
-          const username = match[2]
-          const text     = match[3].trim()
-          const color    = (tags['color'] && tags['color'] !== '') ? tags['color'] : hslFromName(username)
-          const badges   = parseBadges(tags['badges'] || '')
-          const parts    = parseEmotes(text, tags['emotes'] || '')
-          setChatMsgs(prev => {
-            const next = [...prev, { id: msgId || `${Date.now()}-${Math.random()}`, username, parts, color, badges }]
-            return next.length > 60 ? next.slice(-60) : next
-          })
-        }
-      }
-      ws.onclose = () => { retryTimer = setTimeout(connect, 3000) }
-      ws.onerror = () => ws.close()
-    }
-    connect()
-    return () => { clearTimeout(retryTimer); ws?.close() }
   }, [])
 
   function triggerWinAnim() {
@@ -249,6 +156,7 @@ export default function AppSlotStats() {
         bestMulti:    newBestMulti,
         bestMultiBet,
         timesPlayed:  valid.length,
+        avgMulti:     valid.length ? multis.reduce((a, b) => a + b, 0) / valid.length : 0
       })
       setAnimate(true)
     }, 50)
@@ -325,6 +233,7 @@ export default function AppSlotStats() {
             const bestMultiEntry = valid.find(e => parseFloat(e.payment) / parseBet(e.bet) === newBestMulti)
             const newBestWin     = Math.max(...payments)
             const bestWinEntry   = valid.find(e => parseFloat(e.payment) === newBestWin)
+            const avgMultiVal    = valid.length ? multis.reduce((a, b) => a + b, 0) / valid.length : 0
             
             setSlot(slotData)
             setStats({
@@ -334,6 +243,7 @@ export default function AppSlotStats() {
               bestMulti:    newBestMulti,
               bestMultiBet: bestMultiEntry ? parseBet(bestMultiEntry.bet) : null,
               timesPlayed:  valid.length,
+              avgMulti:     avgMultiVal
             })
             
             setAnimate(true)
@@ -373,167 +283,151 @@ export default function AppSlotStats() {
     const ch = supabase.channel('slotstats-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_entries' }, loadCurrentSlot)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_hunts'   }, loadCurrentSlot)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dashboard_state' }, loadCurrentSlot) // Adicionado escuta à tabela mestre
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dashboard_state' }, loadCurrentSlot)
       .subscribe()
     return () => supabase.removeChannel(ch)
   }, [])
 
   if (!slot || !stats) return (
-    <div className="app-slot-card">
+    <div className="app-slot-card-h">
       <style>{CSS}</style>
       <div className="loader" />
-      <span style={{ color: '#64748b', fontSize: 12, marginTop: 12, fontWeight: 600 }}>A carregar...</span>
+      <span style={{ color: '#64748b', fontSize: 12, marginLeft: 16, fontWeight: 600 }}>A carregar...</span>
     </div>
   )
 
   return (
     <>
       <style>{CSS}</style>
-      <div className="app-slot-card" style={{ opacity: animate ? 1 : 0, transform: animate ? 'scale(1)' : 'scale(0.98)' }}>
+      <div className="app-slot-card-h" style={{ opacity: animate ? 1 : 0, transform: animate ? 'scale(1)' : 'scale(0.98)' }}>
 
-        {/* ── HERO ── */}
-        <div className="app-hero">
-          {slot.image_url && <img src={slot.image_url} alt={slot.name} className="app-hero-img" />}
-          <div className="app-hero-gradient" />
-          <div className="app-badges app-badges-left">
+        {/* ── HERO (ESQUERDA) ── */}
+        <div className="app-hero-h">
+          {slot.image_url && <img src={slot.image_url} alt={slot.name} className="app-hero-img-h" />}
+          <div className="app-hero-gradient-h" />
+          
+          <div className="app-badges-h">
             <div className="app-badge-live"><div className="dot-live" /> LIVE</div>
-          </div>
-          <div className="app-badges app-badges-right">
             <div className="app-badge-time">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               {sessionTime}m
             </div>
           </div>
-          <div className="app-title-container">
-            <div className="app-title-watermark">{slot.name}</div>
-            <div className="app-slot-name">{slot.name}</div>
-            <div className="app-slot-provider">{slot.provider || 'PRAGMATIC PLAY'}</div>
+
+          <div className="app-title-container-h">
+            <div className="app-title-watermark-h">{slot.name}</div>
+            <div className="app-slot-name-h">{slot.name}</div>
+            <div className="app-slot-provider-h">{slot.provider || 'PRAGMATIC PLAY'}</div>
           </div>
         </div>
 
-        {/* ── CONTENT ── */}
-        <div className="app-content">
+        {/* ── CONTENT (CENTRO - DIVIDIDO EM 2 COLUNAS) ── */}
+        <div className="app-content-h">
+          
+          {/* Coluna 1: Info da Slot (AGORA COM 5 ITENS) */}
+          <div className="app-section-h">
+            <div className="app-divider-h">
+              <div className="app-line-h" />
+              <span className="app-divider-text-h">SLOT INFO</span>
+              <div className="app-line-h" />
+            </div>
 
-          <div className="app-divider">
-            <div className="app-line" />
-            <span className="app-divider-text">SLOT INFO</span>
-            <div className="app-line" />
+            <div className="app-info-grid-h">
+              <div className="app-info-col-h">
+                <IconTarget />
+                <div className="app-info-val-h">{slot.max_win ? `${slot.max_win}X` : '—'}</div>
+                <div className="app-info-lbl-h">MAX WIN</div>
+              </div>
+              <div className="app-info-col-h">
+                <IconPercent />
+                <div className="app-info-val-h">{slot.rtp ? `${slot.rtp}%` : '—'}</div>
+                <div className="app-info-lbl-h">RTP</div>
+              </div>
+              <div className="app-info-col-h">
+                <IconFlame />
+                <div className="app-info-val-h">{volLabel(slot.volatility)}</div>
+                <div className="app-info-lbl-h">VOLATILITY</div>
+              </div>
+              {/* NOVOS ITENS AQUI */}
+              <div className="app-info-col-h">
+                <IconTrendingUp />
+                <div className="app-info-val-h">{stats.avgMulti ? `${stats.avgMulti.toFixed(1)}X` : '—'}</div>
+                <div className="app-info-lbl-h">AVG MULTI</div>
+              </div>
+              <div className="app-info-col-h">
+                <IconGift />
+                <div className="app-info-val-h">{stats.timesPlayed || 0}</div>
+                <div className="app-info-lbl-h">PLAYED</div>
+              </div>
+            </div>
           </div>
 
-          <div className="app-info-grid">
-            <div className="app-info-col">
-              <IconTarget />
-              <div className="app-info-val">{slot.max_win ? `${slot.max_win}X` : '—'}</div>
-              <div className="app-info-lbl">MAX WIN</div>
-            </div>
-            <div className="app-info-col">
-              <IconPercent />
-              <div className="app-info-val">{slot.rtp ? `${slot.rtp}%` : '—'}</div>
-              <div className="app-info-lbl">RTP</div>
-            </div>
-            <div className="app-info-col">
-              <IconFlame />
-              <div className="app-info-val">{volLabel(slot.volatility)}</div>
-              <div className="app-info-lbl">VOLATILITY</div>
-            </div>
-          </div>
+          {/* Coluna 2: Recordes */}
+          <div className="app-section-h">
+            {stats.bestWinDate ? (
+              <div className="app-divider-h">
+                <span className="app-divider-text-h" style={{ color: '#fbbf24', marginLeft: 0 }}>PERSONAL BEST</span>
+                <div className="app-line-h" style={{ flex: 1, margin: '0 12px' }} />
+                <div className="app-date-h"><IconCalendar /> {fmtDate(stats.bestWinDate)}</div>
+              </div>
+            ) : (
+              <div className="app-divider-h">
+                <div className="app-line-h" />
+                <span className="app-divider-text-h" style={{ color: '#fbbf24' }}>PERSONAL BEST</span>
+                <div className="app-line-h" />
+              </div>
+            )}
 
-          {/* ── LÓGICA DA DATA E LAYOUT DO PERSONAL BEST ── */}
-          {stats.bestWinDate ? (
-            <div className="app-divider" style={{ marginTop: '24px' }}>
-              <span className="app-divider-text" style={{ color: '#fbbf24', marginLeft: 0 }}>PERSONAL BEST</span>
-              <div className="app-line" style={{ flex: 1, margin: '0 12px' }} />
-              <div className="app-date"><IconCalendar /> {fmtDate(stats.bestWinDate)}</div>
+            <div className="app-records-grid-h">
+              {/* BEST WIN */}
+              <div className="app-record-group-h">
+                <div className="app-record-row-h">
+                  <div className="app-record-lbl-h">
+                    <span className="app-icon-wrap icon-yellow"><IconTrophy /></span>
+                    BEST WIN
+                  </div>
+                  <div className="app-record-val-wrap">
+                    <span key={winAnimKey} className={`app-record-val val-yellow${winAnimKey > 0 ? ' val-animating' : ''}`}>
+                      {stats.bestWin ? `${fmtStat(stats.bestWin)}€` : '—'}
+                    </span>
+                    <span className={`rec-new-chip${showNewChip ? ' visible' : ''}`}>New</span>
+                  </div>
+                </div>
+                <div className="app-record-row-sub-h">
+                  <div className="app-record-lbl-sub-h">
+                    <span className="app-icon-wrap icon-green"><IconDollar /></span> BET (WIN)
+                  </div>
+                  <div className="app-record-val val-green" style={{ fontSize: 13 }}>
+                    {stats.bestWinBet ? `${fmtStat(stats.bestWinBet)}€` : '—'}
+                  </div>
+                </div>
+              </div>
+
+              {/* BEST MULTI */}
+              <div className="app-record-group-h">
+                <div className="app-record-row-h">
+                  <div className="app-record-lbl-h">
+                    <span className="app-icon-wrap icon-purple"><IconStar /></span>
+                    BEST MULTI
+                  </div>
+                  <div className="app-record-val-wrap">
+                    <span key={multiAnimKey} className={`app-record-val val-purple${multiAnimKey > 0 ? ' val-animating' : ''}`}>
+                      {stats.bestMulti ? `${fmtStat(stats.bestMulti, 1)}x` : '—'}
+                    </span>
+                    <span className={`rec-new-chip${showNewMultiChip ? ' visible' : ''}`}>New</span>
+                  </div>
+                </div>
+                <div className="app-record-row-sub-h">
+                  <div className="app-record-lbl-sub-h">
+                    <span className="app-icon-wrap icon-green"><IconDollar /></span> BET (MULTI)
+                  </div>
+                  <div className="app-record-val val-green" style={{ fontSize: 13 }}>
+                    {stats.bestMultiBet ? `${fmtStat(stats.bestMultiBet)}€` : '—'}
+                  </div>
+                </div>
+              </div>
+
             </div>
-          ) : (
-            <div className="app-divider" style={{ marginTop: '24px' }}>
-              <div className="app-line" />
-              <span className="app-divider-text" style={{ color: '#fbbf24' }}>PERSONAL BEST</span>
-              <div className="app-line" />
-            </div>
-          )}
-
-          <div className="app-records-list">
-
-            {/* BEST WIN */}
-            <div className="app-record-row">
-              <div className="app-record-lbl">
-                <span className="app-icon-wrap icon-yellow"><IconTrophy /></span>
-                BEST WIN
-              </div>
-              <div className="app-record-val-wrap">
-                <span
-                  key={winAnimKey}
-                  className={`app-record-val val-yellow${winAnimKey > 0 ? ' val-animating' : ''}`}
-                >
-                  {stats.bestWin ? `${fmtStat(stats.bestWin)}€` : '—'}
-                </span>
-                <span className={`rec-new-chip${showNewChip ? ' visible' : ''}`}>New</span>
-              </div>
-            </div>
-
-            <div className="app-record-row app-record-row-sub">
-              <div className="app-record-lbl app-record-lbl-sub">
-                <span className="app-icon-wrap icon-green"><IconDollar /></span>
-                BET (BEST WIN)
-              </div>
-              <div className="app-record-val val-green" style={{ fontSize: 15 }}>
-                {stats.bestWinBet ? `${fmtStat(stats.bestWinBet)}€` : '—'}
-              </div>
-            </div>
-
-            {/* BEST MULTI */}
-            <div className="app-record-row" style={{ marginTop: 8 }}>
-              <div className="app-record-lbl">
-                <span className="app-icon-wrap icon-purple"><IconStar /></span>
-                BEST MULTI
-              </div>
-              <div className="app-record-val-wrap">
-                <span
-                  key={multiAnimKey}
-                  className={`app-record-val val-purple${multiAnimKey > 0 ? ' val-animating' : ''}`}
-                >
-                  {stats.bestMulti ? `${fmtStat(stats.bestMulti, 1)}x` : '—'}
-                </span>
-                <span className={`rec-new-chip${showNewMultiChip ? ' visible' : ''}`}>New</span>
-              </div>
-            </div>
-
-            <div className="app-record-row app-record-row-sub">
-              <div className="app-record-lbl app-record-lbl-sub">
-                <span className="app-icon-wrap icon-green"><IconDollar /></span>
-                BET (BEST MULTI)
-              </div>
-              <div className="app-record-val val-green" style={{ fontSize: 15 }}>
-                {stats.bestMultiBet ? `${fmtStat(stats.bestMultiBet)}€` : '—'}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* ── CHAT ── */}
-        <div className="app-chat-section">
-          <div className="app-chat-hd">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Chat</span>
-          </div>
-          <div className="app-chat-msgs">
-            {chatMsgs.map(item => (
-              <div className="app-msg" key={item.id}>
-                {item.badges?.map(b => <img key={b.key} className="app-msg-badge" src={b.url} alt="" />)}
-                <span className="app-msg-name" style={{ color: item.color }}>{item.username}</span>
-                <span className="app-msg-colon">:</span>
-                <span className="app-msg-text">
-                  {item.parts.map((p, i) =>
-                    p.type === 'emote'
-                      ? <img key={i} src={`https://static-cdn.jtvnw.net/emoticons/v2/${p.id}/default/dark/1.0`} alt={p.name} title={p.name} className="app-emote" />
-                      : <span key={i}>{p.v}</span>
-                  )}
-                </span>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
           </div>
         </div>
 
@@ -545,41 +439,46 @@ export default function AppSlotStats() {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Sora:wght@800;900&display=swap');
 
-.app-slot-card {
-  width: 290px;
-  height: 750px;
+/* Main Container (Horizontal) */
+.app-slot-card-h {
+  width: 1150px;
+  height: 220px;
   background: #090C15;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.03);
   box-shadow: 0 20px 40px rgba(0,0,0,0.6);
   font-family: 'Rubik', sans-serif;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
 }
-
-.app-hero {
-  width: 100%; height: 250px;
-  position: relative; background: #000; flex-shrink: 0;
+.app-slot-card-h .loader {
+  margin: auto;
 }
-.app-hero-img {
+
+/* Hero Section */
+.app-hero-h {
+  width: 320px;
+  height: 100%;
+  position: relative;
+  background: #000;
+  flex-shrink: 0;
+}
+.app-hero-img-h {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; object-position: center 20%;
 }
-.app-hero-gradient {
+.app-hero-gradient-h {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(9,12,21,0) 0%, rgba(9,12,21,0.2) 40%, rgba(9,12,21,0.9) 80%, #090C15 100%);
+  background: linear-gradient(to right, rgba(9,12,21,0) 40%, #090C15 100%),
+              linear-gradient(to bottom, rgba(9,12,21,0) 0%, rgba(9,12,21,0.6) 60%, rgba(9,12,21,0.95) 100%);
 }
-/* Badges — esquerda e direita separados */
-.app-badges {
-  position: absolute; top: 16px;
+.app-badges-h {
+  position: absolute; top: 16px; left: 16px;
   display: flex; gap: 8px; z-index: 10;
 }
-.app-badges-left  { left: 16px; }
-.app-badges-right { right: 16px; }
-
 .app-badge-live, .app-badge-time {
   background: rgba(20,22,35,0.6);
   border: 1px solid rgba(255,255,255,0.1);
@@ -594,76 +493,117 @@ const CSS = `
   box-shadow: 0 0 6px #ef4444; animation: blink 1.5s infinite;
 }
 .app-badge-time { color: #cbd5e1; }
-.app-title-container {
-  position: absolute; bottom: 10px; left: 0; right: 0;
-  text-align: center; z-index: 10;
+
+.app-title-container-h {
+  position: absolute; bottom: 16px; left: 16px; right: 16px;
+  text-align: left; z-index: 10;
 }
-.app-title-watermark {
-  position: absolute; bottom: 8px; left: 0; right: 0;
-  font-family: 'Sora', sans-serif; font-size: 42px; font-weight: 900;
-  color: rgba(255,255,255,0.08); white-space: nowrap; overflow: hidden;
+.app-title-watermark-h {
+  position: absolute; bottom: -4px; left: -4px; right: 0;
+  font-family: 'Sora', sans-serif; font-size: 40px; font-weight: 900;
+  color: rgba(255,255,255,0.06); white-space: nowrap; overflow: hidden;
   text-transform: uppercase; z-index: -1; pointer-events: none;
 }
-.app-slot-name {
+.app-slot-name-h {
   font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 900; color: #fff;
-  text-transform: uppercase; line-height: 1.1; padding: 0 20px;
+  text-transform: uppercase; line-height: 1.1; padding: 0;
   text-shadow: 0 2px 10px rgba(0,0,0,0.8);
 }
-.app-slot-provider {
+.app-slot-provider-h {
   font-size: 10px; font-weight: 800; color: #94a3b8;
   margin-top: 4px; text-transform: uppercase; letter-spacing: 0.2em;
   text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
 
-.app-content {
-  padding: 10px 24px 24px;
-  display: flex; flex-direction: column;
+/* Content Area */
+.app-content-h {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  padding: 20px 24px;
+  gap: 32px;
+  align-items: center;
 }
-.app-divider {
-  display: flex; align-items: center; margin-bottom: 20px;
+.app-section-h {
+  display: flex;
+  flex-direction: column;
 }
-.app-divider-text {
+
+/* Distribuição do espaço adaptada para os novos elementos (1. Info com 5 itens | 2. Records com 2 itens) */
+.app-section-h:nth-child(1) {
+  flex: 1.3;
+}
+.app-section-h:nth-child(2) {
+  flex: 0.9;
+}
+
+.app-divider-h {
+  display: flex; align-items: center; margin-bottom: 16px;
+}
+.app-divider-text-h {
   font-size: 10px; font-weight: 800; color: #1e3a8a;
   letter-spacing: 0.15em; margin: 0 12px;
 }
-.app-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-.app-date {
+.app-line-h { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+.app-date-h {
   display: flex; align-items: center; gap: 6px;
   font-size: 10px; font-weight: 700; color: #fbbf24;
 }
-.app-info-grid {
+
+/* Info Grid (agora com espaço para 5 itens) */
+.app-info-grid-h {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0 10px;
 }
-.app-info-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.app-info-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 800; color: #fff; }
-.app-info-lbl { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+.app-info-col-h { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.app-info-val-h { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800; color: #fff; }
+.app-info-lbl-h { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.app-records-list { display: flex; flex-direction: column; gap: 12px; }
-.app-record-row { display: flex; justify-content: space-between; align-items: center; }
-.app-record-row-sub { opacity: 0.7; margin-top: -4px; }
-.app-record-lbl {
-  display: flex; align-items: center; gap: 12px;
+/* Records Grid (2 columns) */
+.app-records-grid-h {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px; /* Maior separação entre Win e Multi */
+}
+.app-record-group-h {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.app-record-row-h { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  gap: 12px; /* Espaço para impedir o valor de colar no texto */
+}
+.app-record-row-sub-h { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  opacity: 0.7; 
+  gap: 12px; 
+}
+.app-record-lbl-h {
+  display: flex; align-items: center; gap: 10px;
   font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.6);
   letter-spacing: 0.1em; text-transform: uppercase;
 }
-.app-record-lbl-sub {
-  font-size: 9px; gap: 8px; padding-left: 4px;
+.app-record-lbl-sub-h {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.6);
+  padding-left: 4px;
 }
 .app-icon-wrap { display: flex; align-items: center; justify-content: center; }
 .icon-yellow svg { stroke: #fbbf24; }
 .icon-purple svg { stroke: #c084fc; }
 .icon-green  svg { stroke: #34d399; }
 
-/* ── BEST WIN e BEST MULTI values + animations ── */
-.app-record-val-wrap { display: flex; align-items: center; gap: 0; }
-.app-record-val {
-  font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 900;
-}
+/* O flex-shrink: 0 impede o número grande de ser esmagado pela grid */
+.app-record-val-wrap { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+.app-record-val { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 900; }
 .val-yellow { color: #fbbf24; }
 .val-purple { color: #c084fc; }
 .val-green  { color: #34d399; }
 
+/* Animações e Pills */
 .rec-new-chip {
   font-size: 9px; font-weight: 800; letter-spacing: .06em;
   border-radius: 999px; text-transform: uppercase;
@@ -705,39 +645,7 @@ const CSS = `
 .loader {
   width: 32px; height: 32px; border-radius: 50%;
   border: 3px solid rgba(56,189,248,0.2); border-top-color: #38bdf8;
-  animation: spin 1s linear infinite; margin: 40px auto;
+  animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── CHAT ── */
-.app-chat-section {
-  flex: 1; min-height: 0;
-  display: flex; flex-direction: column;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  background: rgba(0,0,0,.15);
-}
-.app-chat-hd {
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 12px 5px;
-  font-size: 9px; font-weight: 800; color: rgba(255,255,255,.25);
-  letter-spacing: .14em; text-transform: uppercase; flex-shrink: 0;
-}
-.app-chat-msgs {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding: 0 0 4px;
-  display: flex; flex-direction: column; justify-content: flex-end;
-  scrollbar-width: none;
-}
-.app-chat-msgs::-webkit-scrollbar { display: none; }
-.app-msg {
-  padding: 2px 12px; font-size: 12px; line-height: 1.6;
-  word-break: break-word; animation: msgIn .15s ease;
-}
-.app-msg-badge { width: 13px; height: 13px; border-radius: 2px; vertical-align: middle; display: inline-block; margin-right: 3px; transform: translateY(-1px); }
-.app-msg-name  { font-weight: 700; }
-.app-msg-colon { font-weight: 700; color: rgba(255,255,255,.2); margin: 0 3px; }
-.app-msg-text  { color: #e2e8f0 }
-.app-emote     { width: 18px; height: 18px; display: inline; vertical-align: middle; margin: 0 1px; }
-
-@keyframes msgIn { from { opacity:0; transform:translateY(2px) } to { opacity:1; transform:none } }
 `

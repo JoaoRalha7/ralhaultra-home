@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import OfferRow from '../components/OfferRow';
 import InfoModal from '../components/InfoModal';
-import { RedirectModal, TwitchPlayerModal } from '../components/HomeModals';
+import { RedirectModal, TwitchPlayerModal, FeaturedOfferModal } from '../components/HomeModals';
 import { casinoToOffer } from '../data/casinoToOffer';
 import { OFFERS } from '../data/fallback';
 import { useTwitchStatus } from '../hooks/useTwitchStatus';
@@ -118,9 +118,18 @@ export default function Home() {
   const [methodsBySlug, setMethodsBySlug] = useState({});
   const [selectedCasino, setSelectedCasino] = useState(null);
   const [redirect, setRedirect] = useState(null);
+  const [featuredCasino, setFeaturedCasino] = useState(null);
+  const [showFeatured, setShowFeatured] = useState(false);
   const [player, setPlayer] = useState(null);
   const [streams, setStreams] = useState([]);
   const [activity, setActivity] = useState(null);
+
+  // Featured offer popup, shown every time Home loads
+  useEffect(() => {
+    supabase.from('casinos').select('*').eq('is_active', true).eq('is_featured', true).limit(1).maybeSingle()
+      .then(({ data }) => { if (data) { setFeaturedCasino(data); setShowFeatured(true); } })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     supabase
@@ -326,6 +335,9 @@ export default function Home() {
 
       {selectedCasino && (
         <InfoModal casino={selectedCasino} methodsBySlug={methodsBySlug} onClose={() => setSelectedCasino(null)} onRedirect={handleRedirect} />
+      )}
+      {showFeatured && featuredCasino && (
+        <FeaturedOfferModal casino={featuredCasino} onClose={() => setShowFeatured(false)} onRedirect={handleRedirect} />
       )}
       {redirect && <RedirectModal url={redirect.url} promo={redirect.promo} onClose={() => setRedirect(null)} />}
       {player && <TwitchPlayerModal type={player.type} id={player.id} title={player.title} meta={player.meta} onClose={() => setPlayer(null)} />}
