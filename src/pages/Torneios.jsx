@@ -142,7 +142,7 @@ function RCol({ matches, ri, totalRounds, outerH, seedOffset = 0, label, onSelec
   return (
     <div style={{ flexShrink:0, display:'flex', flexDirection:'column' }}>
       <div style={{ height:LBL_H, display:'flex', alignItems:'center', justifyContent:'center', width:cardW }}>
-        <span className={styles.colLabel}>{label ?? roundLabel(ri, totalRounds)}</span>
+        <span className={`${styles.colLabel} ${ri === totalRounds - 1 ? styles.colFinal : ''}`}>{ri === totalRounds - 1 && <svg width="12" height="10" viewBox="0 0 26 22" fill="currentColor"><path d="M3 2L13 8L23 2L20 17H6L3 2Z"/><rect x="6" y="18" width="14" height="3" rx="1.5"/></svg>}{label ?? roundLabel(ri, totalRounds)}</span>
       </div>
       <div style={{ height:outerH, position:'relative', width:cardW }}>
         {matches.map((match, idx) => {
@@ -156,7 +156,7 @@ function RCol({ matches, ri, totalRounds, outerH, seedOffset = 0, label, onSelec
           const isSel = selected?.match === match
           return (
             <div key={idx} style={{ position:'absolute', top, left:0, width:cardW, height:MATCH_H }}
-              className={`${styles.matchCard} ${hasData ? styles.matchCardClickable : ''} ${isSel ? styles.matchCardSelected : ''}`}
+              className={`${styles.matchCard} ${ri === totalRounds - 1 ? styles.matchFinal : ''} ${hasData ? styles.matchCardClickable : ''} ${isSel ? styles.matchCardSelected : ''}`}
               onClick={() => hasData && onSelect?.({ match, label: label ?? roundLabel(ri, totalRounds) })}>
               {/* Row A */}
               <div className={`${styles.compRow} ${winner==='a' ? styles.compRowWin : ''} ${winner==='b' && a ? styles.compRowLose : ''}`}>
@@ -429,6 +429,8 @@ export default function Torneios() {
   const champion = fin?.winner ? fin[fin.winner] : null
   const champScore = champion ? getScore(champion) : null
   const isActive = active.status === 'active'
+  const totalMatches = bracket.reduce((n, r) => n + r.length, 0)
+  const decided = bracket.reduce((n, r) => n + r.filter(m => m.winner).length, 0)
   const bal = parseFloat(active.balance_start) || 0
 
   const tiles = [
@@ -458,6 +460,10 @@ export default function Torneios() {
               : <span className={styles.pillDone}>Finished</span>}
             <span>{fmtDate(active.created_at)}</span>
             <span>{active.size} slots</span>
+          </div>
+          <div className={styles.prog}>
+            <div className={styles.progBar}><i style={{ width: (totalMatches ? (decided / totalMatches) * 100 : 0) + '%' }} /></div>
+            <span>{decided} of {totalMatches} matches decided</span>
           </div>
         </div>
 

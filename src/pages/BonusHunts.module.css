@@ -35,7 +35,7 @@
 
 /* ── HUNT CARD ── */
 .huntCard {
-  background: #0a0c14;
+  background: #131720;
   border: 1px solid rgba(255,255,255,.07);
   border-radius: 16px; padding: 18px 20px;
   cursor: pointer;
@@ -115,7 +115,7 @@
 /* Sidebar */
 .sidebar {
   width: 240px; flex-shrink: 0;
-  background: #0a0c14;
+  background: #131720;
   border: 1px solid rgba(255,255,255,.07);
   border-radius: 14px; padding: 12px;
   display: flex; flex-direction: column; gap: 0;
@@ -174,7 +174,7 @@
   flex: 1;
   min-width: 0;
   width: 0; /* essencial: força o flex a não expandir indefinidamente, permite overflow-x no filho */
-  background: #0a0c14;
+  background: #131720;
   border: 1px solid rgba(255,255,255,.07);
   border-radius: 14px;
 }
@@ -278,7 +278,7 @@
   z-index: 9999;
   width: 361px;
   height: 198px;
-  background: #0a0c14;
+  background: #131720;
   border: 1px solid rgba(59,130,246,.3);
   border-radius: 14px;
   padding: 14px;
