@@ -35,7 +35,11 @@ export default function Mines() {
     <Page game="mines" title="Mines" sub="Reveal gems, avoid the mines, cash out before you hit one.">
       <div className={styles.layout}>
         <BetPanel points={g.points} bet={bet} setBet={setBet} locked={active} loggedIn={!!g.user}>
-          <span className={styles.lbl}>Mines</span>
+          <span className={styles.lbl}>Mines <b className={styles.mcount}>{mines}</b></span>
+          <input type="range" min="1" max="24" step="1" value={mines} disabled={active} aria-label="Number of mines"
+            className={styles.range} style={{ '--p': `${((mines - 1) / 23) * 100}%` }}
+            onChange={(e) => setMines(Number(e.target.value))} />
+          <div className={styles.rangeInfo}><span>{mines} mine{mines > 1 ? 's' : ''} / {25 - mines} gems</span><span>1st gem {mult(1, mines).toFixed(2)}x</span></div>
           <div className={styles.quick}>
             {MINE_CHOICES.map((c) => (
               <button key={c} type="button" disabled={active} className={mines === c ? styles.on : ''} onClick={() => setMines(c)}>{c}</button>
