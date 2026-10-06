@@ -332,7 +332,7 @@ function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, 
   useEffect(() => { setAngle(0) }, [n])
 
   const mobile = vw <= 640
-  const w = mobile ? 118 : 158
+  const w = mobile ? 150 : vw <= 1100 ? 176 : 214
   const R = n > 2 ? Math.max(w * 1.15, (w * 1.45) / (2 * Math.tan(Math.PI / n))) : w
 
   const active = n ? ((Math.round(-angle / step) % n) + n) % n : 0
@@ -401,13 +401,17 @@ function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, 
           <button type="button" className={`${styles.cfArr} ${styles.cfR}`} aria-label={`Next ${title}`} onClick={() => move(1)}><Chev d="M9 6l6 6-6 6" /></button>
           {cur && (
             <div className={styles.ringCap}>
-              <strong>{cur.name}</strong>
-              <span>
-                {cur.provider || '-'}
-                {avgs[cur.id] != null && <> · <b>{Math.round(avgs[cur.id]).toLocaleString('pt-PT')}x avg</b></>}
-                {plays[cur.id] ? <> · {plays[cur.id]} bonus</> : null}
-              </span>
-              <button type="button" onClick={() => onSlotClick(cur)}>View stats</button>
+              <div className={styles.capHead}>
+                <strong>{cur.name}</strong>
+                <span className={styles.capProv}>{cur.provider || '-'}{cur.volatility ? ` · ${cur.volatility} volatility` : ''}</span>
+              </div>
+              <div className={styles.capStats}>
+                <div><small>Avg multiplier</small><b className={styles.gold}>{avgs[cur.id] != null ? `${Math.round(avgs[cur.id]).toLocaleString('pt-PT')}x` : '-'}</b></div>
+                <div><small>Bonuses</small><b>{plays[cur.id] || 0}</b></div>
+                <div><small>RTP</small><b>{cur.rtp ? `${parseFloat(cur.rtp).toFixed(2)}%` : '-'}</b></div>
+                <div><small>Max win</small><b>{cur.max_win ? `${parseInt(cur.max_win).toLocaleString('pt-PT')}x` : '-'}</b></div>
+              </div>
+              <button type="button" className={styles.capBtn} onClick={() => onSlotClick(cur)}>View all stats</button>
             </div>
           )}
         </div>

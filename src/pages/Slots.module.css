@@ -339,23 +339,28 @@
 /* ── 3D ring carousel ── */
 .ringWrap { position: relative; border-radius: 18px; overflow: hidden; padding-bottom: 16px;
   background: radial-gradient(60% 70% at 50% 45%, rgba(23,48,95,.4), transparent 72%); }
-.ring { height: calc(var(--h) + 150px); perspective: 1700px; perspective-origin: 50% 20%; cursor: grab; touch-action: pan-y; user-select: none; overflow: hidden; }
+.ring { height: calc(var(--h) + 130px); perspective: 2300px; perspective-origin: 50% 20%; cursor: grab; touch-action: pan-y; user-select: none; overflow: hidden; }
 .ring:active { cursor: grabbing; }
-.ringInner { position: relative; width: var(--w); height: var(--h); margin: 34px auto 0; transform-style: preserve-3d; }
+.ringInner { position: relative; width: var(--w); height: var(--h); margin: 40px auto 0; transform-style: preserve-3d; }
 .ringCard { position: absolute; inset: 0; padding: 0; border: 1px solid rgba(255,255,255,.35); border-radius: 10px; overflow: hidden; background: #0d1018; cursor: pointer;
   box-shadow: 0 0 18px rgba(255,255,255,.28), 0 0 2px rgba(255,255,255,.6);
   -webkit-box-reflect: below 6px linear-gradient(transparent 68%, rgba(255,255,255,.28));
   transition: filter .5s; }
 .ringCard img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 .ringOn { border-color: #93c5fd; box-shadow: 0 0 26px rgba(147,197,253,.65), 0 0 3px #fff; }
-.ringCap { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; margin-top: -6px; padding: 0 56px; }
-.ringCap strong { font: 800 18px 'Bricolage Grotesque', sans-serif; color: #fff; }
-.ringCap span { font-size: 13px; color: var(--mute); }
-.ringCap b { color: #f5c542; font-weight: 800; }
-.ringCap button { margin-top: 8px; height: 36px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--line); background: #131720; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
-.ringCap button:hover { border-color: #3b82f6; background: #17305f; }
-.cfArr { position: absolute; top: 40%; z-index: 20; width: 38px; height: 38px; border-radius: 50%; background: rgba(11,14,20,.8);
+.ringCap { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: -4px; padding: 0 72px 4px; }
+.capHead { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.capHead strong { font: 800 28px/1.15 'Bricolage Grotesque', sans-serif; color: #fff; }
+.capProv { font-size: 14px; color: var(--mute); }
+.capStats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 640px; }
+.capStats div { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; text-align: center; }
+.capStats small { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); margin-bottom: 4px; }
+.capStats b { font: 800 22px 'Bricolage Grotesque', sans-serif; color: #fff; }
+.capStats .gold { color: #f5c542; }
+.capBtn { height: 44px; padding: 0 26px; border-radius: 12px; border: 0; background: #3b82f6; color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; }
+.capBtn:hover { background: #2563eb; }
+.cfArr { position: absolute; top: 165px; z-index: 20; width: 38px; height: 38px; border-radius: 50%; background: rgba(11,14,20,.8);
   border: 1px solid var(--line); color: #eef1f7; display: grid; place-items: center; cursor: pointer; }
 .cfArr:hover { border-color: #3b82f6; background: #17305f; }
 .cfL { left: 8px; } .cfR { right: 8px; }
-@media (max-width: 640px) { .ringCap { padding: 0 64px; } .cfArr { top: auto; bottom: 22px; } .cfL { left: 14px; } .cfR { right: 14px; } }
+@media (max-width: 640px) { .ringCap { padding: 0 14px 4px; } .capHead strong { font-size: 22px; } .capStats { grid-template-columns: repeat(2, 1fr); } .capStats b { font-size: 19px; } .capBtn { width: 100%; } .cfArr { top: 120px; } .cfL { left: 6px; } .cfR { right: 6px; } }
