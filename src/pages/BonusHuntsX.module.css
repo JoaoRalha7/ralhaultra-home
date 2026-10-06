@@ -280,3 +280,8 @@
 .ribbonRow::-webkit-scrollbar{display:none}
 .ribArrow{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--text);display:grid;place-items:center;cursor:pointer}
 .ribArrow:hover{border-color:var(--acc);background:rgba(59,130,246,.16)}
+
+/* best/worst inside the profit box */
+.bw{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.dWorst{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.3)}
+.dWorst strong{color:var(--neg)}

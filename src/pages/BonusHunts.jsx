@@ -494,6 +494,17 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         <div className={x.dProfit}>
           <span className={x.lbl}>Profit</span>
           <b className={hasResult ? (profit >= 0 ? x.pos : x.neg) : ''}>{hasResult ? money(profit) : '—'}</b>
+          {best && (
+            <div className={x.bw}>
+              {[['Best slot', best, ''], worst && worst.id !== best.id ? ['Worst slot', worst, x.dWorst] : null].filter(Boolean).map(([lbl, e, cls]) => (
+                <div key={lbl} className={`${x.dBest} ${cls}`}>
+                  <img src={e.slot?.image_url || ''} alt="" onError={ev => { ev.target.style.opacity = '.1' }} />
+                  <div><small>{lbl}</small><b>{e.slot?.name || '—'}</b></div>
+                  <strong>{e.multi.toFixed(e.multi < 10 ? 1 : 0)}x</strong>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
@@ -502,22 +513,6 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
           <div key={t.lbl} className={x.dTile}><span className={x.lbl}>{t.lbl}</span><b className={t.cls || ''}>{t.val}</b></div>
         ))}
       </div>
-
-      {!loading && best && (
-        <div className={x.stage}>
-          {[['Best slot', best, x.podFirst], worst && worst.id !== best.id ? ['Worst slot', worst, x.podWorst] : null].filter(Boolean).map(([lbl, e, cls]) => (
-            <div key={lbl} className={`${x.pod} ${cls}`}>
-              <span className={x.podTag2}>{lbl}</span>
-              <SlotThumb slot={e.slot} size={60} />
-              <div className={x.podTxt}>
-                <b>{e.slot?.name || '—'}</b>
-                <small>{e.slot?.provider ? e.slot.provider + ' · ' : ''}€{parseBet(e.bet).toFixed(2)} bet · €{parseBet(e.payment).toFixed(2)} win</small>
-              </div>
-              <strong className={x.podX}>{e.multi.toFixed(e.multi < 10 ? 1 : 0)}x</strong>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className={x.split}>
       <div className={x.dBody}>
