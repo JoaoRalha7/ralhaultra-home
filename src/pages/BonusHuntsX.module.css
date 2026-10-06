@@ -83,8 +83,10 @@
 .hcBw strong { font: 800 20px "Bricolage Grotesque", sans-serif; font-variant-numeric: tabular-nums; }
 .hcGood { color: var(--gold); } .hcBad { color: var(--neg); }
 .rNone { font-size: 12px; color: var(--mute); }
-.hcFoot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.hcFoot { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
 .hcFoot small { display: block; font-size: 11px; color: var(--mute); font-weight: 600; margin-bottom: 2px; }
+.hcFoot i { font-style: normal; }
+.hcSuper { color: var(--gold); }
 .hcFoot em { font-style: normal; font-size: 11px; color: var(--gold); }
 
 /* detail */

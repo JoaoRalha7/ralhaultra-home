@@ -222,7 +222,8 @@ function HuntCard({ hunt, entries, onClick }) {
         ))}
       </div>
       <div className={x.hcFoot}>
-        <span><small>Bonuses</small>{st.total || '—'}{st.supers > 0 && <em> · {st.supers} super</em>}</span>
+        <span><small>Bonuses</small>{st.total || '—'}</span>
+        <span><small>Super</small><i className={st.supers > 0 ? x.hcSuper : ''}>{st.supers || '—'}</i></span>
         <span><small>Avg multi</small>{st.avg > 0 ? st.avg.toFixed(1) + 'x' : '—'}</span>
         <span><small>Total pay</small>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</span>
       </div>
