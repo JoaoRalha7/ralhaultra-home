@@ -30,6 +30,13 @@ const GAMES = [
   ['avg_multi_games', 'Avg Multi', 'avg'],
 ];
 
+function Avatar({ src }) {
+  const [bad, setBad] = useState(false)
+  return src && !bad
+    ? <img className="av" src={src} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} />
+    : <div className="av" aria-hidden="true" />
+}
+
 export default function Layout() {
   const { user, profile, isAdmin, isSettingUp, signOut } = useAuth();
   const { points, setPoints, refresh } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name);
@@ -116,7 +123,7 @@ export default function Layout() {
           {isAdmin() && <button className="pill adminBtn" onClick={() => setAdminOpen(true)}>Admin</button>}
           {user ? (
             <>
-              {profile?.avatar_url ? <img className="av" src={profile.avatar_url} alt="" /> : <div className="av" aria-hidden="true" />}
+              <Avatar src={profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture} />
               <button className="logout" onClick={signOut}>Logout</button>
             </>
           ) : (

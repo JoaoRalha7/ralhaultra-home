@@ -6,13 +6,13 @@ import styles from './DailyRewardsModal.module.css'
 const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
 const PRIZES = [
-  { label: '10 pts',     points: 10,   weight: 35, color: '#4338ca', light: '#818cf8' },
-  { label: '25 pts',     points: 25,   weight: 25, color: '#1d4ed8', light: '#60a5fa' },
-  { label: '50 pts',     points: 50,   weight: 20, color: '#0369a1', light: '#38bdf8' },
+  { label: '10 pts',     points: 10,   weight: 35, color: '#1e3a8a', light: '#60a5fa' },
+  { label: '25 pts',     points: 25,   weight: 25, color: '#1d4ed8', light: '#3b82f6' },
+  { label: '50 pts',     points: 50,   weight: 20, color: '#0369a1', light: '#22d3ee' },
   { label: '100 pts',    points: 100,  weight: 10, color: '#065f46', light: '#34d399' },
   { label: '250 pts',    points: 250,  weight: 7,  color: '#92400e', light: '#fbbf24' },
   { label: '500 pts',    points: 500,  weight: 2,  color: '#9a3412', light: '#fb923c' },
-  { label: 'JACKPOT 1K', points: 1000, weight: 1,  color: '#713f12', light: '#facc15' },
+  { label: 'JACKPOT 1K', points: 1000, weight: 1,  color: '#713f12', light: '#f5c542' },
 ]
 
 const STREAK_DAYS = [
@@ -48,7 +48,7 @@ function WheelCanvas({ spinning, targetIndex, onSpinEnd, winIndex }) {
     // Outer subtle ring
     ctx.beginPath()
     ctx.arc(CX, CY, R + 4, 0, Math.PI*2)
-    ctx.strokeStyle = winIdx >= 0 ? 'rgba(34,197,94,.2)' : 'rgba(99,102,241,.15)'
+    ctx.strokeStyle = winIdx >= 0 ? 'rgba(52,211,153,.25)' : 'rgba(59,130,246,.22)'
     ctx.lineWidth = 8
     ctx.stroke()
 
@@ -69,7 +69,7 @@ function WheelCanvas({ spinning, targetIndex, onSpinEnd, winIndex }) {
         gWin.addColorStop(1, 'rgba(34,197,94,.04)')
         ctx.fillStyle = gWin
       } else {
-        ctx.fillStyle = i % 2 === 0 ? '#0d1020' : '#0a0d1a'
+        ctx.fillStyle = i % 2 === 0 ? '#121a2b' : '#0e1522'
       }
       ctx.fill()
 
@@ -105,9 +105,9 @@ function WheelCanvas({ spinning, targetIndex, onSpinEnd, winIndex }) {
       ctx.textAlign = 'right'
       ctx.shadowColor = 'rgba(0,0,0,.9)'
       ctx.shadowBlur = 5
-      ctx.font = `800 ${p.label.includes('JACKPOT') ? 9 : 11}px Rubik,sans-serif`
+      ctx.font = `800 ${p.label.includes('JACKPOT') ? 11 : 14}px "Bricolage Grotesque","DM Sans",sans-serif`
       ctx.fillStyle = isWin ? '#fff' : 'rgba(255,255,255,.85)'
-      ctx.fillText(p.label, R - 28, 4)
+      ctx.fillText(p.label, R - 24, 5)
       ctx.restore()
     })
 
@@ -122,11 +122,11 @@ function WheelCanvas({ spinning, targetIndex, onSpinEnd, winIndex }) {
     ctx.shadowBlur = 0
 
     // Center disc
-    const cGrd = ctx.createRadialGradient(CX-5, CY-5, 2, CX, CY, 26)
-    cGrd.addColorStop(0, '#1e1b4b')
-    cGrd.addColorStop(1, '#080a0f')
+    const cGrd = ctx.createRadialGradient(CX-5, CY-5, 2, CX, CY, 30)
+    cGrd.addColorStop(0, '#1e3a8a')
+    cGrd.addColorStop(1, '#0b0e14')
     ctx.beginPath()
-    ctx.arc(CX, CY, 24, 0, Math.PI*2)
+    ctx.arc(CX, CY, 28, 0, Math.PI*2)
     ctx.fillStyle = cGrd
     ctx.fill()
     ctx.strokeStyle = 'rgba(250,204,21,.4)'
@@ -192,13 +192,12 @@ function WheelCanvas({ spinning, targetIndex, onSpinEnd, winIndex }) {
     return () => cancelAnimationFrame(rafRef.current)
   }, [spinning, targetIndex, onSpinEnd])
 
-  return <canvas ref={canvasRef} width={260} height={260} className={styles.wheelCanvas} />
+  return <canvas ref={canvasRef} width={320} height={320} className={styles.wheelCanvas} />
 }
 
 // ── Main Modal ──────────────────────────────────────────────────────────────────
 export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
   const { user, profile } = useAuth()
-  const [tab, setTab] = useState('claim')
 
   // Refs for precise countdown targeting
   const claimTargetTime = useRef(null)
@@ -385,192 +384,124 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
     onPointsUpdate?.()
   }, [onPointsUpdate])
 
+  const claimed = claimStatus === 'claimed'
+  const nextPts = STREAK_DAYS[Math.min(streakCount, 6)].pts
+  const I = (d, sz = 16, sw = 2) => (
+    <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
+  )
+
   return (
     <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className={styles.modal}>
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Daily Rewards">
 
-        {/* Header */}
-        <div className={styles.modalHeader}>
+        <header className={styles.head}>
+          <span className={styles.headIcon}>{I(<><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></>, 22)}</span>
           <div>
-            <h2 className={styles.modalTitle}>Daily Rewards</h2>
-            <p className={styles.modalSub}>Come back every day for bigger rewards</p>
+            <h2 className={styles.title}>Daily Rewards</h2>
+            <p className={styles.sub}>Claim every day for a bigger streak, and spin once a day for a shot at 1,000 pts.</p>
           </div>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close modal">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">{I(<path d="M18 6L6 18M6 6l12 12"/>, 14, 2.5)}</button>
+        </header>
 
-        {/* Tabs */}
-        <div className={styles.tabs}>
-          <button className={`${styles.tab} ${tab === 'claim' ? styles.tabActive : ''}`} onClick={() => setTab('claim')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Daily Claim
-            {claimStatus === 'ready' && <span className={styles.tabDot} />}
-          </button>
-          <button className={`${styles.tab} ${tab === 'wheel' ? styles.tabActive : ''}`} onClick={() => setTab('wheel')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-            Spin Wheel
-            {wheelStatus === 'ready' && <span className={styles.tabDot} />}
-          </button>
-        </div>
+        <div className={styles.cols}>
 
-        {/* ── TAB: CLAIM ── */}
-        {tab === 'claim' && (
-          <div className={styles.tabContent}>
+          {/* ── Daily claim ── */}
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <h3>{I(<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>, 16)}Daily Claim</h3>
+              <span className={styles.streakChip}>Day {streakCount} of 7</span>
+            </div>
 
-            {/* Streak days */}
-            <div className={styles.streakGrid}>
+            <div className={styles.streakHero}>
+              <b>{streakCount}</b>
+              <span>day streak<small>{streakCount >= 7 ? 'Maximum reached' : `${7 - streakCount} to the 500 pts bonus`}</small></span>
+            </div>
+
+            <div className={styles.days}>
               {STREAK_DAYS.map(({ day, pts }) => {
-                const claimedToday = claimStatus === 'claimed'
-                const daysCompleted = claimedToday ? streakCount : streakCount
-                const isDone  = day <= daysCompleted && daysCompleted > 0
-                const isToday = !claimedToday && day === daysCompleted + 1
-                const isBonus = day === 7
+                const isDone  = day <= streakCount && streakCount > 0
+                const isToday = !claimed && day === streakCount + 1
+                const bonus   = day === 7
                 return (
-                  <div
-                    key={day}
-                    className={`${styles.streakDay} ${isDone ? styles.streakDone : ''} ${isToday ? styles.streakToday : ''}`}
-                  >
-                    <span className={styles.streakDayNum}>DAY {day}</span>
-                    <div className={styles.streakCoin}>
-                      {isDone ? (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      ) : isBonus ? (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isToday ? '#facc15' : 'rgba(250,204,21,.35)'} strokeWidth="2" strokeLinecap="round"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg>
-                      ) : (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isToday ? '#facc15' : 'rgba(255,255,255,.2)'} strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      )}
-                    </div>
-                    <span className={styles.streakPts}>{pts}</span>
+                  <div key={day} className={`${styles.day} ${isDone ? styles.done : ''} ${isToday ? styles.today : ''} ${bonus ? styles.bonus : ''}`}>
+                    <small>Day {day}</small>
+                    <span className={styles.dayIcon}>
+                      {isDone ? I(<polyline points="20 6 9 17 4 12"/>, 15, 3)
+                        : bonus ? I(<path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/>, 15)
+                        : <i className={styles.coin} />}
+                    </span>
+                    <b>{pts}</b>
                   </div>
                 )
               })}
             </div>
 
-            {/* Progress bar */}
-            <div className={styles.streakProgressWrap}>
-              <div className={styles.streakProgressInfo}>
-                <span className={styles.streakProgressLeft}>
-                  Day {streakCount} of 7 completed
-                </span>
-                <span className={styles.streakProgressRight}>
-                  {claimStatus === 'claimed'
-                    ? streakCount === 7 ? '🎉 Full streak!' : `Next: +${STREAK_DAYS[streakCount]?.pts ?? 50} pts on Day ${streakCount + 1}`
-                    : `Claim today: +${todayPts} pts`
-                  }
-                </span>
-              </div>
-              <div className={styles.streakProgressTrack}>
-                <div
-                  className={styles.streakProgressFill}
-                  style={{ width: `${(streakCount / 7) * 100}%` }}
-                />
-              </div>
-            </div>
+            <div className={styles.track}><i style={{ width: `${(streakCount / 7) * 100}%` }} /></div>
+            <p className={styles.hint}>
+              {claimed
+                ? (streakCount >= 7 ? 'Full streak completed. Amazing!' : `Come back tomorrow for +${nextPts} pts on day ${streakCount + 1}.`)
+                : `Day 7 pays 500 pts. Keep the streak alive.`}
+            </p>
 
-            {/* Today's / Next claim */}
-            <div className={styles.claimBanner}>
+            <div className={styles.reward}>
               <div>
-                <div className={styles.claimBannerLabel}>
-                  {claimStatus === 'claimed' ? 'Next reward' : "Today's reward"}
-                </div>
-                <div className={styles.claimBannerPts}>
-                  + {claimStatus === 'claimed'
-                    ? (STREAK_DAYS[Math.min(streakCount, 6)].pts)
-                    : todayPts} pts
-                </div>
+                <small>{claimed ? 'Next reward' : "Today's reward"}</small>
+                <b><i className={styles.coin} />+{claimed ? nextPts : todayPts} pts</b>
               </div>
               {claimStatus === 'loading' ? (
-                <div className={styles.skeleton} style={{ width: 110, height: 38 }} />
+                <div className={styles.skeleton} style={{ width: 130, height: 44 }} />
               ) : claimStatus === 'ready' ? (
-                <button className={styles.claimBtn} onClick={handleClaim} disabled={claimLoading}>
-                  {claimLoading ? 'Claiming…' : 'Claim Now'}
-                </button>
+                <button className={styles.cta} onClick={handleClaim} disabled={claimLoading}>{claimLoading ? 'Claiming…' : 'Claim now'}</button>
               ) : (
-                <div className={styles.cdPill}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  {formatCountdown(claimCountdown)}
-                </div>
+                <div className={styles.cd}>{I(<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>, 14)}{formatCountdown(claimCountdown)}</div>
               )}
             </div>
 
             {claimResult && (
-              <div className={styles.resultBanner}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                +{claimResult} points added to your account!
-              </div>
+              <div className={styles.result}>{I(<polyline points="20 6 9 17 4 12"/>, 15, 3)}+{claimResult} points added to your account</div>
             )}
-          </div>
-        )}
+          </section>
 
-        {/* ── TAB: WHEEL ── */}
-        {tab === 'wheel' && (
-          <div className={styles.tabContent}>
-            <div className={styles.wheelArea}>
+          {/* ── Wheel ── */}
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <h3>{I(<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3v6.5M12 14.5V21M3 12h6.5M14.5 12H21"/></>, 16)}Lucky Wheel</h3>
+              <span className={styles.streakChip}>1 spin / day</span>
+            </div>
 
-              {/* Pointer + canvas */}
-              <div className={styles.wheelWrap}>
-                <div className={`${styles.wheelPointer} ${spinning ? styles.pointerSpinning : ''}`}>
-                  <svg width="22" height="28" viewBox="0 0 22 28">
-                    <defs>
-                      <linearGradient id="ptg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#facc15"/>
-                        <stop offset="100%" stopColor="#d97706"/>
-                      </linearGradient>
-                    </defs>
-                    <polygon points="11,27 1,1 21,1" fill="url(#ptg)" stroke="rgba(0,0,0,.4)" strokeWidth="1"/>
-                    <polygon points="11,20 5,5 17,5" fill="rgba(255,255,255,.22)"/>
-                  </svg>
-                </div>
-                <WheelCanvas spinning={spinning} targetIndex={targetIndex} onSpinEnd={handleSpinEndFinal} winIndex={winIndex} />
+            <div className={styles.wheelWrap}>
+              <div className={`${styles.pointer} ${spinning ? styles.pointerSpin : ''}`}>
+                <svg width="26" height="32" viewBox="0 0 22 28" aria-hidden="true">
+                  <defs><linearGradient id="ptg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d99a0b"/></linearGradient></defs>
+                  <polygon points="11,27 1,1 21,1" fill="url(#ptg)" stroke="rgba(0,0,0,.45)" strokeWidth="1"/>
+                </svg>
               </div>
+              <WheelCanvas spinning={spinning} targetIndex={targetIndex} onSpinEnd={handleSpinEndFinal} winIndex={winIndex} />
+            </div>
 
-              {/* Prize list */}
-              <div className={styles.prizeList}>
-                {PRIZES.map((p, i) => {
-                  const isWon = winIndex === i
-                  return (
-                    <div key={p.label} className={`${styles.prizeItem} ${p.label.includes('JACKPOT') ? styles.prizeJackpot : ''} ${isWon ? styles.prizeWon : ''}`}>
-                      <div className={styles.prizeDot} style={{ background: isWon ? '#22c55e' : p.light }} />
-                      <span className={styles.prizeLabel} style={isWon ? { color: '#86efac' } : p.label.includes('JACKPOT') ? { color: '#fde68a' } : {}}>{p.label}</span>
-                      {isWon
-                        ? <svg style={{ marginLeft: 'auto' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        : <span className={styles.prizeChance}>{p.weight}%</span>
-                      }
-                    </div>
-                  )
-                })}
-              </div>
+            <div className={styles.chips}>
+              {PRIZES.map((p, i) => (
+                <span key={p.label} className={`${styles.chipP} ${winIndex === i ? styles.won : ''} ${p.points >= 1000 ? styles.jack : ''}`} style={{ '--c': p.light }}>
+                  <i />{p.label.replace('JACKPOT ', '')}<small>{p.weight}%</small>
+                </span>
+              ))}
             </div>
 
             {wheelResult && (
-              <div className={styles.resultBanner} style={{ marginTop: 12 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                You won {wheelResult.prize}! Points added to your account.
-              </div>
+              <div className={styles.result}>{I(<polyline points="20 6 9 17 4 12"/>, 15, 3)}You won {wheelResult.prize}. Points added.</div>
             )}
 
             {wheelStatus === 'loading' ? (
-              <div className={styles.skeleton} style={{ height: 44, marginTop: 12 }} />
+              <div className={styles.skeleton} style={{ height: 46 }} />
             ) : wheelStatus === 'ready' ? (
-              <button className={`${styles.claimBtn} ${styles.spinBtn}`} onClick={handleSpinClick}>
-                Spin the Wheel
-              </button>
+              <button className={styles.cta} onClick={handleSpinClick}>Spin the wheel</button>
             ) : wheelStatus === 'spinning' ? (
-              <button className={`${styles.claimBtn} ${styles.spinBtn}`} disabled style={{ opacity: .5 }}>
-                Spinning…
-              </button>
+              <button className={styles.cta} disabled>Spinning…</button>
             ) : (
-              <div className={styles.cdPillFull}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Next spin in {formatCountdown(wheelCountdown)}
-              </div>
+              <div className={`${styles.cd} ${styles.cdFull}`}>{I(<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>, 14)}Next spin in {formatCountdown(wheelCountdown)}</div>
             )}
-          </div>
-        )}
-
+          </section>
+        </div>
       </div>
     </div>
   )
