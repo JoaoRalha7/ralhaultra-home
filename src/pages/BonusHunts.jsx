@@ -201,23 +201,43 @@ function FeaturedHunt({ hunt, entries, onClick }) {
   )
 }
 
-function HuntRow({ hunt, entries, onClick }) {
+function barTone(m) {
+  if (m >= 50) return x.bGold
+  if (m >= 10) return x.bHi
+  if (m >= 1) return x.bMid
+  return x.bLow
+}
+
+function HuntCard({ hunt, entries, onClick }) {
   const st = huntStats(hunt, entries)
+  const bars = entries.slice(0, 60).map(e => {
+    const ok = e.opened && e.payment != null && parseBet(e.bet) > 0
+    const m = ok ? parseBet(e.payment) / parseBet(e.bet) : null
+    return { m, h: m == null ? 12 : Math.max(14, Math.min(100, (Math.log10(Math.max(m, 0.5)) + 0.3) / 2.3 * 100)) }
+  })
   return (
-    <button type="button" className={`${x.row} ${hunt.active ? x.rowLive : ''}`} onClick={onClick}>
-      <span className={x.rId}>#{hunt.id}{hunt.active && <span className={x.liveDot} />}</span>
-      <span className={x.rDate}>{fmtDate(hunt.date)}</span>
-      <span className={x.rBest}>
-        {st.best ? <><SlotThumb slot={st.best.slot} size={30} /><span><b>{st.best.slot?.name || '—'}</b><small>{st.best.multi.toFixed(0)}x best</small></span></> : <span className={x.rNone}>No bonuses opened</span>}
-      </span>
-      <span className={x.rNum}><small>Bonuses</small>{st.total || '—'}{st.supers > 0 && <em>{st.supers} super</em>}</span>
-      <span className={x.rNum}><small>Avg</small>{st.avg > 0 ? st.avg.toFixed(1) + 'x' : '—'}</span>
-      <span className={x.rNum}><small>Total pay</small>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</span>
-      <span className={`${x.rNum} ${x.rProfit} ${st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}`}><small>Profit</small>{st.hasResult ? money(st.profit) : '—'}</span>
+    <button type="button" className={`${x.hCard} ${hunt.active ? x.hCardLive : ''}`} onClick={onClick}>
+      <div className={x.hcTop}>
+        <span className={x.hcId}>#{hunt.id}{hunt.active && <span className={x.liveDot} />}</span>
+        <span className={x.hcDate}>{fmtDate(hunt.date)}</span>
+      </div>
+      <b className={`${x.hcProfit} ${st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}`}>{st.hasResult ? money(st.profit) : '—'}</b>
+      <div className={x.hcBars} aria-hidden="true">
+        {bars.length ? bars.map((b, i) => <i key={i} className={b.m == null ? x.bOff : barTone(b.m)} style={{ height: b.h + '%' }} />) : <span className={x.rNone}>No bonuses yet</span>}
+      </div>
+      <div className={x.hcBest}>
+        {st.best
+          ? <><SlotThumb slot={st.best.slot} size={34} /><span><b>{st.best.slot?.name || '—'}</b><small>Best bonus</small></span><strong>{st.best.multi.toFixed(0)}x</strong></>
+          : <span className={x.rNone}>No bonuses opened</span>}
+      </div>
+      <div className={x.hcFoot}>
+        <span><small>Bonuses</small>{st.total || '—'}{st.supers > 0 && <em> · {st.supers} super</em>}</span>
+        <span><small>Avg multi</small>{st.avg > 0 ? st.avg.toFixed(1) + 'x' : '—'}</span>
+        <span><small>Total pay</small>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</span>
+      </div>
     </button>
   )
 }
-
 
 // ── Mini-games tied to a hunt ──────────────────────────────────────────────────
 const GAME_DEFS = [
@@ -660,6 +680,7 @@ export default function BonusHunts() {
   const [selectedHunt, setSelectedHunt] = useState(null)
   const [tab, setTab]                   = useState('all')
   const [gridPage, setGridPage]         = useState(1)
+  const [sort, setSort]               = useState('new')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -710,7 +731,14 @@ export default function BonusHunts() {
 
   const visibleHunts = tab === 'active' ? hunts.filter(h => h.active) : hunts
   const featured = hunts.find(h => h.active) || hunts[0] || null
-  const history = tab === 'active' ? visibleHunts : visibleHunts.filter(h => h !== featured)
+  const baseHistory = tab === 'active' ? visibleHunts : visibleHunts.filter(h => h !== featured)
+  const sortKey = (h) => {
+    const st = huntStats(h, byHunt[h.id] || [])
+    if (sort === 'profit') return st.hasResult ? st.profit : -Infinity
+    if (sort === 'multi') return st.best ? st.best.multi : -Infinity
+    return h.id
+  }
+  const history = sort === 'new' ? baseHistory : [...baseHistory].sort((a, b) => sortKey(b) - sortKey(a))
   const totalGridPages = Math.ceil(history.length / GRID_PAGE)
   const pageHunts = history.slice((gridPage - 1) * GRID_PAGE, gridPage * GRID_PAGE)
 
@@ -756,21 +784,31 @@ export default function BonusHunts() {
       ) : (
         <>
           {tab === 'all' && featured && (
-            <FeaturedHunt hunt={featured} entries={byHunt[featured.id] || []} onClick={() => setSelectedHunt(featured)} />
-          )}
-
-          {tab === 'all' && done.length > 0 && (
-            <div className={x.life}>
-              <div><span className={x.lbl}>Hunts</span><b>{hunts.length}</b></div>
-              <div><span className={x.lbl}>Bonuses opened</span><b>{bonusCount.toLocaleString('en-GB')}</b></div>
-              <div><span className={x.lbl}>Hunts in profit</span><b>{winRate}%</b></div>
-              <div><span className={x.lbl}>All-time result</span><b className={lifetime >= 0 ? x.pos : x.neg}>{money(lifetime)}</b></div>
+            <div className={x.top}>
+              <FeaturedHunt hunt={featured} entries={byHunt[featured.id] || []} onClick={() => setSelectedHunt(featured)} />
+              {done.length > 0 && (
+                <div className={x.life}>
+                  <div><span className={x.lbl}>All-time result</span><b className={lifetime >= 0 ? x.pos : x.neg}>{money(lifetime)}</b></div>
+                  <div><span className={x.lbl}>Hunts in profit</span><b>{winRate}%</b></div>
+                  <div><span className={x.lbl}>Hunts</span><b>{hunts.length}</b></div>
+                  <div><span className={x.lbl}>Bonuses opened</span><b>{bonusCount.toLocaleString('en-GB')}</b></div>
+                </div>
+              )}
             </div>
           )}
 
+          <div className={x.listHead}>
+            <h2>{tab === 'active' ? 'Live hunts' : 'Past hunts'}</h2>
+            <div className={x.sort} role="group" aria-label="Sort hunts">
+              {[['new', 'Newest'], ['profit', 'Best profit'], ['multi', 'Best multi']].map(([k, l]) => (
+                <button key={k} className={`${x.sortBtn} ${sort === k ? x.sortOn : ''}`} onClick={() => { setSort(k); setGridPage(1) }}>{l}</button>
+              ))}
+            </div>
+          </div>
+
           <div className={x.list}>
             {pageHunts.map(hunt => (
-              <HuntRow key={hunt.id} hunt={hunt} entries={byHunt[hunt.id] || []} onClick={() => setSelectedHunt(hunt)} />
+              <HuntCard key={hunt.id} hunt={hunt} entries={byHunt[hunt.id] || []} onClick={() => setSelectedHunt(hunt)} />
             ))}
           </div>
           {pager}
