@@ -339,6 +339,14 @@ export default function Home() {
             <Link className="pill" to="/leaderboard"><Icon name="trophy" size={16} />Leaderboard</Link>
           </div>
         </article>
+        <article className="hc c">
+          <h2>Points Shop</h2>
+          <p>Spend the points you earn watching on prizes and rewards.</p>
+          <div className="act">
+            <Round />
+            <Link className="pill" to="/shop"><Icon name="bag" size={16} />Open Shop</Link>
+          </div>
+        </article>
       </section>
 
       <section>

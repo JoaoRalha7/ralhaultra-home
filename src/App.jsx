@@ -15,6 +15,7 @@ import Blackjack from './pages/Blackjack';
 import Offers from './pages/Offers';
 import Placeholder from './pages/Placeholder';
 import Shop from './pages/Shop';
+import Giveaways from './pages/Giveaways';
 import Slots from './pages/Slots';
 import Stats from './pages/Stats';
 import Stream from './pages/Stream';
@@ -60,7 +61,6 @@ function StatsPage() {
 }
 
 const SOON = [
-  ['giveaways', 'Giveaways & Raffles'],
   ['community', 'Community'],
 ];
 
@@ -87,6 +87,7 @@ export default function App() {
         <Route path="offers" element={<Offers />} />
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="shop" element={<Shop />} />
+        <Route path="giveaways" element={<Giveaways />} />
         <Route path="slots" element={<Slots />} />
         <Route path="bonus-hunts" element={<BonusHuntsPage />} />
         <Route path="stats" element={<StatsPage />} />
