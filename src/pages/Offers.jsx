@@ -126,6 +126,7 @@ export default function Offers() {
   const [auto, setAuto]                     = useState(true)
   const [tick, setTick]                     = useState(0)   // restarts the progress bar
   const hover = useRef(false)
+  const dragX = useRef(null)
 
   const handleRedirect = (url, promo) =>
     setRedirect({ url, promo: (promo ?? '').toString().trim() })
@@ -220,106 +221,90 @@ export default function Offers() {
         </div>
       ) : (
         <>
-          <section className={styles.show} onMouseEnter={() => { hover.current = true }} onMouseLeave={() => { hover.current = false }}>
-            <article className={styles.hero} key={cur.id}>
-              <div className={styles.heroBg} style={cur.banner_url ? { backgroundImage: `url(${cur.banner_url})` } : bannerBg(cur)} />
-              <div className={styles.heroShade} />
-              <div className={styles.heroTop}>
-                <div className={styles.brand}>
-                  <Logo c={cur} size={52} />
-                  <div><strong>{cur.name}</strong><small>{String(idx + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</small></div>
-                </div>
-                <div className={styles.tags}>
-                  <Tag c={cur} />
-                  {cur.is_freespins && <span className={`${styles.tag} ${styles.tagFs}`}>FREE SPINS</span>}
-                </div>
-              </div>
-
-              <div className={styles.heroBody}>
-                <small className={styles.kicker}>Exclusive welcome offer</small>
-                <h2 className={styles.bonus}>{bonus || cur.name}</h2>
-                {bonus2 && <p className={styles.bonus2}>{bonus2}</p>}
-
-                {stats.length > 0 && (
-                  <div className={styles.stats}>
-                    {stats.map(([icon, label, val]) => (
-                      <div key={label} className={styles.stat}>{icon}<div><small>{label}</small><b>{val}</b></div></div>
-                    ))}
-                  </div>
-                )}
-
-                <div className={styles.actions}>
-                  <button type="button" className={styles.claim} onClick={() => handleRedirect(cur.claim_url, cur.promo_code)}>
-                    Claim bonus {Ico.right}
-                  </button>
-                  <button type="button" className={styles.more} onClick={() => setSelectedCasino(cur)}>{Ico.info} Full details</button>
-                  <PromoChip code={txt(cur.promo_code)} big />
-                </div>
-
-                {pays.length > 0 && (
-                  <div className={styles.pays} aria-label="Payment methods">
-                    {pays.map(slug => {
-                      const m = methodsBySlug[slug]
-                      return (
-                        <span key={slug} className={styles.pay} title={m?.name || slug}>
-                          {m?.icon_url ? <img src={m.icon_url} alt={m?.name || slug} /> : (m?.name || slug).slice(0, 2).toUpperCase()}
-                        </span>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-              {auto && n > 1 && <span key={tick} className={styles.progress} style={{ animationDuration: `${ROTATE_MS}ms` }} />}
-            </article>
-
-            <ol className={styles.rail} aria-label="All offers">
+          <section className={styles.show} onMouseEnter={() => { hover.current = true }} onMouseLeave={() => { hover.current = false }}
+            onPointerDown={e => { dragX.current = e.clientX }}
+            onPointerUp={e => {
+              if (dragX.current == null) return
+              const dx = e.clientX - dragX.current; dragX.current = null
+              if (Math.abs(dx) > 50) pick(Math.min(n - 1, Math.max(0, idx + (dx < 0 ? 1 : -1))))
+            }}>
+            <button type="button" className={`${styles.arr} ${styles.arrL}`} aria-label="Previous offer" disabled={idx === 0} onClick={() => pick(Math.max(0, idx - 1))}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
+            <div className={styles.stage}>
               {list.map((c, i) => {
-                const f = Array.isArray(c.features) ? txt(c.features[0]) : ''
+                const off = i - idx
+                const a = Math.abs(off)
+                if (a > 2) return null
+                const f = Array.isArray(c.features) ? c.features : []
                 return (
-                  <li key={c.id}>
-                    <button type="button" className={`${styles.railItem} ${i === idx ? styles.railOn : ''}`} onClick={() => pick(i)} aria-current={i === idx}>
-                      <Logo c={c} size={42} />
-                      <span className={styles.railTxt}>
-                        <b>{c.name}</b>
-                        <small>{f || 'Exclusive offer'}</small>
-                      </span>
-                      <Tag c={c} />
-                    </button>
-                  </li>
+                  <button type="button" key={c.id}
+                    className={`${styles.card} ${off === 0 ? styles.cardOn : ''}`}
+                    style={{ '--off': off, '--sc': 1 - a * 0.14, zIndex: 10 - a, opacity: a > 1 ? 0.35 : 1 }}
+                    onClick={() => (off === 0 ? setSelectedCasino(c) : pick(i))}
+                    aria-label={c.name} tabIndex={a > 0 ? -1 : 0}>
+                    <div className={styles.cardBg} style={c.banner_url ? { backgroundImage: `url(${c.banner_url})` } : bannerBg(c)} />
+                    <div className={styles.cardShade} />
+                    <div className={styles.cardTop}>
+                      <Logo c={c} size={44} />
+                      <div className={styles.tags}>
+                        <Tag c={c} />
+                        {c.is_freespins && <span className={`${styles.tag} ${styles.tagFs}`}>FREE SPINS</span>}
+                      </div>
+                    </div>
+                    <div className={styles.cardBody}>
+                      <small className={styles.cardName}>{c.name}</small>
+                      <div className={styles.cardBonus}>{txt(f[0]) || c.name}</div>
+                      {txt(f[1]) && <div className={styles.cardBonus2}>{txt(f[1])}</div>}
+                    </div>
+                  </button>
                 )
               })}
-            </ol>
+            </div>
+            <button type="button" className={`${styles.arr} ${styles.arrR}`} aria-label="Next offer" disabled={idx >= n - 1} onClick={() => pick(Math.min(n - 1, idx + 1))}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+            </button>
+            <div className={styles.dots} role="tablist" aria-label="Offers">
+              {list.map((c, i) => (
+                <button type="button" key={c.id} role="tab" aria-selected={i === idx} aria-label={c.name} className={i === idx ? styles.dotOn : ''} onClick={() => pick(i)} />
+              ))}
+            </div>
+            {auto && n > 1 && <span key={tick} className={styles.progress} style={{ animationDuration: `${ROTATE_MS}ms` }} />}
           </section>
 
-          {n > 1 && (
-            <section className={styles.cmp} aria-label="Compare offers">
-              <h2 className={styles.h2}>Compare offers</h2>
-              <div className={styles.cmpWrap}>
-                <table className={styles.cmpTable}>
-                  <thead>
-                    <tr><th>Casino</th><th>Bonus</th><th>Min. deposit</th><th>Cashback</th><th>Withdrawal</th><th>Code</th><th /></tr>
-                  </thead>
-                  <tbody>
-                    {list.map((c, i) => {
-                      const k = c.casino_info || {}
-                      const f = Array.isArray(c.features) ? txt(c.features[0]) : ''
-                      return (
-                        <tr key={c.id} className={i === idx ? styles.cmpOn : ''}>
-                          <td><button type="button" className={styles.cmpName} onClick={() => { pick(i); window.scrollTo?.({ top: 0, behavior: 'smooth' }); document.querySelector('main')?.scrollTo?.({ top: 0, behavior: 'smooth' }) }}><Logo c={c} size={32} />{c.name}<Tag c={c} /></button></td>
-                          <td className={styles.cmpBonus}>{f || '-'}</td>
-                          <td>{k.min_deposit || '-'}</td>
-                          <td>{k.cashback || '-'}</td>
-                          <td>{k.withdraw || '-'}</td>
-                          <td><PromoChip code={txt(c.promo_code)} /></td>
-                          <td><button type="button" className={styles.cmpClaim} onClick={() => handleRedirect(c.claim_url, c.promo_code)}>Claim</button></td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+          <section className={styles.detail} key={cur.id}>
+            <div className={styles.dHead}>
+              <Logo c={cur} size={46} />
+              <div>
+                <h2>{cur.name}</h2>
+                <span>{String(idx + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
               </div>
-            </section>
-          )}
+            </div>
+            {stats.length > 0 && (
+              <div className={styles.stats}>
+                {stats.map(([icon, label, val]) => (
+                  <div key={label} className={styles.stat}>{icon}<div><small>{label}</small><b>{val}</b></div></div>
+                ))}
+              </div>
+            )}
+            <div className={styles.actions}>
+              <button type="button" className={styles.claim} onClick={() => handleRedirect(cur.claim_url, cur.promo_code)}>Claim bonus {Ico.right}</button>
+              <button type="button" className={styles.more} onClick={() => setSelectedCasino(cur)}>{Ico.info} Full details</button>
+              <PromoChip code={txt(cur.promo_code)} big />
+            </div>
+            {pays.length > 0 && (
+              <div className={styles.pays} aria-label="Payment methods">
+                {pays.map(slug => {
+                  const m = methodsBySlug[slug]
+                  return (
+                    <span key={slug} className={styles.pay} title={m?.name || slug}>
+                      {m?.icon_url ? <img src={m.icon_url} alt={m?.name || slug} /> : (m?.name || slug).slice(0, 2).toUpperCase()}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+          </section>
         </>
       )}
 
