@@ -99,3 +99,18 @@
   .myRank{flex-direction:column;align-items:flex-start;gap:10px}
 }
 .colPlayer .rowName{width:auto;flex:0 1 auto;max-width:260px}
+
+/* polish v2 */
+.tableRow{animation:rowIn .35s both;animation-delay:calc(var(--i, 0) * 25ms)}
+@keyframes rowIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.top10 .colPos{background:#f5c54224;color:var(--yellow)}
+.podiumCard{animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+.pod1{animation-delay:.08s}.pod2{animation-delay:.16s}
+@keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+.dock{position:sticky;bottom:16px;z-index:6;display:flex;align-items:center;gap:12px;margin-top:18px;padding:10px 14px;border-radius:16px;border:1px solid var(--acc);background:#0f1a30ee;backdrop-filter:blur(10px);box-shadow:0 14px 40px #000a}
+.dockPos{font:800 18px "Bricolage Grotesque",sans-serif;color:var(--acc2);min-width:44px}
+.dock b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dockPts{display:inline-flex;align-items:center;gap:6px;font:800 15px "Bricolage Grotesque",sans-serif}
+.dock button{height:36px;padding:0 16px;border-radius:11px;border:0;background:var(--acc);color:#fff;font:800 13px "DM Sans",sans-serif;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.tableRow,.podiumCard{animation:none}}
+@media (max-width:760px){.dock{flex-wrap:wrap}.dock button{width:100%}}

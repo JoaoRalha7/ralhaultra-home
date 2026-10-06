@@ -104,6 +104,9 @@ export default function Leaderboard() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [page,        setPage]        = useState(1)
   const [search,      setSearch]      = useState('')
+  const [meSeen,      setMeSeen]      = useState(true)
+  const [jump,        setJump]        = useState(false)
+  const meRef = useRef(null)
 
   const fetchLeaderboard = async () => {
     setLoading(true); setError(null)
@@ -157,6 +160,20 @@ export default function Leaderboard() {
   const totalPages = Math.max(1, Math.ceil(tableUsers.length / PAGE_SIZE))
   const pageSlice  = tableUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const handleSearch = (e) => { setSearch(e.target.value); setPage(1) }
+
+  useEffect(() => {
+    const el = meRef.current
+    if (!el) { setMeSeen(false); return undefined }
+    const io = new IntersectionObserver(([e]) => setMeSeen(e.isIntersecting), { rootMargin: '-70px 0px -10px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [page, users, search, loading])
+
+  useEffect(() => {
+    if (!jump) return
+    const t = setTimeout(() => { meRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setJump(false) }, 60)
+    return () => clearTimeout(t)
+  }, [jump, page])
 
   if (loading) return (
     <div className={styles.loading}>
@@ -263,7 +280,7 @@ export default function Leaderboard() {
               const rank = users.findIndex(x => x.username === u.username) + 1
               const isMe = u.username?.toLowerCase() === myUsername
               return (
-                <div key={u.username} className={`${styles.tableRow} ${isMe ? styles.tableRowMe : ''}`} style={{ '--p': Math.max(2, ((u.points || 0) / maxPts) * 100) }}>
+                <div key={u.username} ref={isMe ? meRef : null} className={`${styles.tableRow} ${isMe ? styles.tableRowMe : ''} ${rank <= 10 ? styles.top10 : ''}`} style={{ '--i': pageSlice.indexOf(u), '--p': Math.max(2, ((u.points || 0) / maxPts) * 100) }}>
                   <span className={styles.colPos}>{rank}</span>
                   <div className={styles.colPlayer}>
                     <div className={styles.rowAvatarWrap}><TwitchAvatar username={u.username} size={36} className={styles.rowAvatar} /></div>
@@ -303,6 +320,16 @@ export default function Leaderboard() {
         <div className={styles.emptySearch}>
           <Ico d={<><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></>} size={34} />
           <p>No players found for "{search}"</p>
+        </div>
+      )}
+
+      {myRank >= 3 && !search && !meSeen && (
+        <div className={styles.dock}>
+          <span className={styles.dockPos}>#{myRank + 1}</span>
+          <TwitchAvatar username={users[myRank].username} size={32} className={styles.rowAvatar} />
+          <b>{users[myRank].username}</b>
+          <span className={styles.dockPts}>{users[myRank].points?.toLocaleString('en-GB')} <CoinSVG size={13} /></span>
+          <button type="button" onClick={() => { setPage(Math.floor((myRank - 3) / PAGE_SIZE) + 1); setJump(true) }}>Go to my position</button>
         </div>
       )}
     </div>
