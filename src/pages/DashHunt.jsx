@@ -5,6 +5,26 @@ import { adminPoints } from '../lib/points'
 import { parseBet, AVG_BUCKETS, getBucket } from '../lib/miniGamesUtils'
 import styles from './DashHunt.module.css'
 
+// Deleting a mini-game: give every participant their entry cost back unless the game was already awarded.
+// Each entry is deleted only after its refund succeeded, so a retry never double-refunds.
+async function refundAndDeleteEntries(table, gameId) {
+  const { data: rows } = await supabaseDash.from(table).select('*').eq('game_id', gameId)
+  const list = rows || []
+  const awarded = list.some(r => r.awarded_at || r.points_awarded > 0)
+  let refunded = 0, total = 0
+  for (const r of list) {
+    const cost = awarded ? 0 : Math.max(0, parseInt(r.cost_paid) || 0)
+    if (cost > 0 && r.twitch_username) {
+      const res = await adminPoints(r.twitch_username, cost)
+      if (!res.ok) return { ok: false, refunded, total, error: `${r.twitch_username}: ${res.data?.error || res.status}` }
+      refunded++; total += cost
+    }
+    await supabaseDash.from(table).delete().eq('id', r.id)
+  }
+  return { ok: true, refunded, total, awarded }
+}
+const refundNote = (r) => r.awarded ? 'Game already awarded - no refunds.' : `${r.refunded} participant(s) refunded (${r.total} pts).`
+
 function fmt(n, d = 2) {
   return parseBet(n).toLocaleString('pt-PT', { minimumFractionDigits: d, maximumFractionDigits: d })
 }
@@ -311,9 +331,11 @@ function PickPanel({ hunt, entries }) {
 
   const deletePick = async () => {
     if (!pickGame) return
-    if (!confirm('Eliminar este Pick & Win e todos os picks? Irreversível.')) return
+    if (!confirm('Eliminar este Pick & Win e todos os picks? Os participantes recebem o custo de volta (se ainda não houve prémios). Irreversível.')) return
     setDeleting(true)
-    await supabaseDash.from('picks').delete().eq('game_id', pickGame.id)
+    const rf = await refundAndDeleteEntries('picks', pickGame.id)
+    if (!rf.ok) { alert(`Refund falhou (${rf.error}). Nada mais foi eliminado - tenta de novo.`); setDeleting(false); return }
+    alert(refundNote(rf))
     await supabaseDash.from('pick_games').delete().eq('id', pickGame.id)
     setPickGame(null); setPicks([]); setDeleting(false); setPanelReady(true)
   }
@@ -956,9 +978,11 @@ function GtbPanel({ hunt }) {
 
   const deleteGame = async () => {
     if (!game) return
-    if (!confirm('Delete this GTB game and all entries? Irreversible.')) return
+    if (!confirm('Delete this GTB game and all entries? Participants get their entry cost refunded (if not awarded yet). Irreversible.')) return
     setDeleting(true)
-    await supabaseDash.from('gtb_entries').delete().eq('game_id', game.id)
+    const rf = await refundAndDeleteEntries('gtb_entries', game.id)
+    if (!rf.ok) { alert(`Refund failed (${rf.error}). Nothing else was deleted - try again.`); setDeleting(false); return }
+    alert(refundNote(rf))
     await supabaseDash.from('gtb_games').delete().eq('id', game.id)
     setGame(null); setEntries([]); setDeleting(false); setPanelReady(true)
   }
@@ -1336,9 +1360,11 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
 
   const deleteGame = async () => {
     if (!game) return
-    if (!confirm('Delete this Avg Multi game and all entries? Irreversible.')) return
+    if (!confirm('Delete this Avg Multi game and all entries? Participants get their entry cost refunded (if not awarded yet). Irreversible.')) return
     setDeleting(true)
-    await supabaseDash.from('avg_multi_entries').delete().eq('game_id', game.id)
+    const rf = await refundAndDeleteEntries('avg_multi_entries', game.id)
+    if (!rf.ok) { alert(`Refund failed (${rf.error}). Nothing else was deleted - try again.`); setDeleting(false); return }
+    alert(refundNote(rf))
     await supabaseDash.from('avg_multi_games').delete().eq('id', game.id)
     setGame(null); setEntries([]); setDeleting(false); setPanelReady(true)
   }
