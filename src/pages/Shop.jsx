@@ -164,7 +164,7 @@ export default function Shop() {
 
   useEffect(() => {
     supabase.from('shop_redeems').select('id, twitch_username, created_at, shop_products(name, image_url)')
-      .order('created_at', { ascending: false }).limit(4)
+      .order('created_at', { ascending: false }).limit(5)
       .then(({ data, error }) => { if (!error && data) setRecent(data) })
   }, [])
 
@@ -208,88 +208,87 @@ export default function Shop() {
   return (
     <div className={styles.page}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Rewards Shop</h1>
-        <p className={styles.sub}>Spend the points you earn watching the stream.</p>
+        <div>
+          <h1 className={styles.title}>Rewards Shop</h1>
+          <p className={styles.sub}>Spend the points you earn watching the stream.</p>
+        </div>
+        <div className={styles.wallet}>
+          <IconCoin size={28} />
+          {points !== null ? (
+            <div>
+              <b>{fmt(points)}</b>
+              <small>{affordableCount > 0 ? `${affordableCount} ${affordableCount === 1 ? 'prize' : 'prizes'} ready to redeem` : 'Keep watching to unlock a prize'}</small>
+            </div>
+          ) : (
+            <div><b>Log in</b><small>to see your points and redeem</small></div>
+          )}
+        </div>
       </header>
 
-      <section className={`${styles.stage} ${featured ? "" : styles.stageSolo}`}>
-        <div className={styles.leftCol}>
-        {featured && (
-          <article className={styles.top} style={{ '--c': featured.color || '#f5c542' }}>
-            <div className={styles.topText}>
+      {featured && (
+        <article className={styles.top} style={{ '--c': featured.color || '#f5c542' }}>
+          <div className={styles.topArt}>
+            {featured.image_url ? <img src={featured.image_url} alt="" /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
+          </div>
+          <div className={styles.topText}>
+            <div className={styles.topTags}>
               <span className={`${styles.rar} ${styles['rar_' + rarityOf(featured.cost).id]}`}>Top prize</span>
-              <h2>{featured.name}</h2>
-              {featured.description && <p>{featured.description}</p>}
               {featured.stock != null && featured.stock <= 5 && <span className={styles.limited}>Only {featured.stock} left</span>}
-              <div className={styles.topPrice}><IconCoin size={22} /><b>{fmt(featured.cost)}</b><span>pts</span></div>
-              {points !== null && points < featured.cost ? (
-                <div className={styles.need}>
-                  <div className={styles.needBar}><i style={{ width: Math.min(100, (points / featured.cost) * 100) + '%' }} /></div>
-                  <small>{fmt(featured.cost - points)} pts to go</small>
-                </div>
-              ) : null}
-              <div className={styles.topActions}>
-                <button className={styles.topBtn} disabled={points === null || points < featured.cost} onClick={() => handleRedeem(featured)}>
-                  {points === null ? 'Log in to redeem' : points >= featured.cost ? 'Redeem' : 'Locked'}
-                </button>
-              </div>
             </div>
-            <div className={styles.topArt}>
-              {featured.image_url ? <img src={featured.image_url} alt="" /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
-            </div>
-          </article>
-        )}
-          {recent.length > 0 && (
-            <section className={styles.recent} aria-label="Just redeemed">
-              <div className={styles.rHead}><span>Just redeemed</span><span className={styles.live}><i />Live</span></div>
-              <div className={styles.rGrid}>
-                {recent.map(r => (
-                  <div key={r.id} className={styles.rRow}>
-                    <span className={styles.rThumb}>{r.shop_products?.image_url ? <img src={r.shop_products.image_url} alt="" /> : (r.shop_products?.name?.[0] || '?')}</span>
-                    <div><b>{r.shop_products?.name || 'Prize'}</b><small>{r.twitch_username} · {ago(r.created_at)}</small></div>
-                  </div>
-                ))}
+            <h2>{featured.name}</h2>
+            {featured.description && <p>{featured.description}</p>}
+          </div>
+          <div className={styles.topBuy}>
+            <div className={styles.topPrice}><IconCoin size={22} /><b>{fmt(featured.cost)}</b><span>pts</span></div>
+            {points !== null && points < featured.cost && (
+              <div className={styles.need}>
+                <div className={styles.needBar}><i style={{ width: Math.min(100, (points / featured.cost) * 100) + '%' }} /></div>
+                <small>{fmt(featured.cost - points)} pts to go</small>
               </div>
-            </section>
+            )}
+            <button className={styles.topBtn} disabled={points === null || points < featured.cost} onClick={() => handleRedeem(featured)}>
+              {points === null ? 'Log in to redeem' : points >= featured.cost ? 'Redeem' : 'Locked'}
+            </button>
+          </div>
+        </article>
+      )}
+
+      <section className={styles.info}>
+        <div className={styles.panel}>
+          <div className={styles.rHead}><span>Top points</span><Link className={styles.all} to="/leaderboard">View all</Link></div>
+          {board.length === 0 ? <p className={styles.walletNote}>Leaderboard unavailable right now.</p> : (
+            <ol className={styles.rows}>
+              {board.slice(0, 5).map((u, i) => (
+                <li key={u.username} className={`${styles.bRow} ${me && u.username?.toLowerCase() === me ? styles.bMe : ''}`}>
+                  <span className={`${styles.rank} ${i < 3 ? styles['rank' + (i + 1)] : ''}`}>{i + 1}</span>
+                  <b>{u.username}</b>
+                  <span className={styles.bPts}><IconCoin size={12} />{fmt(u.points)}</span>
+                </li>
+              ))}
+              {myRank >= 5 && (
+                <li className={`${styles.bRow} ${styles.bMe}`}>
+                  <span className={styles.rank}>{myRank + 1}</span>
+                  <b>{board[myRank].username} <em>you</em></b>
+                  <span className={styles.bPts}><IconCoin size={12} />{fmt(board[myRank].points)}</span>
+                </li>
+              )}
+            </ol>
           )}
         </div>
 
-        <div className={styles.side}>
-          <div className={styles.wallet}>
-            <span className={styles.wLbl}>Your points</span>
-            {points !== null ? (
-              <>
-                <div className={styles.wVal}><IconCoin size={24} /><b>{fmt(points)}</b></div>
-                <p className={styles.walletNote}>
-                  {affordableCount > 0 ? `${affordableCount} ${affordableCount === 1 ? 'prize' : 'prizes'} you can redeem now` : 'Keep watching to unlock your first prize.'}
-                </p>
-              </>
-            ) : (
-              <p className={styles.walletNote}>Log in with Twitch to see your points and redeem prizes.</p>
-            )}
-          </div>
-
-          <div className={styles.board}>
-            <div className={styles.rHead}><span>Top points</span><Link className={styles.all} to="/leaderboard">View all</Link></div>
-            {board.length === 0 ? <p className={styles.walletNote}>Leaderboard unavailable right now.</p> : (
-              <ol className={styles.rows}>
-                {board.slice(0, 5).map((u, i) => (
-                  <li key={u.username} className={`${styles.bRow} ${me && u.username?.toLowerCase() === me ? styles.bMe : ''}`}>
-                    <span className={`${styles.rank} ${i < 3 ? styles['rank' + (i + 1)] : ''}`}>{i + 1}</span>
-                    <b>{u.username}</b>
-                    <span className={styles.bPts}><IconCoin size={12} />{fmt(u.points)}</span>
-                  </li>
-                ))}
-                {myRank >= 5 && (
-                  <li className={`${styles.bRow} ${styles.bMe} ${styles.bYou}`}>
-                    <span className={styles.rank}>{myRank + 1}</span>
-                    <b>{board[myRank].username} <em>you</em></b>
-                    <span className={styles.bPts}><IconCoin size={12} />{fmt(board[myRank].points)}</span>
-                  </li>
-                )}
-              </ol>
-            )}
-          </div>
+        <div className={styles.panel}>
+          <div className={styles.rHead}><span>Just redeemed</span><span className={styles.live}><i />Live</span></div>
+          {recent.length === 0 ? <p className={styles.walletNote}>No redeems yet. Be the first.</p> : (
+            <ul className={styles.rows}>
+              {recent.slice(0, 5).map(r => (
+                <li key={r.id} className={styles.bRow}>
+                  <span className={styles.rThumb}>{r.shop_products?.image_url ? <img src={r.shop_products.image_url} alt="" /> : (r.shop_products?.name?.[0] || '?')}</span>
+                  <b>{r.shop_products?.name || 'Prize'}</b>
+                  <span className={styles.rWho}>{r.twitch_username} · {ago(r.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
