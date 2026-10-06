@@ -150,7 +150,7 @@ function HistoryList({ games, onSelect, twitchUser }) {
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
-export default function MiniGame() {
+export default function MiniGame({ huntId = null }) {
   const { user, profile } = useAuth()
 
   // All games list (active + finished), newest first = index 0
@@ -188,6 +188,7 @@ export default function MiniGame() {
     const { data: gamesData } = await supabaseDash
       .from('pick_games')
       .select('*')
+      .match(huntId ? { hunt_id: huntId } : {})
       .in('status', ['open', 'closed', 'finished'])
       .order('created_at', { ascending: false })
       .limit(50)
@@ -210,7 +211,7 @@ export default function MiniGame() {
 
     setGames(games)
     setLoading(false)
-  }, [])
+  }, [huntId])
 
   useEffect(() => { loadAllGames() }, [loadAllGames])
 

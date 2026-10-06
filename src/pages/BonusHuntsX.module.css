@@ -192,3 +192,12 @@
 .fChip em { font-style: normal; font-weight: 800; }
 .fChipLive { color: #fca5a5; border-color: rgba(239,68,68,.45); }
 @media (max-width: 1000px) { .gamesGrid { grid-template-columns: 1fr; } }
+
+/* view switcher + embedded games */
+.views{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 6px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.view{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid transparent;color:var(--mute);font:600 13px "DM Sans",sans-serif;padding:8px 14px;border-radius:999px;cursor:pointer}
+.view:hover{color:var(--text)}
+.view svg{width:16px;height:16px}
+.viewOn{background:rgba(59,130,246,.14);border-color:rgba(59,130,246,.45);color:var(--acc2)}
+.viewLive{width:7px;height:7px;border-radius:50%;background:var(--pos);box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+.embed>div{padding:12px 0 0 !important}

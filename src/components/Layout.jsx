@@ -19,16 +19,15 @@ const NAV_GROUPS = [
     ['spark', 'Bonus Hunts', '/bonus-hunts'],
     ['ball', 'Tournaments', '/torneios'],
     ['pulse', 'Stats', '/stats'],
-    ['cards', 'Mini-Games', '/mini-games'],
     ['play', 'Stream', '/stream'],
     ['users', 'Community', '/community'],
   ],
 ];
 
 const GAMES = [
-  ['pick_games', 'Pick & Win', '/mini-games/pick-win'],
-  ['gtb_games', 'Guess the Balance', '/mini-games/gtb'],
-  ['avg_multi_games', 'Avg Multi', '/mini-games/avg-multi'],
+  ['pick_games', 'Pick & Win', 'pick'],
+  ['gtb_games', 'Guess the Balance', 'gtb'],
+  ['avg_multi_games', 'Avg Multi', 'avg'],
 ];
 
 export default function Layout() {
@@ -64,8 +63,8 @@ export default function Layout() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all(GAMES.map(([table]) => supabaseDash.from(table).select('id').eq('status', 'open').limit(1))).then((res) => {
-      if (alive) setLive(GAMES.filter((_, i) => res[i].data && res[i].data.length));
+    Promise.all(GAMES.map(([table]) => supabaseDash.from(table).select('id, hunt_id').eq('status', 'open').limit(1))).then((res) => {
+      if (alive) setLive(GAMES.map(([, name, view], i) => ({ name, view, huntId: res[i].data?.[0]?.hunt_id })).filter((_, i) => res[i].data && res[i].data.length));
     });
     return () => {
       alive = false;
@@ -107,8 +106,8 @@ export default function Layout() {
                 {live.length === 0 ? (
                   <p className="dropEmpty">No live games right now.</p>
                 ) : (
-                  live.map(([, name, to]) => (
-                    <Link key={to} to={to} onClick={() => setBellOpen(false)}>{name}<span className="chip">Live</span></Link>
+                  live.map(({ name, view, huntId }) => (
+                    <Link key={view} to="/bonus-hunts" state={{ huntId, view }} onClick={() => setBellOpen(false)}>{name}<span className="chip">Live</span></Link>
                   ))
                 )}
               </div>

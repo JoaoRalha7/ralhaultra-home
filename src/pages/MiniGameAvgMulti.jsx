@@ -137,7 +137,7 @@ function ConfirmDialog({ bucket, guess, cost, points, onConfirm, onCancel, loadi
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
-export default function MiniGameAvgMulti() {
+export default function MiniGameAvgMulti({ huntId = null }) {
   const { user, profile } = useAuth()
 
   const [games,        setGames]        = useState([])
@@ -172,6 +172,7 @@ export default function MiniGameAvgMulti() {
   const loadAllGames = useCallback(async () => {
     const { data: gamesData } = await supabaseDash
       .from('avg_multi_games').select('*')
+      .match(huntId ? { hunt_id: huntId } : {})
       .in('status', ['open', 'closed', 'finished'])
       .order('created_at', { ascending: false }).limit(50)
 
@@ -187,7 +188,7 @@ export default function MiniGameAvgMulti() {
 
     setGames(gamesData.map(g => ({ ...g, bonus_hunts: g.hunt_id ? huntMap[g.hunt_id] || null : null })))
     setLoading(false)
-  }, [])
+  }, [huntId])
 
   useEffect(() => { loadAllGames() }, [loadAllGames])
 

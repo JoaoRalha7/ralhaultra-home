@@ -139,7 +139,7 @@ function ConfirmDialog({ guess, cost, points, onConfirm, onCancel, loading, cash
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
-export default function MiniGameGtb() {
+export default function MiniGameGtb({ huntId = null }) {
   const { user, profile } = useAuth()
 
   const [games,       setGames]       = useState([])
@@ -174,6 +174,7 @@ export default function MiniGameGtb() {
   const loadAllGames = useCallback(async () => {
     const { data: gamesData } = await supabaseDash
       .from('gtb_games').select('*')
+      .match(huntId ? { hunt_id: huntId } : {})
       .in('status', ['open', 'closed', 'finished'])
       .order('created_at', { ascending: false })
       .limit(50)
@@ -190,7 +191,7 @@ export default function MiniGameGtb() {
 
     setGames(gamesData.map(g => ({ ...g, bonus_hunts: g.hunt_id ? huntMap[g.hunt_id] || null : null })))
     setLoading(false)
-  }, [])
+  }, [huntId])
 
   useEffect(() => { loadAllGames() }, [loadAllGames])
 

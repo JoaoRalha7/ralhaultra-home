@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
+import MiniGame from './MiniGame'
+import MiniGameGtb from './MiniGameGtb'
+import MiniGameAvgMulti from './MiniGameAvgMulti'
 import { supabaseDash } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import styles from './BonusHunts.module.css'
@@ -261,8 +264,7 @@ const GameIcon = ({ k }) => (
   </svg>
 )
 
-function HuntMiniGames({ huntId, navigate }) {
-  const list = useHuntGames(huntId)
+function HuntMiniGames({ list, onOpen }) {
   if (!list) return null
   if (list.every(g => !g.game)) return null
   return (
@@ -289,7 +291,7 @@ function HuntMiniGames({ huntId, navigate }) {
                 </div>
               ) : <div className={x.gameMid}><span>No game for this hunt.</span></div>}
               {g.game && (
-                <button className={x.gameBtn} onClick={() => navigate ? navigate(g.route) : (window.location.href = g.route)}>
+                <button className={x.gameBtn} onClick={() => onOpen(g.key)}>
                   {live ? 'Play now' : g.game.status === 'closed' ? 'See entries' : 'See results'}
                 </button>
               )}
@@ -317,7 +319,11 @@ function FeaturedGameChips({ huntId }) {
 }
 
 // ── Hunt Detail ────────────────────────────────────────────────────────────────
-function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
+function HuntDetail({ hunt, hunts, onNavigate, onBack }) {
+  const location = useLocation()
+  const [gv, setGv] = useState(() => (location.state?.huntId === hunt.id && location.state?.view) || 'bonuses')
+  const gameList = useHuntGames(hunt.id)
+  useEffect(() => { if (location.state?.huntId === hunt.id && location.state?.view) setGv(location.state.view) }, [location.key])
   const [entries,       setEntries]       = useState([])
   const [loading,       setLoading]       = useState(true)
   const [page,          setPage]          = useState(1)
@@ -497,9 +503,24 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
         ))}
       </div>
 
-      <HuntMiniGames huntId={hunt.id} navigate={navigate} />
+      <div className={x.views} role="tablist">
+        <button role="tab" aria-selected={gv === 'bonuses'} className={`${x.view} ${gv === 'bonuses' ? x.viewOn : ''}`} onClick={() => setGv('bonuses')}>Bonuses</button>
+        {GAME_DEFS.map(d => {
+          const g = (gameList || []).find(q => q.key === d.key)
+          return (
+            <button key={d.key} role="tab" aria-selected={gv === d.key} className={`${x.view} ${gv === d.key ? x.viewOn : ''}`} onClick={() => setGv(d.key)}>
+              <GameIcon k={d.key} />{d.label}{g?.game?.status === 'open' && <i className={x.viewLive} />}
+            </button>
+          )
+        })}
+      </div>
 
-      {!loading && (podium.length > 0 || nextUp) && (
+      {gv === 'bonuses' && gameList && <HuntMiniGames list={gameList} onOpen={setGv} />}
+      {gv === 'pick' && <div className={x.embed}><MiniGame huntId={hunt.id} /></div>}
+      {gv === 'gtb' && <div className={x.embed}><MiniGameGtb huntId={hunt.id} /></div>}
+      {gv === 'avg' && <div className={x.embed}><MiniGameAvgMulti huntId={hunt.id} /></div>}
+
+      {gv === 'bonuses' && !loading && (podium.length > 0 || nextUp) && (
         <div className={x.stage}>
           {podium.map((e, i) => (
             <div key={e.id} className={`${x.pod} ${i === 0 ? x.podFirst : ''}`}>
@@ -526,7 +547,7 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
         </div>
       )}
 
-      <div className={x.dBody}>
+      {gv === 'bonuses' && <div className={x.dBody}>
         <div className={x.chips} role="tablist">
           {[['all', 'All'], ['opened', 'Opened'], ['pending', 'Waiting'], ['super', 'Super']].map(([k, l]) => (
             <button key={k} role="tab" aria-selected={filter === k} className={`${x.chip} ${filter === k ? x.chipOn : ''}`} onClick={() => { setFilter(k); setPage(1) }}>
@@ -604,13 +625,13 @@ function HuntDetail({ hunt, hunts, onNavigate, onBack, navigate }) {
             </>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
-export default function BonusHunts({ navigate }) {
+export default function BonusHunts() {
   const location = useLocation()
   const [hunts, setHunts]               = useState([])
   const [byHunt, setByHunt]             = useState({})
@@ -640,7 +661,7 @@ export default function BonusHunts({ navigate }) {
   // Auto-open hunt se vier do Stats
   useEffect(() => {
     const huntId = location.state?.huntId
-    if (huntId && hunts.length > 0 && !selectedHunt) {
+    if (huntId && hunts.length > 0 && selectedHunt?.id !== huntId) {
       const found = hunts.find(h => h.id === huntId)
       if (found) setSelectedHunt(found)
     }
@@ -657,11 +678,11 @@ export default function BonusHunts({ navigate }) {
 
   if (selectedHunt) return (
     <HuntDetail
+      key={selectedHunt.id}
       hunt={selectedHunt}
       hunts={hunts}
       onNavigate={setSelectedHunt}
       onBack={() => setSelectedHunt(null)}
-      navigate={navigate}
     />
   )
 
