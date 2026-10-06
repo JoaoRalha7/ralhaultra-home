@@ -352,7 +352,7 @@
 .capHead { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .capHead strong { font: 800 22px/1.15 'Bricolage Grotesque', sans-serif; color: #fff; }
 .capProv { font-size: 13px; color: var(--mute); }
-.capStats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 520px; }
+.capStats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 300px; }
 .capStats div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; text-align: center; }
 .capStats small { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); margin-bottom: 2px; }
 .capStats b { font: 800 17px 'Bricolage Grotesque', sans-serif; color: #fff; }

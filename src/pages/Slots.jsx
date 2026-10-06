@@ -403,13 +403,11 @@ function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, 
             <div className={styles.ringCap}>
               <div className={styles.capHead}>
                 <strong>{cur.name}</strong>
-                <span className={styles.capProv}>{cur.provider || '-'}{cur.volatility ? ` · ${cur.volatility} volatility` : ''}</span>
+                <span className={styles.capProv}>{cur.provider || '-'}</span>
               </div>
               <div className={styles.capStats}>
                 <div><small>Avg multiplier</small><b className={styles.gold}>{avgs[cur.id] != null ? `${Math.round(avgs[cur.id]).toLocaleString('pt-PT')}x` : '-'}</b></div>
                 <div><small>Bonuses</small><b>{plays[cur.id] || 0}</b></div>
-                <div><small>RTP</small><b>{cur.rtp ? `${parseFloat(cur.rtp).toFixed(2)}%` : '-'}</b></div>
-                <div><small>Max win</small><b>{cur.max_win ? `${parseInt(cur.max_win).toLocaleString('pt-PT')}x` : '-'}</b></div>
               </div>
               <button type="button" className={styles.capBtn} onClick={() => onSlotClick(cur)}>View all stats</button>
             </div>
