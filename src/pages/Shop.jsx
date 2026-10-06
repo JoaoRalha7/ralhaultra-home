@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { supabase } from '../lib/supabase'
@@ -7,160 +7,105 @@ import styles from './Shop.module.css'
 const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
 const CATEGORIES = [
-  { id: 'all',      label: 'ALL' },
-  { id: 'digital',  label: 'DIGITAL' },
-  { id: 'interact', label: 'INTERACT' },
+  { id: 'all',      label: 'All' },
+  { id: 'digital',  label: 'Digital' },
+  { id: 'interact', label: 'Interact' },
 ]
 
-const IconCoin = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/>
+const SORTS = [
+  { id: 'default', label: 'Featured' },
+  { id: 'low',     label: 'Price: low to high' },
+  { id: 'high',    label: 'Price: high to low' },
+]
+
+const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
+
+const IconCoin = ({ size = 14 }) => <span className={styles.coin} style={{ width: size, height: size }} aria-hidden="true" />
+const IconGift = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
   </svg>
 )
-const IconBox = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-  </svg>
-)
 
-// ── Efeito Ping-Pong ─────────────────────────────────────────────────────────
-function SlideText({ text, className }) {
-  const containerRef = useRef(null)
-  const textRef = useRef(null)
-  const [slideDist, setSlideDist] = useState(0)
-
-  useEffect(() => {
-    if (containerRef.current && textRef.current) {
-      const cWidth = containerRef.current.clientWidth
-      const tWidth = textRef.current.scrollWidth
-      if (tWidth > cWidth) {
-        setSlideDist(cWidth - tWidth - 6) 
-      } else {
-        setSlideDist(0)
-      }
-    }
-  }, [text])
-
-  return (
-    <div className={`${styles.slideWrap} ${className || ''}`} ref={containerRef}>
-      <div 
-        className={`${styles.slideInner} ${slideDist < 0 ? styles.animPingPong : ''}`}
-        style={{ '--slide-dist': `${slideDist}px` }}
-      >
-        <span className={styles.slideText} ref={textRef}>{text}</span>
-      </div>
-    </div>
-  )
-}
-
-// ── Card (Layout Original) ───────────────────────────────────────────────────
+// ── Product card ─────────────────────────────────────────────────────────────
 function ShopCard({ product, userPoints, onRedeem }) {
-  const canAfford  = userPoints !== null && userPoints >= product.cost
+  const unlimited  = product.stock == null
   const outOfStock = product.stock === 0
+  const lowStock   = !unlimited && product.stock > 0 && product.stock <= 5
+  const loggedIn   = userPoints !== null
+  const canAfford  = loggedIn && userPoints >= product.cost
+  const missing    = loggedIn ? Math.max(0, product.cost - userPoints) : product.cost
+  const pct        = loggedIn ? Math.min(100, (userPoints / product.cost) * 100) : 0
   const disabled   = outOfStock || !canAfford
 
-  const btnLabel = outOfStock
-    ? 'OUT OF STOCK'
-    : userPoints === null
-      ? 'LOGIN TO REDEEM'
-      : !canAfford
-        ? 'NOT ENOUGH POINTS'
-        : 'REDEEM'
-
   return (
-    <div className={`${styles.card} ${outOfStock ? styles.cardSoldOut : ''} ${disabled && !outOfStock ? styles.cardCantAfford : ''}`}>
-
-      {/* ── Imagem ── */}
-      <div className={styles.cardImg} style={{ '--card-color': product.color || 'var(--accent)' }}>
+    <article
+      className={`${styles.card} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''}`}
+      style={{ '--c': product.color || '#3b82f6' }}
+    >
+      <div className={styles.media}>
         {product.image_url
-          ? <img src={product.image_url} alt={product.name} className={styles.cardPhoto} loading="lazy" />
-          : <div className={styles.cardImgFallback}>{product.name?.[0]?.toUpperCase() || '?'}</div>
-        }
-        {outOfStock && (
-          <div className={styles.soldOut}>
-            <span>SOLD OUT</span>
-          </div>
-        )}
-        <div className={styles.cardCategoryPill}>{product.category}</div>
+          ? <img src={product.image_url} alt="" className={styles.photo} loading="lazy" />
+          : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
+        <span className={styles.cat}>{product.category}</span>
+        {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Sold out</span>}
+        {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
       </div>
 
-      {/* ── Info ── */}
-      <div className={styles.cardBody}>
-        <div className={styles.cardTop}>
-          {/* Nome com Ping-Pong */}
-          <SlideText text={product.name} className={styles.cardName} />
-          {product.description && (
-            <p className={styles.cardDesc}>{product.description}</p>
-          )}
-        </div>
+      <div className={styles.body}>
+        <h3 className={styles.name} title={product.name}>{product.name}</h3>
+        {product.description && <p className={styles.desc}>{product.description}</p>}
 
-        <div className={styles.cardBottom}>
-          <div className={styles.cardMeta}>
-            <div className={styles.metaCost}>
-              <span className={styles.metaCostLabel}>Cost</span>
-              <div className={styles.metaCostValue}>
-                <span className={styles.iconYellow}><IconCoin /></span>
-                <span>{product.cost.toLocaleString('en-GB')}</span>
-                <span className={styles.metaPts}>pts</span>
-              </div>
-            </div>
-            <div className={styles.metaDivider} />
-            <div className={`${styles.metaStockBlock} ${outOfStock ? styles.metaStockEmpty : ''}`}>
-              <span className={styles.metaStockLabel}>Stock</span>
-              <div className={styles.metaStockValue}>
-                <IconBox />
-                <span>{outOfStock ? '0' : product.stock}</span>
-                <span className={styles.metaStockUnit}>pcs.</span>
-              </div>
-            </div>
+        <div className={styles.foot}>
+          <div className={styles.price}>
+            <IconCoin size={18} />
+            <b>{fmt(product.cost)}</b>
+            <span>pts</span>
           </div>
 
-          <button
-            className={`${styles.redeemBtn} ${disabled ? styles.redeemBtnDisabled : ''}`}
-            onClick={() => !disabled && onRedeem(product)}
-            disabled={disabled}
-          >
-            {!disabled && (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/>
-                <path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-              </svg>
-            )}
-            {btnLabel}
+          {!outOfStock && loggedIn && !canAfford && (
+            <div className={styles.need}>
+              <div className={styles.needBar}><i style={{ width: pct + '%' }} /></div>
+              <small>{fmt(missing)} pts to go</small>
+            </div>
+          )}
+
+          <button className={styles.btn} onClick={() => !disabled && onRedeem(product)} disabled={disabled}>
+            {canAfford && !outOfStock && <IconGift />}
+            {outOfStock ? 'Sold out' : !loggedIn ? 'Log in to redeem' : canAfford ? 'Redeem' : 'Not enough points'}
           </button>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 
-// ── Modal de confirmação ──────────────────────────────────────────────────────
-function ConfirmModal({ product, loading, onConfirm, onCancel }) {
+// ── Confirm modal ────────────────────────────────────────────────────────────
+function ConfirmModal({ product, balance, loading, onConfirm, onCancel }) {
+  const after = (balance ?? 0) - product.cost
   return (
-    <div className={styles.modalOverlay} onClick={!loading ? onCancel : undefined}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalImg} style={{ '--card-color': product.color || 'var(--accent)' }}>
+    <div className={styles.overlay} onClick={!loading ? onCancel : undefined}>
+      <div className={styles.modal} style={{ '--c': product.color || '#3b82f6' }} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className={styles.mMedia}>
           {product.image_url
-            ? <img src={product.image_url} alt={product.name} className={styles.modalPhoto} />
-            : <div className={styles.modalImgFallback}>{product.name?.[0]?.toUpperCase()}</div>
-          }
+            ? <img src={product.image_url} alt="" />
+            : <span className={styles.initial}>{product.name?.[0]?.toUpperCase()}</span>}
         </div>
-        <div className={styles.modalInfo}>
-          <h2 className={styles.modalTitle}>{product.name}</h2>
-          <p className={styles.modalDesc}>{product.description}</p>
-          <div className={styles.modalCost}>
-            <span className={styles.iconYellow}><IconCoin /></span>
-            <span>{product.cost.toLocaleString('en-GB')} points</span>
+        <div className={styles.mBody}>
+          <h2>{product.name}</h2>
+          {product.description && <p>{product.description}</p>}
+          <div className={styles.sum}>
+            <div><small>Your balance</small><b>{fmt(balance)}</b></div>
+            <div><small>Cost</small><b className={styles.neg}>−{fmt(product.cost)}</b></div>
+            <div><small>After redeeming</small><b>{fmt(after)}</b></div>
           </div>
-          <p className={styles.modalNote}>
-            After redeeming, open a ticket on Discord to receive your prize.
-          </p>
+          <p className={styles.note}>After redeeming, open a ticket on Discord to receive your prize.</p>
         </div>
-        <div className={styles.modalActions}>
-          <button className={styles.cancelBtn} onClick={onCancel} disabled={loading}>Cancel</button>
-          <button className={styles.confirmBtn} onClick={onConfirm} disabled={loading}>
-            {loading ? 'Processing…' : `Confirm — ${product.cost.toLocaleString('en-GB')} pts`}
+        <div className={styles.actions}>
+          <button className={styles.ghost} onClick={onCancel} disabled={loading}>Cancel</button>
+          <button className={styles.confirm} onClick={onConfirm} disabled={loading}>
+            {loading ? 'Processing…' : `Confirm and spend ${fmt(product.cost)} pts`}
           </button>
         </div>
       </div>
@@ -177,6 +122,8 @@ export default function Shop() {
   const [products,       setProducts]       = useState([])
   const [loadingProds,   setLoadingProds]   = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
+  const [sort,           setSort]           = useState('default')
+  const [onlyAfford,     setOnlyAfford]     = useState(false)
   const [confirmProduct, setConfirmProduct] = useState(null)
   const [redeeming,      setRedeeming]      = useState(false)
   const [toast,          setToast]          = useState(null)
@@ -186,9 +133,15 @@ export default function Shop() {
       .then(({ data, error }) => { if (!error) setProducts(data || []); setLoadingProds(false) })
   }, [])
 
-  const filtered = activeCategory === 'all'
-    ? products
-    : products.filter(p => p.category === activeCategory)
+  let filtered = activeCategory === 'all' ? products : products.filter(p => p.category === activeCategory)
+  if (onlyAfford && points !== null) filtered = filtered.filter(p => p.cost <= points && p.stock !== 0)
+  if (sort === 'low')  filtered = [...filtered].sort((a, b) => a.cost - b.cost)
+  if (sort === 'high') filtered = [...filtered].sort((a, b) => b.cost - a.cost)
+
+  // cheapest item the user can't afford yet = the "next goal"
+  const goal = points === null ? null
+    : [...products].filter(p => p.stock !== 0 && p.cost > points).sort((a, b) => a.cost - b.cost)[0] || null
+  const affordableCount = points === null ? 0 : products.filter(p => p.stock !== 0 && p.cost <= points).length
 
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
 
@@ -218,50 +171,65 @@ export default function Shop() {
 
   return (
     <div className={styles.page}>
-
-      {/* Header */}
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            Rewards Shop
-          </h1>
-          <p className={styles.sub}>Redeem your points for exclusive prizes</p>
-        </div>
-        {points !== null && (
-          <div className={styles.pointsPill}>
-            <span className={styles.iconYellow}><IconCoin /></span>
-            <span>{points.toLocaleString('en-GB')} pts available</span>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <h1 className={styles.title}>Rewards Shop</h1>
+          <p className={styles.sub}>Spend the points you earn watching the stream. New prizes land here regularly.</p>
+          <div className={styles.heroMeta}>
+            <span><b>{products.length}</b> prizes</span>
+            {points !== null && <span><b>{affordableCount}</b> you can redeem now</span>}
           </div>
-        )}
-      </div>
-
-      {/* Filtros */}
-      <div className={styles.filters}>
-        {CATEGORIES.map(cat => (
-          <button
-            key={cat.id}
-            className={`${styles.filterBtn} ${activeCategory === cat.id ? styles.filterBtnActive : ''}`}
-            onClick={() => setActiveCategory(cat.id)}
-          >
-            {cat.label}
-            {cat.id !== 'all' && (
-              <span className={styles.filterCount}>{products.filter(p => p.category === cat.id).length}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Grid */}
-      {loadingProds ? (
-        <div className={styles.loading}>
-          <svg className={styles.spin} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          <span>Loading products…</span>
         </div>
+
+        <div className={styles.wallet}>
+          <span className={styles.wLbl}>Your points</span>
+          {points !== null ? (
+            <>
+              <div className={styles.wVal}><IconCoin size={26} /><b>{fmt(points)}</b></div>
+              {goal ? (
+                <div className={styles.goal}>
+                  <div className={styles.goalTop}><span>Next prize: <b>{goal.name}</b></span><span>{fmt(goal.cost - points)} to go</span></div>
+                  <div className={styles.needBar}><i style={{ width: Math.min(100, (points / goal.cost) * 100) + '%' }} /></div>
+                </div>
+              ) : (
+                <p className={styles.walletNote}>{products.length ? 'You can afford everything in stock.' : 'No prizes yet.'}</p>
+              )}
+            </>
+          ) : (
+            <p className={styles.walletNote}>Log in with Twitch to see your points and redeem prizes.</p>
+          )}
+        </div>
+      </header>
+
+      <div className={styles.bar}>
+        <div className={styles.seg} role="tablist">
+          {CATEGORIES.map(cat => (
+            <button key={cat.id} role="tab" aria-selected={activeCategory === cat.id}
+              className={`${styles.segBtn} ${activeCategory === cat.id ? styles.segOn : ''}`}
+              onClick={() => setActiveCategory(cat.id)}>
+              {cat.label}
+              <span>{cat.id === 'all' ? products.length : products.filter(p => p.category === cat.id).length}</span>
+            </button>
+          ))}
+        </div>
+        <div className={styles.barRight}>
+          {points !== null && (
+            <button className={`${styles.chip} ${onlyAfford ? styles.chipOn : ''}`} onClick={() => setOnlyAfford(v => !v)} aria-pressed={onlyAfford}>
+              I can afford
+            </button>
+          )}
+          <select className={styles.select} value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort prizes">
+            {SORTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {loadingProds ? (
+        <div className={styles.grid}>{[0, 1, 2, 3].map(i => <div key={i} className={styles.skel} />)}</div>
       ) : filtered.length === 0 ? (
         <div className={styles.empty}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: .2 }}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-          <p>No products in this category.</p>
+          <p>{onlyAfford ? 'Nothing you can afford yet. Keep watching to earn more points.' : 'No prizes in this category yet.'}</p>
+          {onlyAfford && <button className={styles.chip} onClick={() => setOnlyAfford(false)}>Show all prizes</button>}
         </div>
       ) : (
         <div className={styles.grid}>
@@ -272,11 +240,11 @@ export default function Shop() {
       )}
 
       {confirmProduct && (
-        <ConfirmModal product={confirmProduct} loading={redeeming} onConfirm={handleConfirm} onCancel={() => !redeeming && setConfirmProduct(null)} />
+        <ConfirmModal product={confirmProduct} balance={points} loading={redeeming} onConfirm={handleConfirm} onCancel={() => !redeeming && setConfirmProduct(null)} />
       )}
 
       {toast && (
-        <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+        <div className={`${styles.toast} ${toast.type === 'error' ? styles.toastErr : styles.toastOk}`}>
           {toast.type === 'success'
             ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
