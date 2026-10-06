@@ -281,9 +281,9 @@ export default function Home() {
       ];
       const byDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
       setActivity({
-        shop: shop.sort(byDate).slice(0, 10),
-        giveaways: giveaways.sort(byDate).slice(0, 10),
-        games: games.sort(byDate).slice(0, 10),
+        shop: shop.sort(byDate).slice(0, 7),
+        giveaways: giveaways.sort(byDate).slice(0, 7),
+        games: games.sort(byDate).slice(0, 7),
       });
     } catch (e) {
       console.error('activity error', e);

@@ -12,6 +12,7 @@ import MiniGameAvgMulti from './pages/MiniGameAvgMulti';
 import MiniGameGtb from './pages/MiniGameGtb';
 import MiniGamesLanding from './pages/MiniGamesLanding';
 import Blackjack from './pages/Blackjack';
+import Mines from './pages/Mines';
 import Offers from './pages/Offers';
 import Placeholder from './pages/Placeholder';
 import Shop from './pages/Shop';
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="mini-games/gtb" element={<MiniGameGtb />} />
         <Route path="mini-games/avg-multi" element={<MiniGameAvgMulti />} />
         <Route path="blackjack" element={<Blackjack />} />
+        <Route path="mines" element={<Mines />} />
         <Route path="terms" element={<Legal />} />
         <Route path="privacy" element={<Legal />} />
         <Route path="cookies" element={<Legal />} />
