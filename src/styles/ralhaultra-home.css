@@ -177,7 +177,9 @@ aside .nav{flex-direction:row;height:46px;padding:0 14px;gap:12px;font-size:14px
 .app.collapsed aside .nav{justify-content:center;padding:0}
 .app.collapsed .lbl{display:none}
 .logo{min-width:0}
-@media (prefers-reduced-motion:reduce){.app{transition:none}}
+@keyframes arIn{from{opacity:0;transform:translateY(-14px);background:#3b82f633}60%{background:#3b82f61f}to{opacity:1;transform:none}}
+.ar.fresh{animation:arIn .7s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){.app{transition:none}.ar.fresh{animation:none}}
 @media (max-width:820px){
   .app,.app.collapsed{grid-template-columns:1fr}
   .app.collapsed>aside{display:none}

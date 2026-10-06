@@ -148,6 +148,16 @@ function gameRows(rows, type, entryLabel, awardLabel, dateKey) {
   });
 }
 
+const CASINO_NAMES = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash' };
+const casinoRow = (r) => {
+  const net = (r.payout || 0) - (r.bet || 0);
+  return {
+    _type: 'casino', action: CASINO_NAMES[r.game] || r.game, username: r.username, created_at: r.updated_at,
+    points: net, status: net > 0 ? 'WON' : net === 0 ? 'PUSH' : 'LOST',
+  };
+};
+const rowKey = (r) => `${r._type}|${r.username}|${r.created_at}|${r.action}`;
+
 function Round() {
   return (
     <span className="round">
@@ -186,6 +196,19 @@ export default function Home() {
   const [mine, setMine] = useState(null);
   const [clips, setClips] = useState([]);
   const [activity, setActivity] = useState(null);
+  const [fresh, setFresh] = useState(() => new Set());
+  const seen = useRef(null);
+  const actRef = useRef(null);
+  const applyActivity = useCallback((next) => {
+    const keys = Object.values(next).flat().map(rowKey);
+    if (seen.current) {
+      const f = new Set(keys.filter((k) => !seen.current.has(k)));
+      if (f.size) { setFresh(f); setTimeout(() => setFresh(new Set()), 2600); }
+    }
+    seen.current = new Set([...(seen.current || []), ...keys]);
+    actRef.current = next;
+    setActivity(next);
+  }, []);
 
   // Featured offer popup, shown every time Home loads
   useEffect(() => {
@@ -274,14 +297,7 @@ export default function Home() {
       const daily = (dailyRes.redeems || []).map((r) => ({
         _type: 'daily', action: r.action, username: r.username, created_at: r.created_at, points: r.points, status: 'AWARDED',
       }));
-      const CASINO_NAMES = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash' };
-      const casino = (casinoRes.rounds || []).map((r) => {
-        const net = (r.payout || 0) - (r.bet || 0);
-        return {
-          _type: 'casino', action: `${CASINO_NAMES[r.game] || r.game} - ${net > 0 ? 'Win' : net === 0 ? 'Push' : 'Loss'}`,
-          username: r.username, created_at: r.updated_at, points: net, status: net > 0 ? 'WON' : net === 0 ? 'PUSH' : 'LOST',
-        };
-      });
+      const casino = (casinoRes.rounds || []).map(casinoRow);
       const games = [
         ...casino,
         ...gameRows(picks.data, 'pickwin', 'Pick & Win Entry', 'Pick & Win', 'picked_at'),
@@ -290,7 +306,7 @@ export default function Home() {
         ...daily,
       ];
       const byDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
-      setActivity({
+      applyActivity({
         shop: shop.sort(byDate).slice(0, 7),
         giveaways: giveaways.sort(byDate).slice(0, 7),
         games: games.sort(byDate).slice(0, 7),
@@ -298,7 +314,7 @@ export default function Home() {
     } catch (e) {
       console.error('activity error', e);
     }
-  }, []);
+  }, [applyActivity]);
 
   useEffect(() => {
     loadActivity();
@@ -307,8 +323,22 @@ export default function Home() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'shop_redeems' }, () => loadActivity())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'daily_redeems' }, () => loadActivity())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [loadActivity]);
+    // casino rounds have no public realtime (RLS), so poll the light endpoint; full refresh less often
+    const live = setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        const d = await fetch(`${SE_WORKER_URL}/casino-feed?limit=10`).then((r) => (r.ok ? r.json() : null));
+        if (!d?.rounds) return;
+        const prev = actRef.current;
+        if (!prev) return;
+        const games = [...prev.games.filter((g) => g._type !== 'casino'), ...d.rounds.map(casinoRow)]
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 7);
+        applyActivity({ ...prev, games });
+      } catch { /* ignore */ }
+    }, 4000);
+    const full = setInterval(() => { if (!document.hidden) loadActivity(); }, 20000);
+    return () => { supabase.removeChannel(ch); clearInterval(live); clearInterval(full); };
+  }, [loadActivity, applyActivity]);
 
   const claim = (o) => {
     const c = o.raw;
@@ -451,7 +481,7 @@ export default function Home() {
             const pts = Number(r.points || 0);
             const st = String(r.status || 'pending').toLowerCase();
             return (
-              <div key={i} className="ar">
+              <div key={rowKey(r)} className={`ar${fresh.has(rowKey(r)) ? ' fresh' : ''}`}>
                 <span className="rd"><i />{cleanAction(r)}</span>
                 <b>{r.username || '-'}</b>
                 <span className="dt">{new Date(r.created_at).toLocaleString('pt-PT')}</span>
