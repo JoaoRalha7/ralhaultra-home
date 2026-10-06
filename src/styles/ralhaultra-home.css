@@ -241,3 +241,17 @@ a.logo{color:inherit}
 :root{--header-h:64px}
 html,body{background:var(--ru-bg)}
 body{margin:0}
+
+/* real-data additions */
+.btn-claim,.btn-more{cursor:pointer;font-family:inherit}
+.btn-claim{border:0}
+.btn-more{color:inherit}
+.th.img{background-size:cover;background-position:center}
+.th .dur{position:absolute;right:8px;bottom:8px;background:#0e0d14e6;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700}
+button.vbig,button.vi{font:inherit;color:inherit;text-align:left;cursor:pointer}
+.pill .dot.off{background:var(--mute);box-shadow:none;animation:none}
+.stt.awarded,.stt.completed,.stt.done,.stt.shipped{background:#10281a;color:#4ade80}
+.stt.entered,.stt.joined,.stt.applied{background:#1c1838;color:var(--acc2)}
+.stt.rejected,.stt.refunded{background:#2a1115;color:#f87171}
+.val.pos{color:#4ade80}
+.empty{padding:22px;text-align:center;color:var(--mute);font-size:13px}
