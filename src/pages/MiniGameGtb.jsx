@@ -516,7 +516,8 @@ export default function MiniGameGtb({ huntId = null }) {
                 {/* Guess input */}
                 {isOpen && !myEntry && (
                   <div className={styles.gtbInputWrap}>
-                    <div className={styles.gtbInputLabel}>Your balance guess</div>
+                    <div className={styles.gtbInputLabel}>Guess the final balance</div>
+                    <div className={styles.gtbInputSub}>Closest guess without going wild wins. One shot per game.</div>
                     <div className={styles.gtbInputRow}>
                       <span className={styles.gtbInputPrefix}>€</span>
                       <input
@@ -536,6 +537,13 @@ export default function MiniGameGtb({ huntId = null }) {
                       >
                         {submitting ? <Spinner size={14} /> : 'Submit'}
                       </button>
+                    </div>
+                    <div className={styles.gtbChips}>
+                      {[-500, -100, 100, 500].map(d => (
+                        <button key={d} type="button" className={styles.gtbChip} onClick={() => setGuessInput(v => String(Math.max(0, (parseFloat(v) || 0) + d)))}>
+                          {d > 0 ? '+' : '−'}€{Math.abs(d)}
+                        </button>
+                      ))}
                     </div>
                     {game.target_balance > 0 && (
                       <div className={styles.gtbHint}>

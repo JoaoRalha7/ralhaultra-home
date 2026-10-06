@@ -133,3 +133,21 @@
 @media (max-width: 640px) {
   .bucketGrid { grid-template-columns: repeat(2, 1fr); }
 }
+/* ═══ skin v2 ═══ */
+.bucketSection, .distSection { background: #131720; border: 1px solid #252b3a; border-radius: 20px; padding: 22px; }
+.bucketSection { gap: 14px; background-image: radial-gradient(500px 160px at 50% 0, rgba(59,130,246,.14), transparent 70%); }
+.bucketLabel, .distLabel { font: 800 18px "Bricolage Grotesque", sans-serif; letter-spacing: -.02em; text-transform: none; color: #eef1f7; }
+.distLabel { font-size: 15px; }
+.bucketGrid { gap: 10px; }
+.bucketBtn { flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px 16px 14px; border-radius: 16px; border: 1.5px solid color-mix(in srgb, var(--bcolor) 35%, #252b3a); background: linear-gradient(160deg, color-mix(in srgb, var(--bcolor) 20%, #131720), #131720 75%); }
+.bucketBtn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 12px 26px color-mix(in srgb, var(--bcolor) 25%, transparent); }
+.bucketBtnId { font: 800 30px "Bricolage Grotesque", sans-serif; line-height: 1; }
+.bucketBtnRange { font: 700 14px "DM Sans", sans-serif; color: #eef1f7; }
+.distRow { grid-template-columns: 22px 78px 1fr 44px 28px; padding: 7px 0; }
+.distBucketId { font: 800 14px "Bricolage Grotesque", sans-serif; }
+.distBucketLabel { font-size: 13px; color: #8d96ab; }
+.distBarWrap { height: 10px; background: rgba(255,255,255,.07); }
+.distBar { opacity: 1; }
+.distPct { font-size: 13px; color: #eef1f7; font-weight: 800; }
+.distCount { font-size: 12px; color: #8d96ab; }
+.distRowWin { background: color-mix(in srgb, var(--bcolor) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bcolor) 50%, transparent); }

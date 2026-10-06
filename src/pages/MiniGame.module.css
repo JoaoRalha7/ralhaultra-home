@@ -1058,3 +1058,127 @@
   .gtbInputRow { flex-wrap: wrap; }
   .gtbSubmitBtn { width: 100%; border-radius: 0 0 10px 10px; }
 }
+/* ═══════════════ RalhaUltra skin v2 (blue) — overrides ═══════════════ */
+.page {
+  --acc:#3b82f6; --acc2:#93c5fd; --gold:#f5c542; --panel:#131720; --line:#252b3a;
+  --mute:#8d96ab; --text:#eef1f7; --pos:#34d399; --neg:#f87171;
+  --font:"DM Sans",sans-serif; --head:"Bricolage Grotesque",sans-serif;
+  font-family: var(--font); color: var(--text);
+}
+/* status bar */
+.statusBar { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; height: 58px; padding: 0 14px; }
+.barTitle { font: 800 15px var(--head); letter-spacing: -.01em; color: var(--text); }
+.barDiv { background: var(--line); }
+.barNav, .barHistBtn { background: rgba(255,255,255,.04); border-color: var(--line); color: var(--mute); border-radius: 10px; }
+.barNav:hover, .barHistBtn:hover { background: rgba(59,130,246,.14); border-color: var(--acc); color: var(--text); }
+.barHistBtnActive { background: rgba(59,130,246,.18) !important; border-color: var(--acc) !important; color: var(--acc2) !important; }
+.barHuntBadge { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.4); color: var(--acc2); border-radius: 999px; }
+.barHuntBadge:hover { background: rgba(59,130,246,.22); border-color: var(--acc); color: #fff; }
+.barTimer { color: var(--neg); font-family: var(--head); font-size: 14px; }
+.barPts { color: var(--gold); }
+.barMyPick { color: var(--pos); }
+.barPager { color: var(--mute); }
+.barDotLive { background: var(--pos); box-shadow: 0 0 0 4px rgba(52,211,153,.18); }
+.barDotDone { background: var(--gold); }
+
+/* banners */
+.costBanner { background: linear-gradient(120deg, rgba(59,130,246,.16), var(--panel) 70%); border: 1px solid rgba(59,130,246,.35); border-radius: 16px; padding: 14px 18px; }
+.costBanner strong { color: var(--acc2); font: 800 15px var(--head); }
+.costIcon { background: rgba(59,130,246,.2); color: var(--acc2); border-radius: 10px; width: 30px; height: 30px; }
+.costBannerDanger { background: linear-gradient(120deg, rgba(248,113,113,.14), var(--panel) 70%); border-color: rgba(248,113,113,.4); }
+.costBalance strong { font-family: var(--head); color: var(--text); }
+.myPickBanner { background: linear-gradient(120deg, rgba(52,211,153,.14), var(--panel) 70%); border: 1px solid rgba(52,211,153,.4); border-radius: 16px; padding: 14px 18px; }
+.myPickLabel, .myPickLocked { color: var(--pos); }
+.myPickName { font: 800 18px var(--head); letter-spacing: -.01em; }
+.myPickCost { color: var(--gold); }
+.myPickProvider { color: var(--mute); }
+.progressTrack { height: 6px; background: rgba(255,255,255,.08); }
+.progressFill { background: var(--acc2); }
+.progressLabel { color: var(--mute); font-size: 12px; }
+
+/* podium */
+.podiumHeading { color: var(--gold); font: 800 13px var(--head); letter-spacing: .06em; }
+.podiumCard { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px 14px; }
+.podiumGold { border-color: rgba(245,197,66,.5); background: linear-gradient(160deg, rgba(245,197,66,.14), var(--panel) 65%); }
+.podiumSilver { border-color: rgba(148,163,184,.35); background: linear-gradient(160deg, rgba(148,163,184,.1), var(--panel) 65%); }
+.podiumBronze { border-color: rgba(205,124,84,.35); background: linear-gradient(160deg, rgba(205,124,84,.1), var(--panel) 65%); }
+.podiumSlot { font: 800 14px var(--head); }
+.podiumUser { color: var(--mute); font-size: 12px; }
+.podiumPts { font: 800 20px var(--head); color: var(--pos); }
+.podiumReason { color: var(--mute); }
+
+/* pick grid */
+.mainLayout, .gtbLayout { grid-template-columns: minmax(0,1fr) 300px; gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+.cardPickable:hover { border-color: var(--acc); box-shadow: 0 12px 30px rgba(59,130,246,.22); }
+.cardTaken { opacity: .6; }
+.cardMine { border-color: var(--pos) !important; box-shadow: 0 0 0 1px var(--pos), 0 0 22px rgba(52,211,153,.15) !important; }
+.cardRank1 { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold), 0 0 24px rgba(245,197,66,.2) !important; }
+.cardNum { background: rgba(11,14,20,.75); font-family: var(--head); }
+.cardSuperBadge { background: rgba(245,197,66,.18); color: var(--gold); border-color: rgba(245,197,66,.55); }
+.cardSuper { border-color: rgba(245,197,66,.55) !important; }
+.cardOverlay { background: linear-gradient(to top, rgba(11,14,20,.97) 0%, rgba(11,14,20,.82) 55%, rgba(11,14,20,.6) 100%); }
+.cardOwnerPill { background: rgba(59,130,246,.2); color: var(--acc2); border-color: rgba(59,130,246,.45); }
+.cardRevealBet { background: rgba(255,255,255,.08); border-color: var(--line); color: var(--mute); }
+.cardRevealMulti { font: 800 26px var(--head); color: var(--gold); text-shadow: none; }
+.cardRevealWin { color: var(--pos); text-shadow: none; font-weight: 800; }
+.cardName { font-family: var(--head); font-size: 12px; text-transform: none; letter-spacing: -.005em; }
+.cardBet { color: var(--mute); }
+.cardWin { color: var(--pos); font-weight: 800; }
+
+/* side rail */
+.sidebar { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; top: 76px; }
+.sidebarHead { font: 800 13px var(--head); letter-spacing: .02em; text-transform: none; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+.sidebarCount { background: rgba(59,130,246,.18); color: var(--acc2); }
+.liveDot { background: var(--pos); box-shadow: 0 0 0 4px rgba(52,211,153,.18); }
+.sidebarRow { padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.sidebarRowRanked { background: rgba(245,197,66,.06); }
+.sidebarRowMe { background: rgba(52,211,153,.07); box-shadow: inset 3px 0 0 var(--pos); }
+.sidebarUser { font-size: 13px; font-weight: 700; }
+.sidebarUserMe { color: var(--pos); }
+.sidebarSlot { font-size: 11px; color: var(--mute); }
+.sidebarMulti { font: 800 14px var(--head); color: var(--gold); }
+.sidebarWin { color: var(--pos); font-weight: 800; }
+.sidebarPrize { color: var(--acc2); }
+.sidebarRows { max-height: 560px; overflow-y: auto; }
+
+/* GTB input */
+.gtbCashBanner { background: linear-gradient(120deg, rgba(245,197,66,.16), var(--panel) 70%); border: 1px solid rgba(245,197,66,.4); border-radius: 16px; padding: 14px 18px; }
+.gtbCashBanner strong { color: var(--gold); font: 800 16px var(--head); }
+.gtbCashBanner svg { stroke: var(--gold); }
+.gtbInputWrap { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 26px; gap: 14px; background-image: radial-gradient(500px 160px at 50% 0, rgba(59,130,246,.14), transparent 70%); }
+.gtbInputLabel { font: 800 20px var(--head); letter-spacing: -.02em; text-transform: none; color: var(--text); }
+.gtbInputSub { font-size: 13px; color: var(--mute); margin-top: -8px; }
+.gtbInputRow { background: #0d1118; border: 1.5px solid var(--line); border-radius: 16px; }
+.gtbInputRow:focus-within { border-color: var(--acc); box-shadow: 0 0 0 4px rgba(59,130,246,.18); }
+.gtbInputPrefix { font: 800 28px var(--head); color: var(--acc2); background: transparent; border-right: none; padding: 0 4px 0 22px; }
+.gtbInput { font: 800 38px var(--head); letter-spacing: -.02em; padding: 18px 12px; color: var(--text); }
+.gtbInput::placeholder { font: 700 28px var(--head); color: rgba(255,255,255,.14); }
+.gtbSubmitBtn { background: var(--acc); font: 800 15px var(--head); padding: 0 32px; margin: 8px; border-radius: 12px; }
+.gtbSubmitBtn:hover:not(:disabled) { background: #2563eb; }
+.gtbChips { display: flex; flex-wrap: wrap; gap: 8px; }
+.gtbChip { height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text); font: 700 13px var(--font); cursor: pointer; }
+.gtbChip:hover { border-color: var(--acc); background: rgba(59,130,246,.16); }
+.gtbHint { color: var(--mute); font-style: normal; }
+.gtbClosed { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; color: var(--mute); padding: 18px 20px; }
+
+/* history */
+.histCard, .historyGame { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+.histCard:hover { border-color: var(--acc); background: rgba(59,130,246,.07); }
+.histCardNum { font-family: var(--head); font-size: 15px; }
+.histCardHunt, .histDate { color: var(--mute); }
+.histWinnerPill { background: rgba(255,255,255,.05); border-color: var(--line); }
+.histWinAmt { color: var(--pos); }
+.histMyBadge { color: var(--pos); }
+
+/* dialogs / toasts */
+.confirmBox { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; max-width: 380px; }
+.confirmSlotName { font: 800 22px var(--head); letter-spacing: -.02em; }
+.confirmCostVal { color: var(--acc2); font-family: var(--head); }
+.confirmBalanceVal { font-family: var(--head); }
+.confirmOk { background: var(--acc); border-radius: 12px; font-family: var(--head); font-size: 14px; }
+.confirmCancel { border-radius: 12px; border-color: var(--line); }
+.toast_success { background: rgba(52,211,153,.14); border-color: rgba(52,211,153,.4); color: var(--pos); }
+.emptyState { background: var(--panel); border: 1px dashed var(--line); border-radius: 20px; padding: 70px 20px; }
+.emptyTitle { font-family: var(--head); }
+@media (max-width: 1100px) { .mainLayout, .gtbLayout { grid-template-columns: 1fr; } .sidebar { position: static; } }

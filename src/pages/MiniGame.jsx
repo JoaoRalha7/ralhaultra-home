@@ -622,7 +622,7 @@ export default function MiniGame({ huntId = null }) {
                 <div className={styles.grid}>
                   {entries.map((entry, entryIdx) => {
                     const pick       = picks.find(p => p.entry_id === entry.id)
-                    const isMine     = pick?.twitch_username?.toLowerCase() === twitchUser?.toLowerCase()
+                    const isMine     = !!pick && !!twitchUser && pick.twitch_username?.toLowerCase() === twitchUser.toLowerCase()
                     const isTaken    = !!pick
                     const isLoading  = picking === entry.id
                     const isSuper    = !!entry.is_super
