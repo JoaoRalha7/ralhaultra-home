@@ -40,10 +40,9 @@
 .ocTag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .06em; background: rgba(0,0,0,.6); color: #fff; backdrop-filter: blur(6px); border: 1px solid #ffffff22; }
 .ocTag i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .ocHot { color: #f87171; } .ocNew { color: #4ade80; } .ocFs { color: #fbbf24; }
-.ocName { position: absolute; left: 16px; right: 16px; bottom: 14px; z-index: 2; display: flex; align-items: center; gap: 12px; }
-.ocName > div { min-width: 0; }
+.ocName { position: absolute; left: 18px; right: 18px; bottom: 14px; z-index: 2; }
 .ocName strong { display: block; font: 800 20px 'Bricolage Grotesque', sans-serif; color: #fff; }
-.ocName > div span { display: block; color: #cbd5e1; font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ocName span { display: block; color: #cbd5e1; font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .logoImg { object-fit: contain; border-radius: 14px; background: #0008; padding: 5px; border: 1px solid #ffffff22; flex: none; }
 .logoFb { display: grid; place-items: center; border-radius: 14px; background: linear-gradient(135deg, #3b82f655, #131720); border: 1px solid #ffffff22; font: 800 16px 'Bricolage Grotesque', sans-serif; color: #e5e7eb; flex: none; }
 
@@ -154,48 +153,3 @@
   .page { padding: 16px 12px; }
   .title { font-size: 20px; }
 }
-/* hot card glow */
-.ocHotCard { border-color: rgba(245,197,66,.45); box-shadow: 0 0 0 1px rgba(245,197,66,.12), 0 14px 40px -18px rgba(245,197,66,.45); }
-
-/* payment strip */
-.pays { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.pay { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: #161a22; border: 1px solid #232a38; color: var(--mute); font: 800 10px 'DM Sans', sans-serif; overflow: hidden; }
-.pay img { width: 20px; height: 20px; object-fit: contain; }
-.payMore { width: auto; padding: 0 9px; color: #fff; }
-
-/* featured top pick */
-.feat { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); margin-bottom: 30px; border-radius: 24px; overflow: hidden; border: 1px solid #3b82f655; background: #101319; box-shadow: 0 24px 60px -30px #3b82f655; }
-.featArt { position: relative; min-height: 340px; overflow: hidden; display: flex; align-items: flex-end; }
-.featShade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(10,12,18,.95) 4%, rgba(10,12,18,.15) 60%); }
-.featBadge { position: absolute; top: 18px; left: 18px; z-index: 2; display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: 999px; background: rgba(11,14,20,.75); border: 1px solid rgba(245,197,66,.5); color: var(--gold); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; backdrop-filter: blur(6px); }
-.featWho { position: relative; z-index: 2; display: flex; align-items: center; gap: 16px; padding: 24px 28px; min-width: 0; }
-.featWho > div { min-width: 0; }
-.featWho strong { display: block; font: 800 clamp(26px, 3vw, 36px)/1.05 'Bricolage Grotesque', sans-serif; letter-spacing: -.02em; color: #fff; }
-.featWho > div span { display: block; margin-top: 4px; color: #cbd5e1; font-size: 14px; }
-.featBody { display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 28px 32px; min-width: 0; background: radial-gradient(70% 90% at 100% 0%, rgba(59,130,246,.14), transparent 70%); }
-.featTags { display: flex; gap: 6px; flex-wrap: wrap; }
-.featTags:empty { display: none; }
-.featBig small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--mute); font-weight: 700; margin-bottom: 4px; }
-.featBig b { font: 800 clamp(44px, 5.4vw, 68px)/1 'Bricolage Grotesque', sans-serif; letter-spacing: -.03em; color: #fff; display: block; }
-.featFacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.featFacts div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 14px; height: 42px; border-radius: 12px; background: #161a22; border: 1px solid #1f2430; font-size: 13px; min-width: 0; }
-.featFacts span { display: inline-flex; align-items: center; gap: 8px; color: var(--mute); white-space: nowrap; }
-.featFacts b { color: #fff; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.featCta { display: flex; align-items: flex-end; gap: 12px; }
-.featCode small { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); font-weight: 700; margin-bottom: 4px; }
-.featCta .ocClaim { flex: 1; min-width: 0; height: 46px; }
-.featCta .ocPlus { width: 46px; height: 46px; }
-
-/* section head */
-.moreHead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.moreHead h2 { font: 800 22px/1 'Bricolage Grotesque', sans-serif; letter-spacing: -.02em; }
-.moreHead span { padding: 3px 10px; border-radius: 999px; background: #131720; border: 1px solid var(--line); color: var(--mute); font-size: 12px; font-weight: 800; }
-
-@media (max-width: 900px) {
-  .feat { grid-template-columns: minmax(0, 1fr); }
-  .featArt { min-height: 220px; }
-  .featBody { padding: 22px 20px; }
-}
-@media (max-width: 480px) { .featFacts { grid-template-columns: minmax(0, 1fr); } }
-
-.featCode .promo { height: 46px; padding: 0 16px; font-size: 13px; background: #232832; border: 0; color: #fff; border-radius: 12px; }
