@@ -99,6 +99,16 @@ const Ico = {
   right: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>,
 }
 
+function headline(c) {
+  const t = txt(Array.isArray(c.features) ? c.features[0] : '')
+  const pct = t.match(/(\d[\d.,]*)\s*%/)
+  const fs  = t.match(/(\d[\d.,]*)\s*(?:free\s*spins|fs\b)/i)
+  if (c.is_freespins && fs) return ['Free spins', fs[1]]
+  if (pct) return ['Bonus value', `${pct[1]}%`]
+  if (fs)  return ['Free spins', fs[1]]
+  return ['Welcome offer', t || '-']
+}
+
 function PromoChip({ code, big }) {
   const [copied, setCopied] = useState(false)
   if (!code) return null
@@ -114,6 +124,61 @@ function PromoChip({ code, big }) {
   )
 }
 
+// ── Offer card (vertical, like the reference) ─────────────────────────────────
+function OfferCard({ c, onInfo, onClaim }) {
+  const f = Array.isArray(c.features) ? c.features : []
+  const ci = c.casino_info || {}
+  const [label, value] = headline(c)
+  const rows = [
+    ci.min_deposit && ['Min. deposit', ci.min_deposit, Ico.card],
+    ci.cashback    && ['Cashback', ci.cashback, Ico.loop],
+    ci.withdraw    && ['Withdrawal', ci.withdraw, Ico.clock],
+    ci.license     && ['License', ci.license, Ico.shield],
+  ].filter(Boolean).slice(0, 3)
+  const code = txt(c.promo_code)
+  return (
+    <article className={styles.oc}>
+      <div className={styles.ocBanner}>
+        <div className={styles.ocBg} style={c.banner_url ? { backgroundImage: `url(${c.banner_url})` } : bannerBg(c)} />
+        <div className={styles.ocShade} />
+        <div className={styles.ocTags}>
+          {!!c.is_hot && <span className={`${styles.ocTag} ${styles.ocHot}`}><i />HOT</span>}
+          {!!c.is_new && <span className={`${styles.ocTag} ${styles.ocNew}`}><i />NEW</span>}
+          {!!c.is_freespins && <span className={`${styles.ocTag} ${styles.ocFs}`}><i />FREE SPINS</span>}
+        </div>
+        {c.logo_url && <Logo c={c} size={72} />}
+        <div className={styles.ocName}>
+          <strong>{c.name}</strong>
+          <span>{txt(f[0]) || 'Exclusive offer'}</span>
+        </div>
+      </div>
+      <div className={styles.ocBody}>
+        <div className={styles.ocHead}>
+          <div className={styles.ocBig}>
+            <small>{label}</small>
+            <b>{value}</b>
+          </div>
+          <div className={styles.ocCode}>
+            <small>Code</small>
+            {code ? <PromoChip code={code} /> : <span className={styles.ocNoCode}>-</span>}
+          </div>
+        </div>
+        <div className={styles.ocRows}>
+          {rows.map(([k, v, icon]) => (
+            <div key={k} className={styles.ocRow}><span>{icon}{k}</span><i /><b>{v}</b></div>
+          ))}
+        </div>
+        <div className={styles.ocBtns}>
+          <button type="button" className={styles.ocClaim} onClick={() => onClaim(c)}>CLAIM BONUS</button>
+          <button type="button" className={styles.ocPlus} aria-label={`More about ${c.name}`} onClick={() => onInfo(c)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function Offers() {
   const [casinos, setCasinos]               = useState([])
@@ -122,11 +187,10 @@ export default function Offers() {
   const [selectedCasino, setSelectedCasino] = useState(null)
   const [redirect, setRedirect]             = useState(null)
   const [filter, setFilter]                 = useState('all')
-  const [idx, setIdx]                       = useState(0)
-  const [auto, setAuto]                     = useState(true)
-  const [tick, setTick]                     = useState(0)   // restarts the progress bar
-  const hover = useRef(false)
-  const dragX = useRef(null)
+  const [canL, setCanL]                     = useState(false)
+  const [canR, setCanR]                     = useState(false)
+  const track = useRef(null)
+  const drag = useRef(null)
 
   const handleRedirect = (url, promo) =>
     setRedirect({ url, promo: (promo ?? '').toString().trim() })
@@ -165,19 +229,43 @@ export default function Offers() {
 
   const list = casinos.filter(c =>
     filter === 'all' || (filter === 'hot' && c.is_hot) || (filter === 'new' && c.is_new) || (filter === 'fs' && c.is_freespins))
-  const n = list.length
-  const cur = list[Math.min(idx, Math.max(0, n - 1))]
 
-  useEffect(() => { setIdx(0); setTick(t => t + 1) }, [filter])
-
-  // auto-rotate (paused on hover, stopped after a manual pick)
+  const sync = useCallback(() => {
+    const el = track.current
+    if (!el) return
+    setCanL(el.scrollLeft > 4)
+    setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+  }, [])
   useEffect(() => {
-    if (!auto || n < 2) return
-    const t = setTimeout(() => { if (!hover.current) { setIdx(i => (i + 1) % n); setTick(x => x + 1) } else setTick(x => x + 1) }, ROTATE_MS)
-    return () => clearTimeout(t)
-  }, [auto, n, tick])
+    sync()
+    const el = track.current
+    if (el) el.scrollTo({ left: 0 })
+    window.addEventListener('resize', sync)
+    return () => window.removeEventListener('resize', sync)
+  }, [list.length, filter, loading, sync])
 
-  const pick = i => { setIdx(i); setAuto(false); setTick(t => t + 1) }
+  const scrollBy = dir => {
+    const el = track.current
+    if (!el) return
+    const card = el.querySelector('article')
+    const w = (card?.offsetWidth || 300) + 16
+    el.scrollBy({ left: dir * w * 2, behavior: 'smooth' })
+  }
+  // mouse drag-to-scroll (touch already scrolls natively)
+  const onDown = e => { if (e.pointerType !== 'mouse') return; drag.current = { x: e.clientX, l: track.current.scrollLeft, moved: false } }
+  const onMove = e => {
+    const d = drag.current; if (!d) return
+    const dx = e.clientX - d.x
+    if (Math.abs(dx) > 5) { d.moved = true; track.current.style.scrollSnapType = 'none'; track.current.style.cursor = 'grabbing' }
+    if (d.moved) track.current.scrollLeft = d.l - dx
+  }
+  const onUp = () => {
+    const d = drag.current; if (!d) return
+    drag.current = null
+    const el = track.current
+    el.style.cursor = ''
+    requestAnimationFrame(() => { el.style.scrollSnapType = '' })
+  }
 
   if (loading) {
     return (
@@ -187,17 +275,6 @@ export default function Offers() {
       </div>
     )
   }
-
-  const ci = cur?.casino_info || {}
-  const feats = Array.isArray(cur?.features) ? cur.features : []
-  const bonus = txt(feats[0]), bonus2 = txt(feats[1])
-  const stats = cur ? [
-    ci.min_deposit && [Ico.card, 'Min. deposit', ci.min_deposit],
-    ci.cashback    && [Ico.loop, 'Cashback', ci.cashback],
-    ci.withdraw    && [Ico.clock, 'Withdrawal', ci.withdraw],
-    ci.license     && [Ico.shield, 'License', ci.license],
-  ].filter(Boolean) : []
-  const pays = Array.isArray(cur?.payments) ? cur.payments.slice(0, 6) : []
 
   return (
     <div className={styles.page}>
@@ -214,98 +291,30 @@ export default function Offers() {
         </div>
       </div>
 
-      {!cur ? (
+      {list.length === 0 ? (
         <div className={styles.empty}>
           <p>No offers available{filter !== 'all' ? ' for this filter' : ' at the moment'}.</p>
           {filter !== 'all' && <button type="button" className={styles.linkBtn} onClick={() => setFilter('all')}>Show all offers</button>}
         </div>
       ) : (
-        <>
-          <section className={styles.show} onMouseEnter={() => { hover.current = true }} onMouseLeave={() => { hover.current = false }}
-            onPointerDown={e => { dragX.current = e.clientX }}
-            onPointerUp={e => {
-              if (dragX.current == null) return
-              const dx = e.clientX - dragX.current; dragX.current = null
-              if (Math.abs(dx) > 50) pick(Math.min(n - 1, Math.max(0, idx + (dx < 0 ? 1 : -1))))
-            }}>
-            <button type="button" className={`${styles.arr} ${styles.arrL}`} aria-label="Previous offer" disabled={idx === 0} onClick={() => pick(Math.max(0, idx - 1))}>
+        <div className={styles.carWrap}>
+          {canL && (
+            <button type="button" className={`${styles.arr} ${styles.arrL}`} aria-label="Previous offers" onClick={() => scrollBy(-1)}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             </button>
-            <div className={styles.stage}>
-              {list.map((c, i) => {
-                const off = i - idx
-                const a = Math.abs(off)
-                if (a > 2) return null
-                const f = Array.isArray(c.features) ? c.features : []
-                return (
-                  <button type="button" key={c.id}
-                    className={`${styles.card} ${off === 0 ? styles.cardOn : ''}`}
-                    style={{ '--off': off, '--sc': 1 - a * 0.14, zIndex: 10 - a, opacity: a > 1 ? 0.35 : 1 }}
-                    onClick={() => (off === 0 ? setSelectedCasino(c) : pick(i))}
-                    aria-label={c.name} tabIndex={a > 0 ? -1 : 0}>
-                    <div className={styles.cardBg} style={c.banner_url ? { backgroundImage: `url(${c.banner_url})` } : bannerBg(c)} />
-                    <div className={styles.cardShade} />
-                    <div className={styles.cardTop}>
-                      <Logo c={c} size={44} />
-                      <div className={styles.tags}>
-                        <Tag c={c} />
-                        {c.is_freespins && <span className={`${styles.tag} ${styles.tagFs}`}>FREE SPINS</span>}
-                      </div>
-                    </div>
-                    <div className={styles.cardBody}>
-                      <small className={styles.cardName}>{c.name}</small>
-                      <div className={styles.cardBonus}>{txt(f[0]) || c.name}</div>
-                      {txt(f[1]) && <div className={styles.cardBonus2}>{txt(f[1])}</div>}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-            <button type="button" className={`${styles.arr} ${styles.arrR}`} aria-label="Next offer" disabled={idx >= n - 1} onClick={() => pick(Math.min(n - 1, idx + 1))}>
+          )}
+          <div className={styles.track} ref={track} onScroll={sync}
+            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
+            {list.map(c => (
+              <OfferCard key={c.id} c={c} onInfo={setSelectedCasino} onClaim={x => handleRedirect(x.claim_url, x.promo_code)} />
+            ))}
+          </div>
+          {canR && (
+            <button type="button" className={`${styles.arr} ${styles.arrR}`} aria-label="Next offers" onClick={() => scrollBy(1)}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
             </button>
-            <div className={styles.dots} role="tablist" aria-label="Offers">
-              {list.map((c, i) => (
-                <button type="button" key={c.id} role="tab" aria-selected={i === idx} aria-label={c.name} className={i === idx ? styles.dotOn : ''} onClick={() => pick(i)} />
-              ))}
-            </div>
-            {auto && n > 1 && <span key={tick} className={styles.progress} style={{ animationDuration: `${ROTATE_MS}ms` }} />}
-          </section>
-
-          <section className={styles.detail} key={cur.id}>
-            <div className={styles.dHead}>
-              <Logo c={cur} size={46} />
-              <div>
-                <h2>{cur.name}</h2>
-                <span>{String(idx + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
-              </div>
-            </div>
-            {stats.length > 0 && (
-              <div className={styles.stats}>
-                {stats.map(([icon, label, val]) => (
-                  <div key={label} className={styles.stat}>{icon}<div><small>{label}</small><b>{val}</b></div></div>
-                ))}
-              </div>
-            )}
-            <div className={styles.actions}>
-              <button type="button" className={styles.claim} onClick={() => handleRedirect(cur.claim_url, cur.promo_code)}>Claim bonus {Ico.right}</button>
-              <button type="button" className={styles.more} onClick={() => setSelectedCasino(cur)}>{Ico.info} Full details</button>
-              <PromoChip code={txt(cur.promo_code)} big />
-            </div>
-            {pays.length > 0 && (
-              <div className={styles.pays} aria-label="Payment methods">
-                {pays.map(slug => {
-                  const m = methodsBySlug[slug]
-                  return (
-                    <span key={slug} className={styles.pay} title={m?.name || slug}>
-                      {m?.icon_url ? <img src={m.icon_url} alt={m?.name || slug} /> : (m?.name || slug).slice(0, 2).toUpperCase()}
-                    </span>
-                  )
-                })}
-              </div>
-            )}
-          </section>
-        </>
+          )}
+        </div>
       )}
 
       {selectedCasino && (
