@@ -1,0 +1,25 @@
+.page { padding: 28px 32px; color: #e8eefc; }
+.header { margin-bottom: 24px; }
+.title { font-size: 22px; font-weight: 900; letter-spacing: .06em; color: #fff; margin-bottom: 4px; }
+.sub { font-size: 13px; color: rgba(232,238,252,.4); }
+.form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 14px 16px; margin-bottom: 22px; border: 1px dashed rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.02); }
+.form b { grid-column: 1 / -1; font-size: 14px; }
+.form input, .form select { height: 38px; border-radius: 9px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.25); color: #fff; padding: 0 10px; font-size: 13px; min-width: 0; font-family: inherit; }
+.form button { height: 38px; border-radius: 9px; border: 0; background: #3b82f6; color: #fff; font-weight: 800; font-size: 13px; cursor: pointer; }
+.form button:disabled { background: rgba(255,255,255,.08); color: rgba(255,255,255,.4); cursor: not-allowed; }
+.table { display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; overflow: hidden; }
+.row { display: grid; grid-template-columns: 1.6fr .7fr 1fr 1.1fr 1fr 1.2fr 1.7fr; gap: 10px; align-items: center; padding: 12px 14px; font-size: 13px; border-top: 1px solid rgba(255,255,255,.07); }
+.row:first-child { border-top: 0; }
+.head { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.4); background: rgba(255,255,255,.03); }
+.prize b { display: block; }
+.prize small, .row small { color: rgba(255,255,255,.4); }
+.live { color: #34d399; font-weight: 700; }
+.ended { color: rgba(255,255,255,.45); }
+.won { color: #f5c542; font-weight: 700; }
+.acts { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.acts button { height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; }
+.acts .del { color: #f87171; }
+.empty { color: rgba(255,255,255,.4); padding: 30px 0; text-align: center; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 12px; background: #0f2a1f; border: 1px solid #34d399; color: #34d399; font-weight: 700; z-index: 50; }
+.toast.err { background: #2a1212; border-color: #f87171; color: #f87171; }
+@media (max-width: 1000px) { .form { grid-template-columns: 1fr 1fr; } .row { grid-template-columns: 1fr 1fr; } .head { display: none; } }

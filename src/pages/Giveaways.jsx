@@ -25,7 +25,7 @@ const pick = (n) => {
   return a[0] % n
 }
 
-function Card({ g, tickets, mine, now, admin, onEnter, onDraw, onDelete, loggedIn, people }) {
+function Card({ g, tickets, mine, now, onEnter, loggedIn, people }) {
   const ended = g.status === 'ended' || new Date(g.ends_at) <= now
   const t = left(new Date(g.ends_at) - now)
   const cap = capOf(g)
@@ -53,13 +53,6 @@ function Card({ g, tickets, mine, now, admin, onEnter, onDraw, onDelete, loggedI
           <button type="button" className={styles.enter} disabled={full} onClick={() => onEnter(g)}>
             {full ? 'You are in' : !loggedIn ? 'Log in to enter' : g.ticket_cost > 0 ? <>{fmt(g.ticket_cost)} PTS. <Coin s={15} /></> : 'Enter for free'}
           </button>
-        )}
-        {admin && (
-          <div className={styles.adm}>
-            {ended && !g.winner && tickets > 0 && <button type="button" onClick={() => onDraw(g)}>Draw winner</button>}
-            {!ended && tickets > 0 && <button type="button" onClick={() => onDraw(g)}>End and draw</button>}
-            <button type="button" className={styles.del} onClick={() => onDelete(g)}>Delete</button>
-          </div>
         )}
       </div>
     </article>
@@ -105,38 +98,8 @@ function TicketModal({ g, balance, mine, busy, onClose, onConfirm }) {
   )
 }
 
-const EMPTY = { prize: '', title: '', description: '', kind: 'giveaway', ends_at: '', image_url: '', ticket_cost: '0', max_tickets: '' }
-function NewForm({ onCreate }) {
-  const [f, setF] = useState(EMPTY)
-  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
-  const ok = f.prize.trim() && f.title.trim() && f.ends_at
-  return (
-    <form className={styles.form} onSubmit={(e) => {
-      e.preventDefault(); if (!ok) return
-      onCreate({
-        prize: f.prize.trim(), title: f.title.trim(), description: f.description.trim() || null, kind: f.kind,
-        ends_at: new Date(f.ends_at).toISOString(), image_url: f.image_url.trim() || null,
-        ticket_cost: Math.max(0, parseInt(f.ticket_cost, 10) || 0), max_tickets: parseInt(f.max_tickets, 10) || null,
-      })
-      setF(EMPTY)
-    }}>
-      <b>New giveaway</b>
-      <input placeholder="Prize (e.g. PS5 + GTA VI)" value={f.prize} onChange={set('prize')} />
-      <input placeholder="Title" value={f.title} onChange={set('title')} />
-      <input placeholder="Description (optional)" value={f.description} onChange={set('description')} />
-      <select value={f.kind} onChange={set('kind')}><option value="giveaway">Giveaway</option><option value="raffle">Raffle</option></select>
-      <input type="datetime-local" value={f.ends_at} onChange={set('ends_at')} />
-      <input type="number" min="0" placeholder="Ticket cost (pts, 0 = free)" value={f.ticket_cost} onChange={set('ticket_cost')} />
-      <input type="number" min="1" placeholder="Max tickets (empty = unlimited)" value={f.max_tickets} onChange={set('max_tickets')} />
-      <input placeholder="Image URL (optional)" value={f.image_url} onChange={set('image_url')} />
-      <button type="submit" disabled={!ok}>Create</button>
-    </form>
-  )
-}
-
 export default function Giveaways() {
-  const { user, profile, isAdmin } = useAuth()
-  const admin = isAdmin()
+  const { user, profile } = useAuth()
   const uname = profile?.twitch_username || user?.user_metadata?.full_name || null
   const [list, setList] = useState(null)
   const [entries, setEntries] = useState([])
@@ -212,28 +175,6 @@ export default function Giveaways() {
     setBusy(false)
   }
 
-  const create = async (row) => {
-    const { error } = await supabase.from('giveaways').insert(row)
-    if (error) return say(error.message, 'error')
-    say('Created.'); load()
-  }
-
-  const draw = async (g) => {
-    const pool = entries.filter((x) => x.giveaway_id === g.id).flatMap((x) => Array(x.tickets || 1).fill(x))
-    if (!pool.length) return say('No entries.', 'error')
-    const w = pool[pick(pool.length)].twitch_username
-    const { error } = await supabase.from('giveaways').update({ winner: w, status: 'ended' }).eq('id', g.id)
-    if (error) return say(error.message, 'error')
-    say(`Winner: ${w}`); load()
-  }
-
-  const del = async (g) => {
-    if (!window.confirm(`Delete "${g.prize}"?`)) return
-    const { error } = await supabase.from('giveaways').delete().eq('id', g.id)
-    if (error) return say(error.message, 'error')
-    load()
-  }
-
   const myCount = active.reduce((n, g) => n + (mineN[g.id] || 0), 0)
   const ft = feat && left(new Date(feat.ends_at) - now)
 
@@ -272,8 +213,6 @@ export default function Giveaways() {
         </article>
       )}
 
-      {admin && <NewForm onCreate={create} />}
-
       <div className={styles.tabs} role="tablist">
         <button type="button" role="tab" aria-selected={tab === 'active'} className={tab === 'active' ? styles.on : ''} onClick={() => setTab('active')}>Active <i>{active.length}</i></button>
         <button type="button" role="tab" aria-selected={tab === 'ended'} className={tab === 'ended' ? styles.on : ''} onClick={() => setTab('ended')}>Ended <i>{done.length}</i></button>
@@ -284,7 +223,7 @@ export default function Giveaways() {
       ) : (
         <div className={styles.grid}>
           {shown.map((g) => (
-            <Card key={g.id} g={g} now={now} admin={admin} loggedIn={!!user} tickets={count[g.id] || 0} people={people[g.id] || 0} mine={mineN[g.id] || 0} onEnter={enter} onDraw={draw} onDelete={del} />
+            <Card key={g.id} g={g} now={now} loggedIn={!!user} tickets={count[g.id] || 0} people={people[g.id] || 0} mine={mineN[g.id] || 0} onEnter={enter} />
           ))}
         </div>
       )}
