@@ -152,7 +152,7 @@ export default function Keno() {
             </button>
           )}
           {g.err && <p className={styles.err}>{g.err}</p>}
-          <p className={styles.note}>Payouts are fixed by the odds of your pick count (about 97% return, 1000x max). Higher risk pays less on low hits and far more on high hits. Autobet stops on its own if you run out of points or hit an error.</p>
+          <p className={styles.note}>Payouts are fixed by the odds of your pick count (about 99% return, 1000x max). Higher risk pays less on low hits and far more on high hits. Autobet stops on its own if you run out of points or hit an error.</p>
         </BetPanel>
 
         <section className={styles.stage}>

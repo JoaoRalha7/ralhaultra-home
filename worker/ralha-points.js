@@ -25,15 +25,17 @@ const ADMIN_IDS = ['13878854-d588-4c49-ad36-1428920902bd']
 const CASINO = { minBet: 10, maxBet: 10000, maxPayout: 250000, edge: 0.97, grid: 25, crashRate: 0.00008, crashCap: 1000 }
 const CASINO_GAMES = ['mines', 'blackjack', 'crash', 'keno']
 
-// Keno: pick 1-10 of 40, the house draws 10. Paytable is derived from the exact odds (~96-97% RTP, 1000x cap).
-const KENO = { size: 40, draw: 10, max: 10, edge: 0.97, cap: 1000 }
-const KENO_RISK = { low: { alpha: 0.75, min: 1 }, classic: { alpha: 0.3, min: 1 }, medium: { alpha: 0, min: 1.5 }, high: { alpha: -0.5, min: 3 } }
+// Keno: pick 1-10 of 40, the house draws 10. Paytable is derived from the exact odds (~99% RTP, 1000x cap).
+const KENO = { size: 40, draw: 10, max: 10, edge: 0.99, cap: 1000 }
+const KENO_RISK = { low: { alpha: 0.75, min: 1 }, classic: { alpha: 0.3, min: 0.3 }, medium: { alpha: 0, min: 1.5 }, high: { alpha: -0.5, min: 3 } }
 const C = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r }
 function kenoProbs(n) { const t = C(KENO.size, KENO.draw); return Array.from({ length: n + 1 }, (_, h) => C(n, h) * C(KENO.size - n, KENO.draw - h) / t) }
 function kenoTable(n, risk = 'classic') {
   const R = KENO_RISK[risk] || KENO_RISK.classic
   const P = kenoProbs(n)
-  let lo = 1 // lowest paying hit
+  // multipliers only make sense from the most likely hit count upwards (they must grow as hits get rarer)
+  let lo = 1
+  for (let h = 1; h <= n; h++) if (P[h] > P[lo]) lo = h
   for (;;) {
     const S = []; for (let h = lo; h <= n; h++) S.push(h)
     const capped = new Set(), mult = {}
