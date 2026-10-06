@@ -103,7 +103,7 @@ function UserIcon({ size = 10 }) {
 }
 
 // ── Connectors ───────────────────────────────────────────────
-const S = 'rgba(255,255,255,.18)'
+const S = 'rgba(167,139,250,.38)'
 function ConnLR({ fromN, toN, outerH }) {
   const pF = (outerH - colH(fromN)) / 2, pT = (outerH - colH(toN)) / 2
   const els = []
@@ -207,8 +207,6 @@ function MirrorBracket({ bracket, onSelect, selected }) {
   }))
   const outerN   = leftCols[0]?.matches.length || 1
   const outerH   = colH(outerN)
-  const fin      = bracket[finalRi]?.[0]
-  const champion = fin?.winner ? fin[fin.winner] : null
 
   return (
     <div style={{ position:'relative', display:'inline-block', padding:'0 16px 16px', minWidth:'max-content' }}>
@@ -234,23 +232,6 @@ function MirrorBracket({ bracket, onSelect, selected }) {
         ))}
       </div>
 
-      {/* Champion card */}
-      <div style={{ display:'flex', justifyContent:'center', marginTop: 12 }}>
-        <div className={styles.champCard}>
-          <svg width="18" height="15" viewBox="0 0 26 22" fill="none">
-            <path d="M3 2L13 8L23 2L20 17H6L3 2Z" fill="rgba(245,158,11,.85)" stroke="rgba(245,158,11,1)" strokeWidth="1.2" strokeLinejoin="round"/>
-            <rect x="6" y="18" width="14" height="3" rx="1.5" fill="rgba(245,158,11,.6)"/>
-          </svg>
-          {champion?.slot ? (
-            <>
-              <SlotImg slot={champion.slot} size={44} radius={8} />
-              <div className={styles.champName}>{champion.slot.name}</div>
-              {champion.player && <div className={styles.champPlayer}><UserIcon size={10} />{champion.player}</div>}
-              {getScore(champion) !== null && <div className={styles.champScore}>{getScore(champion).toFixed(2)}</div>}
-            </>
-          ) : <div className={styles.champEmpty}>To be decided…</div>}
-        </div>
-      </div>
     </div>
   )
 }
@@ -267,13 +248,6 @@ function BottomPanel({ selected, onClose }) {
     (b?.payments || []).reduce((s, p) => s + (parseFloat(p) || 0), 0)
   const pnl = totalWon - totalBet
   const pnlPos = pnl >= 0
-
-  // figure out next round label
-  const roundOrder = ['Round 1','Round 2','Round 3','Round of 16','Quarter-Finals','Semi-Final','Final']
-  const nextLabel = label === 'Final' ? null : (() => {
-    const idx = roundOrder.indexOf(label)
-    return idx !== -1 && idx < roundOrder.length - 1 ? roundOrder[idx + 1] : null
-  })()
 
   const Fighter = ({ comp, side }) => {
     const isWinner = winner === side
@@ -336,7 +310,7 @@ function BottomPanel({ selected, onClose }) {
           <span className={styles.bpRoundBadge}>{label}</span>
           <span className={styles.bpTitle}>Match details</span>
         </div>
-        <button className={styles.bpClose} onClick={onClose}>✕</button>
+        <button className={styles.bpClose} onClick={onClose} aria-label="Close"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       </div>
 
       <div className={styles.bpBody}>
@@ -451,88 +425,108 @@ export default function Torneios() {
   const stats   = calcStats(bracket, active.balance_start)
   const pnlPos  = stats.pnl >= 0
 
-  const INFO_ROWS = [
-    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>, bg:'rgba(100,100,255,.15)', color:'#8080ff', lbl:'Data', val: fmtDate(active.created_at) },
-    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>, bg: active.status==='active' ? 'rgba(33,209,110,.15)' : 'rgba(255,255,255,.07)', color: active.status==='active' ? '#21d16e' : 'rgba(255,255,255,.45)', lbl:'Status', val: active.status==='active' ? 'Active' : 'Completed', valColor: active.status==='active' ? '#21d16e' : undefined },
-    ...(active.balance_start ? [{ icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/></svg>, bg:'rgba(255,255,255,.07)', color:'rgba(255,255,255,.45)', lbl:'Balance start', val: `${parseFloat(active.balance_start).toFixed(2)}€` }] : []),
-    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>, bg:'rgba(251,191,36,.15)', color:'#fbbf24', lbl:'Total Bet', val: stats.totalBet > 0 ? `${stats.totalBet.toFixed(2)}€` : '—', valColor:'#fbbf24' },
-    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>, bg:'rgba(59,130,246,.15)', color:'#60a5fa', lbl:'Total Won', val: stats.totalWon > 0 ? `${stats.totalWon.toFixed(2)}€` : '—', valColor:'#60a5fa' },
-    { icon: pnlPos ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20V4M5 11l7-7 7 7"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 4v16M5 13l7 7 7-7"/></svg>, bg: pnlPos ? 'rgba(33,209,110,.15)' : 'rgba(240,79,79,.15)', color: pnlPos ? '#21d16e' : '#f04f4f', lbl:'Profit / Loss', val: stats.totalBet > 0 ? `${pnlPos?'+':''}${stats.pnl.toFixed(2)}€` : '—', valColor: pnlPos ? '#21d16e' : '#f04f4f' },
-    ...(stats.best ? [{ icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>, bg:'rgba(74,222,128,.15)', color:'#4ade80', lbl:'Best slot', val: stats.best.score.toFixed(2), sub: stats.best.name, subPlayer: stats.best.player || null, valColor:'#4ade80', slot: stats.best.slot }] : []),
-    ...(stats.worst ? [{ icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>, bg:'rgba(248,113,113,.15)', color:'#f87171', lbl:'Worst slot', val: stats.worst.score.toFixed(2), sub: stats.worst.name, subPlayer: stats.worst.player || null, valColor:'#f87171', slot: stats.worst.slot }] : []),
+  const fin      = bracket[bracket.length - 1]?.[0]
+  const champion = fin?.winner ? fin[fin.winner] : null
+  const champScore = champion ? getScore(champion) : null
+  const isActive = active.status === 'active'
+  const bal = parseFloat(active.balance_start) || 0
+
+  const tiles = [
+    { lbl: 'Total bet', val: stats.totalBet > 0 ? `${stats.totalBet.toFixed(2)}€` : '—', cls: styles.tAmber },
+    { lbl: 'Total won', val: stats.totalWon > 0 ? `${stats.totalWon.toFixed(2)}€` : '—', cls: styles.tViolet },
+    { lbl: 'Profit / loss', val: stats.totalBet > 0 ? `${pnlPos ? '+' : ''}${stats.pnl.toFixed(2)}€` : '—', cls: stats.totalBet > 0 ? (pnlPos ? styles.tPos : styles.tNeg) : '', big: true },
+    ...(bal ? [{ lbl: 'Starting balance', val: `${bal.toFixed(2)}€` }] : []),
   ]
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <div className={styles.titleRow}>
-          <svg width="18" height="16" viewBox="0 0 26 22" fill="none"><path d="M3 2L13 8L23 2L20 17H6L3 2Z" fill="rgba(245,158,11,.85)" stroke="rgba(245,158,11,1)" strokeWidth="1.2" strokeLinejoin="round"/><rect x="6" y="18" width="14" height="3" rx="1.5" fill="rgba(245,158,11,.6)"/></svg>
-          <h1 className={styles.title}>Tournaments</h1>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <div className={styles.switcher}>
+            <button className={styles.swBtn} onClick={() => prevT && handleOpen(prevT)} disabled={!prevT} title={prevT?.title} aria-label="Previous tournament">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button className={styles.swBtn} onClick={() => nextT && handleOpen(nextT)} disabled={!nextT} title={nextT?.title} aria-label="Next tournament">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <span className={styles.swCount}>{tournaments.length - activeIdx} of {tournaments.length}</span>
+          </div>
+          <h1 className={styles.title}>{active.title}</h1>
+          <div className={styles.heroMeta}>
+            {isActive
+              ? <span className={styles.pillAct}><span className={styles.actDot}/>In progress</span>
+              : <span className={styles.pillDone}>Finished</span>}
+            <span>{fmtDate(active.created_at)}</span>
+            <span>{active.size} slots</span>
+          </div>
         </div>
-        <p className={styles.sub}>Click a match to see the details</p>
+
+        <div className={`${styles.spot} ${champion ? styles.spotWon : ''}`}>
+          {champion?.slot ? (
+            <>
+              <div className={styles.spotArt}><SlotImg slot={champion.slot} size={96} radius={14} /></div>
+              <div className={styles.spotBody}>
+                <span className={styles.spotLbl}>
+                  <svg width="14" height="12" viewBox="0 0 26 22" fill="currentColor"><path d="M3 2L13 8L23 2L20 17H6L3 2Z"/><rect x="6" y="18" width="14" height="3" rx="1.5"/></svg>
+                  Champion
+                </span>
+                <b className={styles.spotName}>{champion.slot.name}</b>
+                {champion.player && <span className={styles.spotPlayer}><UserIcon size={11} />{champion.player}</span>}
+                {champScore !== null && <span className={styles.spotScore}>{champScore.toFixed(2)}<small>x</small></span>}
+              </div>
+            </>
+          ) : (
+            <div className={styles.spotBody}>
+              <span className={styles.spotLbl}>Champion</span>
+              <b className={styles.spotName}>To be decided</b>
+              <span className={styles.spotPlayer}>Tap any match in the bracket for its details.</span>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className={styles.board}>
+        {tiles.map((t) => (
+          <div key={t.lbl} className={`${styles.tile} ${t.big ? styles.tileBig : ''}`}>
+            <span className={styles.tileLbl}>{t.lbl}</span>
+            <b className={`${styles.tileVal} ${t.cls || ''}`}>{t.val}</b>
+          </div>
+        ))}
+        {[['Best slot', stats.best, styles.tPos], ['Worst slot', stats.worst, styles.tNeg]].map(([lbl, x, cls]) => x && (
+          <div key={lbl} className={`${styles.tile} ${styles.tileSlot}`}>
+            <SlotImg slot={x.slot} size={40} radius={10} />
+            <div className={styles.tileTxt}>
+              <span className={styles.tileLbl}>{lbl}</span>
+              <b className={styles.tileName}>{x.name}</b>
+              {x.player && <span className={styles.tilePlayer}><UserIcon size={9} />{x.player}</span>}
+            </div>
+            <b className={`${styles.tileX} ${cls}`}>{x.score.toFixed(2)}x</b>
+          </div>
+        ))}
       </div>
 
-      <div className={styles.tabs}>
-        <button className={`${styles.tab} ${tab==='bracket' ? styles.tabActive : ''}`} onClick={() => setTab('bracket')}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <div className={styles.tabs} role="tablist">
+        <button role="tab" aria-selected={tab==='bracket'} className={`${styles.tab} ${tab==='bracket' ? styles.tabActive : ''}`} onClick={() => setTab('bracket')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 5h5v5H3zM3 14h5v5H3zM16 9.5h5v5h-5zM8 7.5h4v9M12 12h4"/></svg>
           Bracket
         </button>
-        <button className={`${styles.tab} ${tab==='history' ? styles.tabActive : ''}`} onClick={() => setTab('history')}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          History
+        <button role="tab" aria-selected={tab==='history'} className={`${styles.tab} ${tab==='history' ? styles.tabActive : ''}`} onClick={() => setTab('history')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Past tournaments
           {tournaments.length > 0 && <span className={styles.tabBadge}>{tournaments.length}</span>}
         </button>
       </div>
 
       {tab === 'bracket' && (
-        <div className={styles.layout}>
-          <aside className={styles.sidebar}>
-            {/* Navigation */}
-            <div className={styles.huntNav}>
-              <button className={styles.huntNavBtn} onClick={() => prevT && handleOpen(prevT)} disabled={!prevT} title={prevT?.title}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-              </button>
-              <span className={styles.huntNavTitle}>{active.title.toUpperCase()}</span>
-              <button className={styles.huntNavBtn} onClick={() => nextT && handleOpen(nextT)} disabled={!nextT} title={nextT?.title}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-              </button>
-            </div>
-
-            {/* Status pill */}
-            <div className={styles.sidebarStatusRow}>
-              {active.status === 'active'
-                ? <span className={styles.pillAct}><span className={styles.actDot}/>Active</span>
-                : <span className={styles.pillDone}>Completed</span>}
-            </div>
-
-            {INFO_ROWS.map(({ icon, bg, color, lbl, val, valColor, sub, subPlayer, slot }) => (
-              <div key={lbl} className={styles.infoItem}>
-                <div className={styles.infoIcon} style={{ background: bg, color }}>{icon}</div>
-                <div className={styles.infoText}>
-                  <div className={styles.infoLbl}>{lbl}</div>
-                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    {slot && <SlotImg slot={slot} size={18} radius={4} />}
-                    <div className={styles.infoVal} style={valColor ? { color: valColor } : {}}>{val}</div>
-                  </div>
-                  {sub && <div className={styles.infoSub}>
-                    {sub}
-                    {subPlayer && <span className={styles.infoSubPlayer}><UserIcon size={9} />{subPlayer}</span>}
-                  </div>}
-                </div>
-              </div>
-            ))}
-          </aside>
-
-          <div className={styles.bracketPanel}>
-            <div className={styles.bracketScroll}>
-              <MirrorBracket bracket={bracket} onSelect={setSelected} selected={selected} />
-            </div>
-            {selected && (
-              <div className={styles.bottomPanelWrap}>
-                <BottomPanel selected={selected} onClose={() => setSelected(null)} />
-              </div>
-            )}
+        <div className={styles.bracketPanel}>
+          <div className={styles.bracketScroll}>
+            <MirrorBracket bracket={bracket} onSelect={setSelected} selected={selected} />
           </div>
+          {selected && (
+            <div className={styles.bottomPanelWrap}>
+              <BottomPanel selected={selected} onClose={() => setSelected(null)} />
+            </div>
+          )}
         </div>
       )}
 
