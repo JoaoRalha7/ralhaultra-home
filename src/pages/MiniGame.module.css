@@ -1198,3 +1198,9 @@
 .compact, .compact .gtbLayout, .compact .gtbLeft, .compact .mainLayout, .compact .gtbLayout > *, .compact .mainLayout > * { min-width: 0; }
 .compact .statusBar { max-width: 100%; }
 .compact .barHuntBadge { display: none; }
+
+.compact .barNav, .compact .barHistBtn, .compact .barPager, .compact .barDiv, .compact .barTitle { display: none; }
+.compact .statusBar { border: none; background: transparent; padding: 0; min-height: 0; gap: 10px; }
+.compact .sidebarRows { max-height: 170px; }
+.compact .costBanner, .compact .gtbCashBanner, .compact .myPickBanner { padding: 10px 14px; }
+.compact .gtbInputSub { display: none; }

@@ -156,3 +156,13 @@
 .compact .bucketSection, .compact .distSection { padding: 16px; }
 .compact .bucketBtnId { font-size: 24px; }
 .compact .distRow { grid-template-columns: 18px 62px minmax(0,1fr) 38px 20px; gap: 6px; }
+
+.bucketPct { margin-left: auto; font: 800 13px "Bricolage Grotesque", sans-serif; color: #8d96ab; }
+.compact .bucketGrid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.compact .bucketBtn { padding: 10px 10px 9px; border-radius: 13px; }
+.compact .bucketBtn { position: relative; }
+.compact .bucketPct { position: absolute; top: 10px; right: 10px; }
+.compact .bucketBtnId { font-size: 20px; }
+.compact .bucketBtnRange { font-size: 12px; }
+.compact .distSection { display: none; }
+.compact .bucketLabel { font-size: 15px; }

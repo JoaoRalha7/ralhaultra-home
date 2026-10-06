@@ -432,7 +432,17 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const gbox = (key, node) => {
     const d = GAME_DEFS.find(q => q.key === key)
     const g = (gameList || []).find(q => q.key === key)
-    if (!g?.game) return null
+    if (!gameList) return null
+    if (!g?.game) return (
+      <section id={'game-' + key} className={x.gbox} aria-label={d.label}>
+        <header className={x.gboxHead}>
+          <span className={x.gameIcon}><GameIcon k={key} /></span>
+          <div><b>{d.label}</b><small>{d.blurb}</small></div>
+          <span className={`${x.gChip} ${x.gClosed}`}>Waiting</span>
+        </header>
+        <p className={x.gboxEmpty}>No game for this hunt yet.</p>
+      </section>
+    )
     const live = g.game.status === 'open'
     return (
       <section id={'game-' + key} className={`${x.gbox} ${live ? x.gboxLive : ''}`} aria-label={d.label}>

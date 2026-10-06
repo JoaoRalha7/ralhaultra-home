@@ -243,3 +243,11 @@
 .gboxHead small{display:block;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gboxBody>div{padding:14px !important}
 @media (max-width:1100px){.split{grid-template-columns:1fr}.rail{order:2}}
+
+/* compact left rail + scrolling table */
+.split{grid-template-columns:380px minmax(0,1fr);min-height:640px;align-items:stretch}
+.rail{order:-1}
+.dBody{display:flex;flex-direction:column;height:0;min-height:100%}
+.dBody .tbl{flex:1;min-height:0;overflow:auto}
+.gboxEmpty{margin:0;padding:18px;font-size:13px;color:var(--mute)}
+@media (max-width:1100px){.split{grid-template-columns:1fr;min-height:0}.rail{order:2}.dBody{height:auto;min-height:0}.dBody .tbl{overflow:visible}}

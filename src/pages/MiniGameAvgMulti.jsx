@@ -458,6 +458,7 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
                         >
                           <span className={avgStyles.bucketBtnId}>{b.id}</span>
                           <span className={avgStyles.bucketBtnRange}>{b.label}</span>
+                          <span className={avgStyles.bucketPct}>{entries.length ? Math.round(((bucketCounts[b.id] || 0) / entries.length) * 100) : 0}%</span>
                           {submitting && selectedBucket?.id === b.id && <Spinner size={10} />}
                         </button>
                       ))}
