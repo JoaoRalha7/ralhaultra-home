@@ -271,7 +271,7 @@ function useHuntGames(huntId) {
 const GameIcon = ({ k }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     {k === 'pick' && <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>}
-    {k === 'gtb'  && <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>}
+    {k === 'gtb'  && <><path d="M17.5 6.5A7 7 0 0 0 7 12a7 7 0 0 0 10.5 5.5M4 10h10M4 14h10"/></>}
     {k === 'avg'  && <><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></>}
   </svg>
 )

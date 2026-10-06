@@ -445,7 +445,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                 {game.prize_cash_1st > 0 && (
                   <div className={styles.gtbCashBanner}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round">
-                      <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      <path d="M17.5 6.5A7 7 0 0 0 7 12a7 7 0 0 0 10.5 5.5M4 10h10M4 14h10"/>
                     </svg>
                     <span>1st place wins <strong>€{game.prize_cash_1st} cash</strong></span>
                   </div>
@@ -478,7 +478,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                   <div className={styles.myPickBanner}>
                     <div className={styles.myPickImgWrap} style={{background:'rgba(59,130,246,.1)', border:'1px solid rgba(59,130,246,.2)'}}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round">
-                        <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        <path d="M17.5 6.5A7 7 0 0 0 7 12a7 7 0 0 0 10.5 5.5M4 10h10M4 14h10"/>
                       </svg>
                     </div>
                     <div className={styles.myPickInfo}>
