@@ -18,9 +18,33 @@ const SORTS = [
   { id: 'high',    label: 'Price: high to low' },
 ]
 
+const GOAL_KEY = 'ru-shop-goal'
+const readGoal = () => { try { return Number(localStorage.getItem(GOAL_KEY)) || null } catch { return null } }
+const saveGoal = (id) => { try { id ? localStorage.setItem(GOAL_KEY, String(id)) : localStorage.removeItem(GOAL_KEY) } catch { /* storage blocked */ } }
+
+// rarity comes from the price, so it works without any new column
+const rarityOf = (cost) =>
+  cost >= 500000 ? { id: 'legendary', label: 'Legendary' }
+  : cost >= 100000 ? { id: 'epic', label: 'Epic' }
+  : cost >= 20000 ? { id: 'rare', label: 'Rare' }
+  : { id: 'common', label: 'Common' }
+
+const ago = (d) => {
+  const m = Math.max(1, Math.round((Date.now() - new Date(d)) / 60000))
+  if (m < 60) return `${m}m ago`
+  const h = Math.round(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.round(h / 24)}d ago`
+}
+
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 
 const IconCoin = ({ size = 14 }) => <span className={styles.coin} style={{ width: size, height: size }} aria-hidden="true" />
+const IconFlag = ({ filled }) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 22V4"/><path d="M4 4h13l-2.5 4L17 12H4"/>
+  </svg>
+)
 const IconGift = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
@@ -29,7 +53,7 @@ const IconGift = ({ size = 15 }) => (
 )
 
 // ── Product card ─────────────────────────────────────────────────────────────
-function ShopCard({ product, userPoints, onRedeem }) {
+function ShopCard({ product, userPoints, onRedeem, isGoal, onGoal }) {
   const unlimited  = product.stock == null
   const outOfStock = product.stock === 0
   const lowStock   = !unlimited && product.stock > 0 && product.stock <= 5
@@ -38,18 +62,28 @@ function ShopCard({ product, userPoints, onRedeem }) {
   const missing    = loggedIn ? Math.max(0, product.cost - userPoints) : product.cost
   const pct        = loggedIn ? Math.min(100, (userPoints / product.cost) * 100) : 0
   const disabled   = outOfStock || !canAfford
+  const rar        = rarityOf(product.cost)
 
   return (
     <article
-      className={`${styles.card} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''}`}
+      className={`${styles.card} ${styles['r_' + rar.id]} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''} ${isGoal ? styles.cardGoal : ''}`}
       style={{ '--c': product.color || '#3b82f6' }}
     >
       <div className={styles.media}>
         {product.image_url
           ? <img src={product.image_url} alt="" className={styles.photo} loading="lazy" />
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
-        <span className={styles.cat}>{product.category}</span>
-        {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Sold out</span>}
+        <span className={styles.tags}>
+          <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
+          <span className={styles.cat}>{product.category}</span>
+        </span>
+        {!outOfStock && (
+          <button className={`${styles.pin} ${isGoal ? styles.pinOn : ''}`} onClick={() => onGoal(isGoal ? null : product.id)}
+            aria-pressed={isGoal} title={isGoal ? 'Remove goal' : 'Set as goal'} aria-label={isGoal ? 'Remove goal' : 'Set as goal'}>
+            <IconFlag filled={isGoal} />
+          </button>
+        )}
+        {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Gone</span>}
         {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
       </div>
 
@@ -124,6 +158,8 @@ export default function Shop() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [sort,           setSort]           = useState('default')
   const [onlyAfford,     setOnlyAfford]     = useState(false)
+  const [goalId,         setGoalId]         = useState(readGoal)
+  const [recent,         setRecent]         = useState([])
   const [confirmProduct, setConfirmProduct] = useState(null)
   const [redeeming,      setRedeeming]      = useState(false)
   const [toast,          setToast]          = useState(null)
@@ -133,15 +169,26 @@ export default function Shop() {
       .then(({ data, error }) => { if (!error) setProducts(data || []); setLoadingProds(false) })
   }, [])
 
+  useEffect(() => {
+    supabase.from('shop_redeems').select('id, twitch_username, created_at, shop_products(name, image_url)')
+      .order('created_at', { ascending: false }).limit(4)
+      .then(({ data, error }) => { if (!error && data) setRecent(data) })
+  }, [])
+
+  const setGoal = (id) => { setGoalId(id); saveGoal(id) }
+
   let filtered = activeCategory === 'all' ? products : products.filter(p => p.category === activeCategory)
   if (onlyAfford && points !== null) filtered = filtered.filter(p => p.cost <= points && p.stock !== 0)
   if (sort === 'low')  filtered = [...filtered].sort((a, b) => a.cost - b.cost)
   if (sort === 'high') filtered = [...filtered].sort((a, b) => b.cost - a.cost)
 
-  // cheapest item the user can't afford yet = the "next goal"
-  const goal = points === null ? null
-    : [...products].filter(p => p.stock !== 0 && p.cost > points).sort((a, b) => a.cost - b.cost)[0] || null
+  // the user's pinned goal, or the cheapest prize they can't afford yet
+  const pinned = products.find(p => p.id === goalId && p.stock !== 0) || null
+  const goal = pinned || (points === null ? null
+    : [...products].filter(p => p.stock !== 0 && p.cost > points).sort((a, b) => a.cost - b.cost)[0] || null)
   const affordableCount = points === null ? 0 : products.filter(p => p.stock !== 0 && p.cost <= points).length
+  // top prize = most expensive item still in stock
+  const featured = [...products].filter(p => p.stock !== 0).sort((a, b) => b.cost - a.cost)[0] || null
 
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
 
@@ -171,35 +218,77 @@ export default function Shop() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.hero}>
-        <div className={styles.heroMain}>
-          <h1 className={styles.title}>Rewards Shop</h1>
-          <p className={styles.sub}>Spend the points you earn watching the stream. New prizes land here regularly.</p>
-          <div className={styles.heroMeta}>
-            <span><b>{products.length}</b> prizes</span>
-            {points !== null && <span><b>{affordableCount}</b> you can redeem now</span>}
+      <header className={styles.head}>
+        <h1 className={styles.title}>Rewards Shop</h1>
+        <p className={styles.sub}>Spend the points you earn watching the stream.</p>
+      </header>
+
+      <section className={`${styles.stage} ${featured ? "" : styles.stageSolo}`}>
+        {featured && (
+          <article className={styles.top} style={{ '--c': featured.color || '#f5c542' }}>
+            <div className={styles.topText}>
+              <span className={`${styles.rar} ${styles['rar_' + rarityOf(featured.cost).id]}`}>Top prize</span>
+              <h2>{featured.name}</h2>
+              {featured.description && <p>{featured.description}</p>}
+              {featured.stock != null && featured.stock <= 5 && <span className={styles.limited}>Only {featured.stock} left</span>}
+              <div className={styles.topPrice}><IconCoin size={22} /><b>{fmt(featured.cost)}</b><span>pts</span></div>
+              {points !== null && points < featured.cost ? (
+                <div className={styles.need}>
+                  <div className={styles.needBar}><i style={{ width: Math.min(100, (points / featured.cost) * 100) + '%' }} /></div>
+                  <small>{fmt(featured.cost - points)} pts to go</small>
+                </div>
+              ) : null}
+              <div className={styles.topActions}>
+                <button className={styles.topBtn} disabled={points === null || points < featured.cost} onClick={() => handleRedeem(featured)}>
+                  {points === null ? 'Log in to redeem' : points >= featured.cost ? 'Redeem' : 'Locked'}
+                </button>
+                <button className={`${styles.ghostBtn} ${goalId === featured.id ? styles.ghostOn : ''}`} onClick={() => setGoal(goalId === featured.id ? null : featured.id)}>
+                  <IconFlag filled={goalId === featured.id} />{goalId === featured.id ? 'Your goal' : 'Set as goal'}
+                </button>
+              </div>
+            </div>
+            <div className={styles.topArt}>
+              {featured.image_url ? <img src={featured.image_url} alt="" /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
+            </div>
+          </article>
+        )}
+
+        <div className={styles.side}>
+          <div className={styles.wallet}>
+            <span className={styles.wLbl}>Your points</span>
+            {points !== null ? (
+              <>
+                <div className={styles.wVal}><IconCoin size={24} /><b>{fmt(points)}</b></div>
+                {goal ? (
+                  <div className={styles.goal}>
+                    <div className={styles.goalTop}>
+                      <span>{pinned ? 'Your goal' : 'Next prize'}: <b>{goal.name}</b></span>
+                      <span>{points >= goal.cost ? 'Ready' : `${fmt(goal.cost - points)} to go`}</span>
+                    </div>
+                    <div className={styles.needBar}><i style={{ width: Math.min(100, (points / goal.cost) * 100) + '%' }} /></div>
+                    {pinned && <button className={styles.link} onClick={() => setGoal(null)}>Clear goal</button>}
+                  </div>
+                ) : (
+                  <p className={styles.walletNote}>{products.length ? 'You can afford everything in stock.' : 'No prizes yet.'}</p>
+                )}
+                {!pinned && <p className={styles.hint}>Tap the flag on a prize to track it here.</p>}
+              </>
+            ) : (
+              <p className={styles.walletNote}>Log in with Twitch to see your points and redeem prizes.</p>
+            )}
+          </div>
+
+          <div className={styles.recent}>
+            <div className={styles.rHead}><span>Just redeemed</span><span className={styles.live}><i />Live</span></div>
+            {recent.length === 0 ? <p className={styles.walletNote}>No redeems yet. Be the first.</p> : recent.map(r => (
+              <div key={r.id} className={styles.rRow}>
+                <span className={styles.rThumb}>{r.shop_products?.image_url ? <img src={r.shop_products.image_url} alt="" /> : (r.shop_products?.name?.[0] || '?')}</span>
+                <div><b>{r.shop_products?.name || 'Prize'}</b><small>{r.twitch_username} · {ago(r.created_at)}</small></div>
+              </div>
+            ))}
           </div>
         </div>
-
-        <div className={styles.wallet}>
-          <span className={styles.wLbl}>Your points</span>
-          {points !== null ? (
-            <>
-              <div className={styles.wVal}><IconCoin size={26} /><b>{fmt(points)}</b></div>
-              {goal ? (
-                <div className={styles.goal}>
-                  <div className={styles.goalTop}><span>Next prize: <b>{goal.name}</b></span><span>{fmt(goal.cost - points)} to go</span></div>
-                  <div className={styles.needBar}><i style={{ width: Math.min(100, (points / goal.cost) * 100) + '%' }} /></div>
-                </div>
-              ) : (
-                <p className={styles.walletNote}>{products.length ? 'You can afford everything in stock.' : 'No prizes yet.'}</p>
-              )}
-            </>
-          ) : (
-            <p className={styles.walletNote}>Log in with Twitch to see your points and redeem prizes.</p>
-          )}
-        </div>
-      </header>
+      </section>
 
       <div className={styles.bar}>
         <div className={styles.seg} role="tablist">
@@ -234,7 +323,7 @@ export default function Shop() {
       ) : (
         <div className={styles.grid}>
           {filtered.map(product => (
-            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} />
+            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} isGoal={goalId === product.id} onGoal={setGoal} />
           ))}
         </div>
       )}
