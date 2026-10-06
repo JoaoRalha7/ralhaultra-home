@@ -13,7 +13,7 @@ import { supabaseDash } from '../lib/supabase';
 
 const NAV_GROUPS = [
   [['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard']],
-  [['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop'], ['ball', 'Blackjack', '/blackjack'], ['spark', 'Mines', '/mines']],
+  [['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop']],
   [
     ['slots', 'Slots', '/slots'],
     ['spark', 'Bonus Hunts', '/bonus-hunts'],
