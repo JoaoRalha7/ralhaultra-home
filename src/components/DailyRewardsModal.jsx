@@ -208,6 +208,8 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
   const [claimCountdown, setClaimCountdown] = useState(0)
   const [claimLoading,   setClaimLoading]   = useState(false)
   const [claimResult,    setClaimResult]    = useState(null)
+  const [errClaim,       setErrClaim]       = useState(null)
+  const [errWheel,       setErrWheel]       = useState(null)
   const [streakCount,    setStreakCount]    = useState(0)
   const [todayPts,       setTodayPts]       = useState(50)
 
@@ -309,6 +311,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
     if (!username || !userId || claimLoading || claimStatus !== 'ready') return
     setClaimLoading(true)
     setClaimResult(null)
+    setErrClaim(null)
     try {
       const res  = await fetch(`${SE_WORKER_URL}/daily/claim`, {
         method: 'POST',
@@ -321,7 +324,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
           setClaimStatus('claimed')
           claimTargetTime.current = Date.now() + data.nextClaimMs
           setClaimCountdown(data.nextClaimMs) 
-        }
+        } else setErrClaim('Could not claim right now. Please try again in a moment.')
         return
       }
       setClaimResult(data.points)
@@ -336,7 +339,8 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
       setTodayPts(data.points ?? STREAK_DAYS[Math.min(newStreak - 1, 6)].pts)
       
       onPointsUpdate?.()
-    } finally { setClaimLoading(false) }
+    } catch { setErrClaim('Connection error. Please try again.') }
+    finally { setClaimLoading(false) }
   }
 
   // Store wheel result when spinning completes
@@ -345,6 +349,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
   async function handleSpinClick() {
     if (!username || !userId || spinning || wheelStatus !== 'ready') return
     setWheelResult(null)
+    setErrWheel(null)
     wheelResultRef.current = null
     try {
       const res  = await fetch(`${SE_WORKER_URL}/daily/wheel`, {
@@ -358,7 +363,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
           setWheelStatus('claimed')
           wheelTargetTime.current = Date.now() + data.nextSpinMs
           setWheelCountdown(data.nextSpinMs) 
-        }
+        } else setErrWheel('The wheel is unavailable right now. Please try again in a moment.')
         return
       }
       wheelResultRef.current = data
@@ -366,7 +371,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
       setWinIndex(-1)
       setSpinning(true)
       setWheelStatus('spinning')
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); setErrWheel('Connection error. Please try again.') }
   }
 
   const handleSpinEndFinal = useCallback(() => {
@@ -457,6 +462,8 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
               )}
             </div>
 
+            {errClaim && <div className={`${styles.result} ${styles.error}`} role="alert">{errClaim}</div>}
+
             {claimResult && (
               <div className={styles.result}>{I(<polyline points="20 6 9 17 4 12"/>, 15, 3)}+{claimResult} points added to your account</div>
             )}
@@ -486,6 +493,8 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
                 </span>
               ))}
             </div>
+
+            {errWheel && <div className={`${styles.result} ${styles.error}`} role="alert">{errWheel}</div>}
 
             {wheelResult && (
               <div className={styles.result}>{I(<polyline points="20 6 9 17 4 12"/>, 15, 3)}You won {wheelResult.prize}. Points added.</div>

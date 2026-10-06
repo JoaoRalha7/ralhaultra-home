@@ -69,3 +69,4 @@
 .streakHero span{font:800 18px "Bricolage Grotesque",sans-serif}
 .streakHero small{display:block;margin-top:4px;font:500 13px "DM Sans",sans-serif;color:var(--mute)}
 .card{justify-content:space-between}
+.error{background:#f871711a;border-color:#f8717166;color:#f87171}
