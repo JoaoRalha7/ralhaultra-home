@@ -332,7 +332,7 @@ function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, 
   useEffect(() => { setAngle(0) }, [n])
 
   const mobile = vw <= 640
-  const w = mobile ? 150 : vw <= 1100 ? 176 : 214
+  const w = mobile ? 128 : vw <= 1100 ? 150 : 176
   const R = n > 2 ? Math.max(w * 1.15, (w * 1.45) / (2 * Math.tan(Math.PI / n))) : w
 
   const active = n ? ((Math.round(-angle / step) % n) + n) % n : 0
