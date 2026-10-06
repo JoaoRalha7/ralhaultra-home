@@ -14,6 +14,7 @@ import { supabaseDash } from '../lib/supabase';
 const NAV_GROUPS = [
   [['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard']],
   [['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop']],
+  [['mines', 'Mines', '/mines'], ['cards', 'Blackjack', '/blackjack'], ['crash', 'Crash', '/crash']],
   [
     ['slots', 'Slots', '/slots'],
     ['spark', 'Bonus Hunts', '/bonus-hunts'],

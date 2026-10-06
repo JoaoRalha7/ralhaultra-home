@@ -3,11 +3,14 @@ import { Route, Routes, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import AuthCallback from './pages/AuthCallback';
 import BonusHunts from './pages/BonusHunts';
+import Blackjack from './pages/Blackjack';
+import Crash from './pages/Crash';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Legal from './pages/Legal';
 import Leaderboard from './pages/Leaderboard';
 import MiniGame from './pages/MiniGame';
+import Mines from './pages/Mines';
 import MiniGameAvgMulti from './pages/MiniGameAvgMulti';
 import MiniGameGtb from './pages/MiniGameGtb';
 import MiniGamesLanding from './pages/MiniGamesLanding';
@@ -96,6 +99,9 @@ export default function App() {
         <Route path="mini-games/pick-win" element={<MiniGame />} />
         <Route path="mini-games/gtb" element={<MiniGameGtb />} />
         <Route path="mini-games/avg-multi" element={<MiniGameAvgMulti />} />
+        <Route path="mines" element={<Mines />} />
+        <Route path="blackjack" element={<Blackjack />} />
+        <Route path="crash" element={<Crash />} />
         <Route path="terms" element={<Legal />} />
         <Route path="privacy" element={<Legal />} />
         <Route path="cookies" element={<Legal />} />
