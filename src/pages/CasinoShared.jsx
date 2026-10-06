@@ -11,6 +11,9 @@ export const fmt = (n) => Number(n ?? 0).toLocaleString('en-GB')
 const ERR = {
   insufficient: 'Not enough points.',
   'invalid picks': 'Pick between 1 and 10 numbers.',
+  'invalid side bet': `Side bets must be 0 or between ${MIN_BET} and ${fmt(MAX_BET)} points.`,
+  'cannot split': 'You cannot split this hand.',
+  'cannot double': 'You cannot double this hand.',
   'invalid bet': `Bet must be between ${MIN_BET} and ${fmt(MAX_BET)} points.`,
   unauthorized: 'Log in again to play.',
   not_logged_in: 'Log in with Twitch to play.',
@@ -173,7 +176,7 @@ export function useCasino(game) {
     const r = round
     if (!r) { seen.current = { id: null, status: null, n: -1 }; return }
     const prev = seen.current
-    const n = (r.revealed?.length ?? r.player?.length ?? 0)
+    const n = (r.revealed?.length ?? (r.hands ? r.hands.reduce((a, h) => a + h.cards.length, 0) : 0))
     const fresh = prev.id !== null && prev.id === r.id
     if (fresh && n > prev.n) playSfx(game === 'mines' ? 'gem' : 'card')
     if (r.status === 'done' && !(prev.id === r.id && prev.status === 'done')) {

@@ -38,7 +38,7 @@
 .cta:disabled, .ctaAlt:disabled { opacity: .45; cursor: default; }
 .pulse { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { box-shadow: 0 12px 28px -12px var(--g1), 0 0 0 0 color-mix(in srgb, var(--g1) 55%, transparent); } 50% { box-shadow: 0 12px 28px -12px var(--g1), 0 0 0 10px transparent; } }
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .actions .cta { grid-column: 1 / -1; }
 .err { margin: 0; padding: 10px 12px; border-radius: 10px; background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.35); color: #fca5a5; font-size: 13px; }
 .note { margin: 0; font-size: 12px; color: var(--mute); line-height: 1.5; }
@@ -218,3 +218,28 @@
 .payRow small { display: block; color: #5a6070; font-size: 10.5px; font-weight: 700; margin-bottom: 2px; }
 .payRow .cur { color: #fff; border-color: var(--g1); background: color-mix(in srgb, var(--g1) 22%, transparent); }
 @media (max-width: 640px) { .kenoGrid { gap: 5px; } .kn { border-radius: 9px; } }
+
+.riskRow button { font-size: 12px; padding: 0 2px; }
+
+/* ---- Blackjack: split hands and side bets ---- */
+.sideIn { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); background: #0f131b; }
+.sideIn span { display: grid; font: 800 13px "DM Sans", sans-serif; color: #fff; min-width: 0; }
+.sideIn small { color: var(--mute); font-weight: 600; font-size: 10.5px; line-height: 1.3; }
+.sideIn input { width: 84px; height: 34px; padding: 0 8px; border-radius: 9px; border: 1px solid var(--line); background: #161a22; color: #fff; font: 700 14px "DM Sans", sans-serif; text-align: right; flex: none; }
+.sideIn input:disabled { opacity: .5; }
+.sideRes { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.sideRes span { padding: 4px 12px; border-radius: 999px; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.18); color: rgba(255,255,255,.7); font: 700 12px "DM Sans", sans-serif; }
+.sideRes .sideWin { background: rgba(52,211,153,.18); border-color: rgba(52,211,153,.6); color: #6ee7b7; }
+.seats { display: flex; justify-content: center; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+.seat { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; border: 2px solid transparent; transition: .15s; }
+.seatOn { border-color: var(--gold); background: rgba(0,0,0,.18); box-shadow: 0 0 24px -6px rgba(245,197,66,.55); }
+.seatDone { opacity: .7; }
+.multi .card { width: 62px; height: 90px; margin-left: -34px; padding: 6px 7px; }
+.multi .card b { font-size: 17px; }
+.multi .pip { width: 28px; height: 28px; }
+.multi .pipSm { width: 11px; height: 11px; top: 8px; right: 7px; }
+.multi .cards { min-height: 90px; padding-left: 34px; }
+.emWin { background: #34d399 !important; color: #04140d !important; }
+.emLose { background: #f87171 !important; color: #2a0a0a !important; }
+.betLine { flex-wrap: wrap; }
+.page[data-game="keno"] .quick .on { color: #fff; }

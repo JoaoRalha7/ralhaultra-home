@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BetPanel, Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
-import { KENO, kenoTable } from '../lib/keno'
+import { KENO, KENO_RISK, kenoTable } from '../lib/keno'
 import styles from './Casino.module.css'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -11,6 +11,7 @@ export default function Keno() {
   const [bet, setBet] = useState(100)
   const [picks, setPicks] = useState([])
   const [mode, setMode] = useState('manual')
+  const [risk, setRisk] = useState('classic')
   const [turbo, setTurbo] = useState(false)
   const [cfg, setCfg] = useState({ rounds: '10', stopProfit: '', stopLoss: '', onWin: '', onLoss: '' })
   const [view, setView] = useState(null) // { res, shown }
@@ -20,13 +21,13 @@ export default function Keno() {
 
   // latest values for the async loops
   const R = useRef({})
-  R.current = { bet, picks, turbo, cfg }
+  R.current = { bet, picks, turbo, cfg, risk }
   const stop = useRef(false)
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false; stop.current = true } }, [])
 
   const locked = playing || auto
-  const table = picks.length ? kenoTable(picks.length) : []
+  const table = picks.length ? kenoTable(picks.length, risk) : []
   const res = view?.res
   const done = !!res && view.shown >= KENO.draw
   const drawnSet = new Set(res ? res.draw.slice(0, view.shown) : [])
@@ -47,10 +48,10 @@ export default function Keno() {
 
   // one round: server settles instantly, the client only animates the reveal
   const playRound = async (stake) => {
-    const { picks: pk, turbo: tb } = R.current
+    const { picks: pk, turbo: tb, risk: rk } = R.current
     setPlaying(true); setView(null)
     g.quiet.current = tb
-    const data = await g.start({ bet: stake, picks: pk })
+    const data = await g.start({ bet: stake, picks: pk, risk: rk })
     if (!data?.state || data.state.game !== 'keno') { setPlaying(false); return null }
     const s = data.state
     if (tb) { setView({ res: s, shown: KENO.draw }) }
@@ -109,6 +110,13 @@ export default function Keno() {
             <button type="button" role="tab" aria-selected={mode === 'auto'} className={mode === 'auto' ? styles.on : ''} disabled={auto} onClick={() => setMode('auto')}>Auto</button>
           </div>
 
+          <span className={styles.lbl}>Risk</span>
+          <div className={`${styles.quick} ${styles.riskRow}`}>
+            {Object.keys(KENO_RISK).map((k) => (
+              <button key={k} type="button" disabled={locked} className={risk === k ? styles.on : ''} onClick={() => { setRisk(k); setView(null) }}>{k[0].toUpperCase() + k.slice(1)}</button>
+            ))}
+          </div>
+
           {mode === 'auto' && (
             <>
               <div className={styles.kRow}>
@@ -144,7 +152,7 @@ export default function Keno() {
             </button>
           )}
           {g.err && <p className={styles.err}>{g.err}</p>}
-          <p className={styles.note}>Payouts are fixed by the odds of your pick count (about 96% return, 1000x max). Autobet stops on its own if you run out of points or hit an error.</p>
+          <p className={styles.note}>Payouts are fixed by the odds of your pick count (about 97% return, 1000x max). Higher risk pays less on low hits and far more on high hits. Autobet stops on its own if you run out of points or hit an error.</p>
         </BetPanel>
 
         <section className={styles.stage}>

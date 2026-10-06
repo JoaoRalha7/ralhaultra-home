@@ -26,25 +26,34 @@ const CASINO = { minBet: 10, maxBet: 10000, maxPayout: 250000, edge: 0.97, grid:
 const CASINO_GAMES = ['mines', 'blackjack', 'crash', 'keno']
 
 // Keno: pick 1-10 of 40, the house draws 10. Paytable is derived from the exact odds (~96-97% RTP, 1000x cap).
-const KENO = { size: 40, draw: 10, max: 10, edge: 0.97, cap: 1000, alpha: 0.3 }
+const KENO = { size: 40, draw: 10, max: 10, edge: 0.97, cap: 1000 }
+const KENO_RISK = { low: { alpha: 0.75, min: 1 }, classic: { alpha: 0.3, min: 1 }, medium: { alpha: 0, min: 1.5 }, high: { alpha: -0.5, min: 3 } }
 const C = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r }
 function kenoProbs(n) { const t = C(KENO.size, KENO.draw); return Array.from({ length: n + 1 }, (_, h) => C(n, h) * C(KENO.size - n, KENO.draw - h) / t) }
-function kenoTable(n) {
+function kenoTable(n, risk = 'classic') {
+  const R = KENO_RISK[risk] || KENO_RISK.classic
   const P = kenoProbs(n)
-  let S = []; for (let h = 1; h <= n; h++) S.push(h)
-  let mult = []
+  let lo = 1 // lowest paying hit
   for (;;) {
-    const W = S.map((h) => Math.pow(P[h], KENO.alpha)); const sum = W.reduce((a, b) => a + b, 0)
-    mult = S.map((h, i) => KENO.edge * (W[i] / sum) / P[h])
-    const low = mult.findIndex((m) => m < 1)
-    if (low === -1 || S.length === 1) break
-    S = S.slice(1)
+    const S = []; for (let h = lo; h <= n; h++) S.push(h)
+    const capped = new Set(), mult = {}
+    for (;;) {
+      const used = [...capped].reduce((a, h) => a + KENO.cap * P[h], 0)
+      const free = S.filter((h) => !capped.has(h))
+      const W = free.map((h) => Math.pow(P[h], R.alpha)); const sum = W.reduce((a, b) => a + b, 0)
+      free.forEach((h, i) => { mult[h] = Math.max(0, KENO.edge - used) * (W[i] / sum) / P[h] })
+      const over = free.filter((h) => mult[h] > KENO.cap)
+      if (!over.length) break
+      over.forEach((h) => capped.add(h))
+      if (capped.size === S.length) break
+    }
+    S.forEach((h) => { if (capped.has(h)) mult[h] = KENO.cap })
+    if (lo < n && mult[lo] < R.min) { lo++; continue }
+    const t = new Array(n + 1).fill(0)
+    S.forEach((h) => { t[h] = Math.min(KENO.cap, Math.floor(mult[h] * 100) / 100) })
+    return t
   }
-  const t = new Array(n + 1).fill(0)
-  S.forEach((h, i) => { t[h] = Math.min(KENO.cap, Math.floor(mult[i] * 100) / 100) })
-  return t
 }
-
 
 const _u32 = new Uint32Array(1)
 function rndInt(n) { // unbiased integer in [0, n)
@@ -73,6 +82,32 @@ function bjTotal(cards) {
 }
 const isBJ = (cards) => cards.length === 2 && bjTotal(cards) === 21
 
+// Blackjack runs on a 6-deck shoe (card = 0..51 repeated). suit = floor((c % 52) / 13): 0 spade, 1 heart, 2 diamond, 3 club.
+const BJ_DECKS = 6
+const bjSuit = (c) => Math.floor((c % 52) / 13)
+const bjRed = (c) => { const x = bjSuit(c); return x === 1 || x === 2 }
+// Side bets pay "total multiples" of the stake (stake included). Odds checked on a 6-deck shoe: Perfect Pairs ~94.5%, 21+3 ~95.4%.
+const SIDE_PP = { perfect: 30, colored: 12, mixed: 6 }
+const SIDE_T3 = { suitedTrips: 101, straightFlush: 41, trips: 31, straight: 11, flush: 6 }
+function sidePP(a, b) {
+  if (a % 13 !== b % 13) return { kind: 'none', mult: 0 }
+  const kind = bjSuit(a) === bjSuit(b) ? 'perfect' : bjRed(a) === bjRed(b) ? 'colored' : 'mixed'
+  return { kind, mult: SIDE_PP[kind] }
+}
+function sideT3(a, b, c) {
+  const r = [a % 13, b % 13, c % 13].sort((x, y) => x - y), s = [bjSuit(a), bjSuit(b), bjSuit(c)]
+  const flush = s[0] === s[1] && s[1] === s[2], trips = r[0] === r[1] && r[1] === r[2]
+  const straight = (r[1] === r[0] + 1 && r[2] === r[1] + 1) || (r[0] === 0 && r[1] === 11 && r[2] === 12)
+  const kind = trips && flush ? 'suitedTrips' : straight && flush ? 'straightFlush' : trips ? 'trips' : straight ? 'straight' : flush ? 'flush' : 'none'
+  return { kind, mult: SIDE_T3[kind] || 0 }
+}
+const bjStake = (s) => s.hands.reduce((a, h) => a + h.bet, 0) + (s.sideStake || 0)
+const bjCanSplit = (s) => {
+  const h = s.hands[s.active]
+  return !!h && !h.done && h.cards.length === 2 && s.hands.length < 4 && !h.noResplit && bjVal(h.cards[0]) === bjVal(h.cards[1])
+}
+const bjCanDouble = (s) => { const h = s.hands[s.active]; return !!h && !h.done && h.cards.length === 2 && !h.noDouble }
+
 // Crash multiplier helpers
 const crashAtMs = (m) => Math.log(m) / CASINO.crashRate
 const crashMultAt = (ms) => Math.floor(Math.exp(CASINO.crashRate * Math.max(0, ms)) * 100) / 100
@@ -92,7 +127,8 @@ function crashResolve(st, now) {
 }
 
 function publicGame(game, row, now) {
-  const st = row.state
+  let st = row.state
+  if (game === 'blackjack' && !st.hands) st = { ...st, hands: [{ cards: st.player || [], bet: row.bet }], active: 0 } // round started before splits existed
   const done = row.status === 'done'
   const base = { game, id: row.id, bet: row.bet, status: row.status, payout: row.payout || 0, serverNow: now }
   if (game === 'mines') {
@@ -101,11 +137,13 @@ function publicGame(game, row, now) {
       nextMult: minesMult(k + 1, st.m), minePositions: done ? st.mines : null, hit: st.hit ?? null }
   }
   if (game === 'blackjack') {
-    return { ...base, player: st.player, dealer: done ? st.dealer : [st.dealer[0]], dealerTotal: done ? bjTotal(st.dealer) : bjVal(st.dealer[0]),
-      playerTotal: bjTotal(st.player), canDouble: !done && st.player.length === 2 && !st.doubled, doubled: !!st.doubled, outcome: st.outcome || null }
+    return { ...base, hands: st.hands.map((h) => ({ cards: h.cards, bet: h.bet, total: bjTotal(h.cards), doubled: !!h.doubled, done: !!h.done, result: h.result || null, payout: h.payout || 0 })),
+      active: st.active, dealer: done ? st.dealer : [st.dealer[0]], dealerTotal: done ? bjTotal(st.dealer) : bjVal(st.dealer[0]),
+      canDouble: !done && bjCanDouble(st), canSplit: !done && bjCanSplit(st), outcome: st.outcome || null,
+      side: st.sideRes || null, sidePayout: st.sidePayout || 0 }
   }
   if (game === 'keno') {
-    return { ...base, picks: st.picks, draw: st.draw, hits: st.hits, mult: st.mult }
+    return { ...base, picks: st.picks, risk: st.risk || 'classic', draw: st.draw, hits: st.hits, mult: st.mult }
   }
   // crash
   const r = done ? null : crashResolve(st, now)
@@ -352,11 +390,21 @@ export default {
             if (!Number.isInteger(m) || m < 1 || m > 24) return json({ error: 'invalid mines' }, 400)
             params = { m }
           }
+          let stake = bet
+          let sides = { pp: 0, t3: 0 }
+          if (game === 'blackjack') {
+            const pp = body.pp == null || body.pp === '' ? 0 : parseInt(body.pp, 10)
+            const t3 = body.t3 == null || body.t3 === '' ? 0 : parseInt(body.t3, 10)
+            const okSide = (v) => Number.isInteger(v) && v >= 0 && v <= CASINO.maxBet && (v === 0 || v >= CASINO.minBet)
+            if (!okSide(pp) || !okSide(t3)) return json({ error: 'invalid side bet' }, 400)
+            sides = { pp, t3 }; stake = bet + pp + t3
+          }
           if (game === 'keno') {
             const picks = Array.isArray(body.picks) ? body.picks.map(Number) : []
             const ok = picks.length >= 1 && picks.length <= KENO.max && new Set(picks).size === picks.length && picks.every((x) => Number.isInteger(x) && x >= 1 && x <= KENO.size)
             if (!ok) return json({ error: 'invalid picks' }, 400)
-            params = { picks: [...picks].sort((a, b) => a - b) }
+            const risk = KENO_RISK[body.risk] ? body.risk : 'classic'
+            params = { picks: [...picks].sort((a, b) => a - b), risk }
           }
           if (game === 'crash' && body.auto != null && body.auto !== '') {
             const a = Math.round(Number(body.auto) * 100) / 100
@@ -367,8 +415,8 @@ export default {
           const balRes = await fetch(seUrl, { headers: seH })
           if (!balRes.ok) return json({ error: 'balance check failed' }, 502)
           const { points: current = 0 } = await balRes.json()
-          if (current < bet) return json({ error: 'insufficient', currentPoints: current }, 400)
-          const charge = await seAdd(-bet)
+          if (current < stake) return json({ error: 'insufficient', currentPoints: current }, 400)
+          const charge = await seAdd(-stake)
           if (!charge.ok) return json({ error: 'charge failed' }, 502)
 
           let state, kenoPayout = 0
@@ -378,22 +426,27 @@ export default {
           } else if (game === 'keno') {
             const draw = shuffle(Array.from({ length: KENO.size }, (_, i) => i + 1)).slice(0, KENO.draw)
             const hits = params.picks.filter((p) => draw.includes(p)).length
-            const mult = kenoTable(params.picks.length)[hits]
-            state = { picks: params.picks, draw, hits, mult }
+            const mult = kenoTable(params.picks.length, params.risk)[hits]
+            state = { picks: params.picks, risk: params.risk, draw, hits, mult }
             kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
           } else if (game === 'blackjack') {
-            const deck = shuffle(Array.from({ length: 52 }, (_, i) => i))
-            state = { deck: deck.slice(4), player: [deck[0], deck[2]], dealer: [deck[1], deck[3]] }
+            const deck = shuffle(Array.from({ length: 52 * BJ_DECKS }, (_, i) => i % 52))
+            const pc = [deck[0], deck[2]], dc = [deck[1], deck[3]]
+            const sideRes = {}
+            let sidePayout = 0
+            if (sides.pp) { const r = sidePP(pc[0], pc[1]); sideRes.pp = { stake: sides.pp, ...r }; sidePayout += sides.pp * r.mult }
+            if (sides.t3) { const r = sideT3(pc[0], pc[1], dc[0]); sideRes.t3 = { stake: sides.t3, ...r }; sidePayout += sides.t3 * r.mult }
+            state = { deck: deck.slice(4), dealer: dc, hands: [{ cards: pc, bet }], active: 0, sideStake: sides.pp + sides.t3, sideRes: sides.pp || sides.t3 ? sideRes : null, sidePayout }
           } else {
             state = { crashAt: newCrashPoint(), startedAt: Date.now() + 600, auto: params.auto || null }
           }
 
           const ins = await fetch(rest, {
             method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' },
-            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet, state, status: game === 'keno' ? 'done' : 'active', payout: kenoPayout }),
+            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet: stake, state, status: game === 'keno' ? 'done' : 'active', payout: kenoPayout }),
           })
           const created = ins.ok ? (await ins.json())?.[0] : null
-          if (!created) { const rf = await seAdd(bet); return json({ error: 'could not start', refunded: true, newPoints: rf.points ?? null }, 409) }
+          if (!created) { const rf = await seAdd(stake); return json({ error: 'could not start', refunded: true, newPoints: rf.points ?? null }, 409) }
 
           let row = created, newPoints = charge.points
           if (game === 'keno' && kenoPayout > 0) {
@@ -401,10 +454,12 @@ export default {
             if (p.points != null) newPoints = p.points
           }
           if (game === 'blackjack') {
-            const pBJ = isBJ(state.player), dBJ = isBJ(state.dealer)
+            const pBJ = isBJ(state.hands[0].cards), dBJ = isBJ(state.dealer)
             if (pBJ || dBJ) {
-              const payout = pBJ && dBJ ? bet : pBJ ? bet * 2.5 : 0
-              const f = await finish(created, { ...state, outcome: pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'dealer_blackjack' }, payout)
+              const main = pBJ && dBJ ? bet : pBJ ? bet * 2.5 : 0
+              const result = pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'lose'
+              const hands = [{ ...state.hands[0], done: true, result, payout: main }]
+              const f = await finish(created, { ...state, hands, outcome: pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'dealer_blackjack' }, main + state.sidePayout)
               if (f.row) { row = f.row; newPoints = f.newPoints ?? newPoints }
             }
           }
@@ -448,47 +503,78 @@ export default {
           }
 
           if (game === 'blackjack') {
-            const dealerPlay = (s) => {
-              const d = [...s.dealer], deck = [...s.deck]
-              while (bjTotal(d) < 17) d.push(deck.shift())
-              return { ...s, dealer: d, deck }
-            }
-            const settle = async (s, totalBet) => {
-              const p = bjTotal(s.player), d = bjTotal(s.dealer)
-              let outcome, payout
-              if (p > 21) { outcome = 'bust'; payout = 0 }
-              else if (d > 21 || p > d) { outcome = 'win'; payout = totalBet * 2 }
-              else if (p === d) { outcome = 'push'; payout = totalBet }
-              else { outcome = 'lose'; payout = 0 }
-              const f = await finish(row, { ...s, outcome }, payout)
+            const cur = row.state
+            if (!cur.hands) return json({ error: 'round expired' }, 409)
+            const clone = () => ({ ...cur, deck: [...cur.deck], hands: cur.hands.map((h) => ({ ...h, cards: [...h.cards] })) })
+            const nextActive = (s) => { const i = s.hands.findIndex((h) => !h.done); if (i >= 0) s.active = i; return i < 0 }
+            // all hands finished: dealer plays (unless everyone busted), then settle every hand
+            const finishRound = async (s) => {
+              const anyLive = s.hands.some((h) => bjTotal(h.cards) <= 21)
+              if (anyLive) while (bjTotal(s.dealer) < 17) s.dealer = [...s.dealer, s.deck.shift()]
+              const d = bjTotal(s.dealer)
+              let total = 0
+              s.hands = s.hands.map((h) => {
+                const p = bjTotal(h.cards)
+                let result, payout
+                if (p > 21) { result = 'bust'; payout = 0 }
+                else if (d > 21 || p > d) { result = 'win'; payout = h.bet * 2 }
+                else if (p === d) { result = 'push'; payout = h.bet }
+                else { result = 'lose'; payout = 0 }
+                total += payout
+                return { ...h, result, payout }
+              })
+              s.outcome = s.hands.length === 1 ? s.hands[0].result : 'multi'
+              const f = await finish(row, s, total + (s.sidePayout || 0))
               if (f.conflict) return json({ error: 'conflict' }, 409)
               return out(f.row, { newPoints: f.newPoints })
             }
-            if (action === 'hit') {
-              const deck = [...st.deck]
-              const ns = { ...st, player: [...st.player, deck.shift()], deck }
-              if (bjTotal(ns.player) > 21) return settle(ns, bet)
-              if (bjTotal(ns.player) === 21) return settle(dealerPlay(ns), bet)
-              const saved = await save(row, { state: ns })
+            const proceed = async (s) => {
+              if (nextActive(s)) return finishRound(s)
+              const saved = await save(row, { state: s, bet: bjStake(s) })
               if (!saved) return json({ error: 'conflict' }, 409)
               return out(saved)
             }
-            if (action === 'stand') return settle(dealerPlay(st), bet)
-            if (action === 'double') {
-              if (st.player.length !== 2 || st.doubled) return json({ error: 'cannot double' }, 400)
+            // extra stake (double / split): claim the round first, then charge, undo if the charge fails
+            const withStake = async (s, extra) => {
               const balRes = await fetch(seUrl, { headers: seH })
               const { points: current = 0 } = balRes.ok ? await balRes.json() : {}
-              if (current < bet) return json({ error: 'insufficient', currentPoints: current }, 400)
-              // claim the round first, then charge the extra bet
-              const marked = await save(row, { state: { ...st, doubled: true }, bet: bet * 2 })
-              if (!marked) return json({ error: 'conflict' }, 409)
-              const ch = await seAdd(-bet)
-              if (!ch.ok) { await save(marked, { state: st, bet }); return json({ error: 'charge failed' }, 502) }
+              if (current < extra) return { err: json({ error: 'insufficient', currentPoints: current }, 400) }
+              const marked = await save(row, { state: s, bet: bjStake(s) })
+              if (!marked) return { err: json({ error: 'conflict' }, 409) }
+              const ch = await seAdd(-extra)
+              if (!ch.ok) { await save(marked, { state: cur, bet: bjStake(cur) }); return { err: json({ error: 'charge failed' }, 502) } }
               row = marked
-              const deck = [...st.deck]
-              const ns = { ...st, doubled: true, player: [...st.player, deck.shift()], deck }
-              const settled = bjTotal(ns.player) > 21 ? ns : dealerPlay(ns)
-              return settle(settled, bet * 2)
+              return { ok: true }
+            }
+            const settleHand = (h) => { if (bjTotal(h.cards) >= 21) h.done = true }
+
+            if (action === 'hit') {
+              const s = clone(), h = s.hands[s.active]
+              if (h.done) return json({ error: 'hand finished' }, 400)
+              h.cards.push(s.deck.shift()); settleHand(h)
+              return proceed(s)
+            }
+            if (action === 'stand') {
+              const s = clone(); s.hands[s.active].done = true
+              return proceed(s)
+            }
+            if (action === 'double') {
+              if (!bjCanDouble(cur)) return json({ error: 'cannot double' }, 400)
+              const s = clone(), h = s.hands[s.active], extra = h.bet
+              h.bet = extra * 2; h.doubled = true; h.cards.push(s.deck.shift()); h.done = true
+              const w2 = await withStake(s, extra); if (w2.err) return w2.err
+              return proceed(s)
+            }
+            if (action === 'split') {
+              if (!bjCanSplit(cur)) return json({ error: 'cannot split' }, 400)
+              const s = clone(), i = s.active, h = s.hands[i], aces = h.cards[0] % 13 === 0
+              const h1 = { cards: [h.cards[0], s.deck.shift()], bet: h.bet }
+              const h2 = { cards: [h.cards[1], s.deck.shift()], bet: h.bet }
+              if (aces) for (const x of [h1, h2]) { x.done = true; x.noDouble = true; x.noResplit = true }
+              else for (const x of [h1, h2]) settleHand(x)
+              s.hands.splice(i, 1, h1, h2)
+              const w2 = await withStake(s, h.bet); if (w2.err) return w2.err
+              return proceed(s)
             }
             return json({ error: 'unknown action' }, 400)
           }
