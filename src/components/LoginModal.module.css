@@ -1,0 +1,123 @@
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(8px);
+  display: grid; place-items: center;
+  z-index: 400; padding: 16px;
+  animation: fadeIn .2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  position: relative;
+  width: min(420px, 94vw);
+  background: #0c0e15;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px;
+  padding: 36px 32px 28px;
+  box-shadow: 0 40px 100px rgba(0,0,0,.8);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0;
+  animation: slideUp .25s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.closeBtn {
+  position: absolute; top: 14px; right: 14px;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09);
+  color: rgba(255,255,255,.45); cursor: pointer; transition: .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.closeBtn:hover { color: #fff; background: rgba(255,255,255,.12); }
+
+/* Logo */
+.logoWrap {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; margin-bottom: 18px;
+}
+.logo { width: 44px; height: 44px; object-fit: contain; }
+
+/* Text */
+.title {
+  font-size: 20px; font-weight: 800; color: #fff;
+  margin-bottom: 10px; text-align: center;
+}
+.sub {
+  font-size: 13px; color: rgba(255,255,255,.45);
+  text-align: center; line-height: 1.6;
+  margin-bottom: 24px; max-width: 300px;
+}
+
+/* Checkbox */
+.termsLabel {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 12px; color: rgba(255,255,255,.5);
+  line-height: 1.5; cursor: pointer;
+  margin-bottom: 20px; width: 100%;
+}
+.termsLabel a {
+  color: #93c5fd; text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.termsLabel a:hover { color: #bfdbfe; }
+
+.checkbox {
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.04);
+  display: flex; align-items: center; justify-content: center;
+  transition: .15s; margin-top: 1px;
+}
+.termsLabel:hover .checkbox { border-color: rgba(59,130,246,.5); }
+
+/* When accepted — checkbox fills blue */
+.termsLabel:has(input:checked) .checkbox,
+.checkbox:has(svg) {
+  background: #3b82f6; border-color: #3b82f6; color: #fff;
+}
+
+/* Shake animation for when user tries to login without accepting */
+.shake { animation: shake .4s ease; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+
+/* Twitch button */
+.twitchBtn {
+  width: 100%; padding: 14px;
+  border-radius: 12px; border: none;
+  background: #5b21b6;
+  color: #fff; font-size: 13px; font-weight: 800;
+  letter-spacing: .08em; cursor: pointer;
+  font-family: var(--font); transition: .2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.twitchBtn:hover { background: #1d4ed8; transform: translateY(-1px); }
+.twitchBtnDisabled {
+  opacity: .45; cursor: not-allowed;
+}
+.twitchBtnDisabled:hover { transform: none; background: #5b21b6; }
+
+/* Legal */
+.legal {
+  font-size: 11px; color: rgba(255,255,255,.25);
+  text-align: center;
+}
+.legal a { color: rgba(255,255,255,.35); text-decoration: underline; }
+.legal a:hover { color: rgba(255,255,255,.6); }

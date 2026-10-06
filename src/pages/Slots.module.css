@@ -1,0 +1,341 @@
+/* ══════════════════════════════════════
+   MAIN PAGE
+══════════════════════════════════════ */
+.page { padding: 28px 32px; }
+.header { margin-bottom: 24px; }
+
+/* ── MODIFICADO AQUI PARA SUPORTAR O SVG NO TÍTULO ── */
+.title { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+.titleIcon { color: #3b82f6; } /* Dá a cor azul igual aos outros elementos */
+
+.sub   { font-size: 14px; color: rgb(237 237 237 / 0.85); }
+
+.filterbar { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+.searchBox {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  border-radius: 8px; padding: 10px 14px; transition: border-color .15s;
+}
+.searchBox:focus-within { border-color: rgba(59,130,246,.4); }
+.searchBox i { color: rgba(255,255,255,.3); font-size: 17px; flex-shrink: 0; }
+.searchInput { flex: 1; background: none; border: none; outline: none; color: #fff; font-size: 14px; font-family: var(--font); }
+.searchInput::placeholder { color: rgba(255,255,255,.3); }
+.clearBtn { background: none; border: none; color: rgba(255,255,255,.3); cursor: pointer; font-size: 13px; }
+.clearBtn:hover { color: #fff; }
+.provSelect {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  border-radius: 8px; padding: 10px 14px;
+  color: rgb(237 237 237 / 0.85); font-size: 14px; font-family: var(--font);
+  outline: none; cursor: pointer; min-width: 160px;
+}
+.provSelect option { background: #0c0e15; }
+
+/* ── Section + Carousel ── */
+.section { margin-bottom: 36px; }
+.sectionHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sectionLeft { display: flex; align-items: center; gap: 10px; }
+
+/* ── MODIFICADO AQUI PARA SUPORTAR O SVG NOS TÍTULOS ── */
+.sectionTitle { font-size: 20px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+.sectionTitle svg { color: rgba(255, 255, 255, 0.7); } /* Cor subtil para os ícones */
+
+.sectionCount {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 28px; height: 22px; padding: 0 6px; border-radius: 999px;
+  background: rgba(255,255,255,.10); font-size: 12px; font-weight: 700; color: rgb(237 237 237 / 0.85);
+}
+.sectionArrows { display: flex; gap: 6px; }
+.arrow {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.10);
+  color: rgb(237 237 237 / 0.85); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; transition: background .15s, color .15s;
+}
+.arrow:hover { background: rgba(255,255,255,.14); color: #fff; }
+
+.carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.carousel::-webkit-scrollbar { display: none; }
+.carouselLoading { display: flex; gap: 12px; overflow: hidden; }
+
+/* ── Slot Card ── */
+.slotCard {
+  position: relative; flex: 0 0 160px; width: 160px;
+  border-radius: 12px; overflow: hidden; cursor: pointer;
+  scroll-snap-align: start; background: rgba(255,255,255,.05);
+  transition: transform .2s ease;
+}
+.slotCard:hover { transform: translateY(-4px); }
+.slotImgWrap { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; }
+.slotImg { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s ease; }
+.slotCard:hover .slotImg { transform: scale(1.05); }
+.slotFallback {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(59,130,246,.3), rgba(30,34,56,.9));
+  display: none; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 800; color: rgb(237 237 237 / 0.85);
+}
+.badge {
+  position: absolute; top: 10px; left: 10px;
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 800;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(6px);
+  color: #fff; border: 1px solid rgba(255,255,255,.18);
+}
+.badgeDot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.badgeTOP .badgeDot { background: #facc15; box-shadow: 0 0 6px rgba(250,204,21,.8); }
+.badgeNEW .badgeDot { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.8); }
+.slotHover {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.2) 50%, transparent 100%);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 12px 10px; opacity: 0; transition: opacity .2s ease;
+}
+.slotCard:hover .slotHover { opacity: 1; }
+.hoverName { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.hoverProv { font-size: 11px; color: rgb(237 237 237 / 0.85); margin-bottom: 6px; }
+.hoverMeta { display: flex; gap: 6px; flex-wrap: wrap; }
+.hoverMeta span { font-size: 10px; font-weight: 600; background: rgba(255,255,255,.15); border-radius: 4px; padding: 2px 6px; color: rgb(237 237 237 / 0.85); }
+
+.skeletonCard {
+  flex: 0 0 160px; width: 160px; aspect-ratio: 3 / 4; border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.10) 50%, rgba(255,255,255,.05) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.searchGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 60px; color: rgb(237 237 237 / 0.85); }
+.emptyIcon { font-size: 40px; }
+
+/* ══════════════════════════════════════
+   DETAIL PAGE
+══════════════════════════════════════ */
+.detailPage { padding: 28px 32px; }
+
+.detailHeader { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 28px; }
+.backBtn {
+  width: 40px; height: 40px; flex-shrink: 0;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px; color: rgb(237 237 237 / 0.85);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; cursor: pointer; transition: .15s; margin-top: 2px;
+}
+.backBtn:hover { color: #fff; background: rgba(255,255,255,.12); }
+.detailTitle { font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.detailSub   { font-size: 14px; color: rgb(237 237 237 / 0.85); }
+
+/* 2 col layout */
+.detailLayout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── LEFT ── */
+.detailLeft { display: flex; flex-direction: column; gap: 10px; }
+
+.slotInfoCard {
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; padding-bottom: 14px;
+}
+.slotInfoImgWrap { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; }
+.slotInfoImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.slotInfoName { font-size: 16px; font-weight: 800; color: #fff; padding: 12px 14px 2px; }
+.slotInfoProv { font-size: 13px; color: rgba(59,130,246,.8); font-weight: 600; padding: 0 14px; }
+
+/* Info row — RTP, Volatility, Max Win, Release Date */
+.infoRow {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+  transition: background .15s;
+}
+.infoRow:hover { background: rgba(255,255,255,.06); }
+.infoRowIcon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: rgba(59,130,246,.18); color: #93c5fd;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.infoRowLabel {
+  font-size: 10px; font-weight: 700; color: rgb(237 237 237 / 0.85);
+  text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px;
+}
+.infoRowVal { font-size: 16px; font-weight: 900; color: #fff; }
+
+/* ── RIGHT ── */
+.detailRight { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* Stat cards — 4 in a row, no hero strip above */
+.statsRow {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+.statCard {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; transition: background .15s;
+}
+.statCard:hover { background: rgba(255,255,255,.06); }
+.statIcon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(59,130,246,.18); color: #93c5fd;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.statLabel {
+  font-size: 10px; font-weight: 700; color: rgb(237 237 237 / 0.85);
+  text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px;
+}
+.statValue { font-size: 18px; font-weight: 900; color: #fff; }
+
+/* Table */
+.tableWrap {
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+.tableFilter {
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: flex-end;
+}
+.huntSelect {
+  background: #0f1118; border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px; padding: 8px 12px;
+  color: rgb(237 237 237 / 0.85); font-size: 13px; font-family: var(--font); outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+}
+.huntSelect option { background: #0f1118; color: rgba(255,255,255,.85); }
+.huntSelect option:checked { background: rgba(59,130,246,.3); }
+
+.betCell { display: flex; align-items: center; gap: 8px; }
+.superBadge {
+  font-size: 9px; font-weight: 800; letter-spacing: .05em;
+  background: rgba(251,191,36,.15); color: #fbbf24;
+  border: 1px solid rgba(251,191,36,.3);
+  border-radius: 4px; padding: 2px 6px; flex-shrink: 0;
+}
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th {
+  padding: 12px 16px; font-size: 11px; font-weight: 700;
+  color: rgba(232,238,252,.35); text-transform: uppercase; letter-spacing: .08em;
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+.table td {
+  padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.04);
+  color: rgb(237 237 237 / 0.85); vertical-align: middle;
+}
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: rgba(255,255,255,.03); }
+
+.tdBet   { color: rgb(237 237 237 / 0.85); }
+.tdMulti { font-weight: 800; }
+.tdWin strong { color: #fff; font-weight: 800; }
+.tdDate  { color: rgb(237 237 237 / 0.85); font-size: 12px; white-space: nowrap; }
+
+.multiGood { color: #21d16e; }
+.multiMid  { color: #f5a623; }
+.multiBad  { color: rgb(237 237 237 / 0.85); }
+
+.gameTag {
+  display: inline-block; font-size: 10px; font-weight: 800;
+  letter-spacing: .06em; padding: 4px 9px; border-radius: 5px; white-space: nowrap;
+}
+.gameTagHunt       { background: rgba(59,130,246,.15); color: #93c5fd;  border: 1px solid rgba(59,130,246,.25); }
+.gameTagTournament { background: rgba(34,211,238,.10);  color: #22d3ee;  border: 1px solid rgba(34,211,238,.25); }
+.gameTagSpin       { background: rgba(34,197,94,.10);   color: #4ade80;  border: 1px solid rgba(34,197,94,.25); }
+.gameTagBuy        { background: rgba(251,146,60,.12);  color: #fb923c;  border: 1px solid rgba(251,146,60,.25); }
+.gameTagBtn {
+  cursor: pointer; font-family: var(--font);
+  transition: filter .15s;
+}
+.gameTagBtn:hover { filter: brightness(1.3); }
+
+/* Pagination */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 14px; }
+.pgBtn {
+  min-width: 34px; height: 34px; padding: 0 8px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.05);
+  color: rgb(237 237 237 / 0.85); font-size: 13px; cursor: pointer;
+  transition: .15s; font-family: var(--font);
+  display: flex; align-items: center; justify-content: center;
+}
+.pgBtn:hover:not(:disabled) { color: #fff; background: rgba(255,255,255,.10); }
+.pgBtn:disabled { opacity: .3; cursor: default; }
+.pgActive { background: rgba(59,130,246,.18) !important; border-color: rgba(59,130,246,.35) !important; color: #bfdbfe !important; }
+
+.tableLoading { display: flex; align-items: center; gap: 10px; padding: 32px 20px; color: rgb(237 237 237 / 0.85); }
+.tableEmpty   { padding: 32px 20px; color: rgba(232,238,252,.35); font-size: 13px; }
+.spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.1); border-top-color: #3b82f6; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .statsRow { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .detailLayout { grid-template-columns: 1fr; }
+  .detailLeft { display: grid; grid-template-columns: 1fr 1fr; }
+  .slotInfoCard { grid-column: 1 / -1; }
+}
+
+@media (max-width: 640px) {
+  .page, .detailPage { padding: 18px 16px; }
+  .slotCard     { flex: 0 0 130px; width: 130px; }
+  .skeletonCard { flex: 0 0 130px; width: 130px; }
+  .statsRow     { grid-template-columns: 1fr 1fr; }
+  .detailLeft   { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .page, .detailPage { padding: 12px; }
+
+  /* Search bar full width */
+  .searchWrap  { width: 100%; }
+  .searchBox   { width: 100%; }
+
+  /* Filtros em scroll horizontal */
+  .filters { overflow-x: auto; padding-bottom: 4px; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+
+  /* Slot cards — 2 por linha */
+  .slotCard     { flex: 0 0 calc(50vw - 18px); width: calc(50vw - 18px); }
+  .skeletonCard { flex: 0 0 calc(50vw - 18px); width: calc(50vw - 18px); }
+
+  /* Search grid — 2 colunas */
+  .searchGrid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Stats do detail */
+  .statsRow   { grid-template-columns: 1fr 1fr; }
+  .detailLeft { grid-template-columns: 1fr; }
+
+  /* Stat cards — mais compactos */
+  .statCard { padding: 12px 14px; }
+  .statCard .statVal { font-size: 18px; }
+
+  /* Tabela de wins no detail — esconder colunas */
+  .detailRight .table td { padding: 9px 10px; font-size: 13px; }
+  .detailRight .table th { padding: 9px 10px; }
+}
+
+@media (max-width: 360px) {
+  .page, .detailPage { padding: 10px; }
+  .slotCard     { flex: 0 0 calc(50vw - 14px); width: calc(50vw - 14px); }
+  .skeletonCard { flex: 0 0 calc(50vw - 14px); width: calc(50vw - 14px); }
+  .searchGrid   { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+}
+
+/* ── Scroll lateral na tabela de wins em mobile ── */
+.tableScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tableScroll .table {
+  min-width: 360px;
+}
+
+@media (max-width: 480px) {
+  .detailRight .table td { padding: 9px 10px; font-size: 12px; }
+  .detailRight .table th { padding: 9px 10px; }
+}

@@ -1,0 +1,116 @@
+.footer {
+  margin-top: auto;
+  padding: 48px 32px 0;
+  color: var(--text-2);
+}
+
+/* ── TOP — brand + links ── */
+.top {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: 48px;
+  padding-bottom: 40px;
+  align-items: start;
+}
+
+/* Brand */
+.brandCol {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.logo {
+  width: 52px; height: 52px;
+  border-radius: 50%; object-fit: contain;
+  border: 2px solid rgba(255,255,255,.10);
+}
+.url {
+  font-size: 15px; font-weight: 700; color: #fff; margin: 0;
+}
+.desc {
+  font-size: 14px; line-height: 1.6;
+  color: rgb(237 237 237 / 0.85); margin: 0;
+}
+
+/* Links */
+.linksCol {
+  display: flex; justify-content: flex-end; gap: 56px;
+}
+.linkGroup { display: flex; flex-direction: column; gap: 14px; }
+.groupTitle {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .10em; text-transform: uppercase;
+  color: rgba(232,238,252,.35); margin: 0;
+}
+.linkList {
+  list-style: none; display: flex; flex-direction: column; gap: 10px;
+}
+.linkList a {
+  font-size: 14px; font-weight: 500;
+  color: rgb(237 237 237 / 0.85);
+  text-decoration: none; cursor: pointer;
+  transition: color .15s;
+}
+.linkList a:hover { color: #fff; }
+
+/* ── DIVIDER ── */
+.divider {
+  max-width: 1200px; margin: 0 auto;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    rgba(255,255,255,0),
+    rgba(255,255,255,.08) 20%,
+    rgba(255,255,255,.08) 80%,
+    rgba(255,255,255,0)
+  );
+}
+
+/* ── BOTTOM — socials + legal ── */
+.bottom {
+  max-width: 1200px; margin: 0 auto;
+  padding: 20px 0 28px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.socialRow { display: flex; gap: 10px; }
+.social {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.09);
+  display: flex; align-items: center; justify-content: center;
+  color: rgb(237 237 237 / 0.85); font-size: 17px;
+  text-decoration: none; transition: .15s;
+}
+.social:hover { color: #fff; background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.16); }
+
+.legalRow {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.responsible {
+  font-size: 12px; color: rgba(232,238,252,.3);
+  margin: 0; line-height: 1.5;
+}
+.responsible a {
+  color: rgb(237 237 237 / 0.85);
+  text-decoration: underline; text-underline-offset: 2px;
+  transition: color .15s;
+}
+.responsible a:hover { color: rgb(237 237 237 / 0.85); }
+
+.copy {
+  font-size: 12px; color: rgba(232,238,252,.25);
+  margin: 0; white-space: nowrap;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .top { grid-template-columns: 1fr; gap: 32px; }
+  .linksCol { justify-content: flex-start; }
+}
+@media (max-width: 640px) {
+  .footer { padding: 36px 16px 0; }
+  .linksCol { gap: 32px; flex-wrap: wrap; }
+  .legalRow { flex-direction: column; align-items: flex-start; }
+}

@@ -1,0 +1,113 @@
+.page { padding: 28px 32px; }
+
+.header { margin-bottom: 24px; }
+.title { font-size: 24px; font-weight: 900; letter-spacing: .06em; color: #fff; margin-bottom: 4px; }
+.sub   { font-size: 13px; color: rgba(232,238,252,.45); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 317px));
+  gap: 16px;
+}
+@media (max-width: 700px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; height: 300px;
+  color: rgba(232,238,252,.5); font-size: 14px;
+}
+.spinner {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.1); border-top-color: #3b82f6;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; padding: 80px 24px;
+  color: rgba(232,238,252,.4);
+}
+.emptyIcon { font-size: 44px; }
+/* ── Redirect Modal ── */
+.redirectOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+.redirectBox {
+  position: relative;
+  background: #0e0e14;
+  border: 1.5px solid rgba(59,130,246,.4);
+  border-radius: 20px;
+  padding: 36px 32px 32px;
+  max-width: 420px; width: 90%;
+  text-align: center;
+  animation: modalIn .25s cubic-bezier(.2,.9,.2,1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(.94) translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.redirectClose {
+  position: absolute; top: 14px; right: 14px;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.07);
+  color: rgba(232,238,252,.7); font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.redirectClose:hover { background: rgba(255,255,255,.14); color: #fff; }
+.redirectTitle { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 12px; line-height: 1.2; }
+.redirectSub { font-size: 14px; color: rgba(232,238,252,.5); line-height: 1.6; margin-bottom: 24px; }
+.redirectSub strong { color: rgba(232,238,252,.8); font-weight: 700; }
+.redirectCta {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(90deg, #3b82f6, #5b4de0);
+  color: #fff; font-size: 14px; font-weight: 900;
+  letter-spacing: .08em; padding: 14px 40px;
+  border-radius: 30px; border: none; cursor: pointer;
+  transition: filter .2s, transform .15s; margin-bottom: 20px;
+}
+.redirectCta:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.redirectPromo { padding-top: 16px; border-top: 1px solid rgba(255,255,255,.07); }
+.redirectPromoLabel { font-size: 12px; color: rgba(232,238,252,.4); margin-bottom: 10px; letter-spacing: .04em; }
+.redirectPromoRow {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: rgba(16,185,129,.07);
+  border: 1.5px dashed rgba(34,197,94,.28);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.redirectPromoCode { font-size: 20px; font-weight: 900; color: rgba(134,239,172,.95); letter-spacing: .08em; flex: 1; text-align: left; }
+.redirectCopyBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 13px; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.80);
+  font-size: 12px; font-weight: 900; letter-spacing: .03em;
+  cursor: pointer; flex-shrink: 0;
+  transition: background .18s, border-color .18s, color .18s;
+}
+.redirectCopyBtn i { font-size: 14px; }
+.redirectCopyBtn:hover { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.28); color: #fff; }
+.redirectCopyDone {
+  background: rgba(16,185,129,.15) !important;
+  border-color: rgba(16,185,129,.40) !important;
+  color: #34d399 !important;
+}
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .page { padding: 20px 16px; }
+}
+@media (max-width: 480px) {
+  .page { padding: 16px 12px; }
+  .title { font-size: 20px; }
+}

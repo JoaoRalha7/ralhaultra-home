@@ -1,0 +1,257 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Sora:wght@700;800;900&display=swap');
+
+:root {
+  --bg: #090C15; 
+  --surface: rgba(255,255,255,0.02); 
+  --surface2: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.04); 
+  --border2: rgba(255,255,255,0.08);
+  --text: #eeeef5; 
+  --muted: #64748b; 
+  --muted2: #94a3b8;
+  --accent: #c084fc; 
+  --green: #34d399; 
+  --red: #f87171; 
+  --yellow: #fbbf24; 
+  --blue: #38bdf8; 
+  --font: 'Rubik', system-ui, sans-serif; 
+  --display: 'Sora', sans-serif;
+}
+
+/* ── BASE ── */
+.page { 
+  padding: 28px 32px 100px; 
+  width: 100%;
+  max-width: 1600px; 
+  margin: 0 auto; 
+  font-family: var(--font); 
+}
+.header { margin-bottom: 24px; }
+.title { 
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--display); font-size: 26px; font-weight: 900; 
+  color: var(--text); margin-bottom: 6px; letter-spacing: .02em; text-transform: uppercase;
+}
+.sub   { font-size: 13px; color: var(--muted); }
+
+/* ── Filters ── */
+.filters {
+  display: flex; gap: 10px; justify-content: flex-end;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.select {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 36px 12px 16px;
+  color: var(--text); font-size: 13px; font-weight: 600; font-family: var(--font);
+  outline: none; cursor: pointer; min-width: 180px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  transition: border-color .15s, background .15s;
+}
+.select:focus { border-color: var(--blue); background: rgba(56,189,248,.05); }
+.select option { background: var(--bg); }
+
+/* ── Table wrap ── */
+.tableWrap {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+.table { width: 100%; border-collapse: collapse; }
+
+/* Header */
+.table thead tr {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.table th {
+  padding: 16px 16px;
+  font-family: var(--display); font-size: 11px; font-weight: 800;
+  color: var(--muted2); text-transform: uppercase; letter-spacing: .08em;
+  text-align: left;
+}
+.thRank { width: 50px; text-align: center; padding: 16px 8px; }
+.thSlot { min-width: 240px; }
+.thWin  { text-align: right; }
+
+/* Rows */
+.row { border-bottom: 1px solid var(--border); transition: background .2s; }
+.row:last-child { border-bottom: none; }
+.row:hover { background: var(--surface); }
+
+.table td {
+  padding: 12px 16px; font-size: 14px;
+  color: var(--text); vertical-align: middle;
+}
+
+/* ── Rank ── */
+.tdRank { text-align: center; padding: 0 8px; width: 50px; }
+
+/* Rank 1/2/3 */
+.rank1Row { background: rgba(251,191,36,.06) !important; border-left: 3px solid var(--yellow); }
+.rank2Row { background: rgba(148,163,184,.06) !important; border-left: 3px solid #94a3b8; }
+.rank3Row { background: rgba(205,124,84,.06) !important; border-left: 3px solid #cd7c54; }
+
+.rankTop  { font-family: var(--display); font-size: 16px; font-weight: 900; }
+.rank1Row .rankTop { color: var(--yellow); }
+.rank2Row .rankTop { color: #94a3b8; }
+.rank3Row .rankTop { color: #cd7c54; }
+
+.rankNum { font-family: var(--display); font-size: 14px; font-weight: 800; color: var(--muted); }
+
+/* ── Slot ── */
+.tdSlot { padding-left: 8px; }
+.slotCellWrap { position: relative; }
+.slotCell { display: flex; align-items: center; gap: 14px; }
+.slotImgWrap {
+  width: 44px; height: 44px; border-radius: 10px;
+  overflow: hidden; background: var(--surface2); flex-shrink: 0;
+  border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center;
+}
+.slotImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.slotImgFallback { color: var(--muted2); font-size: 20px; }
+
+.slotNameWrap { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; overflow: hidden; }
+
+/* Ping Pong Slider inside Button */
+.slotNameBtn {
+  background: none; border: none; padding: 0;
+  font-size: 14px; font-weight: 800; color: var(--text);
+  cursor: pointer; font-family: var(--font);
+  text-align: left; transition: color .15s;
+  min-width: 0; flex: 1; overflow: hidden;
+}
+.slotNameBtn:hover { color: var(--blue); }
+
+.superTag {
+  font-size: 9px; font-weight: 900; letter-spacing: .06em;
+  padding: 3px 8px; border-radius: 8px; flex-shrink: 0;
+  background: rgba(251,191,36,.08); color: rgba(251,191,36,.8);
+  border: 1px solid rgba(251,191,36,.15); text-transform: uppercase;
+}
+
+/* ── Other cells ── */
+.tdBet   { color: var(--muted2); font-family: var(--display); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.tdMulti { font-family: var(--display); font-size: 15px; font-weight: 900; color: var(--text); white-space: nowrap; }
+.tdAvg   { font-family: var(--display); font-size: 14px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.tdDate  { color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tdWin   { text-align: right; font-family: var(--display); font-size: 16px; font-weight: 900; color: var(--green); white-space: nowrap; }
+
+/* ── Type tags (Limpas e Subtis) ── */
+.typeTag {
+  display: inline-block; font-size: 10px; font-weight: 700; font-family: var(--font);
+  letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px;
+  white-space: nowrap; line-height: 1; vertical-align: middle;
+}
+.type_bonus_hunt { background: rgba(56,189,248,.05); color: rgba(56,189,248,.8); border: 1px solid rgba(56,189,248,.1); }
+.type_bonus_buy  { background: rgba(96,165,250,.05); color: rgba(96,165,250,.8); border: 1px solid rgba(96,165,250,.1); }
+.type_tournament { background: rgba(52,211,153,.05); color: rgba(52,211,153,.8); border: 1px solid rgba(52,211,153,.1); }
+.type_spin       { background: rgba(251,146,60,.05); color: rgba(251,146,60,.8); border: 1px solid rgba(251,146,60,.1); }
+
+/* ── Hunt link (Limpo) ── */
+.huntLink {
+  display: inline-block; background: rgba(56,189,248,.05); border: 1px solid rgba(56,189,248,.1);
+  color: rgba(56,189,248,.8); border-radius: 6px;
+  padding: 5px 12px; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  cursor: pointer; font-family: var(--font); line-height: 1; transition: .15s; white-space: nowrap;
+}
+.huntLink:hover { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.25); color: var(--blue); }
+
+/* ── Pagination ── */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 20px; border-top: 1px solid var(--border); }
+.pgBtn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--muted2); font-size: 13px; font-weight: 700; font-family: var(--font); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: .15s; }
+.pgBtn:hover:not(:disabled) { background: var(--surface2); color: var(--text); transform: translateY(-2px); }
+.pgBtn:disabled { opacity: .3; cursor: default; }
+.pgActive { background: var(--text) !important; border-color: var(--text) !important; color: var(--bg) !important; box-shadow: 0 4px 12px rgba(255,255,255,.1); transform: translateY(-2px); }
+
+
+/* ── States ── */
+.loading { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 80px 24px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.spinner { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border2); border-top-color: var(--blue); animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { padding: 80px 24px; color: var(--muted2); font-size: 14px; font-weight: 600; text-align: center; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   POPOVER — Mini Dashboard
+   ══════════════════════════════════════════════════════════════════════════════ */
+.popover {
+  position: fixed; z-index: 9999;
+  width: 360px; height: 210px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+  padding: 16px; box-shadow: 0 32px 80px rgba(0,0,0,.6); animation: popIn .15s ease;
+  display: flex; flex-direction: column; gap: 16px; box-sizing: border-box;
+}
+@keyframes popIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+.popoverHead { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.popoverImgWrap { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; background: var(--surface2); flex-shrink: 0; border: 1px solid var(--border2); }
+.popoverImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.popoverInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.popoverProvider { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; line-height: 1; }
+.popoverName { font-size: 16px; font-weight: 900; color: var(--text); }
+
+.popoverNavBtn {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted2);
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  cursor: pointer; transition: .15s; flex-shrink: 0;
+}
+.popoverNavBtn:hover { background: rgba(56,189,248,.05); border-color: rgba(56,189,248,.2); color: var(--blue); }
+
+.popoverDivider { height: 1px; background: var(--border); flex-shrink: 0; }
+
+.popoverPills {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 46px); gap: 10px; flex: 1;
+}
+.popoverPill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 0 10px; box-sizing: border-box; overflow: hidden;
+}
+.pillIcon {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: rgba(56,189,248,.05); color: var(--blue);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px;
+}
+.pillText { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 1; overflow: hidden; gap: 2px; }
+.pillLbl { font-size: 9px; font-weight: 800; color: var(--muted2); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pillVal { font-family: var(--display); font-size: 13px; font-weight: 900; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── PING PONG ANIMATION ── */
+.slideWrap { width: 100%; overflow: hidden; white-space: nowrap; mask-image: linear-gradient(to right, black 90%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); }
+.slideInner { display: inline-flex; align-items: center; width: fit-content; }
+.animPingPong { animation: textPingPong 4s ease-in-out infinite alternate; }
+.slideText { line-height: 1.2; display: inline-block; }
+@keyframes textPingPong { 0%, 20% { transform: translateX(0); } 80%, 100% { transform: translateX(var(--slide-dist)); } }
+
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+.tableScroll {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent;
+}
+.tableScroll .table { min-width: 800px; }
+
+@media (max-width: 640px) {
+  .page { padding: 16px; }
+  .filters { flex-direction: column; gap: 8px; }
+  .select { width: 100%; }
+}
+@media (max-width: 480px) {
+  .page { padding: 12px; }
+  .title { font-size: 22px; }
+  .table td { padding: 10px 10px; font-size: 12px; }
+  .table th { padding: 12px 10px; font-size: 10px; }
+  .tdMulti  { font-size: 13px; }
+  .tdWin    { font-size: 13px; }
+  .tdRank   { width: 32px; }
+  .typeTag  { font-size: 9px; padding: 4px 8px; }
+  .slotImgWrap { width: 36px; height: 36px; }
+  .slotCell    { gap: 10px; }
+  
+  .popover { width: calc(100vw - 24px); left: 12px !important; right: 12px !important; }
+}

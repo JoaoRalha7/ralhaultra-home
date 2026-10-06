@@ -1,0 +1,158 @@
+import { useEffect, useState } from 'react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Icon, IconSprite } from './Icon';
+import AccountSetupOverlay from './AccountSetupOverlay';
+import AdminPanel from './AdminPanel';
+import AgeVerification from './AgeVerification';
+import DailyRewardsModal from './DailyRewardsModal';
+import Footer from './Footer';
+import LoginModal from './LoginModal';
+import { useAuth } from '../hooks/useAuth';
+import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
+import { missingEnv, supabaseDash } from '../lib/supabase';
+
+const NAV_GROUPS = [
+  [['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard']],
+  [['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop']],
+  [
+    ['slots', 'Slots', '/slots'],
+    ['spark', 'Bonus Hunts', '/bonus-hunts'],
+    ['ball', 'Tournaments', '/torneios'],
+    ['pulse', 'Stats', '/stats'],
+    ['cards', 'Mini-Games', '/mini-games'],
+    ['play', 'Stream', '/stream'],
+    ['users', 'Community', '/community'],
+  ],
+];
+
+const GAMES = [
+  ['pick_games', 'Pick & Win', '/pick-win'],
+  ['gtb_games', 'Guess the Balance', '/gtb'],
+  ['avg_multi_games', 'Avg Multi', '/avg-multi'],
+];
+
+export default function Layout() {
+  const { user, profile, isAdmin, isSettingUp, signOut } = useAuth();
+  const { points, setPoints } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name);
+  const navigate = useNavigate();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [dailyOpen, setDailyOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [live, setLive] = useState([]);
+  const [open, setOpen] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ru-sidebar');
+      if (saved !== null) return saved === 'open';
+    } catch {
+      /* storage unavailable */
+    }
+    return window.innerWidth > 820;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ru-sidebar', open ? 'open' : 'closed');
+    } catch {
+      /* storage unavailable */
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (user) setLoginOpen(false);
+  }, [user]);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all(GAMES.map(([table]) => supabaseDash.from(table).select('id').eq('status', 'open').limit(1))).then((res) => {
+      if (alive) setLive(GAMES.filter((_, i) => res[i].data && res[i].data.length));
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const onSearch = (e) => {
+    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+      navigate(`/slots?q=${encodeURIComponent(e.currentTarget.value.trim())}`);
+    }
+  };
+
+  return (
+    <>
+      <IconSprite />
+      <AgeVerification onVerified={() => {}} />
+      <div className={`app${open ? '' : ' collapsed'}`}>
+        <header className="top">
+          <button className="menu-btn" aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+            <Icon name="menu" />
+          </button>
+          <Link className="logo" to="/">Ralha<b>Ultra</b><span className="beta">BETA</span></Link>
+          <label className="search">
+            <Icon name="search" />
+            <input placeholder="Search slots..." aria-label="Search slots" onKeyDown={onSearch} />
+          </label>
+          <div className="sp" />
+          {points !== null && <div className="pts"><span className="coin" />{points.toLocaleString('pt-PT')}</div>}
+          {user && (
+            <button className="bell" aria-label="Daily rewards" onClick={() => setDailyOpen(true)}><Icon name="gift" /></button>
+          )}
+          <div className="bellwrap">
+            <button className="bell" aria-label="Notifications" aria-expanded={bellOpen} onClick={() => setBellOpen((v) => !v)}>
+              <Icon name="bell" />
+              {live.length > 0 && <i>{live.length}</i>}
+            </button>
+            {bellOpen && (
+              <div className="drop" role="menu">
+                {live.length === 0 ? (
+                  <p className="dropEmpty">No live games right now.</p>
+                ) : (
+                  live.map(([, name, to]) => (
+                    <Link key={to} to={to} onClick={() => setBellOpen(false)}>{name}<span className="chip">Live</span></Link>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          {isAdmin && <button className="pill" onClick={() => setAdminOpen(true)}>Admin</button>}
+          {user ? (
+            <>
+              {profile?.avatar_url ? <img className="av" src={profile.avatar_url} alt="" /> : <div className="av" aria-hidden="true" />}
+              <button className="logout" onClick={signOut}>Logout</button>
+            </>
+          ) : (
+            <button className="logout" onClick={() => setLoginOpen(true)}>Login</button>
+          )}
+        </header>
+
+        <aside>
+          {NAV_GROUPS.map((group, gi) => (
+            <div className="grp" key={gi}>
+              {group.map(([icon, label, to]) => (
+                <NavLink key={to} to={to} end={to === '/'} title={label} aria-label={label} className={({ isActive }) => `nav${isActive ? ' on' : ''}`}>
+                  <Icon name={icon} />
+                  <span className="lbl">{label}</span>
+                </NavLink>
+              ))}
+            </div>
+          ))}
+        </aside>
+
+        <main>
+          {missingEnv.length > 0 && (
+            <div className="envwarn" role="alert">
+              Database not connected. Missing in .env: {missingEnv.join(', ')}. Restart the dev server after saving.
+            </div>
+          )}
+          <Outlet />
+          <Footer />
+        </main>
+      </div>
+
+      {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+      {dailyOpen && <DailyRewardsModal onClose={() => setDailyOpen(false)} onPointsUpdate={setPoints} />}
+      {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
+      {isSettingUp && <AccountSetupOverlay />}
+    </>
+  );
+}

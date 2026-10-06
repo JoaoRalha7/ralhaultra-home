@@ -1,0 +1,255 @@
+.overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+
+.modal {
+  width: 100%; max-width: 580px;
+  background: #0d1020;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 22px;
+  overflow: hidden;
+  animation: slideUp .25s cubic-bezier(.2,.9,.2,1);
+}
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(16px) scale(.98) }
+  to   { opacity:1; transform:none }
+}
+
+/* Header */
+.modalHeader {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 24px 24px 0;
+}
+.modalTitle { font-size: 20px; font-weight: 900; color: #fff; }
+.modalSub   { font-size: 12px; color: rgba(232,238,252,.35); margin-top: 4px; }
+.closeBtn {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: .15s;
+}
+.closeBtn:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 6px;
+  padding: 16px 24px 0;
+}
+.tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: .15s;
+  border: 1px solid transparent;
+  position: relative; font-family: var(--font);
+}
+.tabActive {
+  background: rgba(99,102,241,.15);
+  border-color: rgba(99,102,241,.3);
+  color: #a5b4fc;
+}
+.tab:not(.tabActive) {
+  background: transparent;
+  color: rgba(255,255,255,.3);
+}
+.tab:not(.tabActive):hover { color: rgba(255,255,255,.6); }
+.tabDot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #facc15;
+  box-shadow: 0 0 6px rgba(250,204,21,.5);
+}
+
+/* Tab content */
+.tabContent { padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Streak */
+.streakGrid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px;
+}
+/* Responsividade do grid para mobile pequeno */
+@media (max-width: 440px) {
+  .streakGrid {
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+    /* Torna o scroll invisível na maioria dos browsers para manter o aspeto clean, mas permite o swipe */
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
+  }
+  .streakGrid::-webkit-scrollbar {
+    display: none;
+  }
+  .streakDay {
+    min-width: 58px;
+    scroll-snap-align: start;
+  }
+}
+
+.streakDay {
+  background: #080a0f;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 11px; padding: 10px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.streakDone  { border-color: rgba(99,102,241,.3);  background: rgba(99,102,241,.07); }
+.streakToday { border-color: rgba(250,204,21,.35); background: rgba(250,204,21,.06); }
+.streakDayNum { font-size: 10px; font-weight: 700; letter-spacing: .04em; color: rgba(255,255,255,.25); }
+.streakDone  .streakDayNum { color: rgba(99,102,241,.7); }
+.streakToday .streakDayNum { color: rgba(250,204,21,.8); }
+.streakCoin {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,.05);
+  display: flex; align-items: center; justify-content: center;
+}
+.streakDone  .streakCoin { background: rgba(99,102,241,.15); }
+.streakToday .streakCoin { background: rgba(250,204,21,.12); }
+.streakPts { font-size: 11px; font-weight: 800; color: rgba(255,255,255,.35); }
+.streakDone  .streakPts { color: #a5b4fc; }
+.streakToday .streakPts { color: #fde68a; }
+
+.streakProgressWrap { display: flex; flex-direction: column; gap: 7px; }
+.streakProgressInfo {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.streakProgressLeft  { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.3); }
+.streakProgressRight { font-size: 11px; font-weight: 800; color: #fde68a; }
+.streakProgressTrack {
+  height: 5px; background: rgba(255,255,255,.06);
+  border-radius: 99px; overflow: hidden; position: relative;
+}
+.streakProgressFill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.streakProgressFill::after {
+  content: '';
+  position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #facc15;
+  box-shadow: 0 0 7px rgba(250,204,21,.6);
+}
+
+/* Claim banner */
+.claimBanner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px;
+  background: rgba(99,102,241,.08);
+  border: 1px solid rgba(99,102,241,.2);
+  border-radius: 14px;
+}
+.claimBannerLabel { font-size: 12px; color: rgba(255,255,255,.35); font-weight: 600; }
+.claimBannerPts   { font-size: 26px; font-weight: 900; color: #a5b4fc; margin-top: 3px; }
+
+.claimBtn {
+  padding: 10px 22px; border-radius: 999px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  border: none; color: #fff;
+  font-size: 13px; font-weight: 800; letter-spacing: .04em;
+  cursor: pointer; font-family: var(--font);
+  transition: opacity .15s, transform .15s, filter .15s; 
+  white-space: nowrap;
+}
+.claimBtn:hover:not(:disabled) { 
+  opacity: .95; 
+  transform: translateY(-1px); 
+  filter: brightness(1.1);
+}
+.claimBtn:disabled { opacity: .5; cursor: not-allowed; }
+
+.spinBtn {
+  width: 100%; border-radius: 11px;
+  padding: 12px;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+}
+
+.cdPill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 14px; border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.07);
+  font-size: 12px; font-weight: 700;
+  color: rgba(255,255,255,.35);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cdPillFull {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px; border-radius: 11px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
+  font-size: 13px; font-weight: 700;
+  color: rgba(255,255,255,.3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Result */
+.resultBanner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 11px;
+  background: rgba(34,197,94,.08);
+  border: 1px solid rgba(34,197,94,.2);
+  font-size: 12px; font-weight: 700; color: #86efac;
+}
+
+/* Skeleton */
+.skeleton {
+  border-radius: 10px; width: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.07) 50%, rgba(255,255,255,.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0 } }
+
+/* Wheel */
+.wheelArea { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.wheelWrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.wheelPointer {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%); z-index: 2;
+  filter: drop-shadow(0 0 8px rgba(250,204,21,.5));
+}
+
+/* Animação do Pointer quando a roleta gira */
+.pointerSpinning {
+  transform-origin: top center;
+  animation: pointerTick 0.1s infinite alternate;
+}
+@keyframes pointerTick {
+  0%   { transform: translateX(-50%) rotate(0deg); }
+  100% { transform: translateX(-50%) rotate(-8deg); }
+}
+
+.wheelCanvas { display: block; border-radius: 50%; }
+
+/* Prize list */
+.prizeList { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; }
+.prizeItem {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 10px;
+  background: #080a0f; border: 1px solid rgba(255,255,255,.06);
+  border-radius: 9px;
+}
+.prizeJackpot {
+  grid-column: span 2;
+  border-color: rgba(250,204,21,.2);
+  background: rgba(250,204,21,.05);
+}
+.prizeWon {
+  border-color: rgba(34,197,94,.4) !important;
+  background: rgba(34,197,94,.08) !important;
+  animation: prizeWonPulse 1.2s ease-in-out infinite;
+}
+@keyframes prizeWonPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,.3); }
+  50%       { box-shadow: 0 0 0 4px rgba(34,197,94,.1); }
+}
+.prizeDot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.prizeLabel { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.55); }
+.prizeChance { font-size: 10px; color: rgba(255,255,255,.2); margin-left: auto; }
