@@ -236,3 +236,8 @@ a.logo{color:inherit}
 .bn h3{font-size:26px;max-width:13ch;overflow-wrap:anywhere}
 
 .envwarn{background:#3a1212;border:1px solid #7a1f1f;color:#fecaca;border-radius:12px;padding:12px 16px;font-weight:700}
+
+/* Keep old pages' sticky offsets aligned with the new 64px topbar */
+:root{--header-h:64px}
+html,body{background:var(--ru-bg)}
+body{margin:0}

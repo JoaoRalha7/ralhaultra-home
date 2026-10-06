@@ -1,0 +1,118 @@
+/* ── ROOT ── */
+.root {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background: #060810;
+  overflow: hidden;
+  font-family: var(--font);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: #080a10;
+  border-right: 1px solid rgba(255,255,255,.06);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 10px;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+/* Brand */
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 6px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.brandLogo {
+  width: 32px; height: 32px; border-radius: 8px;
+  object-fit: contain; flex-shrink: 0;
+}
+.brandName { font-size: 13px; font-weight: 800; color: #fff; line-height: 1.2; }
+.brandSub  { font-size: 10px; color: rgba(255,255,255,.3); font-weight: 500; }
+
+/* Status bar */
+.statusBar {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 9px; padding: 8px 10px;
+}
+.statusDot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,.2); flex-shrink: 0;
+}
+.statusDotLive {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34,197,94,.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.statusInfo {
+  display: flex; align-items: center; gap: 4px;
+  flex-wrap: wrap; min-width: 0; flex: 1;
+}
+.statusCasinoLogo {
+  height: 16px; max-width: 48px;
+  object-fit: contain; flex-shrink: 0;
+}
+.statusCasinoName {
+  font-size: 11px; font-weight: 700; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.statusSep   { font-size: 10px; color: rgba(255,255,255,.2); }
+.statusModo  {
+  font-size: 10px; font-weight: 800; padding: 1px 5px;
+  border-radius: 4px; white-space: nowrap;
+  background: rgba(255,255,255,.08); color: rgba(255,255,255,.6);
+}
+.modo_raw    { background: rgba(34,197,94,.15);   color: #4ade80; }
+.modo_wager  { background: rgba(59,130,246,.15);  color: #93c5fd; }
+.modo_demo   { background: rgba(255,255,255,.06); color: rgba(255,255,255,.3); }
+.statusActivity { font-size: 10px; color: rgba(255,255,255,.45); white-space: nowrap; }
+
+/* Nav */
+.nav {
+  display: flex; flex-direction: column; gap: 3px;
+  flex: 1;
+}
+.navItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 9px;
+  border: 1px solid transparent;
+  color: rgba(255,255,255,.45); font-size: 13px; font-weight: 600;
+  text-decoration: none; transition: .15s;
+}
+.navItem:hover { background: rgba(255,255,255,.05); color: rgba(255,255,255,.8); }
+.navIcon  { font-size: 16px; line-height: 1; flex-shrink: 0; }
+.navLabel { flex: 1; }
+
+/* Active states per accent */
+.navItemActive.nav_blue    { background: rgba(59,130,246,.12);  border-color: rgba(59,130,246,.25);  color: #93c5fd; }
+.navItemActive.nav_green   { background: rgba(34,197,94,.10);   border-color: rgba(34,197,94,.25);   color: #4ade80; }
+.navItemActive.nav_amber   { background: rgba(245,158,11,.10);  border-color: rgba(245,158,11,.25);  color: #fbbf24; }
+.navItemActive.nav_slate   { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.15); color: #fff; }
+.navItemActive.nav_purple  { background: rgba(59,130,246,.12);  border-color: rgba(59,130,246,.25);  color: #93c5fd; }
+
+/* Back button */
+.backBtn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 10px; border-radius: 8px;
+  color: rgba(255,255,255,.3); font-size: 12px; font-weight: 500;
+  text-decoration: none; transition: color .15s;
+  margin-top: auto;
+}
+.backBtn:hover { color: rgba(255,255,255,.6); }
+
+/* ── CONTENT ── */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}.navItemActive.nav_pink { background: rgba(236,72,153,.12); border-color: rgba(236,72,153,.25); color: #f9a8d4; }

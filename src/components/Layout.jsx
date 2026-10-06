@@ -9,7 +9,7 @@ import Footer from './Footer';
 import LoginModal from './LoginModal';
 import { useAuth } from '../hooks/useAuth';
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
-import { missingEnv, supabaseDash } from '../lib/supabase';
+import { supabaseDash } from '../lib/supabase';
 
 const NAV_GROUPS = [
   [['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard']],
@@ -26,14 +26,14 @@ const NAV_GROUPS = [
 ];
 
 const GAMES = [
-  ['pick_games', 'Pick & Win', '/pick-win'],
-  ['gtb_games', 'Guess the Balance', '/gtb'],
-  ['avg_multi_games', 'Avg Multi', '/avg-multi'],
+  ['pick_games', 'Pick & Win', '/mini-games/pick-win'],
+  ['gtb_games', 'Guess the Balance', '/mini-games/gtb'],
+  ['avg_multi_games', 'Avg Multi', '/mini-games/avg-multi'],
 ];
 
 export default function Layout() {
   const { user, profile, isAdmin, isSettingUp, signOut } = useAuth();
-  const { points, setPoints } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name);
+  const { points, setPoints, refresh } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name);
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [dailyOpen, setDailyOpen] = useState(false);
@@ -114,7 +114,7 @@ export default function Layout() {
               </div>
             )}
           </div>
-          {isAdmin && <button className="pill" onClick={() => setAdminOpen(true)}>Admin</button>}
+          {isAdmin() && <button className="pill" onClick={() => setAdminOpen(true)}>Admin</button>}
           {user ? (
             <>
               {profile?.avatar_url ? <img className="av" src={profile.avatar_url} alt="" /> : <div className="av" aria-hidden="true" />}
@@ -139,18 +139,13 @@ export default function Layout() {
         </aside>
 
         <main>
-          {missingEnv.length > 0 && (
-            <div className="envwarn" role="alert">
-              Database not connected. Missing in .env: {missingEnv.join(', ')}. Restart the dev server after saving.
-            </div>
-          )}
           <Outlet />
           <Footer />
         </main>
       </div>
 
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
-      {dailyOpen && <DailyRewardsModal onClose={() => setDailyOpen(false)} onPointsUpdate={setPoints} />}
+      {dailyOpen && <DailyRewardsModal onClose={() => setDailyOpen(false)} onPointsUpdate={() => refresh?.()} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
       {isSettingUp && <AccountSetupOverlay />}
     </>

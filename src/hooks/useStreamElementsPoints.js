@@ -1,35 +1,34 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react'
 
-const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev';
+const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
-// Reads the viewer's points from the ralha-points worker (response shape is a best guess).
-export function useStreamElementsPoints(username) {
-  const [points, setPoints] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const refresh = useCallback(async () => {
-    if (!username) {
-      setPoints(null);
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch(`${SE_WORKER_URL}?username=${encodeURIComponent(username.toLowerCase())}`);
-      if (res.ok) {
-        const d = await res.json();
-        const n = Number(d?.points ?? d?.data?.points ?? d?.user?.points);
-        if (Number.isFinite(n)) setPoints(n);
-      }
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false);
-    }
-  }, [username]);
+export function useStreamElementsPoints(twitchUsername) {
+  const [points,  setPoints]  = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState(null)
+  const [tick,    setTick]    = useState(0)
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!twitchUsername) return
 
-  return { points, setPoints, loading, refresh };
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+
+    fetch(`${SE_WORKER_URL}?username=${twitchUsername.toLowerCase()}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`Worker erro ${res.status}`)
+        return res.json()
+      })
+      .then(data => { if (!cancelled) setPoints(data.points ?? 0) })
+      .catch(err  => { if (!cancelled) setError(err.message) })
+      .finally(()  => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [twitchUsername, tick])
+
+  const refresh = useCallback(() => setTick(t => t + 1), [])
+
+  // setPoints exposto para actualizar localmente após resgate
+  return { points, setPoints, loading, error, refresh }
 }

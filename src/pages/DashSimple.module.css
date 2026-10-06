@@ -1,0 +1,22 @@
+.page {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 12px; padding: 40px;
+  text-align: center;
+}
+.icon  { font-size: 52px; margin-bottom: 4px; }
+.title { font-size: 22px; font-weight: 800; color: #fff; }
+.sub   { font-size: 13px; color: rgba(255,255,255,.4); }
+.hint  {
+  font-size: 12px; color: rgba(255,255,255,.3);
+  max-width: 320px; line-height: 1.6; margin-top: 8px;
+}
+.hint strong { color: rgba(255,255,255,.6); }
+.activateBtn {
+  margin-top: 8px; padding: 10px 20px; border-radius: 9px;
+  background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.35);
+  color: #fbbf24; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: var(--font); transition: .15s;
+}
+.activateBtn:hover:not(:disabled) { background: rgba(245,158,11,.25); }
+.activateBtn:disabled { opacity: .6; cursor: default; }
