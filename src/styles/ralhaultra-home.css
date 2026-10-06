@@ -310,3 +310,15 @@ button.vbig,button.vi{font:inherit;color:inherit;text-align:left;cursor:pointer}
 .cv .th{height:132px}
 .cover .carArr{top:100px}
 @media (max-width:640px){.cv{width:220px}.cv .th{height:118px}.cover{height:280px}.cover .carArr{top:90px}}
+
+.lcols{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:0}
+.lcol{min-width:0}
+.chd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font:800 16px "Bricolage Grotesque",sans-serif}
+.chd span{display:inline-flex;align-items:center;gap:8px}
+.chd a{font:600 13px "DM Sans",sans-serif;color:var(--acc2)}
+.lcol .cv{width:176px;padding:7px 7px 9px}
+.lcol .cv .th{height:94px}
+.lcol .cv p{font-size:13px}
+.lcol .cover{height:200px}
+.lcol .cover .carArr{top:70px}
+@media (max-width:760px){.lcols{grid-template-columns:1fr}}

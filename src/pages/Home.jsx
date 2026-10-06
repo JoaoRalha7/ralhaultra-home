@@ -71,6 +71,62 @@ function thumbOf(s) {
   return s.thumbnail_url ? s.thumbnail_url.replace('%{width}', 640).replace('%{height}', 360) : '';
 }
 
+const CLIP_FALLBACK = [
+  { id: 'c0', title: 'Latest clip', tone: 'v2' },
+  { id: 'c1', title: 'Crazy bonus', tone: 'v3' },
+  { id: 'c2', title: 'Big win', tone: 'v4' },
+  { id: 'c3', title: 'Funny moment', tone: 'v5' },
+  { id: 'c4', title: 'Chat reaction', tone: 'v1' },
+];
+
+function Coverflow({ label, items, fallback, onPlay }) {
+  const [ci, setCi] = useState(0);
+  const dragX = useRef(null);
+  const live = !!items;
+  const slides = items || fallback;
+  const go = (d) => setCi((c) => Math.min(slides.length - 1, Math.max(0, c + d)));
+  return (
+    <div className="cover" onPointerDown={(e) => { dragX.current = e.clientX; }} onPointerUp={(e) => {
+      if (dragX.current == null) return;
+      const dx = e.clientX - dragX.current; dragX.current = null;
+      if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+    }}>
+      <button type="button" className="carArr l" aria-label={`Previous ${label}`} onClick={() => go(-1)}><Icon name="left" size={18} /></button>
+      <div className="stage3d">
+        {slides.map((v, i) => {
+          const off = i - ci;
+          const a = Math.abs(off);
+          if (a > 3) return null;
+          return (
+            <button
+              type="button" key={v.id || i}
+              className={`cv${off === 0 ? ' on' : ''}`}
+              style={{ transform: `translateX(calc(-50% + ${off * 98}px)) scale(${1 - a * 0.13})`, zIndex: 10 - a, opacity: a > 2 ? 0 : 1 }}
+              onClick={() => (off === 0 ? live && onPlay(v) : setCi(i))}
+              aria-label={v.title}
+              tabIndex={a > 1 ? -1 : 0}
+            >
+              <div className={`th ${v.thumbnail_url ? 'img' : v.tone || `v${(i % 5) + 1}`}`} style={thumbOf(v) ? { backgroundImage: `url(${thumbOf(v)})` } : undefined}>
+                {live && v.created_at && <span className="new">{ago(v.created_at)}</span>}
+                {v.duration && <span className="dur">{typeof v.duration === 'number' ? `0:${String(Math.round(v.duration)).padStart(2, '0')}` : parseDuration(v.duration)}</span>}
+                <svg><use href="#play" /></svg>
+              </div>
+              <p>{v.title}</p>
+              {live && <small>{(v.view_count ?? 0).toLocaleString('en-GB')} views</small>}
+            </button>
+          );
+        })}
+      </div>
+      <button type="button" className="carArr r" aria-label={`Next ${label}`} onClick={() => go(1)}><Icon name="right" size={18} /></button>
+      <div className="dots" role="tablist" aria-label={label}>
+        {slides.map((v, i) => (
+          <button type="button" key={v.id || i} role="tab" aria-selected={i === ci} aria-label={`${label} ${i + 1}`} className={i === ci ? 'on' : ''} onClick={() => setCi(i)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function cleanAction(it) {
   if (it._type === 'daily') {
     const raw = (it.action || '').replace(/\s*[–—-].+$/, '').trim();
@@ -127,8 +183,7 @@ export default function Home() {
   const me = user?.user_metadata?.full_name?.toLowerCase() || null;
   const [board, setBoard] = useState([]);
   const [mine, setMine] = useState(null);
-  const [ci, setCi] = useState(0);
-  const dragX = useRef(null);
+  const [clips, setClips] = useState([]);
   const [activity, setActivity] = useState(null);
 
   // Featured offer popup, shown every time Home loads
@@ -162,6 +217,10 @@ export default function Home() {
     fetch(`${SE_WORKER_URL}/leaderboard?limit=5`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d?.users) setBoard(d.users); })
+      .catch(() => {});
+    fetch(`${STATUS_WORKER_URL}/clips?limit=8`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { const l = d?.clips || d?.data; if (l?.length) setClips(l); })
       .catch(() => {});
     fetch(`${STATUS_WORKER_URL}/streams?limit=8`)
       .then((r) => (r.ok ? r.json() : null))
@@ -254,8 +313,7 @@ export default function Home() {
   const vids = streams.length ? streams : null;
   
   
-  const slides = vids || VIDEO_FALLBACK;
-  const go = (d) => setCi((c) => Math.min(slides.length - 1, Math.max(0, c + d)));
+  const playClip = (c) => setPlayer({ type: 'clip', id: c.slug || c.id, title: c.title, meta: `${(c.view_count ?? 0).toLocaleString('en-GB')} views` });
   const thumbStyle = (v) => (thumbOf(v) ? { backgroundImage: `url(${thumbOf(v)})` } : undefined);
   const thumbCls = (v, i) => `th ${v.thumbnail_url ? 'img' : v.tone || `v${(i % 5) + 1}`}`;
 
@@ -291,44 +349,15 @@ export default function Home() {
       </section>
 
       <section>
-        <SectionHead icon="tv" title="Latest Streams" tag="Twitch" showAll="/stream" />
         <div className="lsx">
-          <div className="cover" onPointerDown={(e) => { dragX.current = e.clientX; }} onPointerUp={(e) => {
-            if (dragX.current == null) return;
-            const dx = e.clientX - dragX.current; dragX.current = null;
-            if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
-          }}>
-            <button type="button" className="carArr l" aria-label="Previous stream" onClick={() => go(-1)}><Icon name="left" size={18} /></button>
-            <div className="stage3d">
-              {slides.map((v, i) => {
-                const off = i - ci;
-                const a = Math.abs(off);
-                if (a > 3) return null;
-                return (
-                  <button
-                    type="button" key={v.id}
-                    className={`cv${off === 0 ? ' on' : ''}`}
-                    style={{ transform: `translateX(calc(-50% + ${off * 155}px)) scale(${1 - a * 0.13})`, zIndex: 10 - a, opacity: a > 2 ? 0 : 1 }}
-                    onClick={() => (off === 0 ? vids && play(v) : setCi(i))}
-                    aria-label={v.title}
-                    tabIndex={a > 1 ? -1 : 0}
-                  >
-                    <div className={thumbCls(v, i)} style={thumbStyle(v)}>
-                      {vids && <span className="new">{ago(v.created_at)}</span>}
-                      {v.duration && <span className="dur">{parseDuration(v.duration)}</span>}
-                      <svg><use href="#play" /></svg>
-                    </div>
-                    <p>{v.title}</p>
-                    {vids && <small>{(v.view_count ?? 0).toLocaleString('en-GB')} views</small>}
-                  </button>
-                );
-              })}
+          <div className="lcols">
+            <div className="lcol">
+              <div className="chd"><span><Icon name="tv" size={16} />Latest Streams</span><Link to="/stream">View all</Link></div>
+              <Coverflow label="stream" items={vids} fallback={VIDEO_FALLBACK} onPlay={play} />
             </div>
-            <button type="button" className="carArr r" aria-label="Next stream" onClick={() => go(1)}><Icon name="right" size={18} /></button>
-            <div className="dots" role="tablist" aria-label="Streams">
-              {slides.map((v, i) => (
-                <button type="button" key={v.id} role="tab" aria-selected={i === ci} aria-label={`Stream ${i + 1}`} className={i === ci ? 'on' : ''} onClick={() => setCi(i)} />
-              ))}
+            <div className="lcol">
+              <div className="chd"><span><Icon name="play" size={16} />Latest Clips</span><a href="https://www.twitch.tv/jralha_/clips" target="_blank" rel="noopener noreferrer">View all</a></div>
+              <Coverflow label="clip" items={clips.length ? clips : null} fallback={CLIP_FALLBACK} onPlay={playClip} />
             </div>
           </div>
           <aside className="lbp" aria-label="Top points">
