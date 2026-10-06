@@ -201,17 +201,17 @@ export default function Dashboard() {
       {/* ── CONTENT ── */}
       <main className={styles.content}>
         <Routes>
-          <Route path="/dashboard/hunt"     element={<DashHunt />} />
-          <Route path="/dashboard/slots"    element={<DashSlots />} />
-          <Route path="/dashboard/torneios" element={<DashTorneios />} />
-          <Route path="/dashboard/chill"    element={<DashChill />} />
-          <Route path="/dashboard/barra"    element={<DashBarra state={state} onStateChange={setState} />} />
-          <Route path="/dashboard/overlays" element={<DashOverlays />} />
-          <Route path="/dashboard/giveaway" element={<DashGiveaway />} />
-          <Route path="/dashboard/minigame" element={<DashMinigame />} />
-          <Route path="/dashboard/shop"     element={<DashShop />} />
-          <Route path="/dashboard"          element={<DashHome state={state} />} />
-          <Route path="*"                   element={<Navigate to="/dashboard" replace />} />
+          <Route path="hunt"     element={<DashHunt />} />
+          <Route path="slots"    element={<DashSlots />} />
+          <Route path="torneios" element={<DashTorneios />} />
+          <Route path="chill"    element={<DashChill />} />
+          <Route path="barra"    element={<DashBarra state={state} onStateChange={setState} />} />
+          <Route path="overlays" element={<DashOverlays />} />
+          <Route path="giveaway" element={<DashGiveaway />} />
+          <Route path="minigame" element={<DashMinigame />} />
+          <Route path="shop"     element={<DashShop />} />
+          <Route index          element={<DashHome state={state} />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
 
