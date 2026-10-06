@@ -314,13 +314,55 @@ function SlotCard({ slot, badge, onClick }) {
   )
 }
 
-// ── Coverflow carousel (same feel as Latest Streams on Home) ──────────────────
+// ── 3D ring carousel ──────────────────────────────────────────────────────────
 function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, avgs, plays }) {
-  const [ci, setCi] = useState(0)
-  const dragX = useRef(null)
-  const go = d => setCi(c => Math.min(slots.length - 1, Math.max(0, c + d)))
-  useEffect(() => { setCi(0) }, [slots.length])
+  const n = slots.length
+  const step = n ? 360 / n : 0
+  const [angle, setAngle] = useState(0)       // current rotation (deg)
+  const [dragging, setDragging] = useState(false)
+  const [vw, setVw] = useState(() => window.innerWidth)
+  const drag = useRef(null)
+  const moved = useRef(false)
+
+  useEffect(() => {
+    const on = () => setVw(window.innerWidth)
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  useEffect(() => { setAngle(0) }, [n])
+
+  const mobile = vw <= 640
+  const w = mobile ? 118 : 158
+  const R = n > 2 ? Math.max(w * 1.15, (w * 1.45) / (2 * Math.tan(Math.PI / n))) : w
+
+  const active = n ? ((Math.round(-angle / step) % n) + n) % n : 0
+  const snap = a => Math.round(a / step) * step
+  const goTo = i => {
+    // shortest way around the ring
+    const target = -i * step
+    let d = target - angle
+    d = ((d + 180) % 360 + 360) % 360 - 180
+    setAngle(snap(angle + d))
+  }
+  const move = d => setAngle(a => snap(a) - d * step)
+
+  const onDown = e => { drag.current = { x: e.clientX, a: angle }; moved.current = false; setDragging(true) }
+  const onMove = e => {
+    if (!drag.current) return
+    const dx = e.clientX - drag.current.x
+    if (Math.abs(dx) > 4) moved.current = true
+    setAngle(drag.current.a + dx * 0.35)
+  }
+  const onUp = () => {
+    if (!drag.current) return
+    drag.current = null
+    setDragging(false)
+    setAngle(a => snap(a))
+  }
+
+  const cur = slots[active]
   const Chev = ({ d }) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
@@ -329,53 +371,45 @@ function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, 
           {count > 0 && <span className={styles.sectionCount}>{count}</span>}
         </div>
       </div>
-      {loading || !slots.length ? (
+      {loading || !n ? (
         <div className={styles.carouselLoading}>{[...Array(7)].map((_, i) => <div key={i} className={styles.skeletonCard} />)}</div>
       ) : (
-        <div className={styles.cf}
-          onPointerDown={e => { dragX.current = e.clientX }}
-          onPointerUp={e => {
-            if (dragX.current == null) return
-            const dx = e.clientX - dragX.current; dragX.current = null
-            if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
-          }}>
-          <button type="button" className={`${styles.cfArr} ${styles.cfL}`} aria-label={`Previous ${title}`} onClick={() => go(-1)}><Chev d="M15 18l-6-6 6-6" /></button>
-          <div className={styles.cfStage}>
-            {slots.map((slot, i) => {
-              const off = i - ci
-              const a = Math.abs(off)
-              if (a > 3) return null
-              const avg = avgs[slot.id]
-              return (
-                <button type="button" key={slot.id}
-                  className={`${styles.cfCard} ${off === 0 ? styles.cfOn : ''}`}
-                  style={{ '--off': off, '--sc': 1 - a * 0.12, zIndex: 10 - a, opacity: a > 2 ? 0 : 1 }}
-                  onClick={() => (off === 0 ? onSlotClick(slot) : setCi(i))}
-                  aria-label={slot.name} tabIndex={a > 1 ? -1 : 0}>
-                  <div className={styles.cfImgWrap}>
-                    <img src={slot.image_url || ''} alt="" className={styles.slotImg} loading="lazy" draggable="false"
+        <div className={styles.ringWrap}>
+          <button type="button" className={`${styles.cfArr} ${styles.cfL}`} aria-label={`Previous ${title}`} onClick={() => move(-1)}><Chev d="M15 18l-6-6 6-6" /></button>
+          <div className={styles.ring} style={{ '--w': `${w}px`, '--h': `${Math.round(w * 4 / 3)}px` }}
+            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp} onPointerCancel={onUp}>
+            <div className={styles.ringInner}
+              style={{ transform: `translateZ(${-R}px) rotateY(${angle}deg)`, transition: dragging ? 'none' : 'transform .7s cubic-bezier(.2,.8,.2,1)' }}>
+              {slots.map((slot, i) => {
+                const dist = Math.abs(((i * step + angle) % 360 + 540) % 360 - 180) // 0 = front, 180 = back
+                const dim = 1 - Math.min(dist, 160) / 160 * 0.65
+                return (
+                  <button type="button" key={slot.id}
+                    className={`${styles.ringCard} ${i === active ? styles.ringOn : ''}`}
+                    style={{ transform: `rotateY(${i * step}deg) translateZ(${R}px)`, filter: `brightness(${dim.toFixed(2)})` }}
+                    aria-label={slot.name}
+                    onClick={() => { if (moved.current) return; i === active ? onSlotClick(slot) : goTo(i) }}>
+                    <img src={slot.image_url || ''} alt="" draggable="false" loading="lazy"
                       onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
-                    <div className={styles.slotFallback} style={{ display: 'none' }}>{(slot.name || '?').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase()}</div>
-                    {badge && (
-                      <span className={`${styles.badge} ${styles['badge' + badge]}`}><span className={styles.badgeDot} />{badge}</span>
-                    )}
-                    {avg != null && <span className={styles.cfAvg}>{Math.round(avg).toLocaleString('pt-PT')}x</span>}
-                  </div>
-                  <div className={styles.cfInfo}>
-                    <p>{slot.name}</p>
-                    <small>{slot.provider || '-'}{plays[slot.id] ? ` · ${plays[slot.id]} bonus` : ''}</small>
-                  </div>
-                </button>
-              )
-            })}
+                    <div className={styles.slotFallback} style={{ display: 'none' }}>{(slot.name || '?').split(' ').slice(0, 2).map(w2 => w2[0] || '').join('').toUpperCase()}</div>
+                    {badge && <span className={`${styles.badge} ${styles['badge' + badge]}`}><span className={styles.badgeDot} />{badge}</span>}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-          <button type="button" className={`${styles.cfArr} ${styles.cfR}`} aria-label={`Next ${title}`} onClick={() => go(1)}><Chev d="M9 6l6 6-6 6" /></button>
-          <div className={styles.cfDots} role="tablist" aria-label={title}>
-            {slots.map((slot, i) => (
-              <button type="button" key={slot.id} role="tab" aria-selected={i === ci} aria-label={`${title} ${i + 1}`}
-                className={i === ci ? styles.cfDotOn : ''} onClick={() => setCi(i)} />
-            ))}
-          </div>
+          <button type="button" className={`${styles.cfArr} ${styles.cfR}`} aria-label={`Next ${title}`} onClick={() => move(1)}><Chev d="M9 6l6 6-6 6" /></button>
+          {cur && (
+            <div className={styles.ringCap}>
+              <strong>{cur.name}</strong>
+              <span>
+                {cur.provider || '-'}
+                {avgs[cur.id] != null && <> · <b>{Math.round(avgs[cur.id]).toLocaleString('pt-PT')}x avg</b></>}
+                {plays[cur.id] ? <> · {plays[cur.id]} bonus</> : null}
+              </span>
+              <button type="button" onClick={() => onSlotClick(cur)}>View stats</button>
+            </div>
+          )}
         </div>
       )}
     </div>
