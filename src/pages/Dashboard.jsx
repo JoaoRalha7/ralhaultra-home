@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route, NavLink, useNavigate, Navigate } from 'react-router-dom'
+import { Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase, supabaseDash } from '../lib/supabase'
 import styles from './Dashboard.module.css'
@@ -77,6 +77,9 @@ const NAV = [
 export default function Dashboard() {
   const { user, isAdmin, loading } = useAuth()
   const navigate = useNavigate()
+  const loc = useLocation()
+  const [navOpen, setNavOpen] = useState(false)
+  useEffect(() => { setNavOpen(false) }, [loc.pathname])
 
   const [state,    setState]    = useState(null)
   const [pending,  setPending]  = useState(0)   // resgates pendentes
@@ -147,8 +150,16 @@ export default function Dashboard() {
   return (
     <div className={styles.root}>
 
+      <header className={styles.mobBar}>
+        <button type="button" className={styles.mobBtn} aria-label="Menu" aria-expanded={navOpen} onClick={() => setNavOpen((v) => !v)}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <span>RALHA <small>Dashboard</small></span>
+      </header>
+      {navOpen && <div className={styles.scrim} onClick={() => setNavOpen(false)} aria-hidden="true" />}
+
       {/* ── SIDEBAR ── */}
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${navOpen ? styles.sidebarOpen : ''}`}>
 
         {/* Brand */}
         <div className={styles.brand}>

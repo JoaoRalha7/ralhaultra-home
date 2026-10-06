@@ -91,3 +91,9 @@
   border-color: rgba(59,130,246,.4);
   color: #93c5fd;
 }
+@media (max-width: 820px) {
+  .card { flex-wrap: wrap; }
+  .cardLeft { flex: 1 1 100%; }
+  .cardActions { width: 100%; }
+  .cardActions > * { flex: 1; justify-content: center; }
+}

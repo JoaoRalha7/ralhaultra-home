@@ -135,4 +135,4 @@
 @media (max-width: 360px) {
   .page    { padding: 10px; }
   .content { padding: 14px 12px; }
-}
+}@media (max-width: 560px) { .tabNav { overflow-x: auto; scrollbar-width: none; } .tabBtn { flex-shrink: 0; } }

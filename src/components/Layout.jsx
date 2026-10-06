@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Icon, IconSprite } from './Icon';
 import AccountSetupOverlay from './AccountSetupOverlay';
 import AdminPanel from './AdminPanel';
@@ -46,7 +46,9 @@ export default function Layout() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [live, setLive] = useState([]);
+  const location = useLocation();
   const [open, setOpen] = useState(() => {
+    if (window.innerWidth <= 820) return false;
     try {
       const saved = localStorage.getItem('ru-sidebar');
       if (saved !== null) return saved === 'open';
@@ -57,6 +59,11 @@ export default function Layout() {
   });
 
   useEffect(() => {
+    if (window.innerWidth <= 820) setOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (window.innerWidth <= 820) return;
     try {
       localStorage.setItem('ru-sidebar', open ? 'open' : 'closed');
     } catch {
@@ -131,6 +138,7 @@ export default function Layout() {
           )}
         </header>
 
+        {open && <div className="scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
         <aside>
           {NAV_GROUPS.map((group, gi) => (
             <div className="grp" key={gi}>
@@ -142,6 +150,7 @@ export default function Layout() {
               ))}
             </div>
           ))}
+          {user && <button type="button" className="drawerOut" onClick={signOut}>Logout</button>}
         </aside>
 
         <main>

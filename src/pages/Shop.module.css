@@ -172,3 +172,4 @@
 .cardOut.cardLocked { opacity: .6; }
 .lock { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(11,14,20,.8); border: 1px solid #2a3040; color: #9aa3b8; }
 .lock { top: auto; bottom: 10px; }
+@media (max-width: 560px) { .stock { top: auto; bottom: 8px; right: auto; left: 8px; } .lock { right: 8px; bottom: 8px; } }
