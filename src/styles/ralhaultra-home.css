@@ -322,3 +322,26 @@ button.vbig,button.vi{font:inherit;color:inherit;text-align:left;cursor:pointer}
 .lcol .cover{height:200px}
 .lcol .cover .carArr{top:70px}
 @media (max-width:760px){.lcols{grid-template-columns:1fr}}
+
+.shub{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:stretch}
+.shh{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.shh b{font:800 16px "Bricolage Grotesque",sans-serif}
+.shi{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:#0d1018;border:1px solid var(--line);color:var(--acc);flex:none}
+.shrow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;min-width:0}
+.sht{display:flex;align-items:center;gap:12px;min-width:0;padding:16px 14px;border-radius:14px;border:1px solid #ffffff14;color:#fff;transition:transform .2s,border-color .2s,filter .2s;background:linear-gradient(135deg,var(--g1),var(--g2))}
+.sht:hover{transform:translateY(-3px);border-color:#ffffff40;filter:brightness(1.15)}
+.sht>span{flex:1;min-width:0}
+.sht b{display:block;font:800 14px "Bricolage Grotesque",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sht small{display:block;color:#ffffffa0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sht svg:first-child{flex:none}
+.sht .shx{flex:none;opacity:.5}
+.sht.twitch{--g1:#2a1a4a;--g2:#1b1535}
+.sht.kick{--g1:#0b0f0a;--g2:#1c4a12}
+.sht.instagram{--g1:#4a2a14;--g2:#4a1a2a}
+.sht.instagram.clips{--g1:#3a1a3a;--g2:#4a1a1a}
+.sht.discord{--g1:#1a1f4a;--g2:#151a38}
+.sht.telegram{--g1:#0f2f45;--g2:#0e2a3a}
+@media (max-width:1500px){.sht .shx{display:none}.sht{padding:14px 12px;gap:10px}.shh{padding:14px}}
+@media (max-width:1100px){.shrow{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:900px){.shub{grid-template-columns:1fr}}
+@media (max-width:560px){.shrow{grid-template-columns:repeat(2,minmax(0,1fr))}}
