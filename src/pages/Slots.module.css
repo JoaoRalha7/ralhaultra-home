@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════
    MAIN PAGE
 ══════════════════════════════════════ */
-.page { padding: 28px 32px; }
+.page { padding: 8px 0 40px; }
 .header { margin-bottom: 24px; }
 
 /* ── MODIFICADO AQUI PARA SUPORTAR O SVG NO TÍTULO ── */
@@ -110,7 +110,7 @@
 /* ══════════════════════════════════════
    DETAIL PAGE
 ══════════════════════════════════════ */
-.detailPage { padding: 28px 32px; }
+.detailPage { padding: 8px 0 40px; }
 
 .detailHeader { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 28px; }
 .backBtn {
@@ -282,7 +282,6 @@
 }
 
 @media (max-width: 640px) {
-  .page, .detailPage { padding: 18px 16px; }
   .slotCard     { flex: 0 0 130px; width: 130px; }
   .skeletonCard { flex: 0 0 130px; width: 130px; }
   .statsRow     { grid-template-columns: 1fr 1fr; }
@@ -290,7 +289,6 @@
 }
 
 @media (max-width: 480px) {
-  .page, .detailPage { padding: 12px; }
 
   /* Search bar full width */
   .searchWrap  { width: 100%; }
@@ -320,7 +318,6 @@
 }
 
 @media (max-width: 360px) {
-  .page, .detailPage { padding: 10px; }
   .slotCard     { flex: 0 0 calc(50vw - 14px); width: calc(50vw - 14px); }
   .skeletonCard { flex: 0 0 calc(50vw - 14px); width: calc(50vw - 14px); }
   .searchGrid   { grid-template-columns: repeat(2, 1fr); gap: 8px; }
