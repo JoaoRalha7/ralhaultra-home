@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { supabase } from '../lib/supabase'
+import { workerPost } from '../lib/points'
 import styles from './Shop.module.css'
 
 const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
@@ -196,12 +197,8 @@ export default function Shop() {
     if (!confirmProduct || redeeming) return
     setRedeeming(true)
     try {
-      const res = await fetch(`${SE_WORKER_URL}/redeem`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: twitchUsername, userId: user.id, productId: confirmProduct.id, cost: confirmProduct.cost }),
-      })
-      const data = await res.json()
+      const res = await workerPost('/redeem', { productId: confirmProduct.id })
+      const data = res.data
       if (!res.ok) { showToast(data.error || 'Error processing redeem.', 'error'); return }
       if (data.newPoints != null) setPoints(data.newPoints)
       setProducts(prev => prev.map(p => p.id === confirmProduct.id ? { ...p, stock: Math.max(0, p.stock - 1) } : p))

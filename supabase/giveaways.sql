@@ -50,3 +50,7 @@ alter table public.giveaway_entries drop constraint if exists giveaway_entries_g
 
 -- refresh the API schema cache so new columns are visible
 notify pgrst, 'reload schema';
+
+-- v3: entries are now created only by the worker (service key), which charges the points.
+-- Run this together with the new worker deploy. Without it, anyone could insert entries directly.
+drop policy if exists "entries insert own" on public.giveaway_entries;

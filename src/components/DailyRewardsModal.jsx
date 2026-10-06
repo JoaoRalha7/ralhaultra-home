@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import { workerPost } from '../lib/points'
 import styles from './DailyRewardsModal.module.css'
 
-const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
 const PRIZES = [
   { label: '10 pts',     points: 10,   weight: 35, color: '#1e3a8a', light: '#60a5fa' },
@@ -314,12 +314,8 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
     setClaimResult(null)
     setErrClaim(null)
     try {
-      const res  = await fetch(`${SE_WORKER_URL}/daily/claim`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, userId }),
-      })
-      const data = await res.json()
+      const { ok, data } = await workerPost('/daily/claim')
+      const res = { ok }
       if (!res.ok) {
         if (data.error === 'already_claimed') { 
           setClaimStatus('claimed')
@@ -353,12 +349,8 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
     setErrWheel(null)
     wheelResultRef.current = null
     try {
-      const res  = await fetch(`${SE_WORKER_URL}/daily/wheel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, userId }),
-      })
-      const data = await res.json()
+      const { ok, data } = await workerPost('/daily/wheel')
+      const res = { ok }
       if (!res.ok) {
         if (data.error === 'already_spun') { 
           setWheelStatus('claimed')

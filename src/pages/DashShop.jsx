@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { adminPoints } from '../lib/points'
 import styles from './DashShop.module.css'
 
-const SE_WORKER_URL = 'https://ralha-points.jppralha.workers.dev'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -254,11 +254,8 @@ function TabResgates() {
     // 1. Devolver pontos (só 1 vez)
     if (shouldRefundPoints) {
       try {
-        const res = await fetch(`${SE_WORKER_URL}/refund`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: redeem.twitch_username, amount: redeem.cost_at_redeem }),
-        })
-        const data = await res.json()
+        const res = await adminPoints(redeem.twitch_username, redeem.cost_at_redeem)
+        const data = res.data
         if (!res.ok) {
           showToast(`Erro ao devolver pontos: ${data.error}`, 'error')
           setSaving(s => ({ ...s, [redeem.id]: false }))

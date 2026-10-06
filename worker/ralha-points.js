@@ -15,6 +15,8 @@ const STREAK_POINTS = [50, 75, 100, 150, 200, 300, 500]
 // Server-side price list for mini-games (the browser never sends an amount).
 const GAME_COSTS = { pick: 100, gtb: 100, avg: 100 }
 
+const ADMIN_IDS = ['13878854-d588-4c49-ad36-1428920902bd']
+
 // Validates the Supabase session token and resolves the Twitch username.
 async function getUser(request, env, sbHeaders) {
   const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
@@ -99,6 +101,81 @@ export default {
         return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
       }
 
+      // ── POST /giveaway/enter ──────────────────────────────────────────────────
+      // Everything is decided here: price, limits, deadline, payment and the entry row.
+      if (pathname === '/giveaway/enter' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+
+        const body = await request.json()
+        const q = parseInt(body.tickets, 10)
+        if (!body.giveaway_id || !Number.isInteger(q) || q < 1 || q > 1000)
+          return json({ error: 'invalid request' }, 400)
+
+        const gRes = await fetch(`${env.SUPABASE_URL}/rest/v1/giveaways?id=eq.${encodeURIComponent(body.giveaway_id)}&select=id,status,ends_at,ticket_cost,max_tickets`, { headers: sbHeaders })
+        const g = (await gRes.json())?.[0]
+        if (!g) return json({ error: 'not found' }, 404)
+        if (g.status !== 'active' || new Date(g.ends_at) <= new Date()) return json({ error: 'ended' }, 400)
+
+        const unit = g.ticket_cost || 0
+        const cap = unit > 0 ? (g.max_tickets || null) : 1
+        if (cap == null && q > 100) return json({ error: 'invalid request' }, 400)
+
+        const eRes = await fetch(`${env.SUPABASE_URL}/rest/v1/giveaway_entries?giveaway_id=eq.${g.id}&user_id=eq.${who.id}&select=tickets`, { headers: sbHeaders })
+        const have = ((await eRes.json()) || []).reduce((n, r) => n + (r.tickets || 1), 0)
+        if (cap != null && have + q > cap) return json({ error: 'limit' }, 400)
+
+        const cost = q * unit
+        const seUrl = `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${who.username}`
+        const seHeaders = { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' }
+        let newPoints = null
+
+        if (cost > 0) {
+          const balRes = await fetch(seUrl, { headers: seHeaders })
+          if (!balRes.ok) return json({ error: 'balance check failed' }, 502)
+          const { points: current = 0 } = await balRes.json()
+          if (current < cost) return json({ error: 'insufficient', currentPoints: current }, 400)
+          const d = await fetch(`${seUrl}/${-cost}`, { method: 'PUT', headers: seHeaders })
+          if (!d.ok) return json({ error: `SE API erro ${d.status}` }, 502)
+          const dd = await d.json()
+          newPoints = dd.newAmount ?? dd.points ?? null
+        }
+
+        const ins = await fetch(`${env.SUPABASE_URL}/rest/v1/giveaway_entries`, {
+          method: 'POST',
+          headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ giveaway_id: g.id, user_id: who.id, twitch_username: who.username, tickets: q, cost_paid: cost }),
+        })
+        if (!ins.ok) {
+          if (cost > 0) {
+            const r = await fetch(`${seUrl}/${cost}`, { method: 'PUT', headers: seHeaders })
+            if (r.ok) { const rd = await r.json(); newPoints = rd.newAmount ?? rd.points ?? newPoints }
+          }
+          return json({ error: 'entry failed', refunded: cost > 0, newPoints }, 500)
+        }
+        return json({ ok: true, newPoints })
+      }
+
+      // ── POST /admin/points ────────────────────────────────────────────────────
+      // Streamer only: award or refund points to a viewer (hunts, mini-game prizes, shop refunds).
+      if (pathname === '/admin/points' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who || !ADMIN_IDS.includes(who.id)) return json({ error: 'unauthorized' }, 401)
+
+        const { username, amount } = await request.json()
+        const n = parseInt(amount, 10)
+        if (!username || !Number.isInteger(n) || n === 0 || Math.abs(n) > 1000000)
+          return json({ error: 'username e amount são obrigatórios' }, 400)
+
+        const res = await fetch(
+          `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${String(username).toLowerCase()}/${n}`,
+          { method: 'PUT', headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } }
+        )
+        if (!res.ok) return json({ error: `SE API erro ${res.status}`, detail: await res.text() }, res.status)
+        const data = await res.json()
+        return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
+      }
+
       // ── POST /game/spend ──────────────────────────────────────────────────────
       // Mini-game entry. The browser sends only its Supabase session token and the
       // game key; user, username and price are decided here. No shared secret.
@@ -165,10 +242,10 @@ export default {
 
       // ── POST /daily/claim ─────────────────────────────────────────────────────
       if (pathname === '/daily/claim' && request.method === 'POST') {
-        const { username, userId } = await request.json()
-
-        if (!username || !userId)
-          return json({ error: 'username e userId são obrigatórios' }, 400)
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+        const username = who.username
+        const userId   = who.id
 
         // 1. Garantir que o perfil existe
         await fetch(`${env.SUPABASE_URL}/rest/v1/profiles`, {
@@ -257,10 +334,10 @@ export default {
 
       // ── POST /daily/wheel ─────────────────────────────────────────────────────
       if (pathname === '/daily/wheel' && request.method === 'POST') {
-        const { username, userId } = await request.json()
-
-        if (!username || !userId)
-          return json({ error: 'username e userId são obrigatórios' }, 400)
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+        const username = who.username
+        const userId   = who.id
 
         // 1. Garantir que o perfil existe
         await fetch(`${env.SUPABASE_URL}/rest/v1/profiles`, {
@@ -334,13 +411,15 @@ export default {
 
       // ── POST /redeem ──────────────────────────────────────────────────────────
       if (pathname === '/redeem' && request.method === 'POST') {
-        const { username, userId, productId, cost } = await request.json()
-
-        if (!username || !userId || !productId || !cost)
-          return json({ error: 'username, userId, productId e cost são obrigatórios' }, 400)
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+        const username = who.username
+        const userId   = who.id
+        const { productId } = await request.json()
+        if (!productId) return json({ error: 'productId é obrigatório' }, 400)
 
         const prodRes = await fetch(
-          `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${productId}&select=id,stock,active`,
+          `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&select=id,stock,active,cost`,
           { headers: sbHeaders }
         )
         if (!prodRes.ok)
@@ -352,6 +431,8 @@ export default {
         if (!product)        return json({ error: 'Produto não encontrado.' }, 404)
         if (!product.active) return json({ error: 'Produto não está disponível.' }, 400)
         if (product.stock <= 0) return json({ error: 'Produto sem stock.' }, 400)
+        const cost = product.cost
+        if (!Number.isInteger(cost) || cost <= 0) return json({ error: 'Produto sem preço válido.' }, 400)
 
         const checkRes = await fetch(
           `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${username.toLowerCase()}`,
@@ -398,6 +479,9 @@ export default {
 
       // ── POST /refund ──────────────────────────────────────────────────────────
       if (pathname === '/refund' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who || !ADMIN_IDS.includes(who.id)) return json({ error: 'unauthorized' }, 401)
+
         const { username, amount } = await request.json()
 
         if (!username || !amount)

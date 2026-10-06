@@ -3,9 +3,9 @@ import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { supabase } from '../lib/supabase'
+import { workerPost } from '../lib/points'
 import styles from './Giveaways.module.css'
 
-const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 const Coin = ({ s = 16 }) => <span className={styles.coin} style={{ width: s, height: s }} aria-hidden="true" />
 const capOf = (g) => (g.ticket_cost > 0 ? g.max_tickets || null : 1)
@@ -154,19 +154,16 @@ export default function Giveaways() {
     if (cap != null && (mineN[g.id] || 0) + q > cap) return say('Ticket limit reached.', 'error')
     if (cost > 0 && (points ?? 0) < cost) return say('Not enough points.', 'error')
     setBusy(true)
-    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_WORKER_SECRET}` }
-    const move = (amount) => fetch(`${SE_WORKER_URL}/points/update`, { method: 'PUT', headers, body: JSON.stringify({ username: uname.toLowerCase(), amount }) })
     try {
-      if (cost > 0) {
-        const r = await move(-cost)
-        if (!r.ok) { say('Error deducting points. Try again.', 'error'); setBusy(false); return }
-        const d = await r.json().catch(() => ({}))
-        setPoints(d.newPoints != null ? d.newPoints : (p) => Math.max(0, (p ?? 0) - cost))
-      }
-      const { error } = await supabase.from('giveaway_entries').insert({ giveaway_id: g.id, user_id: user.id, twitch_username: uname, tickets: q, cost_paid: cost })
-      if (error) {
-        if (cost > 0) { await move(cost); setPoints((p) => (p ?? 0) + cost) }
-        say(cost > 0 ? 'Could not enter. Points refunded.' : 'Could not enter, try again.', 'error')
+      const { ok, data } = await workerPost('/giveaway/enter', { giveaway_id: g.id, tickets: q })
+      if (data.newPoints != null) setPoints(data.newPoints)
+      if (!ok) {
+        const msg = data.error === 'insufficient' ? 'Not enough points.'
+          : data.error === 'limit' ? 'Ticket limit reached.'
+          : data.error === 'ended' ? 'This giveaway has ended.'
+          : data.error === 'not_logged_in' || data.error === 'unauthorized' ? 'Log in again to enter.'
+          : data.refunded ? 'Could not enter. Points refunded.' : 'Could not enter, try again.'
+        say(msg, 'error')
       } else {
         say(`You are in: ${g.prize}`)
         setModal(null); load(); if (cost > 0) refresh()

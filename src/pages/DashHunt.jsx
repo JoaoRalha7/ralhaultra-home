@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabaseDash } from '../lib/supabase'
+import { adminPoints } from '../lib/points'
 import { parseBet, AVG_BUCKETS, getBucket } from '../lib/miniGamesUtils'
 import styles from './DashHunt.module.css'
 
@@ -236,7 +237,6 @@ function PickPanel({ hunt, entries }) {
   const [pts3,           setPts3]          = useState(100)
   const [deleting,       setDeleting]      = useState(false)
   const [showAwardPreview, setShowAwardPreview] = useState(false)
-  const SE_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
   const load = useCallback(async () => {
     if (!hunt?.id) return
@@ -372,21 +372,13 @@ function PickPanel({ hunt, entries }) {
 
       if (dbErr) { results.push(`${label} ${pick.twitch_username}: DB error`); continue }
 
-      // Dar pontos via Worker SE — PUT /points/update com INTERNAL_SECRET
+      // Dar pontos via Worker (admin autenticado)
       try {
-        const res = await fetch(`${SE_URL}/points/update`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_WORKER_SECRET}`
-          },
-          body: JSON.stringify({ username: pick.twitch_username.toLowerCase(), amount: pts })
-        })
+        const res = await adminPoints(pick.twitch_username, pts)
         if (res.ok) {
           results.push(`${label} ${pick.twitch_username} +${pts}pts — ok`)
         } else {
-          const txt = await res.text()
-          results.push(`${label} ${pick.twitch_username}: worker error — ${txt}`)
+          results.push(`${label} ${pick.twitch_username}: worker error — ${res.data?.error || res.status}`)
         }
       } catch (e) {
         results.push(`${label} ${pick.twitch_username}: connection error — ${e.message}`)
@@ -883,7 +875,6 @@ function GtbPanel({ hunt }) {
   // award
   const [actualBal,    setActualBal]    = useState('')
 
-  const SE_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
   const load = useCallback(async () => {
     if (!hunt?.id) { setPanelReady(true); return }
@@ -999,11 +990,7 @@ function GtbPanel({ hunt }) {
       // Give points
       if (pts > 0) {
         try {
-          const res = await fetch(`${SE_URL}/points/update`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_WORKER_SECRET}` },
-            body: JSON.stringify({ username: entry.twitch_username.toLowerCase(), amount: pts })
-          })
+          const res = await adminPoints(entry.twitch_username, pts)
           const cashStr = cash > 0 ? ` + €${cash} cash` : ''
           results.push(res.ok ? `${entry.twitch_username} +${pts}pts${cashStr} — ok` : `${entry.twitch_username}: worker error`)
         } catch { results.push(`${entry.twitch_username}: connection error`) }
@@ -1277,7 +1264,6 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
   const [pts3,        setPts3]        = useState(100)
   const [actualAvg,   setActualAvg]   = useState('')
 
-  const SE_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
   const load = useCallback(async () => {
     if (!hunt?.id) { setPanelReady(true); return }
@@ -1388,11 +1374,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
       }).eq('id', entry.id)
       if (pts > 0) {
         try {
-          const res = await fetch(`${SE_URL}/points/update`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_WORKER_SECRET}` },
-            body: JSON.stringify({ username: entry.twitch_username.toLowerCase(), amount: pts })
-          })
+          const res = await adminPoints(entry.twitch_username, pts)
           results.push(res.ok ? `${entry.twitch_username} +${pts}pts — ok` : `${entry.twitch_username}: worker error`)
         } catch { results.push(`${entry.twitch_username}: connection error`) }
       }
