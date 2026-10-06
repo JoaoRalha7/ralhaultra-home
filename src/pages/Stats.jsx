@@ -237,9 +237,16 @@ export default function Stats({ navigate }) {
     }
   })
 
-  const totalPages   = Math.ceil(sorted.length / PER_PAGE)
-  const pageEntries  = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-  const globalOffset = (page - 1) * PER_PAGE
+  const podium       = sorted.slice(0, 3)
+  const rest         = sorted.slice(3)
+  const totalPages   = Math.ceil(rest.length / PER_PAGE)
+  const pageEntries  = rest.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const globalOffset = 3 + (page - 1) * PER_PAGE
+
+  const kpiTotal = filtered.reduce((a, e) => a + parseBet(e.payment), 0)
+  const kpiMultis = filtered.map(e => parseBet(e.payment) / parseBet(e.bet))
+  const kpiBest  = kpiMultis.length ? Math.max(...kpiMultis) : 0
+  const kpiAvg   = kpiMultis.length ? kpiMultis.reduce((a, b) => a + b, 0) / kpiMultis.length : 0
 
   const handleSort = v => { setSort(v);       setPage(1) }
   const handleType = v => { setTypeFilter(v); setPage(1) }
@@ -259,24 +266,60 @@ export default function Stats({ navigate }) {
           <i className="bx bx-bar-chart-alt-2" style={{color: 'var(--blue)'}} />
           Global Stats
         </h1>
-        <p className={styles.sub}>The latest casino stats for this year.</p>
+        <p className={styles.sub}>The best wins and multipliers from every bonus we opened.</p>
       </div>
 
-      <div className={styles.filters}>
-        <select className={styles.select} value={typeFilter} onChange={e => handleType(e.target.value)}>
-          {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <select className={styles.select} value={sort} onChange={e => handleSort(e.target.value)}>
+      <div className={styles.kpis}>
+        <div className={styles.kpi}><small>Total paid out</small><strong>{fmtCompact(kpiTotal)}</strong></div>
+        <div className={styles.kpi}><small>Bonuses opened</small><strong>{filtered.length.toLocaleString('pt-PT')}</strong></div>
+        <div className={styles.kpi}><small>Best multiplier</small><strong className={styles.gold}>{fmtX(kpiBest)}</strong></div>
+        <div className={styles.kpi}><small>Average multiplier</small><strong>{fmtX(kpiAvg)}</strong></div>
+      </div>
+
+      <div className={styles.toolbar}>
+        <div className={styles.chips} role="tablist" aria-label="Type">
+          {TYPE_OPTIONS.map(o => (
+            <button key={o.value} type="button" role="tab" aria-selected={typeFilter === o.value}
+              className={`${styles.chip} ${typeFilter === o.value ? styles.chipOn : ''}`} onClick={() => handleType(o.value)}>{o.label}</button>
+          ))}
+        </div>
+        <select className={styles.select} value={sort} onChange={e => handleSort(e.target.value)} aria-label="Sort by">
           {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
+
+      {!loading && podium.length > 0 && (
+        <div className={styles.podium}>
+          {podium.map((e, i) => {
+            const multi = parseBet(e.payment) / parseBet(e.bet)
+            return (
+              <button type="button" key={e.id || i} className={`${styles.pod} ${styles['pod' + (i + 1)]}`}
+                onClick={() => navigate('/slots', { state: { slotId: e.slot_id || e.slot?.id } })}>
+                <span className={styles.podRank}>{i + 1}</span>
+                <div className={styles.podImg}>
+                  {e.slot?.image_url ? <img src={e.slot.image_url} alt="" onError={ev => { ev.target.style.opacity = '.2' }} /> : <div className={styles.podFb}>{(e.slot?.name || '?').slice(0, 2).toUpperCase()}</div>}
+                </div>
+                <div className={styles.podBody}>
+                  <div className={styles.podName}>{e.slot?.name || '—'}</div>
+                  <div className={styles.podProv}>{e.slot?.provider || ''}</div>
+                  <div className={styles.podStats}>
+                    <div><small>Win</small><strong>{fmtCompact(e.payment)}</strong></div>
+                    <div><small>Multi</small><strong className={styles.gold}>{fmtX(multi)}</strong></div>
+                    <div><small>Bet</small><strong>{fmtCompact(e.bet)}</strong></div>
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       <div className={styles.tableWrap}>
         {loading ? (
           <div className={styles.loading}><div className={styles.spinner} /> Loading...</div>
         ) : sorted.length === 0 ? (
           <div className={styles.empty}>No entries found.</div>
-        ) : (
+        ) : rest.length === 0 ? null : (
           <>
             <div className={styles.tableScroll}>
             <table className={styles.table}>
