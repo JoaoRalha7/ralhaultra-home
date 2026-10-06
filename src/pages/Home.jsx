@@ -169,6 +169,22 @@ export default function Home() {
           </section>
 
           <section>
+            <SectionHead icon="users" title="Community" tag="Join us" />
+            <div className="ccards">
+              {COMMUNITY.map((c) => (
+                <a key={c.id} className="cc" href={c.url} target="_blank" rel="noopener noreferrer">
+                  <span className="gi"><Icon name={c.icon} size={20} /></span>
+                  <div>
+                    <b>{c.name}</b>
+                    <small>{c.meta}</small>
+                  </div>
+                  <span className="go">{c.cta}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          <section>
             <SectionHead icon="pulse" title="Activity Feed" tag="Live updates" />
             <div className="tabs" role="tablist">
               <button role="tab" aria-selected={tab === 'shop'} className={`tb${tab === 'shop' ? ' on' : ''}`} onClick={() => setTab('shop')}>
@@ -194,22 +210,6 @@ export default function Home() {
                   <span className="val">- {r.value} PTS <span className="coin" /></span>
                   <span className={`stt ${r.status}`}>{r.status}</span>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <SectionHead icon="users" title="Community" tag="Join us" />
-            <div className="ccards">
-              {COMMUNITY.map((c) => (
-                <a key={c.id} className="cc" href={c.url} target="_blank" rel="noopener noreferrer">
-                  <span className="gi"><Icon name={c.icon} size={20} /></span>
-                  <div>
-                    <b>{c.name}</b>
-                    <small>{c.meta}</small>
-                  </div>
-                  <span className="go">{c.cta}</span>
-                </a>
               ))}
             </div>
           </section>
