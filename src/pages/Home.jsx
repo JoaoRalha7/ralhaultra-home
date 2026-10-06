@@ -5,7 +5,6 @@ import OfferRow from '../components/OfferRow';
 import InfoModal from '../components/InfoModal';
 import { RedirectModal, TwitchPlayerModal, FeaturedOfferModal } from '../components/HomeModals';
 import { casinoToOffer } from '../data/casinoToOffer';
-import { BRAND_PATHS } from '../data/brandPaths';
 import { OFFERS } from '../data/fallback';
 import { useAuth } from '../hooks/useAuth';
 import { useTwitchStatus } from '../hooks/useTwitchStatus';
@@ -35,12 +34,12 @@ const LINKS = {
 };
 
 const COMMUNITY = [
-  { id: 1, brand: 'twitch', name: 'Twitch', meta: 'jralha_', url: LINKS.twitch },
-  { id: 2, brand: 'kick', name: 'Kick', meta: 'jralha_', url: LINKS.kick },
-  { id: 3, brand: 'instagram', name: 'Instagram', meta: '@jotaralha7', url: LINKS.instagram },
-  { id: 4, brand: 'instagram', name: 'Clips', meta: '@clipsdoralha', url: LINKS.clips },
-  { id: 5, brand: 'discord', name: 'Discord', meta: '4,000+ users', url: LINKS.discord },
-  { id: 6, brand: 'telegram', name: 'Telegram', meta: 'Updates', url: LINKS.telegram },
+  { id: 1, icon: 'tv', name: 'Twitch', meta: 'jralha_', cta: 'Follow', url: LINKS.twitch },
+  { id: 2, icon: 'play', name: 'Kick', meta: 'jralha_', cta: 'Follow', url: LINKS.kick },
+  { id: 3, icon: 'camera', name: 'Instagram', meta: '@jotaralha7', cta: 'Follow', url: LINKS.instagram },
+  { id: 4, icon: 'camera', name: 'Instagram clips', meta: '@clipsdoralha', cta: 'Follow', url: LINKS.clips },
+  { id: 5, icon: 'chat', name: 'Discord', meta: '4,000+ members', cta: 'Join', url: LINKS.discord },
+  { id: 6, icon: 'send', name: 'Telegram', meta: 'Announcements', cta: 'Join', url: LINKS.telegram },
 ];
 
 const TABS = [
@@ -386,20 +385,18 @@ export default function Home() {
       </section>
 
       <section>
-        <div className="shub">
-          <div className="shh">
-            <span className="shi"><Icon name="users" size={20} /></span>
-            <b>Social Hub</b>
-          </div>
-          <div className="shrow">
-            {COMMUNITY.map((c) => (
-              <a key={c.id} className={`sht ${c.brand}${c.id === 4 ? ' clips' : ''}`} href={c.url} target="_blank" rel="noopener noreferrer" aria-label={`${c.name} ${c.meta}`}>
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d={BRAND_PATHS[c.brand]} /></svg>
-                <span><b>{c.name}</b><small>{c.meta}</small></span>
-                <svg className="shx" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.5 14.5l5-5M10 9.5h4.5V14" /></svg>
-              </a>
-            ))}
-          </div>
+        <SectionHead icon="users" title="Community" tag="Join us" />
+        <div className="ccards">
+          {COMMUNITY.map((c) => (
+            <a key={c.id} className="cc" href={c.url} target="_blank" rel="noopener noreferrer">
+              <span className="gi"><Icon name={c.icon} size={20} /></span>
+              <div>
+                <b>{c.name}</b>
+                <small>{c.meta}</small>
+              </div>
+              <span className="go">{c.cta}</span>
+            </a>
+          ))}
         </div>
       </section>
 
