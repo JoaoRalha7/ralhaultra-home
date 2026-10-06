@@ -213,6 +213,7 @@ export default function Shop() {
       </header>
 
       <section className={`${styles.stage} ${featured ? "" : styles.stageSolo}`}>
+        <div className={styles.leftCol}>
         {featured && (
           <article className={styles.top} style={{ '--c': featured.color || '#f5c542' }}>
             <div className={styles.topText}>
@@ -238,6 +239,20 @@ export default function Shop() {
             </div>
           </article>
         )}
+          {recent.length > 0 && (
+            <section className={styles.recent} aria-label="Just redeemed">
+              <div className={styles.rHead}><span>Just redeemed</span><span className={styles.live}><i />Live</span></div>
+              <div className={styles.rGrid}>
+                {recent.map(r => (
+                  <div key={r.id} className={styles.rRow}>
+                    <span className={styles.rThumb}>{r.shop_products?.image_url ? <img src={r.shop_products.image_url} alt="" /> : (r.shop_products?.name?.[0] || '?')}</span>
+                    <div><b>{r.shop_products?.name || 'Prize'}</b><small>{r.twitch_username} · {ago(r.created_at)}</small></div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
 
         <div className={styles.side}>
           <div className={styles.wallet}>
@@ -258,14 +273,14 @@ export default function Shop() {
             <div className={styles.rHead}><span>Top points</span><Link className={styles.all} to="/leaderboard">View all</Link></div>
             {board.length === 0 ? <p className={styles.walletNote}>Leaderboard unavailable right now.</p> : (
               <ol className={styles.rows}>
-                {board.slice(0, 6).map((u, i) => (
+                {board.slice(0, 5).map((u, i) => (
                   <li key={u.username} className={`${styles.bRow} ${me && u.username?.toLowerCase() === me ? styles.bMe : ''}`}>
                     <span className={`${styles.rank} ${i < 3 ? styles['rank' + (i + 1)] : ''}`}>{i + 1}</span>
                     <b>{u.username}</b>
                     <span className={styles.bPts}><IconCoin size={12} />{fmt(u.points)}</span>
                   </li>
                 ))}
-                {myRank >= 6 && (
+                {myRank >= 5 && (
                   <li className={`${styles.bRow} ${styles.bMe} ${styles.bYou}`}>
                     <span className={styles.rank}>{myRank + 1}</span>
                     <b>{board[myRank].username} <em>you</em></b>
@@ -277,20 +292,6 @@ export default function Shop() {
           </div>
         </div>
       </section>
-
-      {recent.length > 0 && (
-        <section className={styles.recent} aria-label="Just redeemed">
-          <div className={styles.rHead}><span>Just redeemed</span><span className={styles.live}><i />Live</span></div>
-          <div className={styles.rGrid}>
-            {recent.map(r => (
-              <div key={r.id} className={styles.rRow}>
-                <span className={styles.rThumb}>{r.shop_products?.image_url ? <img src={r.shop_products.image_url} alt="" /> : (r.shop_products?.name?.[0] || '?')}</span>
-                <div><b>{r.shop_products?.name || 'Prize'}</b><small>{r.twitch_username} · {ago(r.created_at)}</small></div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <div className={styles.bar}>
         <div className={styles.seg} role="tablist">
