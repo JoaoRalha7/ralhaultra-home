@@ -146,10 +146,12 @@ function huntStats(hunt, entries) {
   const profit   = balEnd > 0 ? balEnd + totalPay - balStart : totalPay - balStart
   const avg      = opened.length > 0
     ? opened.reduce((a, e) => a + parseBet(e.payment) / parseBet(e.bet), 0) / opened.length : 0
-  const best     = [...opened].map(e => ({ ...e, multi: parseBet(e.payment) / parseBet(e.bet) }))
-    .sort((a, b) => b.multi - a.multi)[0] || null
+  const ranked   = [...opened].map(e => ({ ...e, multi: parseBet(e.payment) / parseBet(e.bet) }))
+    .sort((a, b) => b.multi - a.multi)
+  const best     = ranked[0] || null
+  const worst    = ranked.length > 1 ? ranked[ranked.length - 1] : null
   return {
-    opened, totalPay, balStart, profit, avg, best,
+    opened, totalPay, balStart, profit, avg, best, worst,
     total: entries.length,
     supers: entries.filter(e => e.is_super).length,
     hasResult: opened.length > 0,
@@ -201,20 +203,8 @@ function FeaturedHunt({ hunt, entries, onClick }) {
   )
 }
 
-function barTone(m) {
-  if (m >= 50) return x.bGold
-  if (m >= 10) return x.bHi
-  if (m >= 1) return x.bMid
-  return x.bLow
-}
-
 function HuntCard({ hunt, entries, onClick }) {
   const st = huntStats(hunt, entries)
-  const bars = entries.slice(0, 60).map(e => {
-    const ok = e.opened && e.payment != null && parseBet(e.bet) > 0
-    const m = ok ? parseBet(e.payment) / parseBet(e.bet) : null
-    return { m, h: m == null ? 12 : Math.max(14, Math.min(100, (Math.log10(Math.max(m, 0.5)) + 0.3) / 2.3 * 100)) }
-  })
   return (
     <button type="button" className={`${x.hCard} ${hunt.active ? x.hCardLive : ''}`} onClick={onClick}>
       <div className={x.hcTop}>
@@ -222,13 +212,14 @@ function HuntCard({ hunt, entries, onClick }) {
         <span className={x.hcDate}>{fmtDate(hunt.date)}</span>
       </div>
       <b className={`${x.hcProfit} ${st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}`}>{st.hasResult ? money(st.profit) : '—'}</b>
-      <div className={x.hcBars} aria-hidden="true">
-        {bars.length ? bars.map((b, i) => <i key={i} className={b.m == null ? x.bOff : barTone(b.m)} style={{ height: b.h + '%' }} />) : <span className={x.rNone}>No bonuses yet</span>}
-      </div>
-      <div className={x.hcBest}>
-        {st.best
-          ? <><SlotThumb slot={st.best.slot} size={34} /><span><b>{st.best.slot?.name || '—'}</b><small>Best bonus</small></span><strong>{st.best.multi.toFixed(0)}x</strong></>
-          : <span className={x.rNone}>No bonuses opened</span>}
+      <div className={x.hcPair}>
+        {[['Best', st.best, x.hcGood], ['Worst', st.worst, x.hcBad]].map(([lbl, e, cls]) => (
+          <div key={lbl} className={x.hcBw}>
+            {e
+              ? <><SlotThumb slot={e.slot} size={34} /><span><small>{lbl}</small><b>{e.slot?.name || '—'}</b></span><strong className={cls}>{e.multi >= 10 ? e.multi.toFixed(0) : e.multi.toFixed(2)}x</strong></>
+              : <><span className={x.hcBwEmpty}><small>{lbl}</small><b>—</b></span></>}
+          </div>
+        ))}
       </div>
       <div className={x.hcFoot}>
         <span><small>Bonuses</small>{st.total || '—'}{st.supers > 0 && <em> · {st.supers} super</em>}</span>

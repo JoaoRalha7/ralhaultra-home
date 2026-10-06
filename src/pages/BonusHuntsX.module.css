@@ -75,18 +75,13 @@
 .hcId { font: 800 16px "Bricolage Grotesque", sans-serif; display: flex; align-items: center; }
 .hcDate { font-size: 12px; color: var(--mute); }
 .hcProfit { font: 800 32px/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.hcBars { display: flex; align-items: flex-end; gap: 2px; height: 46px; padding: 6px 8px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
-.hcBars i { flex: 1; min-width: 2px; max-width: 8px; border-radius: 2px 2px 0 0; }
-.bOff { background: rgba(255,255,255,.12); }
-.bLow { background: rgba(248,113,113,.7); }
-.bMid { background: rgba(59,130,246,.75); }
-.bHi { background: var(--acc2); }
-.bGold { background: var(--gold); }
-.hcBest { display: flex; align-items: center; gap: 10px; min-height: 34px; min-width: 0; }
-.hcBest > span:not(.rNone) { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.hcBest b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hcBest small { font-size: 11px; color: var(--mute); }
-.hcBest strong { font: 800 20px "Bricolage Grotesque", sans-serif; color: var(--gold); }
+.hcPair { display: flex; flex-direction: column; gap: 8px; }
+.hcBw { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 5px 10px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); min-width: 0; }
+.hcBw > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hcBw small { font-size: 11px; color: var(--mute); }
+.hcBw b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hcBw strong { font: 800 20px "Bricolage Grotesque", sans-serif; font-variant-numeric: tabular-nums; }
+.hcGood { color: var(--gold); } .hcBad { color: var(--neg); }
 .rNone { font-size: 12px; color: var(--mute); }
 .hcFoot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
 .hcFoot small { display: block; font-size: 11px; color: var(--mute); font-weight: 600; margin-bottom: 2px; }
