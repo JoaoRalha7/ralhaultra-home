@@ -322,8 +322,8 @@ export default function Home() {
     <>
       <section className="hero" aria-label="Featured">
         <article className="hc a">
-          <h2>Where every spin is a show</h2>
-          <p>Bonus hunts, giveaways and slots, almost every day.</p>
+          <h2>Ralha Community House</h2>
+          <p>Bonus hunts, giveaways and slots, almost every day. Come hang out.</p>
           <div className="act">
             <Round />
             <a className={`pill${live ? ' live' : ''}`} href={LINKS.twitch} target="_blank" rel="noopener noreferrer">
