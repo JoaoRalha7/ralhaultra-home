@@ -363,7 +363,6 @@ export default function Home() {
 
       <section>
         <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
-        <p className="hint">Sign up through the official links to support the channel and unlock the offers.</p>
         <div className="ocards">
           {offers.map((o) => <OfferRow key={o.id} o={o} onClaim={claim} onInfo={info} />)}
         </div>

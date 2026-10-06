@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabaseDash } from '../lib/supabase'
+import { spendGamePoints, refundGamePoints } from '../lib/points'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import styles from './MiniGame.module.css'
@@ -10,7 +11,6 @@ import {
   AVG_BUCKETS, getBucket
 } from '../lib/miniGamesUtils'
 
-const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 const AVG_COST      = 100
 
 // ── History List ───────────────────────────────────────────────────────────────
@@ -241,14 +241,12 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
     if (points != null && points < AVG_COST) { showToast('Not enough points!', 'error'); setConfirm(null); return }
     setSubmitting(true); setConfirm(null)
     try {
-      const res = await fetch(`${SE_WORKER_URL}/points/update`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_WORKER_SECRET}` },
-        body: JSON.stringify({ username: twitchUser.toLowerCase(), amount: -AVG_COST })
-      })
-      if (!res.ok) { showToast('Error deducting points. Try again.', 'error'); setSubmitting(false); return }
-      const resData = await res.json()
-      if (resData.newPoints != null) setPoints(resData.newPoints)
+      const res = await spendGamePoints('avg')
+      if (!res.ok) {
+        showToast(res.error === 'insufficient' ? 'Not enough points!' : res.status === 401 ? 'Log in again to play.' : 'Error deducting points. Try again.', 'error')
+        setSubmitting(false); return
+      }
+      if (res.newPoints != null) setPoints(res.newPoints)
       else setPoints(p => Math.max(0, (p ?? 0) - AVG_COST))
 
       const { error } = await supabaseDash.from('avg_multi_entries').insert({
@@ -257,11 +255,7 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
       })
       if (error) {
         if (error.code === '23505') {
-          await fetch(`${SE_WORKER_URL}/points/update`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_WORKER_SECRET}` },
-            body: JSON.stringify({ username: twitchUser.toLowerCase(), amount: AVG_COST })
-          })
+          await refundGamePoints('avg')
           setPoints(p => (p ?? 0) + AVG_COST)
           showToast('You already have a guess! Points refunded.', 'error')
         } else { showToast('Error saving guess. Contact the streamer.', 'error') }

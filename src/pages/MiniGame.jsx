@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabaseDash } from '../lib/supabase'
+import { spendGamePoints, refundGamePoints } from '../lib/points'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import styles from './MiniGame.module.css'
 import { parseBet, fmtTime, fmtDate, useCountdown, Spinner, Medal, LockIcon, ChevronIcon } from '../lib/miniGamesUtils'
 
-const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 const PICK_COST     = 100
 
 // ── Confirm Dialog ─────────────────────────────────────────────────────────────
@@ -295,14 +295,12 @@ export default function MiniGame({ huntId = null }) {
     }
     setPicking(entry.id); setConfirm(null)
     try {
-      const res = await fetch(`${SE_WORKER_URL}/points/update`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_WORKER_SECRET}` },
-        body: JSON.stringify({ username: twitchUser.toLowerCase(), amount: -PICK_COST })
-      })
-      if (!res.ok) { showToast('Error deducting points. Try again.', 'error'); setPicking(null); return }
-      const resData = await res.json()
-      if (resData.newPoints != null) setPoints(resData.newPoints)
+      const res = await spendGamePoints('pick')
+      if (!res.ok) {
+        showToast(res.error === 'insufficient' ? 'Not enough points!' : res.status === 401 ? 'Log in again to play.' : 'Error deducting points. Try again.', 'error')
+        setPicking(null); return
+      }
+      if (res.newPoints != null) setPoints(res.newPoints)
       else setPoints(p => Math.max(0, (p ?? 0) - PICK_COST))
 
       const { error } = await supabaseDash.from('picks').insert({
@@ -310,11 +308,7 @@ export default function MiniGame({ huntId = null }) {
       })
       if (error) {
         if (error.code === '23505') {
-          await fetch(`${SE_WORKER_URL}/points/update`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_WORKER_SECRET}` },
-            body: JSON.stringify({ username: twitchUser.toLowerCase(), amount: PICK_COST })
-          })
+          await refundGamePoints('pick')
           setPoints(p => (p ?? 0) + PICK_COST)
           showToast('Slot just got taken! Points refunded.', 'error')
         } else {
