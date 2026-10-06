@@ -318,3 +318,15 @@
 .bwLbl svg{width:12px;height:12px}
 .bwWin b{font-size:15px}
 .bwWin small{font-size:12px;margin-top:0}
+
+/* fixed pager: only the rows scroll */
+@media (min-width:1101px){
+  .dBody .tbl{display:flex;flex-direction:column;overflow:hidden}
+  .dBody .tbl > *:first-child{flex:1;min-height:0;overflow-y:auto}
+  .dBody .tbl > *:not(:first-child){flex:none;background:var(--panel);box-shadow:0 -8px 16px rgba(0,0,0,.25)}
+  .dBody .tbl thead th{position:sticky;top:0;z-index:2;background:var(--panel)}
+}
+
+@media (min-width:1101px){
+  .dBody{position:sticky;top:76px;align-self:start;height:calc(100vh - 96px);min-height:440px}
+}
