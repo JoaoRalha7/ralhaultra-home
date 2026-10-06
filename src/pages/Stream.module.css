@@ -1,0 +1,135 @@
+/* ── PAGE ── */
+.page {
+  padding: 28px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* ocupa toda a altura disponível */
+  height: calc(100vh - var(--header-h) - 28px);
+  min-height: 0;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.title {
+  font-size: 24px; font-weight: 900;
+  letter-spacing: .06em; color: #fff;
+}
+.statusBadge {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 13px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; letter-spacing: .06em;
+}
+.online  { background: rgba(0,255,140,.10); border: 1px solid rgba(0,255,140,.30); color: #00ff9a; }
+.offline { background: rgba(255,80,80,.10);  border: 1px solid rgba(255,80,80,.30);  color: #ff5b5b; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.online .dot { animation: pulse 1.5s infinite; box-shadow: 0 0 8px currentColor; }
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(0,255,154,.8); }
+  70%  { box-shadow: 0 0 0 8px rgba(0,255,154,0);  }
+  100% { box-shadow: 0 0 0 0   rgba(0,255,154,0);  }
+}
+
+.watchText {
+  font-size: 13px;
+  color: rgba(232,238,252,.35);
+  font-weight: 500;
+}
+.watchLink {
+  color: rgb(237 237 237 / 0.85);
+  font-weight: 600;
+  text-decoration: none;
+}
+.watchLink:hover { color: rgb(237 237 237 / 0.85); }
+
+/* ── LAYOUT: player + chat com gap e cantos separados ── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── PLAYER ── */
+.playerWrap {
+  position: relative;
+  background: #000;
+  overflow: hidden;
+  min-height: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.player {
+  width: 100%;
+  height: 100%;
+}
+.player iframe { border: none; width: 100%; height: 100%; }
+
+.offlineOverlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; padding: 32px;
+  background: #080a0f;
+  text-align: center;
+}
+.offlineTitle { font-size: 18px; font-weight: 800; color: #fff; }
+.offlineSub   { font-size: 13px; color: rgb(237 237 237 / 0.85); line-height: 1.6; }
+.offlineSub a { color: #3b82f6; font-weight: 600; text-decoration: none; }
+.offlineSub a:hover { text-decoration: underline; }
+
+/* ── CHAT ── */
+.chatWrap {
+  background: #0e0f16;
+  min-height: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.chatFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .page {
+    height: auto;
+    padding: 18px 0 0;
+    gap: 16px;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .playerWrap {
+    aspect-ratio: 16 / 9;
+  }
+  .chatWrap {
+    height: 480px;
+  }
+}
+
+@media (max-width: 600px) {
+  .page { padding: 14px 0 0; gap: 12px; }
+  .title { font-size: 22px; }
+  .watchText { font-size: 13px; }
+  .chatWrap { height: 400px; }
+}
+
+@media (max-width: 360px) {
+  .chatWrap { height: 360px; }
+}

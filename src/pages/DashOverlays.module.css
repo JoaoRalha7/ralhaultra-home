@@ -1,0 +1,93 @@
+.page {
+  display: flex; flex-direction: column;
+  height: 100%; padding: 24px 28px;
+  background: #060810; overflow-y: auto; gap: 20px;
+}
+
+/* Header */
+.header {
+  display: flex; align-items: center; gap: 12px;
+}
+.headerIcon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(139,92,246,.15); border: 1px solid rgba(139,92,246,.25);
+  display: flex; align-items: center; justify-content: center;
+  color: #a78bfa; flex-shrink: 0;
+}
+.headerTitle { font-size: 16px; font-weight: 800; color: #fff; }
+.headerSub   { font-size: 12px; color: rgba(255,255,255,.35); margin-top: 1px; }
+
+/* Grid */
+.grid {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* Card */
+.card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 16px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.03);
+  transition: border-color .15s, background .15s;
+}
+.card_purple:hover { background: rgba(139,92,246,.06);  border-color: rgba(139,92,246,.2); }
+.card_blue:hover   { background: rgba(59,130,246,.06);  border-color: rgba(59,130,246,.2); }
+.card_green:hover  { background: rgba(34,197,94,.05);   border-color: rgba(34,197,94,.2); }
+.card_amber:hover  { background: rgba(245,158,11,.05);  border-color: rgba(245,158,11,.2); }
+.card_red:hover    { background: rgba(239,68,68,.05);   border-color: rgba(239,68,68,.2); }
+
+.cardLeft {
+  display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0;
+}
+
+.cardIcon {
+  width: 44px; height: 44px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.icon_purple { background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(139,92,246,.2); }
+.icon_blue   { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.2); }
+.icon_green  { background: rgba(34,197,94,.12);  color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
+.icon_amber  { background: rgba(245,158,11,.12); color: #fbbf24; border: 1px solid rgba(245,158,11,.2); }
+.icon_red    { background: rgba(239,68,68,.12);  color: #f87171; border: 1px solid rgba(239,68,68,.2); }
+
+.cardText  { min-width: 0; flex: 1; }
+.cardLabel { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.cardSub   { font-size: 11px; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+.cardUrl   {
+  font-size: 10px; color: rgba(255,255,255,.2);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Actions */
+.cardActions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+.btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 12px; border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.6);
+  cursor: pointer; transition: all .15s;
+  font-family: var(--font);
+}
+.btn:hover { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.2); }
+
+.btnCopy {}
+.btnCopied {
+  background: rgba(34,197,94,.15) !important;
+  border-color: rgba(34,197,94,.3) !important;
+  color: #4ade80 !important;
+}
+
+.btnOpen {
+  background: rgba(59,130,246,.1);
+  border-color: rgba(59,130,246,.2);
+  color: #60a5fa;
+}
+.btnOpen:hover {
+  background: rgba(59,130,246,.2);
+  border-color: rgba(59,130,246,.4);
+  color: #93c5fd;
+}

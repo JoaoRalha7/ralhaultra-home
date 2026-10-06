@@ -1,0 +1,80 @@
+.page {
+  padding: 28px 0 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.header { display: flex; flex-direction: column; gap: 6px; }
+.title  { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: .02em; }
+.sub    { font-size: 13px; color: rgba(232,238,252,.35); }
+
+.list { display: flex; flex-direction: column; gap: 8px; }
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: #090b14;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font);
+  transition: border-color .15s, background .15s, transform .15s;
+  width: 100%;
+}
+.card:hover {
+  border-color: rgba(255,255,255,.16);
+  background: #0c0f1a;
+  transform: translateX(3px);
+}
+.cardSoon { opacity: .45; cursor: default; }
+.cardSoon:hover { transform: none; border-color: rgba(255,255,255,.08); background: #090b14; }
+
+.cardIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.09);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(232,238,252,.5);
+  flex-shrink: 0;
+}
+.cardBody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cardTitle { font-size: 15px; font-weight: 800; color: #fff; }
+.cardDesc  { font-size: 12px; color: rgba(232,238,252,.35); line-height: 1.5; }
+.cardRight { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.chipLive {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 800; letter-spacing: .07em;
+  color: #22c55e; background: rgba(34,197,94,.1);
+  border: 1px solid rgba(34,197,94,.25);
+  padding: 3px 10px; border-radius: 999px;
+}
+.chipDot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.7);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.chipDone {
+  font-size: 10px; font-weight: 700; color: #fbbf24;
+  background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.2);
+  padding: 3px 10px; border-radius: 999px;
+}
+.chipIdle {
+  font-size: 10px; font-weight: 700; color: rgba(232,238,252,.25);
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  padding: 3px 10px; border-radius: 999px;
+}
+.chipSoon {
+  font-size: 10px; font-weight: 700; color: rgba(232,238,252,.3);
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06);
+  padding: 3px 10px; border-radius: 999px;
+}

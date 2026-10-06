@@ -1,0 +1,168 @@
+.page { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+.header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.title { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+.sub   { font-size: 12px; color: rgba(255,255,255,.35); }
+
+.grid {
+  flex: 1; overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  align-content: start;
+}
+
+/* Card */
+.card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.cardHead { display: flex; align-items: center; justify-content: space-between; }
+.cardTitle { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: .06em; }
+.cardSub   { font-size: 11px; color: rgba(255,255,255,.3); }
+.divider   { height: 1px; background: rgba(255,255,255,.06); }
+
+/* Main logo */
+.mainLogoRow { display: flex; align-items: center; gap: 10px; }
+.mainLogoPreview {
+  width: 52px; height: 32px; border-radius: 7px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0;
+}
+.mainLogoPreview img { width: 100%; height: 100%; object-fit: contain; }
+.mainLogoPreview span { font-size: 12px; color: rgba(255,255,255,.2); }
+.mainLogoInfo { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.mainLogoLabel { font-size: 11px; color: rgba(255,255,255,.4); }
+.uploadBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 6px;
+  border: 1px solid rgba(59,130,246,.3); background: rgba(59,130,246,.08);
+  color: #93c5fd; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: .15s; align-self: flex-start;
+}
+.uploadBtn:hover { background: rgba(59,130,246,.15); }
+
+/* Casino list */
+.casinoList { display: flex; flex-direction: column; gap: 6px; }
+.emptySmall { font-size: 11px; color: rgba(255,255,255,.25); padding: 4px 0; }
+.casinoItem {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px; padding: 7px 10px; transition: .15s;
+}
+.casinoItemActive { border-color: rgba(59,130,246,.35); background: rgba(59,130,246,.07); }
+.casinoItemLogo {
+  width: 40px; height: 24px; border-radius: 5px;
+  background: rgba(255,255,255,.06); overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.casinoItemLogo img { width: 100%; height: 100%; object-fit: contain; }
+.casinoItemName { flex: 1; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.casinoSetBtn {
+  font-size: 11px; padding: 3px 8px; border-radius: 5px;
+  border: 1px solid rgba(255,255,255,.12); background: transparent;
+  color: rgba(255,255,255,.5); cursor: pointer; font-family: var(--font); transition: .15s;
+  white-space: nowrap;
+}
+.casinoSetBtn:hover { border-color: rgba(59,130,246,.4); color: #93c5fd; }
+.casinoSetBtnActive { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.35); color: #93c5fd; }
+.casinoRemoveBtn {
+  width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
+  border: 1px solid rgba(255,90,120,.2); background: rgba(255,90,120,.07);
+  color: rgba(255,130,150,.6); cursor: pointer; font-size: 10px;
+  display: flex; align-items: center; justify-content: center; transition: .15s;
+}
+.casinoRemoveBtn:hover { background: rgba(255,90,120,.15); color: #fda4af; }
+
+/* Add casino */
+.addCasino { display: flex; flex-direction: column; gap: 7px; }
+.addLabel  { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .06em; }
+.input {
+  padding: 8px 10px; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+  color: #fff; font-size: 12px; font-family: var(--font); outline: none;
+  transition: border-color .15s;
+}
+.input:focus { border-color: rgba(59,130,246,.4); }
+.input::placeholder { color: rgba(255,255,255,.25); }
+.uploadZone {
+  border: 1.5px dashed rgba(59,130,246,.25); border-radius: 7px;
+  padding: 10px; text-align: center; cursor: pointer;
+  font-size: 11px; color: rgba(255,255,255,.35); transition: .2s;
+  background: rgba(59,130,246,.03);
+}
+.uploadZone:hover { border-color: rgba(59,130,246,.5); color: #93c5fd; background: rgba(59,130,246,.07); }
+.addPreview {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.04); border-radius: 7px; padding: 7px 10px;
+}
+.addPreview img { height: 22px; max-width: 60px; object-fit: contain; }
+.addPreview span { flex: 1; font-size: 11px; color: rgba(255,255,255,.45); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clearPreviewBtn { background: none; border: none; color: rgba(255,255,255,.3); cursor: pointer; font-size: 12px; }
+.addSaveBtn {
+  padding: 8px; border-radius: 7px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none; color: #fff; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: var(--font); transition: opacity .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.addSaveBtn:hover { opacity: .88; }
+.addSaveBtn:disabled { opacity: .4; cursor: default; }
+
+/* Modo */
+.modoGrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+.modoBtn {
+  padding: 10px 6px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.5); font-size: 12px; font-weight: 800;
+  cursor: pointer; font-family: var(--font); transition: .15s; letter-spacing: .05em;
+}
+.modoBtn:hover { background: rgba(255,255,255,.08); color: #fff; }
+.modoBtn_green.modoBtnActive  { background: rgba(34,197,94,.15);  border-color: rgba(34,197,94,.4);  color: #4ade80; }
+.modoBtn_blue.modoBtnActive   { background: rgba(59,130,246,.15); border-color: rgba(59,130,246,.4); color: #93c5fd; }
+.modoBtn_slate.modoBtnActive  { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.6); }
+.modoHint { font-size: 11px; color: rgba(255,255,255,.3); }
+
+/* Activity */
+.activityGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.activityBtn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 8px; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03);
+  cursor: pointer; font-family: var(--font); transition: .15s;
+}
+.activityBtn:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.15); }
+.activityBtnActive { border-color: rgba(59,130,246,.4); background: rgba(59,130,246,.1); }
+.activityIcon  { font-size: 22px; line-height: 1; }
+.activityLabel { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.6); }
+.activityBtnActive .activityLabel { color: #93c5fd; }
+
+/* Preview */
+.previewRows { display: flex; flex-direction: column; gap: 8px; }
+.previewRow  { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.previewKey  { font-size: 11px; color: rgba(255,255,255,.35); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.previewVal  { font-size: 12px; color: #fff; font-weight: 600; }
+.previewLogo { height: 20px; max-width: 60px; object-fit: contain; }
+.previewBadge {
+  font-size: 11px; font-weight: 800; padding: 2px 8px;
+  border-radius: 5px; letter-spacing: .05em;
+  background: rgba(255,255,255,.08); color: rgba(255,255,255,.5);
+}
+.previewBadge_raw   { background: rgba(34,197,94,.15);  color: #4ade80; }
+.previewBadge_wager { background: rgba(59,130,246,.15); color: #93c5fd; }
+.previewBadge_demo  { background: rgba(255,255,255,.06); color: rgba(255,255,255,.3); }
+
+/* States */
+.loading { display: flex; align-items: center; gap: 10px; padding: 40px; color: rgba(255,255,255,.4); font-size: 13px; }
+.spinner    { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.1); border-top-color: #3b82f6; animation: spin .7s linear infinite; flex-shrink: 0; }
+.spinnerSm  { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; animation: spin .7s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,421 @@
+import { useState, useEffect, useRef } from 'react'
+import { supabaseDash as supabase } from '../lib/supabase.js'
+
+function fmt(n) {
+  if (!n && n !== 0) return '—'
+  return n >= 1000
+    ? n.toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '€'
+    : n.toFixed(2) + '€'
+}
+
+function hslFromName(name) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff
+  return `hsl(${h % 360}, 55%, 58%)`
+}
+
+// ─── Profile pic cache ────────────────────────────────────────────────────
+const profileCache = {}
+async function getProfilePic(username) {
+  if (profileCache[username]) return profileCache[username]
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 4000)
+    const res  = await fetch(`https://api.ivr.fi/v2/twitch/user?login=${username.toLowerCase()}`, { signal: controller.signal })
+    clearTimeout(timeout)
+    const data = await res.json()
+    const url  = data?.[0]?.logo || null
+    if (url) profileCache[username] = url
+    return url
+  } catch { return null }
+}
+
+// ─── TwitchAvatar ─────────────────────────────────────────────────────────
+// Aceita src pré-carregado para nunca mostrar a letra primeiro
+function TwitchAvatar({ username, src, size = 44, borderColor = 'rgba(124,111,255,.35)' }) {
+  const color  = hslFromName(username)
+  const [imgSrc, setImgSrc] = useState(src || profileCache[username] || null)
+
+  useEffect(() => {
+    if (src) { setImgSrc(src); return }
+    if (profileCache[username]) { setImgSrc(profileCache[username]); return }
+    getProfilePic(username).then(url => { if (url) setImgSrc(url) })
+  }, [username, src])
+
+  const base = { width: size, height: size, borderRadius: '50%', flexShrink: 0, border: `2px solid ${borderColor}` }
+  if (imgSrc) return <img src={imgSrc} alt={username} style={{ ...base, objectFit: 'cover' }} />
+  return (
+    <div style={{ ...base, background: `${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: size * 0.38, color }}>
+      {username?.[0]?.toUpperCase() || '?'}
+    </div>
+  )
+}
+
+// ─── useAutoScroll ────────────────────────────────────────────────────────
+function useAutoScroll({ count, visible, rowH, gap, interval = 6000 }) {
+  const [step, setStep] = useState(0)
+  const innerRef = useRef(null)
+  const maxStep  = Math.max(0, count - visible)
+
+  useEffect(() => { if (count > visible) setStep(maxStep) }, [count])
+
+  useEffect(() => {
+    if (count <= visible) { setStep(0); return }
+    const id = setInterval(() => setStep(prev => prev >= maxStep ? 0 : prev + 1), interval)
+    return () => clearInterval(id)
+  }, [count, maxStep, interval])
+
+  useEffect(() => {
+    if (!innerRef.current) return
+    innerRef.current.style.transform = `translateY(-${step * (rowH + gap)}px)`
+  }, [step, rowH, gap])
+
+  return { innerRef, fadeTop: step > 0, fadeBottom: step < maxStep }
+}
+
+// ─── AnimatedSection ──────────────────────────────────────────────────────
+// Expande/colapsa com animação de altura — sem flick
+function AnimatedSection({ show, children }) {
+  const ref     = useRef(null)
+  const prevRef = useRef(show)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || show === prevRef.current) return
+    prevRef.current = show
+    clearTimeout(timerRef.current)
+
+    if (show) {
+      el.style.overflow   = 'hidden'
+      el.style.height     = '0px'
+      el.style.opacity    = '0'
+      el.offsetHeight
+      const target = el.scrollHeight
+      el.style.transition = 'height .45s cubic-bezier(.4,0,.2,1), opacity .35s ease'
+      el.style.height     = `${target}px`
+      el.style.opacity    = '1'
+      timerRef.current = setTimeout(() => {
+        el.style.height   = 'auto'
+        el.style.overflow = 'visible'
+        el.style.transition = ''
+      }, 460)
+    } else {
+      el.style.overflow   = 'hidden'
+      el.style.height     = `${el.scrollHeight}px`
+      el.style.opacity    = '1'
+      el.offsetHeight
+      el.style.transition = 'height .4s cubic-bezier(.4,0,.2,1), opacity .3s ease'
+      el.style.height     = '0px'
+      el.style.opacity    = '0'
+    }
+  }, [show])
+
+  return (
+    <div ref={ref} style={{ overflow: show ? 'visible' : 'hidden' }}>
+      {children}
+    </div>
+  )
+}
+
+// ─── Constantes ───────────────────────────────────────────────────────────
+const PAY_ROW_H   = 38
+const PAY_GAP     = 5
+const PAY_VISIBLE = 2
+const RK_ROW_H    = 46
+const RK_GAP      = 0
+const RK_VISIBLE  = 4
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&family=Sora:wght@700;800&display=swap');
+html, body { background: transparent !important; margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.root-wrap { width: 100vw; height: 100vh; display: flex; align-items: flex-start; justify-content: flex-start; }
+.root { width: 460px; height: 480px; transform-origin: top left; transform: scale(var(--scale, 1)); font-family: 'Rubik', sans-serif; -webkit-font-smoothing: antialiased; }
+.card { background: #07090f; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; overflow: hidden; }
+
+.hd { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.hd-info { flex: 1; min-width: 0; }
+.hd-tag  { font-size: 10px; font-weight: 800; color: rgba(255,255,255,.35); letter-spacing: .12em; text-transform: uppercase; }
+.hd-user { font-size: 18px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-user.dim { font-size: 14px; color: rgba(255,255,255,.3); font-weight: 500; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; animation: pulse 1.4s ease-in-out infinite; }
+.wait-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.15); flex-shrink: 0; animation: blink 2.2s ease-in-out infinite; }
+
+.slot-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.slot-img    { width: 54px; height: 54px; border-radius: 10px; object-fit: cover; background: #1a1d2e; border: 1px solid rgba(255,255,255,.08); flex-shrink: 0; }
+.slot-img-ph { width: 54px; height: 54px; border-radius: 10px; background: #1a1d2e; border: 1px solid rgba(255,255,255,.08); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.slot-name { font-size: 14px; font-weight: 800; color: #fff; }
+.slot-sub  { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; }
+.slot-bet  { font-size: 13px; font-weight: 700; color: #fff; margin-top: 3px; }
+.slot-bet b { color: #f59e0b; font-weight: 900; font-size: 15px; }
+.total-wrap { margin-left: auto; text-align: right; flex-shrink: 0; }
+.total-lbl  { font-size: 10px; color: rgba(255,255,255,.3); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.total-val  { font-size: 28px; font-weight: 900; color: #22c55e; line-height: 1; }
+
+.pays-outer { padding: 8px 12px; }
+.pays-inner { display: flex; flex-direction: column; gap: ${PAY_GAP}px; transition: transform .6s cubic-bezier(.4,0,.2,1); }
+.pay-row { display: flex; align-items: center; gap: 9px; padding: 7px 11px; border-radius: 9px; background: rgba(255,255,255,.04); flex-shrink: 0; height: ${PAY_ROW_H}px; }
+.pay-ico { width: 24px; height: 24px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pay-ico.bonus { background: rgba(245,158,11,.15); }
+.pay-ico.win   { background: rgba(124,111,255,.15); }
+.pay-type { font-size: 12px; font-weight: 700; flex: 1; }
+.pay-type.bonus { color: #f59e0b; }
+.pay-type.win   { color: #a78bfa; }
+.pay-multi { font-size: 10px; color: rgba(255,255,255,.28); margin-left: 4px; }
+.pay-val { font-size: 13px; font-weight: 900; color: #fff; }
+
+.divider { border-top: 1px solid rgba(255,255,255,.06); }
+
+.rk-hd { display: flex; align-items: center; gap: 8px; padding: 7px 16px; border-bottom: 1px solid rgba(255,255,255,.05); background: rgba(255,255,255,.015); }
+.rk-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.4); letter-spacing: .1em; text-transform: uppercase; }
+.rk-date  { margin-left: auto; font-size: 10px; color: rgba(255,255,255,.2); font-weight: 600; }
+.rk-inner { display: flex; flex-direction: column; transition: transform .6s cubic-bezier(.4,0,.2,1); }
+.rk-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,.03); height: ${RK_ROW_H}px; flex-shrink: 0; }
+.rk-row.r0 { background: rgba(251,191,36,.05); }
+.rk-row.r1 { background: rgba(200,200,200,.02); }
+.rk-row.r2 { background: rgba(180,100,50,.02); }
+.rk-pos { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rk-pos-num { font-size: 11px; font-weight: 800; color: rgba(255,255,255,.22); }
+.rk-slot { width: 34px; height: 34px; border-radius: 8px; background: #1a1d2e; border: 1px solid rgba(255,255,255,.07); flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.rk-slot img { width: 100%; height: 100%; object-fit: cover; }
+.rk-name { font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.rk-amt { font-size: 13px; font-weight: 900; white-space: nowrap; flex-shrink: 0; }
+.rk-amt.r0 { color: #fbbf24; }
+.rk-amt.r1 { color: #cbd5e1; }
+.rk-amt.r2 { color: #cd7c4d; }
+.rk-amt.rn { color: #fff; }
+
+.waiting-body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; gap: 8px; }
+.waiting-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.3); }
+.waiting-sub   { font-size: 11px; color: rgba(255,255,255,.15); font-weight: 500; }
+
+@keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes blink  { 0%,100%{opacity:.15} 50%{opacity:.5} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+`
+
+const TrophyIcon = ({ color }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
+    <path d="M12 17v4"/><path d="M8 21h8"/>
+    <path d="M6 9a6 6 0 0 0 12 0V3H6v6z"/>
+  </svg>
+)
+const trophyColors = ['#fbbf24', '#cbd5e1', '#cd7c4d']
+
+export default function MinigamePlaying() {
+  const [session,    setSession]    = useState(undefined)
+  const [ranking,    setRanking]    = useState([])
+  const [slots,      setSlots]      = useState({})
+  const [sessionPic, setSessionPic] = useState(null)  // foto pré-carregada do jogador atual
+  const [rankPics,   setRankPics]   = useState({})    // fotos pré-carregadas do ranking
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const load = async () => {
+      const { data: sess } = await supabase.from('minigame_sessions')
+        .select('*, slot:slots(*)')
+        .eq('status', 'playing').eq('stream_date', today)
+        .order('created_at', { ascending: false }).limit(1).single()
+
+      // pré-carrega foto ANTES de mostrar a sessão — sem flicker de letra
+      if (sess?.username) {
+        const pic = await getProfilePic(sess.username)
+        setSessionPic(pic)
+      } else {
+        setSessionPic(null)
+      }
+      setSession(sess || null)
+
+      const { data: rk } = await supabase.from('minigame_ranking')
+        .select('*').eq('stream_date', today)
+        .order('total_won', { ascending: false }).limit(20)
+      setRanking(rk || [])
+
+      if (rk?.length) {
+        // pré-carrega fotos do ranking em paralelo
+        const pics = {}
+        await Promise.allSettled(rk.map(async r => {
+          const pic = await getProfilePic(r.username)
+          if (pic) pics[r.username] = pic
+        }))
+        setRankPics(prev => ({ ...prev, ...pics }))
+
+        const { data: done } = await supabase.from('minigame_sessions')
+          .select('username, slot:slots(image_url, name)')
+          .eq('stream_date', today).eq('status', 'done')
+          .order('created_at', { ascending: false })
+        if (done) {
+          const map = {}
+          for (const s of done) { if (!map[s.username]) map[s.username] = s.slot }
+          setSlots(map)
+        }
+      }
+    }
+    load()
+    const ch = supabase.channel('mg-playing-v3')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'minigame_sessions' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'minigame_ranking'  }, load)
+      .subscribe()
+    return () => supabase.removeChannel(ch)
+  }, [])
+
+  // scale OBS
+  useEffect(() => {
+    const update = () => {
+      const scale = Math.min(window.innerWidth / 460, window.innerHeight / 480)
+      document.documentElement.style.setProperty('--scale', scale)
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
+  const payments = [...(session?.payments || [])].reverse()
+  const payScroll = useAutoScroll({ count: payments.length, visible: PAY_VISIBLE, rowH: PAY_ROW_H, gap: PAY_GAP, interval: 5000 })
+  const rkScroll  = useAutoScroll({ count: ranking.length,  visible: RK_VISIBLE,  rowH: RK_ROW_H,  gap: RK_GAP,  interval: 6000 })
+
+  const today      = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })
+  const hasSession = session !== null && session !== undefined
+  const hasRanking = ranking.length > 0
+
+  if (session === undefined) return <><style>{CSS}</style><div className="root-wrap"><div className="root" /></div></>
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="root-wrap">
+        <div className="root">
+          <div className="card">
+
+            {/* HEADER — key muda quando muda o jogador para forçar animação */}
+            <div className="hd" key={session?.id || 'waiting'} style={{ animation: 'fadeIn .35s ease' }}>
+              {hasSession ? (
+                <TwitchAvatar username={session.username} src={sessionPic} size={44} borderColor="rgba(124,111,255,.35)" />
+              ) : (
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+              )}
+              <div className="hd-info">
+                <div className="hd-tag">{hasSession ? 'Now Playing' : 'Minigame'}</div>
+                <div className={`hd-user${hasSession ? '' : ' dim'}`}>
+                  {hasSession ? session.username : 'Waiting for player…'}
+                </div>
+              </div>
+              {hasSession ? <div className="live-dot" /> : <div className="wait-dot" />}
+            </div>
+
+            {/* SLOT + TOTAL */}
+            <AnimatedSection show={hasSession}>
+              {hasSession && (
+                <div className="slot-row">
+                  {session.slot?.image_url
+                    ? <img className="slot-img" src={session.slot.image_url} alt="" onError={e => e.target.style.opacity = '.3'} />
+                    : <div className="slot-img-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
+                  }
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="slot-name">{session.slot?.name || '—'}</div>
+                    <div className="slot-sub">{session.slot?.provider}</div>
+                    <div className="slot-bet">BET: <b>{session.bet}€</b></div>
+                  </div>
+                  <div className="total-wrap">
+                    <div className="total-lbl">Total</div>
+                    <div className="total-val">{fmt(session.total_won)}</div>
+                  </div>
+                </div>
+              )}
+            </AnimatedSection>
+
+            {/* PAYMENTS */}
+            <AnimatedSection show={hasSession && payments.length > 0}>
+              {hasSession && payments.length > 0 && (
+                <div className="pays-outer">
+                  <div style={{ position: 'relative', height: PAY_VISIBLE * PAY_ROW_H + (PAY_VISIBLE - 1) * PAY_GAP, overflow: 'hidden' }}>
+                    {payScroll.fadeTop    && <div style={{ position: 'absolute', top: 0,    left: 0, right: 0, height: 18, background: 'linear-gradient(to bottom, #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    {payScroll.fadeBottom && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to top,    #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    <div className="pays-inner" ref={payScroll.innerRef}>
+                      {payments.map((p, i) => (
+                        <div key={i} className="pay-row">
+                          <div className={`pay-ico ${p.type}`}>
+                            {p.type === 'bonus'
+                              ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                              : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+                            }
+                          </div>
+                          <div className={`pay-type ${p.type}`}>
+                            {p.type === 'bonus' ? 'Bonus' : '+50x Win'}
+                            <span className="pay-multi">{p.multiplier}x</span>
+                          </div>
+                          <div className="pay-val">{fmt(p.value)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </AnimatedSection>
+
+            {/* RANKING */}
+            <AnimatedSection show={hasRanking}>
+              {hasRanking && (
+                <>
+                  <div className="divider" />
+                  <div className="rk-hd">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <div className="rk-title">Ranking</div>
+                    <div className="rk-date">{today}</div>
+                  </div>
+                  <div style={{ position: 'relative', height: RK_VISIBLE * RK_ROW_H, overflow: 'hidden' }}>
+                    {rkScroll.fadeTop    && <div style={{ position: 'absolute', top: 0,    left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    {rkScroll.fadeBottom && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to top,    #07090f, transparent)', zIndex: 1, pointerEvents: 'none' }} />}
+                    <div className="rk-inner" ref={rkScroll.innerRef}>
+                      {ranking.map((r, i) => {
+                        const slot = slots[r.username]
+                        const rc   = i < 3 ? `r${i}` : ''
+                        const ac   = i < 3 ? `r${i}` : 'rn'
+                        return (
+                          <div key={r.id} className={`rk-row ${rc}`}>
+                            <div className="rk-pos">
+                              {i < 3
+                                ? <TrophyIcon color={trophyColors[i]} />
+                                : <div className="rk-pos-num">#{i + 1}</div>}
+                            </div>
+                            <div className="rk-slot">
+                              {slot?.image_url
+                                ? <img src={slot.image_url} alt="" onError={e => e.target.style.opacity = '.3'} />
+                                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+                              }
+                            </div>
+                            <TwitchAvatar username={r.username} src={rankPics[r.username] || null} size={30} borderColor={i < 3 ? `${trophyColors[i]}50` : 'rgba(255,255,255,.15)'} />
+                            <div className="rk-name">{r.username}</div>
+                            <div className={`rk-amt ${ac}`}>{fmt(r.total_won)}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </AnimatedSection>
+
+            {/* Waiting — só quando não há sessão nem ranking */}
+            <AnimatedSection show={!hasSession && !hasRanking}>
+              {!hasSession && !hasRanking && (
+                <div className="waiting-body">
+                  <div className="waiting-title">No active session</div>
+                  <div className="waiting-sub">Next player will appear here</div>
+                </div>
+              )}
+            </AnimatedSection>
+
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}

@@ -1,45 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import OfferRow from '../components/OfferRow';
+import InfoModal from '../components/InfoModal';
+import { RedirectModal, TwitchPlayerModal } from '../components/HomeModals';
 import { casinoToOffer } from '../data/casinoToOffer';
 import { OFFERS } from '../data/fallback';
-import { supabase } from '../lib/supabase';
+import { useTwitchStatus } from '../hooks/useTwitchStatus';
+import { supabase, supabaseDash } from '../lib/supabase';
 import '../styles/ralhaultra-home.css';
 
+const SE_WORKER_URL = 'https://ralha-points.jppralha.workers.dev';
+const STATUS_WORKER_URL = 'https://ralha-status.jppralha.workers.dev';
 
-const FEATURED_VIDEO = { title: 'Best moments - September', age: '2 days ago', tone: 'v1', isNew: true };
-const VIDEOS = [
-  { id: 1, title: 'Live highlights', age: '5 days ago', tone: 'v2' },
-  { id: 2, title: 'Big win compilation', age: '1 week ago', tone: 'v3' },
-  { id: 3, title: 'Bonus hunt result', age: '2 weeks ago', tone: 'v4' },
-  { id: 4, title: 'New record in Portugal', age: '3 weeks ago', tone: 'v5' },
+const VIDEO_FALLBACK = [
+  { id: 'f0', title: 'Latest stream', tone: 'v1' },
+  { id: 'f1', title: 'Live highlights', tone: 'v2' },
+  { id: 'f2', title: 'Big win compilation', tone: 'v3' },
+  { id: 'f3', title: 'Bonus hunt result', tone: 'v4' },
+  { id: 'f4', title: 'New record in Portugal', tone: 'v5' },
 ];
 
-const FEED = {
-  shop: [
-    { id: 1, item: '100 Free Spins No Deposit', user: 'user_one', date: '05/10/2026, 23:41:15', value: '100 000', status: 'pending' },
-    { id: 2, item: '100 Free Spins No Deposit', user: 'user_two', date: '05/10/2026, 22:41:41', value: '100 000', status: 'paid' },
-    { id: 3, item: '100 Free Spins No Deposit', user: 'user_three', date: '05/10/2026, 22:38:56', value: '100 000', status: 'paid' },
-    { id: 4, item: '100 Free Spins No Deposit', user: 'user_four', date: '05/10/2026, 21:49:40', value: '100 000', status: 'pending' },
-    { id: 5, item: '100 Free Spins No Deposit', user: 'user_five', date: '05/10/2026, 19:27:42', value: '100 000', status: 'paid' },
-    { id: 6, item: '50 Free Spins No Deposit', user: 'user_six', date: '04/10/2026, 23:55:10', value: '80 000', status: 'paid' },
-    { id: 7, item: '50 Free Spins No Deposit', user: 'user_seven', date: '04/10/2026, 23:54:56', value: '80 000', status: 'paid' },
-  ],
-  giveaways: [
-    { id: 1, item: 'Daily Giveaway Entry', user: 'user_eight', date: '05/10/2026, 20:00:03', value: '5 000', status: 'paid' },
-    { id: 2, item: 'Weekly Raffle Ticket', user: 'user_nine', date: '05/10/2026, 18:12:44', value: '20 000', status: 'paid' },
-    { id: 3, item: 'Weekly Raffle Ticket', user: 'user_ten', date: '05/10/2026, 17:03:19', value: '20 000', status: 'pending' },
-  ],
-};
+const DAILY_LABELS = { wheel: 'Daily Wheel', 'daily wheel': 'Daily Wheel', claim: 'Daily Claim', 'daily claim': 'Daily Claim' };
 
 const LINKS = {
   twitch: 'https://twitch.tv/jralha_',
   kick: 'https://kick.com/jralha_',
-  instagram: 'https://instagram.com/jotaralha7',
+  instagram: 'https://www.instagram.com/jotaralha7/',
   clips: 'https://instagram.com/clipsdoralha',
-  discord: '#',
-  telegram: '#',
+  discord: 'https://discord.gg/bdweuwugYJ',
+  telegram: 'https://t.me/+AvzWdiNpmDJkNjY0',
 };
 
 const COMMUNITY = [
@@ -50,6 +40,55 @@ const COMMUNITY = [
   { id: 5, icon: 'chat', name: 'Discord', meta: '4,000+ members', cta: 'Join', url: LINKS.discord },
   { id: 6, icon: 'send', name: 'Telegram', meta: 'Announcements', cta: 'Join', url: LINKS.telegram },
 ];
+
+const TABS = [
+  { key: 'shop', label: 'Shop', icon: 'bag' },
+  { key: 'giveaways', label: 'Giveaways & Raffles', icon: 'gift' },
+  { key: 'games', label: 'Games & Daily', icon: 'spark' },
+];
+
+function parseDuration(d = '') {
+  const h = d.match(/(\d+)h/)?.[1];
+  const m = d.match(/(\d+)m/)?.[1];
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  if (m) return `${m}m`;
+  return d;
+}
+
+function ago(date) {
+  const d = new Date(date);
+  if (isNaN(d)) return '';
+  const days = Math.floor((Date.now() - d) / 86400000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function thumbOf(s) {
+  return s.thumbnail_url ? s.thumbnail_url.replace('%{width}', 640).replace('%{height}', 360) : '';
+}
+
+function cleanAction(it) {
+  if (it._type === 'daily') {
+    const raw = (it.action || '').replace(/\s*[–—-].+$/, '').trim();
+    return DAILY_LABELS[raw.toLowerCase()] || raw || '-';
+  }
+  return it.action || '-';
+}
+
+const rankLabel = (r) => (r === 1 ? '1st' : r === 2 ? '2nd' : '3rd');
+
+function gameRows(rows, type, entryLabel, awardLabel, dateKey) {
+  return (rows || []).flatMap((r) => {
+    const out = [{ _type: type, action: entryLabel, username: r.twitch_username, created_at: r[dateKey], points: -(r.cost_paid || 100), status: 'ENTERED' }];
+    if (r.points_awarded > 0 && r.rank && r.awarded_at) {
+      out.push({ _type: type, action: `${awardLabel} - ${rankLabel(r.rank)} place`, username: r.twitch_username, created_at: r.awarded_at, points: r.points_awarded, status: 'AWARDED' });
+    }
+    return out;
+  });
+}
 
 function Round() {
   return (
@@ -73,8 +112,15 @@ function SectionHead({ icon, title, tag, count, showAll }) {
 }
 
 export default function Home() {
+  const live = useTwitchStatus();
   const [tab, setTab] = useState('shop');
   const [offers, setOffers] = useState(OFFERS.slice(0, 3));
+  const [methodsBySlug, setMethodsBySlug] = useState({});
+  const [selectedCasino, setSelectedCasino] = useState(null);
+  const [redirect, setRedirect] = useState(null);
+  const [player, setPlayer] = useState(null);
+  const [streams, setStreams] = useState([]);
+  const [activity, setActivity] = useState(null);
 
   useEffect(() => {
     supabase
@@ -87,133 +133,202 @@ export default function Home() {
       .then(({ data, error }) => {
         if (!error && data && data.length) setOffers(data.map((c, i) => casinoToOffer(c, i)));
       });
+    supabase
+      .from('deposit_methods')
+      .select('slug,name,icon_url')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => {
+        const by = {};
+        (data || []).forEach((m) => { by[m.slug] = { name: m.name, icon_url: m.icon_url }; });
+        setMethodsBySlug(by);
+      });
+    fetch(`${STATUS_WORKER_URL}/streams?limit=8`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.streams?.length) setStreams(d.streams); })
+      .catch(() => {});
   }, []);
 
-  const [shopFeed, setShopFeed] = useState(FEED.shop);
+  const loadActivity = useCallback(async () => {
+    try {
+      const empty = { redeems: [] };
+      const [workerRes, shopRes, dailyRes, picks, gtb, avg] = await Promise.all([
+        fetch(`${SE_WORKER_URL}/redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
+        supabase.from('shop_redeems').select('*, shop_products(name)').order('created_at', { ascending: false }).limit(10),
+        fetch(`${SE_WORKER_URL}/daily-redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
+        supabaseDash.from('picks').select('twitch_username, cost_paid, picked_at, points_awarded, rank, awarded_at').order('picked_at', { ascending: false }).limit(10),
+        supabaseDash.from('gtb_entries').select('twitch_username, cost_paid, created_at, rank, points_awarded, awarded_at').order('created_at', { ascending: false }).limit(10),
+        supabaseDash.from('avg_multi_entries').select('twitch_username, cost_paid, created_at, rank, points_awarded, awarded_at').order('created_at', { ascending: false }).limit(10),
+      ]);
+      const shopData = shopRes.data || [];
+      const minute = (d) => (d ? new Date(d).toISOString().slice(0, 16) : '');
+      const shopKeys = new Set(shopData.map((r) => `${(r.twitch_username || '').toLowerCase()}|${minute(r.created_at)}`));
+      const giveaways = (workerRes.redeems || workerRes.data || [])
+        .filter((it) => !shopKeys.has(`${(it.username || '').toLowerCase()}|${minute(it.created_at)}`))
+        .map((it) => ({ ...it, _type: 'giveaway', action: it.action || it.item }));
+      const shop = shopData.map((r) => ({
+        _type: 'shop', action: r.shop_products?.name || 'Redeem', username: r.twitch_username,
+        created_at: r.created_at, points: -(r.cost_at_redeem || 0), status: r.status,
+      }));
+      const daily = (dailyRes.redeems || []).map((r) => ({
+        _type: 'daily', action: r.action, username: r.username, created_at: r.created_at, points: r.points, status: 'AWARDED',
+      }));
+      const games = [
+        ...gameRows(picks.data, 'pickwin', 'Pick & Win Entry', 'Pick & Win', 'picked_at'),
+        ...gameRows(gtb.data, 'gtb', 'Guess the Balance Entry', 'Guess the Balance', 'created_at'),
+        ...gameRows(avg.data, 'avgmulti', 'Avg Multi Entry', 'Avg Multi', 'created_at'),
+        ...daily,
+      ];
+      const byDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
+      setActivity({
+        shop: shop.sort(byDate).slice(0, 10),
+        giveaways: giveaways.sort(byDate).slice(0, 10),
+        games: games.sort(byDate).slice(0, 10),
+      });
+    } catch (e) {
+      console.error('activity error', e);
+    }
+  }, []);
 
   useEffect(() => {
-    supabase
-      .from('shop_redeems')
-      .select('*, shop_products(name)')
-      .order('created_at', { ascending: false })
-      .limit(10)
-      .then(({ data, error }) => {
-        if (error || !data || !data.length) return;
-        setShopFeed(
-          data.map((r) => ({
-            id: r.id,
-            item: r.shop_products?.name || 'Redeem',
-            user: r.twitch_username,
-            date: new Date(r.created_at).toLocaleString('pt-PT'),
-            value: Number(r.cost_at_redeem || 0).toLocaleString('pt-PT'),
-            status: String(r.status || 'pending').toLowerCase(),
-          }))
-        );
-      });
-  }, []);
+    loadActivity();
+    const ch = supabase
+      .channel('home-activity')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shop_redeems' }, () => loadActivity())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'daily_redeems' }, () => loadActivity())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [loadActivity]);
 
-  const feedRows = tab === 'shop' ? shopFeed : FEED.giveaways;
+  const claim = (o) => {
+    const c = o.raw;
+    const url = c?.claim_url || o.url;
+    if (!url) return;
+    setRedirect({ url, promo: (c?.promo_code ?? '').toString().trim() });
+  };
+  const info = (o) => { if (o.raw) setSelectedCasino(o.raw); };
+  const handleRedirect = (url, promo) => setRedirect({ url, promo: (promo ?? '').toString().trim() });
+  const play = (s) => setPlayer({ type: 'vod', id: s.id, title: s.title, meta: `${(s.view_count ?? 0).toLocaleString('en-GB')} views` });
+
+  const feedRows = activity ? activity[tab] : [];
+  const vids = streams.length ? streams : null;
+  const big = vids ? vids[0] : VIDEO_FALLBACK[0];
+  const list = vids ? vids.slice(1, 5) : VIDEO_FALLBACK.slice(1);
+  const thumbStyle = (v) => (thumbOf(v) ? { backgroundImage: `url(${thumbOf(v)})` } : undefined);
+  const thumbCls = (v, i) => `th ${v.thumbnail_url ? 'img' : v.tone || `v${(i % 5) + 1}`}`;
+
   return (
     <>
-          <section className="hero" aria-label="Featured">
-            <article className="hc a">
-              <h2>#1 Casino Streamer in Portugal</h2>
-              <p>Bonus hunts, giveaways and slots, almost every day.</p>
-              <div className="act">
-                <Round />
-                <a className="pill live" href={LINKS.twitch} target="_blank" rel="noopener noreferrer"><span className="dot" />Watch now</a>
-              </div>
-            </article>
-            <article className="hc b">
-              <h2>Wager Race</h2>
-              <p>Climb the board and win your share of the prize pool.</p>
-              <div className="act">
-                <Round />
-                <Link className="pill" to="/leaderboard"><Icon name="trophy" size={16} />Leaderboard</Link>
-              </div>
-            </article>
-          </section>
+      <section className="hero" aria-label="Featured">
+        <article className="hc a">
+          <h2>#1 Casino Streamer in Portugal</h2>
+          <p>Bonus hunts, giveaways and slots, almost every day.</p>
+          <div className="act">
+            <Round />
+            <a className={`pill${live ? ' live' : ''}`} href={LINKS.twitch} target="_blank" rel="noopener noreferrer">
+              <span className={`dot${live ? '' : ' off'}`} />{live ? 'Live now - Watch' : 'Offline - Twitch'}
+            </a>
+          </div>
+        </article>
+        <article className="hc b">
+          <h2>Wager Race</h2>
+          <p>Climb the board and win your share of the prize pool.</p>
+          <div className="act">
+            <Round />
+            <Link className="pill" to="/leaderboard"><Icon name="trophy" size={16} />Leaderboard</Link>
+          </div>
+        </article>
+      </section>
 
+      <section>
+        <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
+        <p className="hint">Sign up through the official links to support the channel and unlock the offers.</p>
+        <div className="ocards">
+          {offers.map((o) => <OfferRow key={o.id} o={o} onClaim={claim} onInfo={info} />)}
+        </div>
+      </section>
 
-          <section>
-            <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
-            <p className="hint">Sign up through the official links to support the channel and unlock the offers.</p>
-            <div className="ocards">
-              {offers.map((o) => <OfferRow key={o.id} o={o} />)}
+      <section>
+        <SectionHead icon="tv" title="Latest Videos" tag="Twitch" showAll="/stream" />
+        <div className="vgrid">
+          <button type="button" className="vbig" onClick={() => vids && play(big)}>
+            <div className={thumbCls(big, 0)} style={thumbStyle(big)}>
+              {vids && <span className="new">{ago(big.created_at)}</span>}
+              {big.duration && <span className="dur">{parseDuration(big.duration)}</span>}
+              <svg><use href="#play" /></svg>
             </div>
-          </section>
-
-          <section>
-            <SectionHead icon="tv" title="Latest Videos" tag="YouTube" showAll="/stream" />
-            <div className="vgrid">
-              <a className="vbig" href="#">
-                <div className={`th ${FEATURED_VIDEO.tone}`}>
-                  {FEATURED_VIDEO.isNew && <span className="new">New</span>}
-                  <svg><use href="#play" /></svg>
+            <p>{big.title}</p>
+            {vids && <small>{(big.view_count ?? 0).toLocaleString('en-GB')} views</small>}
+          </button>
+          <div className="vl">
+            {list.map((v, i) => (
+              <button type="button" key={v.id} className="vi" onClick={() => vids && play(v)}>
+                <div className={thumbCls(v, i + 1)} style={thumbStyle(v)}><svg><use href="#play" /></svg></div>
+                <div>
+                  <p>{v.title}</p>
+                  {vids && <small>{ago(v.created_at)} · {(v.view_count ?? 0).toLocaleString('en-GB')} views</small>}
                 </div>
-                <p>{FEATURED_VIDEO.title}</p>
-                <small>{FEATURED_VIDEO.age}</small>
-              </a>
-              <div className="vl">
-                {VIDEOS.map((v) => (
-                  <a key={v.id} className="vi" href="#">
-                    <div className={`th ${v.tone}`}><svg><use href="#play" /></svg></div>
-                    <div>
-                      <p>{v.title}</p>
-                      <small>{v.age}</small>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <SectionHead icon="users" title="Community" tag="Join us" />
-            <div className="ccards">
-              {COMMUNITY.map((c) => (
-                <a key={c.id} className="cc" href={c.url} target="_blank" rel="noopener noreferrer">
-                  <span className="gi"><Icon name={c.icon} size={20} /></span>
-                  <div>
-                    <b>{c.name}</b>
-                    <small>{c.meta}</small>
-                  </div>
-                  <span className="go">{c.cta}</span>
-                </a>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <SectionHead icon="pulse" title="Activity Feed" tag="Live updates" />
-            <div className="tabs" role="tablist">
-              <button role="tab" aria-selected={tab === 'shop'} className={`tb${tab === 'shop' ? ' on' : ''}`} onClick={() => setTab('shop')}>
-                <Icon name="bag" />Shop
               </button>
-              <button role="tab" aria-selected={tab === 'giveaways'} className={`tb${tab === 'giveaways' ? ' on' : ''}`} onClick={() => setTab('giveaways')}>
-                <Icon name="gift" />Giveaways &amp; Raffles
-              </button>
-            </div>
-            <div className="feed">
-              <div className="ah">
-                <span>Redeems</span>
-                <span>Username</span>
-                <span className="dt">Date</span>
-                <span className="val">Value</span>
-                <span>Status</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <SectionHead icon="users" title="Community" tag="Join us" />
+        <div className="ccards">
+          {COMMUNITY.map((c) => (
+            <a key={c.id} className="cc" href={c.url} target="_blank" rel="noopener noreferrer">
+              <span className="gi"><Icon name={c.icon} size={20} /></span>
+              <div>
+                <b>{c.name}</b>
+                <small>{c.meta}</small>
               </div>
-              {feedRows.map((r) => (
-                <div key={r.id} className="ar">
-                  <span className="rd"><i />{r.item}</span>
-                  <b>{r.user}</b>
-                  <span className="dt">{r.date}</span>
-                  <span className="val">- {r.value} PTS <span className="coin" /></span>
-                  <span className={`stt ${r.status}`}>{r.status}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        
+              <span className="go">{c.cta}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <SectionHead icon="pulse" title="Activity Feed" tag="Live updates" />
+        <div className="tabs" role="tablist">
+          {TABS.map((t) => (
+            <button key={t.key} role="tab" aria-selected={tab === t.key} className={`tb${tab === t.key ? ' on' : ''}`} onClick={() => setTab(t.key)}>
+              <Icon name={t.icon} />{t.label}
+            </button>
+          ))}
+        </div>
+        <div className="feed">
+          <div className="ah">
+            <span>Redeems</span>
+            <span>Username</span>
+            <span className="dt">Date</span>
+            <span className="val">Value</span>
+            <span>Status</span>
+          </div>
+          {feedRows.length === 0 && <div className="empty">{activity ? 'No recent activity.' : 'Loading...'}</div>}
+          {feedRows.map((r, i) => {
+            const pts = Number(r.points || 0);
+            const st = String(r.status || 'pending').toLowerCase();
+            return (
+              <div key={i} className="ar">
+                <span className="rd"><i />{cleanAction(r)}</span>
+                <b>{r.username || '-'}</b>
+                <span className="dt">{new Date(r.created_at).toLocaleString('pt-PT')}</span>
+                <span className={`val${pts > 0 ? ' pos' : ''}`}>{pts > 0 ? '+' : pts < 0 ? '-' : ''} {Math.abs(pts).toLocaleString('pt-PT')} PTS <span className="coin" /></span>
+                <span className={`stt ${st}`}>{st}</span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {selectedCasino && (
+        <InfoModal casino={selectedCasino} methodsBySlug={methodsBySlug} onClose={() => setSelectedCasino(null)} onRedirect={handleRedirect} />
+      )}
+      {redirect && <RedirectModal url={redirect.url} promo={redirect.promo} onClose={() => setRedirect(null)} />}
+      {player && <TwitchPlayerModal type={player.type} id={player.id} title={player.title} meta={player.meta} onClose={() => setPlayer(null)} />}
     </>
   );
 }

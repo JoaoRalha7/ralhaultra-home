@@ -12,7 +12,7 @@ function Stat({ icon, label, value }) {
   );
 }
 
-export default function OfferRow({ o }) {
+export default function OfferRow({ o, onClaim, onInfo }) {
   return (
     <article className="oc" style={{ '--ac': o.accent }}>
       <div
@@ -41,8 +41,8 @@ export default function OfferRow({ o }) {
         <Stat icon="tag" label="Code" value={o.code} />
       </div>
       <div className="btns">
-        <a className="btn-claim" href={o.url || '#'} target="_blank" rel="noopener noreferrer">Claim offer<Icon name="right" size={12} /></a>
-        <a className="btn-more" href="#">More info<Icon name="right" size={12} /></a>
+        <button type="button" className="btn-claim" onClick={() => onClaim?.(o)}>Claim offer<Icon name="right" size={12} /></button>
+        <button type="button" className="btn-more" onClick={() => onInfo?.(o)}>More info<Icon name="right" size={12} /></button>
       </div>
     </article>
   );

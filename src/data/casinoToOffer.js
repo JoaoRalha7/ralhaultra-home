@@ -18,6 +18,7 @@ export function casinoToOffer(c, i = 0) {
   const ci = c.casino_info || {};
   return {
     id: c.id,
+    raw: c,
     brand: txt(c.name),
     logo: c.logo_url,
     banner: c.banner_url,

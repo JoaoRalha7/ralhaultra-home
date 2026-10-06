@@ -1,0 +1,135 @@
+/* ── Bucket selector ── */
+.bucketSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: #090b14;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+}
+.bucketLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(232,238,252,.25);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.bucketGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.bucketBtn {
+  padding: 11px 10px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: color-mix(in srgb, var(--bcolor) 14%, #090b14);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .1s, opacity .15s;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bucketBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bcolor) 24%, #090b14);
+  border-color: var(--bcolor);
+  transform: translateY(-2px);
+}
+.bucketBtn:active:not(:disabled) { transform: translateY(0); }
+.bucketBtn:disabled { opacity: .5; cursor: default; }
+
+.bucketBtnActive {
+  border-color: var(--bcolor) !important;
+  background: color-mix(in srgb, var(--bcolor) 28%, #090b14) !important;
+}
+
+.bucketBtnId {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--bcolor);
+  letter-spacing: .04em;
+  flex-shrink: 0;
+  min-width: 14px;
+}
+.bucketBtnRange {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(232,238,252,.8);
+  white-space: nowrap;
+}
+
+/* ── Distribution bars ── */
+.distSection {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px;
+  background: #090b14;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 13px;
+}
+.distLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(232,238,252,.25);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.distRow {
+  display: grid;
+  grid-template-columns: 16px 62px 1fr 34px 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-radius: 7px;
+  transition: background .2s;
+}
+.distRowWin {
+  background: color-mix(in srgb, var(--bcolor, #3b82f6) 10%, transparent);
+  padding: 5px 8px;
+  margin: 0 -8px;
+  border-radius: 8px;
+}
+.distBucketId {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--bcolor, rgba(232,238,252,.4));
+}
+.distBucketLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(232,238,252,.4);
+  white-space: nowrap;
+}
+.distBarWrap {
+  height: 6px;
+  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.distBar {
+  height: 100%;
+  background: var(--bcolor, #3b82f6);
+  border-radius: 999px;
+  opacity: .8;
+  transition: width .5s ease;
+}
+.distPct {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(232,238,252,.35);
+  text-align: right;
+}
+.distCount {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(232,238,252,.2);
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .bucketGrid { grid-template-columns: repeat(2, 1fr); }
+}
