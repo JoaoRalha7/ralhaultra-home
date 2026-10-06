@@ -42,13 +42,6 @@ const LINKS = {
   telegram: '#',
 };
 
-const GAMES = [
-  { id: 1, icon: 'trophy', name: 'Pick & Win', text: 'Pick your slot and follow the live ranking.', status: 'Live' },
-  { id: 2, icon: 'spark', name: 'GTB', text: 'Make your guess and win PTS.', status: 'Open' },
-  { id: 3, icon: 'pulse', name: 'Avg Multi', text: 'Predict the average multiplier of the session.', status: 'Open' },
-  { id: 4, icon: 'cards', name: 'Blackjack', text: 'Play with your PTS. Side bets, history and leaderboard.', status: 'Always on' },
-];
-
 const COMMUNITY = [
   { id: 1, icon: 'tv', name: 'Twitch', meta: 'jralha_', cta: 'Follow', url: LINKS.twitch },
   { id: 2, icon: 'play', name: 'Kick', meta: 'jralha_', cta: 'Follow', url: LINKS.kick },
@@ -147,21 +140,6 @@ export default function Home() {
             <p className="hint">Sign up through the official links to support the channel and unlock the offers.</p>
             <div className="ocards">
               {offers.map((o) => <OfferRow key={o.id} o={o} />)}
-            </div>
-          </section>
-
-          <section>
-            <SectionHead icon="spark" title="Mini-games" tag="Play with PTS" showAll="/games" />
-            <div className="gcards">
-              {GAMES.map((g) => (
-                <article key={g.id} className="gc">
-                  <span className="gi"><Icon name={g.icon} size={22} /></span>
-                  <h3>{g.name}</h3>
-                  <p>{g.text}</p>
-                  <span className="chip">{g.status}</span>
-                  <Link className="play" to="/games">Play<Icon name="right" size={14} /></Link>
-                </article>
-              ))}
             </div>
           </section>
 
