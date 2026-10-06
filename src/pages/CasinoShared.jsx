@@ -10,6 +10,7 @@ export const fmt = (n) => Number(n ?? 0).toLocaleString('en-GB')
 
 const ERR = {
   insufficient: 'Not enough points.',
+  'invalid picks': 'Pick between 1 and 10 numbers.',
   'invalid bet': `Bet must be between ${MIN_BET} and ${fmt(MAX_BET)} points.`,
   unauthorized: 'Log in again to play.',
   not_logged_in: 'Log in with Twitch to play.',
@@ -166,6 +167,7 @@ export function useCasino(game) {
   const [fire, setFire] = useState(0)
   const [shake, setShake] = useState(0)
   const seen = useRef({ id: null, status: null, n: -1 })
+  const quiet = useRef(false) // set by autobet turbo: no sound/confetti
 
   useEffect(() => {
     const r = round
@@ -176,11 +178,13 @@ export function useCasino(game) {
     if (fresh && n > prev.n) playSfx(game === 'mines' ? 'gem' : 'card')
     if (r.status === 'done' && !(prev.id === r.id && prev.status === 'done')) {
       const win = r.payout > r.bet, push = r.payout === r.bet && r.payout > 0
-      if (fresh || prev.id === null) {
+      if ((fresh || prev.id === null || game === 'keno') && !quiet.current) {
         playSfx(win ? 'win' : push ? 'cash' : game === 'mines' ? 'boom' : 'lose')
         if (win) setFire((f) => f + 1); else if (!push) setShake((x) => x + 1)
       }
-      const item = game === 'mines'
+      const item = game === 'keno'
+        ? { tone: win ? 'win' : push ? 'push' : 'lose', label: `${(r.mult || 0).toFixed(2)}x`, title: `${r.hits} hit${r.hits === 1 ? '' : 's'}, ${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
+        : game === 'mines'
         ? { tone: win ? 'win' : 'lose', label: win ? `${(r.payout / r.bet).toFixed(2)}x` : 'Mine', title: `${win ? '+' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
         : game === 'blackjack'
           ? { tone: win ? 'win' : push ? 'push' : 'lose', label: win ? 'Win' : push ? 'Push' : 'Loss', title: `${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
@@ -224,7 +228,7 @@ export function useCasino(game) {
     if (ok && data.active !== undefined && data.state) apply(data)
   }, [game, apply])
 
-  return { user, twitchUser, points, round, setRound, busy, err, setErr, start, act, poll, offset, refresh, history, fire, shake }
+  return { user, twitchUser, points, round, setRound, busy, err, setErr, start, act, poll, offset, refresh, history, fire, shake, quiet }
 }
 
 export function Page({ title, sub, game, children }) {

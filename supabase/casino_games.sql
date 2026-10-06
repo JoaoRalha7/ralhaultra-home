@@ -17,3 +17,7 @@ create table if not exists public.casino_games (
 create unique index if not exists casino_one_active on public.casino_games (user_id, game) where status = 'active';
 create index if not exists casino_recent on public.casino_games (game, created_at desc);
 alter table public.casino_games enable row level security;
+
+-- Keno (added later): allow the new game value. Safe to run on an existing table.
+alter table public.casino_games drop constraint if exists casino_games_game_check;
+alter table public.casino_games add constraint casino_games_game_check check (game in ('mines','blackjack','crash','keno'));

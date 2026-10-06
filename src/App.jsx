@@ -5,6 +5,7 @@ import AuthCallback from './pages/AuthCallback';
 import BonusHunts from './pages/BonusHunts';
 import Blackjack from './pages/Blackjack';
 import Crash from './pages/Crash';
+import Keno from './pages/Keno';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Legal from './pages/Legal';
@@ -102,6 +103,7 @@ export default function App() {
         <Route path="mines" element={<Mines />} />
         <Route path="blackjack" element={<Blackjack />} />
         <Route path="crash" element={<Crash />} />
+        <Route path="keno" element={<Keno />} />
         <Route path="terms" element={<Legal />} />
         <Route path="privacy" element={<Legal />} />
         <Route path="cookies" element={<Legal />} />

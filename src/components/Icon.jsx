@@ -30,6 +30,7 @@ export function IconSprite() {
         <symbol id="camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
         <symbol id="send" viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></symbol>
         <symbol id="mines" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8l3 4-3 4-3-4z"/></symbol>
+        <symbol id="keno" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14.5 17.5l2.2 2.2 4-4.4"/></symbol>
         <symbol id="crash" viewBox="0 0 24 24"><path d="M3 20h18M4 16l5-5 4 3 7-8M15 6h5v5"/></symbol>
         <symbol id="cards" viewBox="0 0 24 24"><rect x="4" y="5" width="11" height="15" rx="2"/><path d="M9 3h8a3 3 0 013 3v10"/></symbol>
       </defs>

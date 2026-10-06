@@ -19,11 +19,32 @@ const GAME_COSTS = { pick: 100, gtb: 100, avg: 100 }
 const ADMIN_IDS = ['13878854-d588-4c49-ad36-1428920902bd']
 
 
-// ── Casino games (Mines, Blackjack, Crash) ───────────────────────────────────
+// ── Casino games (Mines, Blackjack, Crash, Keno) ───────────────────────────────────
 // All game state and randomness live here. The browser only sends intents
 // (start / reveal / hit / cashout) and receives the public part of the state.
 const CASINO = { minBet: 10, maxBet: 10000, maxPayout: 250000, edge: 0.97, grid: 25, crashRate: 0.00008, crashCap: 1000 }
-const CASINO_GAMES = ['mines', 'blackjack', 'crash']
+const CASINO_GAMES = ['mines', 'blackjack', 'crash', 'keno']
+
+// Keno: pick 1-10 of 40, the house draws 10. Paytable is derived from the exact odds (~96-97% RTP, 1000x cap).
+const KENO = { size: 40, draw: 10, max: 10, edge: 0.97, cap: 1000, alpha: 0.3 }
+const C = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r }
+function kenoProbs(n) { const t = C(KENO.size, KENO.draw); return Array.from({ length: n + 1 }, (_, h) => C(n, h) * C(KENO.size - n, KENO.draw - h) / t) }
+function kenoTable(n) {
+  const P = kenoProbs(n)
+  let S = []; for (let h = 1; h <= n; h++) S.push(h)
+  let mult = []
+  for (;;) {
+    const W = S.map((h) => Math.pow(P[h], KENO.alpha)); const sum = W.reduce((a, b) => a + b, 0)
+    mult = S.map((h, i) => KENO.edge * (W[i] / sum) / P[h])
+    const low = mult.findIndex((m) => m < 1)
+    if (low === -1 || S.length === 1) break
+    S = S.slice(1)
+  }
+  const t = new Array(n + 1).fill(0)
+  S.forEach((h, i) => { t[h] = Math.min(KENO.cap, Math.floor(mult[i] * 100) / 100) })
+  return t
+}
+
 
 const _u32 = new Uint32Array(1)
 function rndInt(n) { // unbiased integer in [0, n)
@@ -82,6 +103,9 @@ function publicGame(game, row, now) {
   if (game === 'blackjack') {
     return { ...base, player: st.player, dealer: done ? st.dealer : [st.dealer[0]], dealerTotal: done ? bjTotal(st.dealer) : bjVal(st.dealer[0]),
       playerTotal: bjTotal(st.player), canDouble: !done && st.player.length === 2 && !st.doubled, doubled: !!st.doubled, outcome: st.outcome || null }
+  }
+  if (game === 'keno') {
+    return { ...base, picks: st.picks, draw: st.draw, hits: st.hits, mult: st.mult }
   }
   // crash
   const r = done ? null : crashResolve(st, now)
@@ -328,6 +352,12 @@ export default {
             if (!Number.isInteger(m) || m < 1 || m > 24) return json({ error: 'invalid mines' }, 400)
             params = { m }
           }
+          if (game === 'keno') {
+            const picks = Array.isArray(body.picks) ? body.picks.map(Number) : []
+            const ok = picks.length >= 1 && picks.length <= KENO.max && new Set(picks).size === picks.length && picks.every((x) => Number.isInteger(x) && x >= 1 && x <= KENO.size)
+            if (!ok) return json({ error: 'invalid picks' }, 400)
+            params = { picks: [...picks].sort((a, b) => a - b) }
+          }
           if (game === 'crash' && body.auto != null && body.auto !== '') {
             const a = Math.round(Number(body.auto) * 100) / 100
             if (!(a >= 1.01 && a <= CASINO.crashCap)) return json({ error: 'invalid auto' }, 400)
@@ -341,10 +371,16 @@ export default {
           const charge = await seAdd(-bet)
           if (!charge.ok) return json({ error: 'charge failed' }, 502)
 
-          let state
+          let state, kenoPayout = 0
           if (game === 'mines') {
             const tiles = shuffle(Array.from({ length: CASINO.grid }, (_, i) => i))
             state = { m: params.m, mines: tiles.slice(0, params.m).sort((a, b) => a - b), revealed: [] }
+          } else if (game === 'keno') {
+            const draw = shuffle(Array.from({ length: KENO.size }, (_, i) => i + 1)).slice(0, KENO.draw)
+            const hits = params.picks.filter((p) => draw.includes(p)).length
+            const mult = kenoTable(params.picks.length)[hits]
+            state = { picks: params.picks, draw, hits, mult }
+            kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
           } else if (game === 'blackjack') {
             const deck = shuffle(Array.from({ length: 52 }, (_, i) => i))
             state = { deck: deck.slice(4), player: [deck[0], deck[2]], dealer: [deck[1], deck[3]] }
@@ -354,12 +390,16 @@ export default {
 
           const ins = await fetch(rest, {
             method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' },
-            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet, state, status: 'active' }),
+            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet, state, status: game === 'keno' ? 'done' : 'active', payout: kenoPayout }),
           })
           const created = ins.ok ? (await ins.json())?.[0] : null
           if (!created) { const rf = await seAdd(bet); return json({ error: 'could not start', refunded: true, newPoints: rf.points ?? null }, 409) }
 
           let row = created, newPoints = charge.points
+          if (game === 'keno' && kenoPayout > 0) {
+            let p = await seAdd(kenoPayout); if (!p.ok) p = await seAdd(kenoPayout)
+            if (p.points != null) newPoints = p.points
+          }
           if (game === 'blackjack') {
             const pBJ = isBJ(state.player), dBJ = isBJ(state.dealer)
             if (pBJ || dBJ) {
