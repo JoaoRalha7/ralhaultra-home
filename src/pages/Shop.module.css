@@ -160,3 +160,15 @@
 
 @media (max-width: 900px) { .top { grid-template-columns: 110px minmax(0, 1fr); } .topBuy { grid-column: 1 / -1; flex-direction: row; align-items: center; flex-wrap: wrap; } .topBuy .need { flex: 1; min-width: 140px; } .info { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .top { grid-template-columns: 1fr; padding: 18px; gap: 14px; } .topArt { height: 110px; } .topArt img { max-height: 110px; } .topBuy { flex-direction: column; align-items: stretch; } .wallet { width: 100%; } .rWho { display: none; } }
+
+/* locked: can't afford yet or sold out */
+.cardLocked { background: #10131a; border-color: #1d2230; }
+.cardLocked .media { filter: grayscale(1) brightness(.7); }
+.cardLocked .name, .cardLocked .price b { color: #7b8397; }
+.cardLocked .desc, .cardLocked .price span { color: #5c6478; }
+.cardLocked .photo { opacity: .85; }
+.cardLocked .coin { filter: grayscale(1) brightness(.75); }
+.cardLocked .btn:disabled { background: #171b25; color: #5c6478; }
+.cardOut.cardLocked { opacity: .6; }
+.lock { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(11,14,20,.8); border: 1px solid #2a3040; color: #9aa3b8; }
+.lock { top: auto; bottom: 10px; }

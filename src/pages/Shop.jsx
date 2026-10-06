@@ -54,11 +54,12 @@ function ShopCard({ product, userPoints, onRedeem }) {
   const missing    = loggedIn ? Math.max(0, product.cost - userPoints) : product.cost
   const pct        = loggedIn ? Math.min(100, (userPoints / product.cost) * 100) : 0
   const disabled   = outOfStock || !canAfford
+  const locked     = outOfStock || (loggedIn && !canAfford)
   const rar        = rarityOf(product.cost)
 
   return (
     <article
-      className={`${styles.card} ${styles['r_' + rar.id]} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''}`}
+      className={`${styles.card} ${styles['r_' + rar.id]} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''} ${locked ? styles.cardLocked : ''}`}
       style={{ '--c': product.color || '#3b82f6' }}
     >
       <div className={styles.media}>
@@ -69,6 +70,11 @@ function ShopCard({ product, userPoints, onRedeem }) {
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
           <span className={styles.cat}>{product.category}</span>
         </span>
+        {locked && !outOfStock && (
+          <span className={styles.lock} aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          </span>
+        )}
         {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Gone</span>}
         {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
       </div>
