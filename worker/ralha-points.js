@@ -5,6 +5,7 @@
 const ALLOWED_ORIGINS = [
   'https://jralha.com',
   'https://ralha-react-ultra-bwxl.vercel.app',
+  'https://ralhaultra-home.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
