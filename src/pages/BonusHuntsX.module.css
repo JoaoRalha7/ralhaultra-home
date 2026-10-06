@@ -285,3 +285,19 @@
 .bw{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .dWorst{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.3)}
 .dWorst strong{color:var(--neg)}
+
+/* best / worst cards */
+.bwCard{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:14px;border:1px solid;min-width:0}
+.bwGood{color:var(--pos);border-color:rgba(52,211,153,.55);background:linear-gradient(120deg,rgba(52,211,153,.12),rgba(52,211,153,.03))}
+.bwBad{color:var(--neg);border-color:rgba(248,113,113,.55);background:linear-gradient(120deg,rgba(248,113,113,.12),rgba(248,113,113,.03))}
+.bwLbl{display:flex;align-items:center;gap:7px;font:800 13px "Bricolage Grotesque",sans-serif}
+.bwRow{display:flex;align-items:center;gap:12px;color:var(--text);min-width:0}
+.bwRow img{width:48px;height:48px;border-radius:11px;object-fit:cover;background:rgba(255,255,255,.06);flex:none}
+.bwName{flex:1;min-width:0}
+.bwName b{display:block;font:800 15px "Bricolage Grotesque",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bwName small{display:block;font-size:12px;color:var(--mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bwWin{text-align:right;flex:none}
+.bwWin b{display:block;font:800 17px "Bricolage Grotesque",sans-serif}
+.bwWin small{display:block;font:800 13px "Bricolage Grotesque",sans-serif;margin-top:2px}
+.bwGood .bwWin b,.bwGood .bwWin small{color:var(--pos)}
+.bwBad .bwWin b,.bwBad .bwWin small{color:var(--neg)}
