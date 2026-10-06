@@ -249,8 +249,10 @@ export function Page({ title, sub, game, children }) {
   )
 }
 
+// Same gold points coin as the site header
 export const Coin = ({ s = 16 }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v10M9.5 9.5h4a1.7 1.7 0 010 3.5h-3a1.7 1.7 0 000 3.5h4" strokeLinecap="round" /></svg>
+  <span aria-hidden="true" style={{ display: 'inline-block', width: s, height: s, borderRadius: '50%', flex: 'none',
+    background: 'radial-gradient(circle at 35% 30%, #fde68a, #f5c542 55%, #b8860b)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.18)' }} />
 )
 
 // Bet input with quick buttons. `locked` freezes it while a round is running.
