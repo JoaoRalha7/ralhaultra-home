@@ -113,14 +113,14 @@ export default function Layout() {
               </div>
             )}
           </div>
-          {isAdmin() && <button className="pill" onClick={() => setAdminOpen(true)}>Admin</button>}
+          {isAdmin() && <button className="pill adminBtn" onClick={() => setAdminOpen(true)}>Admin</button>}
           {user ? (
             <>
               {profile?.avatar_url ? <img className="av" src={profile.avatar_url} alt="" /> : <div className="av" aria-hidden="true" />}
               <button className="logout" onClick={signOut}>Logout</button>
             </>
           ) : (
-            <button className="logout" onClick={() => setLoginOpen(true)}>Login</button>
+            <button className="logout login" onClick={() => setLoginOpen(true)}>Login</button>
           )}
         </header>
 
