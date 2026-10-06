@@ -322,7 +322,7 @@ export default function Home() {
     <>
       <section className="hero" aria-label="Featured">
         <article className="hc a">
-          <h2>#1 Casino Streamer in Portugal</h2>
+          <h2>Where every spin is a show</h2>
           <p>Bonus hunts, giveaways and slots, almost every day.</p>
           <div className="act">
             <Round />
