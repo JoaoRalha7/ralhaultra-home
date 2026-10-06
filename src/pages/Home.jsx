@@ -123,7 +123,8 @@ export default function Home() {
   const [player, setPlayer] = useState(null);
   const [streams, setStreams] = useState([]);
   const [board, setBoard] = useState([]);
-  const carRef = useRef(null);
+  const [ci, setCi] = useState(0);
+  const dragX = useRef(null);
   const [activity, setActivity] = useState(null);
 
   // Featured offer popup, shown every time Home loads
@@ -229,6 +230,8 @@ export default function Home() {
   const vids = streams.length ? streams : null;
   
   
+  const slides = vids || VIDEO_FALLBACK;
+  const go = (d) => setCi((c) => Math.min(slides.length - 1, Math.max(0, c + d)));
   const thumbStyle = (v) => (thumbOf(v) ? { backgroundImage: `url(${thumbOf(v)})` } : undefined);
   const thumbCls = (v, i) => `th ${v.thumbnail_url ? 'img' : v.tone || `v${(i % 5) + 1}`}`;
 
@@ -266,22 +269,43 @@ export default function Home() {
       <section>
         <SectionHead icon="tv" title="Latest Streams" tag="Twitch" showAll="/stream" />
         <div className="lsx">
-          <div className="carWrap">
-            <button type="button" className="carArr l" aria-label="Previous streams" onClick={() => carRef.current?.scrollBy({ left: -carRef.current.clientWidth * 0.8, behavior: 'smooth' })}><Icon name="left" size={18} /></button>
-            <div className="car" ref={carRef}>
-              {(vids || VIDEO_FALLBACK).map((v, i) => (
-                <button type="button" key={v.id} className="scard" onClick={() => vids && play(v)}>
-                  <div className={thumbCls(v, i)} style={thumbStyle(v)}>
-                    {vids && <span className="new">{ago(v.created_at)}</span>}
-                    {v.duration && <span className="dur">{parseDuration(v.duration)}</span>}
-                    <svg><use href="#play" /></svg>
-                  </div>
-                  <p>{v.title}</p>
-                  {vids && <small>{(v.view_count ?? 0).toLocaleString('en-GB')} views</small>}
-                </button>
+          <div className="cover" onPointerDown={(e) => { dragX.current = e.clientX; }} onPointerUp={(e) => {
+            if (dragX.current == null) return;
+            const dx = e.clientX - dragX.current; dragX.current = null;
+            if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+          }}>
+            <button type="button" className="carArr l" aria-label="Previous stream" onClick={() => go(-1)}><Icon name="left" size={18} /></button>
+            <div className="stage3d">
+              {slides.map((v, i) => {
+                const off = i - ci;
+                const a = Math.abs(off);
+                if (a > 3) return null;
+                return (
+                  <button
+                    type="button" key={v.id}
+                    className={`cv${off === 0 ? ' on' : ''}`}
+                    style={{ transform: `translateX(calc(-50% + ${off * 185}px)) scale(${1 - a * 0.13})`, zIndex: 10 - a, opacity: a > 2 ? 0 : 1 }}
+                    onClick={() => (off === 0 ? vids && play(v) : setCi(i))}
+                    aria-label={v.title}
+                    tabIndex={a > 1 ? -1 : 0}
+                  >
+                    <div className={thumbCls(v, i)} style={thumbStyle(v)}>
+                      {vids && <span className="new">{ago(v.created_at)}</span>}
+                      {v.duration && <span className="dur">{parseDuration(v.duration)}</span>}
+                      <svg><use href="#play" /></svg>
+                    </div>
+                    <p>{v.title}</p>
+                    {vids && <small>{(v.view_count ?? 0).toLocaleString('en-GB')} views</small>}
+                  </button>
+                );
+              })}
+            </div>
+            <button type="button" className="carArr r" aria-label="Next stream" onClick={() => go(1)}><Icon name="right" size={18} /></button>
+            <div className="dots" role="tablist" aria-label="Streams">
+              {slides.map((v, i) => (
+                <button type="button" key={v.id} role="tab" aria-selected={i === ci} aria-label={`Stream ${i + 1}`} className={i === ci ? 'on' : ''} onClick={() => setCi(i)} />
               ))}
             </div>
-            <button type="button" className="carArr r" aria-label="Next streams" onClick={() => carRef.current?.scrollBy({ left: carRef.current.clientWidth * 0.8, behavior: 'smooth' })}><Icon name="right" size={18} /></button>
           </div>
           <aside className="lbp" aria-label="Top points">
             <div className="lbh"><span>Top points</span><Link to="/leaderboard">View all</Link></div>
