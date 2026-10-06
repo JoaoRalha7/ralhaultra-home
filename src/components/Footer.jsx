@@ -10,7 +10,7 @@ const COLS = [
     ['Giveaways & Raffles', '/giveaways'], ['Shop', '/shop'], ['Leaderboard', '/leaderboard'], ['Mini-Games', '/mini-games'], ['Stream', '/stream'],
   ] },
   { title: 'Legal', links: [
-    ['Terms of Service', '/terms'], ['Privacy Policy', '/privacy'], ['Cookie Policy', '/cookies'],
+    ['Terms of Service', '/terms'], ['Privacy Policy', '/privacy'], ['Cookie Policy', '/cookies'], ['Site Rules', '/rules'],
   ] },
 ]
 

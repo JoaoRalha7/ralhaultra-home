@@ -99,6 +99,7 @@ export default function App() {
         <Route path="terms" element={<Legal />} />
         <Route path="privacy" element={<Legal />} />
         <Route path="cookies" element={<Legal />} />
+        <Route path="rules" element={<Legal />} />
         {SOON.map(([path, title]) => (
           <Route key={path} path={path} element={<Placeholder title={title} />} />
         ))}
