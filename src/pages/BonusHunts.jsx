@@ -498,15 +498,9 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
             <div className={x.bw}>
               {[['Best slot', best, false], worst && worst.id !== best.id ? ['Worst slot', worst, true] : null].filter(Boolean).map(([lbl, e, bad]) => (
                 <div key={lbl} className={`${x.bwCard} ${bad ? x.bwBad : x.bwGood}`}>
-                  <span className={x.bwLbl}>
-                    {bad
-                      ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="M12.5 17l-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>
-                      : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M12 17v4"/><path d="M8 21h8"/><path d="M6 9a6 6 0 0 0 12 0V3H6v6z"/></svg>}
-                    {bad ? 'Worst Bonus' : 'Best Bonus'}
-                  </span>
                   <div className={x.bwRow}>
                     <img src={e.slot?.image_url || ''} alt="" onError={ev => { ev.target.style.opacity = '.1' }} />
-                    <div className={x.bwName}><b>{e.slot?.name || '—'}</b><small>{e.slot?.provider || '—'}</small></div>
+                    <div className={x.bwName}><span className={x.bwLbl}>                     {bad                       ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="M12.5 17l-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>                       : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M12 17v4"/><path d="M8 21h8"/><path d="M6 9a6 6 0 0 0 12 0V3H6v6z"/></svg>}                     {bad ? 'Worst Bonus' : 'Best Bonus'}                   </span><b>{e.slot?.name || '—'}</b></div>
                     <div className={x.bwWin}><b>€{parseBet(e.payment).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>{e.multi.toFixed(e.multi < 10 ? 1 : 0)}x</small></div>
                   </div>
                 </div>

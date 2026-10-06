@@ -301,3 +301,20 @@
 .bwWin small{display:block;font:800 13px "Bricolage Grotesque",sans-serif;margin-top:2px}
 .bwGood .bwWin b,.bwGood .bwWin small{color:var(--pos)}
 .bwBad .bwWin b,.bwBad .bwWin small{color:var(--neg)}
+
+/* smaller hero + profit */
+.dHero{gap:12px;margin-bottom:10px}
+.dHeroMain{padding:16px 22px;gap:12px;min-height:0}
+.dTitle{font-size:clamp(26px,3.4vw,38px)}
+.dProfit{padding:14px 18px;gap:8px}
+.dProfit > b{font-size:clamp(28px,3.4vw,40px)}
+.bw{margin-top:2px;gap:6px}
+.bwCard{flex-direction:row;align-items:center;padding:7px 12px;gap:10px;border-radius:12px}
+.bwRow{flex:1;gap:10px}
+.bwRow img{width:36px;height:36px;border-radius:9px}
+.bwName b{font-size:14px}
+.bwName small{display:none}
+.bwLbl{font-size:11px;gap:5px;margin-bottom:1px}
+.bwLbl svg{width:12px;height:12px}
+.bwWin b{font-size:15px}
+.bwWin small{font-size:12px;margin-top:0}
