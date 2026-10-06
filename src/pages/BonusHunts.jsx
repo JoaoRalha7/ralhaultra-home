@@ -404,6 +404,8 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const nextUp = unopened[0] || null
   const hasResult = opened.length > 0
   const bestMulti = best ? best.multi : 0
+  const worst = [...withMulti].sort((a, b) => a.multi - b.multi)[0] || null
+  const ribRef = useRef(null)
   const stats = [
     { lbl: 'Start balance', val: balStart > 0 ? '€' + balStart.toFixed(2) : '—' },
     { lbl: 'Total pay', val: totalPay > 0 ? '€' + totalPay.toFixed(2) : '—', cls: x.pos },
@@ -492,13 +494,6 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         <div className={x.dProfit}>
           <span className={x.lbl}>Profit</span>
           <b className={hasResult ? (profit >= 0 ? x.pos : x.neg) : ''}>{hasResult ? money(profit) : '—'}</b>
-          {best && (
-            <div className={x.dBest}>
-              <img src={best.slot?.image_url || ''} alt="" onError={ev => { ev.target.style.opacity = '.1' }} />
-              <div><small>Best slot</small><b>{best.slot?.name || '—'}</b></div>
-              <strong>{bestMulti.toFixed(0)}x</strong>
-            </div>
-          )}
         </div>
       </header>
 
@@ -508,17 +503,17 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         ))}
       </div>
 
-      {!loading && podium.length > 0 && (
+      {!loading && best && (
         <div className={x.stage}>
-          {podium.map((e, i) => (
-            <div key={e.id} className={`${x.pod} ${i === 0 ? x.podFirst : ''}`}>
-              <span className={x.podRank}>{i + 1}</span>
-              <SlotThumb slot={e.slot} size={i === 0 ? 64 : 52} />
+          {[['Best slot', best, x.podFirst], worst && worst.id !== best.id ? ['Worst slot', worst, x.podWorst] : null].filter(Boolean).map(([lbl, e, cls]) => (
+            <div key={lbl} className={`${x.pod} ${cls}`}>
+              <span className={x.podTag2}>{lbl}</span>
+              <SlotThumb slot={e.slot} size={60} />
               <div className={x.podTxt}>
                 <b>{e.slot?.name || '—'}</b>
-                <small>€{parseBet(e.bet).toFixed(2)} bet · €{parseBet(e.payment).toFixed(2)} win</small>
+                <small>{e.slot?.provider ? e.slot.provider + ' · ' : ''}€{parseBet(e.bet).toFixed(2)} bet · €{parseBet(e.payment).toFixed(2)} win</small>
               </div>
-              <strong className={x.podX}>{e.multi.toFixed(0)}x</strong>
+              <strong className={x.podX}>{e.multi.toFixed(e.multi < 10 ? 1 : 0)}x</strong>
             </div>
           ))}
         </div>
@@ -637,7 +632,9 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
 
       <section className={x.ribbon} aria-label="Hunt history">
         <div className={x.ribbonHead}><h2>History</h2><span>Jump to another hunt</span></div>
-        <div className={x.ribbonRow}>
+        <div className={x.ribbonWrap}>
+        <button className={x.ribArrow} onClick={() => ribRef.current?.scrollBy({ left: -360, behavior: 'smooth' })} aria-label="Scroll left"><ChevLeft /></button>
+        <div className={x.ribbonRow} ref={ribRef}>
           {hunts.slice(0, 24).map(h => {
             const st = huntStats(h, (byHunt && byHunt[h.id]) || [])
             const cur = h.id === hunt.id
@@ -649,6 +646,8 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
               </button>
             )
           })}
+        </div>
+        <button className={x.ribArrow} onClick={() => ribRef.current?.scrollBy({ left: 360, behavior: 'smooth' })} aria-label="Scroll right"><ChevRight /></button>
         </div>
       </section>
     </div>
