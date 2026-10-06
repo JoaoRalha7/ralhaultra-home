@@ -262,10 +262,7 @@ export default function Stats({ navigate }) {
     <div className={styles.page}>
 
       <div className={styles.header}>
-        <h1 className={styles.title}>
-          <i className="bx bx-bar-chart-alt-2" style={{color: 'var(--blue)'}} />
-          Global Stats
-        </h1>
+        <h1 className={styles.title}>Global Stats</h1>
         <p className={styles.sub}>The best wins and multipliers from every bonus we opened.</p>
       </div>
 

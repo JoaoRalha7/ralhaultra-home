@@ -10,7 +10,7 @@
 
 /* header */
 .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
-.h1 { font: 800 clamp(30px, 4vw, 44px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; }
+.h1 { font: 800 clamp(30px, 4vw, 46px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; }
 .hSub { margin: 8px 0 0; color: var(--mute); font-size: 14px; }
 .seg { display: inline-flex; gap: 4px; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
 .segBtn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 9px; border: 0; background: transparent; color: var(--mute); font: 700 13px "DM Sans", sans-serif; cursor: pointer; }

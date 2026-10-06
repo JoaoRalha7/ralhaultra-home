@@ -25,12 +25,8 @@
   font-family: var(--font); 
 }
 .header { margin-bottom: 24px; }
-.title { 
-  display: flex; align-items: center; gap: 12px;
-  font-family: var(--display); font-size: 26px; font-weight: 900; 
-  color: var(--text); margin-bottom: 6px; letter-spacing: .02em; text-transform: uppercase;
-}
-.sub   { font-size: 13px; color: var(--muted); }
+.title { font: 800 clamp(30px, 4vw, 46px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; color: var(--ru-text); }
+.sub { margin: 8px 0 0; color: var(--mute); font-size: 14px; }
 
 /* ── Filters ── */
 .filters {

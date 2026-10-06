@@ -5,7 +5,7 @@
   --accent-blue: #3b82f6;
   --accent-green: #22c55e;
   
-  padding: 28px 0 100px;
+  padding: 8px 0 100px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -18,17 +18,9 @@
   gap: 8px;
 }
 
-.title {
-  font-size: 28px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: 0.02em;
-}
+.title { font: 800 clamp(30px, 4vw, 46px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; color: var(--ru-text); }
 
-.sub {
-  font-size: 14px;
-  color: rgba(232, 238, 252, 0.4);
-}
+.sub { margin: 8px 0 0; color: var(--mute); font-size: 14px; }
 
 /* ── TABS NAVIGATION ── */
 .tabsWrapper {

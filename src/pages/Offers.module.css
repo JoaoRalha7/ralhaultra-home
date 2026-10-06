@@ -11,8 +11,8 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-.title { font: 800 34px/1.1 'Bricolage Grotesque', sans-serif; color: #fff; margin: 0 0 6px; }
-.sub { font-size: 14px; color: var(--mute); margin: 0; }
+.title { font: 800 clamp(30px, 4vw, 46px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; color: var(--ru-text); }
+.sub { margin: 8px 0 0; color: var(--mute); font-size: 14px; }
 .chips { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 4px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
 .chip { flex: none; height: 36px; padding: 0 16px; border-radius: 10px; border: 0; background: transparent; color: var(--mute); font-weight: 700; font-size: 13px; cursor: pointer; }

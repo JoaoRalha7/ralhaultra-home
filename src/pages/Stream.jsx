@@ -53,7 +53,7 @@ export default function Stream() {
       {/* ── HEADER ── */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>STREAM</h1>
+          <h1 className={styles.title}>Stream</h1>
           <div className={`${styles.statusBadge} ${live ? styles.online : styles.offline}`}>
             <span className={styles.dot} />
             {live ? 'ONLINE' : 'OFFLINE'}

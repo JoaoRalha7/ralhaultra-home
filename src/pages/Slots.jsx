@@ -543,10 +543,7 @@ export default function Slots() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>
-          <SlotSVG className={styles.titleIcon} size={28} />
-          Slots
-        </h1>
+        <h1 className={styles.title}>Slots</h1>
         <p className={styles.sub}>Check our top slots, most played slots, etc and find all the stats behind them</p>
       </div>
       <div className={styles.filterbar}>

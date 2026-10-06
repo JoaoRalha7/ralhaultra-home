@@ -5,10 +5,9 @@
 .header { margin-bottom: 24px; }
 
 /* ── MODIFICADO AQUI PARA SUPORTAR O SVG NO TÍTULO ── */
-.title { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
-.titleIcon { color: #3b82f6; } /* Dá a cor azul igual aos outros elementos */
+.title { font: 800 clamp(30px, 4vw, 46px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; color: var(--ru-text); }
 
-.sub   { font-size: 14px; color: rgb(237 237 237 / 0.85); }
+.sub { margin: 8px 0 0; color: var(--mute); font-size: 14px; }
 
 .filterbar { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
 .searchBox {
