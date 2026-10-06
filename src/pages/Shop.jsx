@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { supabase } from '../lib/supabase'
@@ -18,10 +19,6 @@ const SORTS = [
   { id: 'high',    label: 'Price: high to low' },
 ]
 
-const GOAL_KEY = 'ru-shop-goal'
-const readGoal = () => { try { return Number(localStorage.getItem(GOAL_KEY)) || null } catch { return null } }
-const saveGoal = (id) => { try { id ? localStorage.setItem(GOAL_KEY, String(id)) : localStorage.removeItem(GOAL_KEY) } catch { /* storage blocked */ } }
-
 // rarity comes from the price, so it works without any new column
 const rarityOf = (cost) =>
   cost >= 500000 ? { id: 'legendary', label: 'Legendary' }
@@ -40,11 +37,6 @@ const ago = (d) => {
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 
 const IconCoin = ({ size = 14 }) => <span className={styles.coin} style={{ width: size, height: size }} aria-hidden="true" />
-const IconFlag = ({ filled }) => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 22V4"/><path d="M4 4h13l-2.5 4L17 12H4"/>
-  </svg>
-)
 const IconGift = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
@@ -53,7 +45,7 @@ const IconGift = ({ size = 15 }) => (
 )
 
 // ── Product card ─────────────────────────────────────────────────────────────
-function ShopCard({ product, userPoints, onRedeem, isGoal, onGoal }) {
+function ShopCard({ product, userPoints, onRedeem }) {
   const unlimited  = product.stock == null
   const outOfStock = product.stock === 0
   const lowStock   = !unlimited && product.stock > 0 && product.stock <= 5
@@ -66,7 +58,7 @@ function ShopCard({ product, userPoints, onRedeem, isGoal, onGoal }) {
 
   return (
     <article
-      className={`${styles.card} ${styles['r_' + rar.id]} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''} ${isGoal ? styles.cardGoal : ''}`}
+      className={`${styles.card} ${styles['r_' + rar.id]} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''}`}
       style={{ '--c': product.color || '#3b82f6' }}
     >
       <div className={styles.media}>
@@ -77,12 +69,6 @@ function ShopCard({ product, userPoints, onRedeem, isGoal, onGoal }) {
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
           <span className={styles.cat}>{product.category}</span>
         </span>
-        {!outOfStock && (
-          <button className={`${styles.pin} ${isGoal ? styles.pinOn : ''}`} onClick={() => onGoal(isGoal ? null : product.id)}
-            aria-pressed={isGoal} title={isGoal ? 'Remove goal' : 'Set as goal'} aria-label={isGoal ? 'Remove goal' : 'Set as goal'}>
-            <IconFlag filled={isGoal} />
-          </button>
-        )}
         {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Gone</span>}
         {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
       </div>
@@ -158,7 +144,7 @@ export default function Shop() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [sort,           setSort]           = useState('default')
   const [onlyAfford,     setOnlyAfford]     = useState(false)
-  const [goalId,         setGoalId]         = useState(readGoal)
+  const [board,          setBoard]          = useState([])
   const [recent,         setRecent]         = useState([])
   const [confirmProduct, setConfirmProduct] = useState(null)
   const [redeeming,      setRedeeming]      = useState(false)
@@ -170,24 +156,27 @@ export default function Shop() {
   }, [])
 
   useEffect(() => {
+    fetch(`${SE_WORKER_URL}/leaderboard?limit=200`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.users) setBoard(d.users) })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     supabase.from('shop_redeems').select('id, twitch_username, created_at, shop_products(name, image_url)')
       .order('created_at', { ascending: false }).limit(4)
       .then(({ data, error }) => { if (!error && data) setRecent(data) })
   }, [])
-
-  const setGoal = (id) => { setGoalId(id); saveGoal(id) }
 
   let filtered = activeCategory === 'all' ? products : products.filter(p => p.category === activeCategory)
   if (onlyAfford && points !== null) filtered = filtered.filter(p => p.cost <= points && p.stock !== 0)
   if (sort === 'low')  filtered = [...filtered].sort((a, b) => a.cost - b.cost)
   if (sort === 'high') filtered = [...filtered].sort((a, b) => b.cost - a.cost)
 
-  // the user's pinned goal, or the cheapest prize they can't afford yet
-  const pinned = products.find(p => p.id === goalId && p.stock !== 0) || null
-  const goal = pinned || (points === null ? null
-    : [...products].filter(p => p.stock !== 0 && p.cost > points).sort((a, b) => a.cost - b.cost)[0] || null)
   const affordableCount = points === null ? 0 : products.filter(p => p.stock !== 0 && p.cost <= points).length
   // top prize = most expensive item still in stock
+  const me = twitchUsername ? twitchUsername.toLowerCase() : null
+  const myRank = me ? board.findIndex(u => u.username?.toLowerCase() === me) : -1
   const featured = [...products].filter(p => p.stock !== 0).sort((a, b) => b.cost - a.cost)[0] || null
 
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
@@ -242,9 +231,6 @@ export default function Shop() {
                 <button className={styles.topBtn} disabled={points === null || points < featured.cost} onClick={() => handleRedeem(featured)}>
                   {points === null ? 'Log in to redeem' : points >= featured.cost ? 'Redeem' : 'Locked'}
                 </button>
-                <button className={`${styles.ghostBtn} ${goalId === featured.id ? styles.ghostOn : ''}`} onClick={() => setGoal(goalId === featured.id ? null : featured.id)}>
-                  <IconFlag filled={goalId === featured.id} />{goalId === featured.id ? 'Your goal' : 'Set as goal'}
-                </button>
               </div>
             </div>
             <div className={styles.topArt}>
@@ -259,36 +245,52 @@ export default function Shop() {
             {points !== null ? (
               <>
                 <div className={styles.wVal}><IconCoin size={24} /><b>{fmt(points)}</b></div>
-                {goal ? (
-                  <div className={styles.goal}>
-                    <div className={styles.goalTop}>
-                      <span>{pinned ? 'Your goal' : 'Next prize'}: <b>{goal.name}</b></span>
-                      <span>{points >= goal.cost ? 'Ready' : `${fmt(goal.cost - points)} to go`}</span>
-                    </div>
-                    <div className={styles.needBar}><i style={{ width: Math.min(100, (points / goal.cost) * 100) + '%' }} /></div>
-                    {pinned && <button className={styles.link} onClick={() => setGoal(null)}>Clear goal</button>}
-                  </div>
-                ) : (
-                  <p className={styles.walletNote}>{products.length ? 'You can afford everything in stock.' : 'No prizes yet.'}</p>
-                )}
-                {!pinned && <p className={styles.hint}>Tap the flag on a prize to track it here.</p>}
+                <p className={styles.walletNote}>
+                  {affordableCount > 0 ? `${affordableCount} ${affordableCount === 1 ? 'prize' : 'prizes'} you can redeem now` : 'Keep watching to unlock your first prize.'}
+                </p>
               </>
             ) : (
               <p className={styles.walletNote}>Log in with Twitch to see your points and redeem prizes.</p>
             )}
           </div>
 
-          <div className={styles.recent}>
-            <div className={styles.rHead}><span>Just redeemed</span><span className={styles.live}><i />Live</span></div>
-            {recent.length === 0 ? <p className={styles.walletNote}>No redeems yet. Be the first.</p> : recent.map(r => (
+          <div className={styles.board}>
+            <div className={styles.rHead}><span>Top points</span><Link className={styles.all} to="/leaderboard">View all</Link></div>
+            {board.length === 0 ? <p className={styles.walletNote}>Leaderboard unavailable right now.</p> : (
+              <ol className={styles.rows}>
+                {board.slice(0, 6).map((u, i) => (
+                  <li key={u.username} className={`${styles.bRow} ${me && u.username?.toLowerCase() === me ? styles.bMe : ''}`}>
+                    <span className={`${styles.rank} ${i < 3 ? styles['rank' + (i + 1)] : ''}`}>{i + 1}</span>
+                    <b>{u.username}</b>
+                    <span className={styles.bPts}><IconCoin size={12} />{fmt(u.points)}</span>
+                  </li>
+                ))}
+                {myRank >= 6 && (
+                  <li className={`${styles.bRow} ${styles.bMe} ${styles.bYou}`}>
+                    <span className={styles.rank}>{myRank + 1}</span>
+                    <b>{board[myRank].username} <em>you</em></b>
+                    <span className={styles.bPts}><IconCoin size={12} />{fmt(board[myRank].points)}</span>
+                  </li>
+                )}
+              </ol>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {recent.length > 0 && (
+        <section className={styles.recent} aria-label="Just redeemed">
+          <div className={styles.rHead}><span>Just redeemed</span><span className={styles.live}><i />Live</span></div>
+          <div className={styles.rGrid}>
+            {recent.map(r => (
               <div key={r.id} className={styles.rRow}>
                 <span className={styles.rThumb}>{r.shop_products?.image_url ? <img src={r.shop_products.image_url} alt="" /> : (r.shop_products?.name?.[0] || '?')}</span>
                 <div><b>{r.shop_products?.name || 'Prize'}</b><small>{r.twitch_username} · {ago(r.created_at)}</small></div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <div className={styles.bar}>
         <div className={styles.seg} role="tablist">
@@ -323,7 +325,7 @@ export default function Shop() {
       ) : (
         <div className={styles.grid}>
           {filtered.map(product => (
-            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} isGoal={goalId === product.id} onGoal={setGoal} />
+            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} />
           ))}
         </div>
       )}
