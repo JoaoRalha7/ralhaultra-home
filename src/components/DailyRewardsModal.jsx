@@ -221,7 +221,8 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
   const [winIndex,       setWinIndex]       = useState(-1)
   const [wheelResult,    setWheelResult]    = useState(null)
 
-  const username = profile?.twitch_username || user?.user_metadata?.name || null
+  const meta     = user?.user_metadata || {}
+  const username = profile?.twitch_username || meta.preferred_username || meta.user_name || meta.full_name || meta.name || null
   const userId   = user?.id || null
 
   // ESC to close
@@ -324,7 +325,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
           setClaimStatus('claimed')
           claimTargetTime.current = Date.now() + data.nextClaimMs
           setClaimCountdown(data.nextClaimMs) 
-        } else setErrClaim('Could not claim right now. Please try again in a moment.')
+        } else setErrClaim(`Could not claim right now${data?.error ? ` (${data.error})` : ''}. Please try again in a moment.`)
         return
       }
       setClaimResult(data.points)
@@ -363,7 +364,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
           setWheelStatus('claimed')
           wheelTargetTime.current = Date.now() + data.nextSpinMs
           setWheelCountdown(data.nextSpinMs) 
-        } else setErrWheel('The wheel is unavailable right now. Please try again in a moment.')
+        } else setErrWheel(`The wheel is unavailable right now${data?.error ? ` (${data.error})` : ''}. Please try again in a moment.`)
         return
       }
       wheelResultRef.current = data
