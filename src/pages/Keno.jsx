@@ -50,9 +50,9 @@ export default function Keno() {
   const playRound = async (stake) => {
     const { picks: pk, turbo: tb, risk: rk } = R.current
     setPlaying(true); setView(null)
-    g.quiet.current = tb
+    g.quiet.current = tb; g.hold.current = true
     const data = await g.start({ bet: stake, picks: pk, risk: rk })
-    if (!data?.state || data.state.game !== 'keno') { setPlaying(false); return null }
+    if (!data?.state || data.state.game !== 'keno') { g.release(); setPlaying(false); return null }
     const s = data.state
     if (tb) { setView({ res: s, shown: KENO.draw }) }
     else {
@@ -63,6 +63,7 @@ export default function Keno() {
         await sleep(i === KENO.draw ? 260 : 120)
       }
     }
+    g.release()
     setPlaying(false)
     return s
   }

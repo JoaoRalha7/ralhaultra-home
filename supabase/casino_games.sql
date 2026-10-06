@@ -21,3 +21,7 @@ alter table public.casino_games enable row level security;
 -- Keno (added later): allow the new game value. Safe to run on an existing table.
 alter table public.casino_games drop constraint if exists casino_games_game_check;
 alter table public.casino_games add constraint casino_games_game_check check (game in ('mines','blackjack','crash','keno'));
+
+-- Plinko and Roulette (added later)
+alter table public.casino_games drop constraint if exists casino_games_game_check;
+alter table public.casino_games add constraint casino_games_game_check check (game in ('mines','blackjack','crash','keno','plinko','roulette'));

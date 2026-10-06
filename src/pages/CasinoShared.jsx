@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { workerPost } from '../lib/points'
+import { Link } from 'react-router-dom'
 import styles from './Casino.module.css'
 
 export const MIN_BET = 10
@@ -11,6 +12,8 @@ export const fmt = (n) => Number(n ?? 0).toLocaleString('en-GB')
 const ERR = {
   insufficient: 'Not enough points.',
   'invalid picks': 'Pick between 1 and 10 numbers.',
+  'invalid bets': 'Check your bets and try again.',
+  'invalid plinko': 'Invalid Plinko settings.',
   'invalid side bet': `Side bets must be 0 or between ${MIN_BET} and ${fmt(MAX_BET)} points.`,
   'cannot split': 'You cannot split this hand.',
   'cannot double': 'You cannot double this hand.',
@@ -154,6 +157,7 @@ export function ChipStack({ amount }) {
 }
 
 // Shared game plumbing: login/points, resuming an active round, start/act calls.
+const INSTANT = ['keno', 'plinko', 'roulette']
 export function useCasino(game) {
   const { user, profile } = useAuth()
   const twitchUser = profile?.twitch_username || user?.user_metadata?.name || null
@@ -172,6 +176,39 @@ export function useCasino(game) {
   const seen = useRef({ id: null, status: null, n: -1 })
   const quiet = useRef(false) // set by autobet turbo: no sound/confetti
 
+  const hold = useRef(false) // instant games animate first: sound, confetti and history wait for release()
+  const pending = useRef(null)
+  const pendingPts = useRef(null)
+  const fx = useCallback((r, loud) => {
+    const win = r.payout > r.bet, push = r.payout === r.bet && r.payout > 0
+    if (loud && !quiet.current) {
+      playSfx(win ? 'win' : push ? 'cash' : game === 'mines' ? 'boom' : 'lose')
+      if (win) setFire((f) => f + 1); else if (!push) setShake((x) => x + 1)
+    }
+      const item = game === 'plinko'
+        ? { tone: win ? 'win' : push ? 'push' : 'lose', label: `${(r.mult || 0).toFixed(2)}x`, title: `${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
+        : game === 'roulette'
+          ? { tone: win ? 'win' : push ? 'push' : 'lose', label: String(r.number), title: `${r.color}, ${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
+          : game === 'keno'
+        ? { tone: win ? 'win' : push ? 'push' : 'lose', label: `${(r.mult || 0).toFixed(2)}x`, title: `${r.hits} hit${r.hits === 1 ? '' : 's'}, ${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
+        : game === 'mines'
+        ? { tone: win ? 'win' : 'lose', label: win ? `${(r.payout / r.bet).toFixed(2)}x` : 'Mine', title: `${win ? '+' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
+        : game === 'blackjack'
+          ? { tone: win ? 'win' : push ? 'push' : 'lose', label: win ? 'Win' : push ? 'Push' : 'Loss', title: `${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
+          : { tone: r.cashedAt ? 'win' : 'lose', label: `${(r.cashedAt || r.crashAt || 1).toFixed(2)}x`, title: r.cashedAt ? `Cashed out, +${fmt(r.payout - r.bet)} pts` : 'Crashed' }
+    setHistory((h) => {
+      const next = [item, ...h].slice(0, 14)
+      try { localStorage.setItem(hkey, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [game, hkey])
+  const release = useCallback(() => {
+    hold.current = false
+    const p = pending.current; pending.current = null
+    if (p) fx(p.r, p.loud)
+    if (pendingPts.current != null) { setPoints(pendingPts.current); pendingPts.current = null }
+  }, [fx, setPoints])
+
   useEffect(() => {
     const r = round
     if (!r) { seen.current = { id: null, status: null, n: -1 }; return }
@@ -180,31 +217,17 @@ export function useCasino(game) {
     const fresh = prev.id !== null && prev.id === r.id
     if (fresh && n > prev.n) playSfx(game === 'mines' ? 'gem' : 'card')
     if (r.status === 'done' && !(prev.id === r.id && prev.status === 'done')) {
-      const win = r.payout > r.bet, push = r.payout === r.bet && r.payout > 0
-      if ((fresh || prev.id === null || game === 'keno') && !quiet.current) {
-        playSfx(win ? 'win' : push ? 'cash' : game === 'mines' ? 'boom' : 'lose')
-        if (win) setFire((f) => f + 1); else if (!push) setShake((x) => x + 1)
-      }
-      const item = game === 'keno'
-        ? { tone: win ? 'win' : push ? 'push' : 'lose', label: `${(r.mult || 0).toFixed(2)}x`, title: `${r.hits} hit${r.hits === 1 ? '' : 's'}, ${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
-        : game === 'mines'
-        ? { tone: win ? 'win' : 'lose', label: win ? `${(r.payout / r.bet).toFixed(2)}x` : 'Mine', title: `${win ? '+' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
-        : game === 'blackjack'
-          ? { tone: win ? 'win' : push ? 'push' : 'lose', label: win ? 'Win' : push ? 'Push' : 'Loss', title: `${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
-          : { tone: r.cashedAt ? 'win' : 'lose', label: `${(r.cashedAt || r.crashAt || 1).toFixed(2)}x`, title: r.cashedAt ? `Cashed out, +${fmt(r.payout - r.bet)} pts` : 'Crashed' }
-      setHistory((h) => {
-        const next = [item, ...h].slice(0, 14)
-        try { localStorage.setItem(hkey, JSON.stringify(next)) } catch { /* ignore */ }
-        return next
-      })
+      const loud = fresh || prev.id === null || INSTANT.includes(game)
+      if (INSTANT.includes(game) && hold.current) pending.current = { r, loud }
+      else fx(r, loud)
     }
     seen.current = { id: r.id, status: r.status, n }
   }, [round]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const apply = useCallback((data) => {
-    if (data.newPoints != null) setPoints(data.newPoints)
+    if (data.newPoints != null) { if (hold.current && INSTANT.includes(game)) pendingPts.current = data.newPoints; else setPoints(data.newPoints) }
     if (data.state) { setRound(data.state); setOffset((data.state.serverNow || Date.now()) - Date.now()) }
-  }, [setPoints])
+  }, [setPoints, game])
 
   useEffect(() => {
     if (!user) return
@@ -231,7 +254,7 @@ export function useCasino(game) {
     if (ok && data.active !== undefined && data.state) apply(data)
   }, [game, apply])
 
-  return { user, twitchUser, points, round, setRound, busy, err, setErr, start, act, poll, offset, refresh, history, fire, shake, quiet }
+  return { user, twitchUser, points, round, setRound, busy, err, setErr, start, act, poll, offset, refresh, history, fire, shake, quiet, hold, release }
 }
 
 export function Page({ title, sub, game, children }) {
@@ -239,6 +262,7 @@ export function Page({ title, sub, game, children }) {
     <div className={styles.page} data-game={game}>
       <header className={styles.head}>
         <div>
+          <Link to="/originals" className={styles.back}>Originals</Link>
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.sub}>{sub}</p>
         </div>

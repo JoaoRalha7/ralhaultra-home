@@ -10,14 +10,23 @@ const SUITS = [
   { red: false, d: 'M12 3a4 4 0 00-3.500 6A4.500 4.500 0 106 17a4.400 4.400 0 003-1.200L8 22h8l-1-6.200A4.400 4.400 0 0018 17a4.500 4.500 0 10-2.500-8A4 4 0 0012 3z' },
 ]
 
-function Card({ c, hidden, i, flip }) {
-  if (hidden) return <div className={`${styles.card} ${styles.cardBack}`} style={{ '--i': i }} aria-label="Hidden card"><span /></div>
-  const suit = SUITS[Math.floor((c % 52) / 13)]
+// delay: ms before the card leaves the shoe. reveal: turn a face-down card over in place (dealer hole card).
+function Card({ c, hidden, delay = 0, reveal }) {
+  const suit = hidden ? null : SUITS[Math.floor((c % 52) / 13)]
   return (
-    <div className={`${styles.card} ${suit.red ? styles.red : ''} ${flip ? styles.flipIn : ''}`} style={{ '--i': i }} aria-label={RANKS[c % 13]}>
-      <b>{RANKS[c % 13]}</b>
-      <svg viewBox="0 0 24 24" className={styles.pip} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
-      <svg viewBox="0 0 24 24" className={styles.pipSm} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
+    <div className={`${styles.card} ${reveal ? '' : styles.cardFly}`} style={{ '--dl': `${delay}ms` }} aria-label={hidden ? 'Hidden card' : RANKS[c % 13]}>
+      <div className={`${styles.cardIn} ${hidden ? styles.down : reveal ? styles.revealTurn : styles.turnTurn}`}>
+        <div className={`${styles.face} ${styles.cFront} ${suit?.red ? styles.red : ''}`}>
+          {!hidden && (
+            <>
+              <b>{RANKS[c % 13]}</b>
+              <svg viewBox="0 0 24 24" className={styles.pip} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
+              <svg viewBox="0 0 24 24" className={styles.pipSm} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
+            </>
+          )}
+        </div>
+        <div className={`${styles.face} ${styles.cBack}`}><span /></div>
+      </div>
     </div>
   )
 }
@@ -101,8 +110,11 @@ export default function Blackjack() {
                 <div className={styles.hand}>
                   <h3>Dealer <span>{r.dealerTotal}{!done && '+'}</span></h3>
                   <div className={styles.cards}>
-                    {r.dealer.map((c, i) => <Card key={`d${i}`} c={c} i={i} flip={done && i > 0} />)}
-                    {active && <Card hidden i={1} />}
+                    {r.dealer.map((c, i) => (
+                      <Card key={i === 1 && done ? 'dh-open' : `d${i}`} c={c} reveal={i === 1 && done}
+                        delay={i === 0 ? 200 : i === 1 ? 0 : 750 + (i - 2) * 600} />
+                    ))}
+                    {active && <Card key="dh" hidden delay={600} />}
                   </div>
                 </div>
 
@@ -115,10 +127,10 @@ export default function Blackjack() {
 
                 <div className={`${styles.seats} ${multi ? styles.multi : ''}`}>
                   {r.hands.map((h, hi) => (
-                    <div key={hi} className={`${styles.seat} ${active && hi === r.active && multi ? styles.seatOn : ''} ${h.done && active ? styles.seatDone : ''}`}>
+                    <div key={hi} className={`${styles.seat} ${active && hi === r.active && multi ? styles.seatOn : ''} ${h.done && active ? styles.seatDone : ''} ${done && h.result === 'bust' ? styles.seatBust : ''} ${done && (h.result === 'win' || h.result === 'blackjack') ? (h.result === 'blackjack' ? styles.seatBj : styles.seatWin) : ''} ${done && h.result === 'lose' ? styles.seatLose : ''}`}>
                       <div className={styles.hand}>
-                        <h3>{multi ? `Hand ${hi + 1}` : 'You'} <span className={h.total === 21 ? styles.t21 : ''}>{h.total}</span></h3>
-                        <div className={styles.cards}>{h.cards.map((c, i) => <Card key={`p${hi}-${i}`} c={c} i={i} />)}</div>
+                        <h3>{multi ? `Hand ${hi + 1}` : 'You'} <span key={h.total} className={`${styles.totPop} ${h.total === 21 ? styles.t21 : ''}`}>{h.total}</span></h3>
+                        <div className={styles.cards}>{h.cards.map((c, i) => <Card key={`p${hi}-${i}`} c={c} delay={i === 0 ? 0 : i === 1 ? 400 : 0} />)}</div>
                       </div>
                       <div className={styles.betLine}><ChipStack amount={h.bet} /><b>{fmt(h.bet)}</b>{h.doubled && <em>Doubled</em>}
                         {done && h.result && <em className={h.payout > h.bet ? styles.emWin : h.payout === h.bet ? '' : styles.emLose}>{HAND[h.result]}</em>}</div>

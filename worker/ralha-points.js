@@ -23,7 +23,8 @@ const ADMIN_IDS = ['13878854-d588-4c49-ad36-1428920902bd']
 // All game state and randomness live here. The browser only sends intents
 // (start / reveal / hit / cashout) and receives the public part of the state.
 const CASINO = { minBet: 10, maxBet: 10000, maxPayout: 250000, edge: 0.97, grid: 25, crashRate: 0.00008, crashCap: 1000 }
-const CASINO_GAMES = ['mines', 'blackjack', 'crash', 'keno']
+const CASINO_GAMES = ['mines', 'blackjack', 'crash', 'keno', 'plinko', 'roulette']
+const INSTANT_GAMES = ['keno', 'plinko', 'roulette'] // settled in a single request
 
 // Keno: pick 1-10 of 40, the house draws 10. Paytable is derived from the exact odds (~99% RTP, 1000x cap).
 const KENO = { size: 40, draw: 10, max: 10, edge: 0.99, cap: 1000 }
@@ -44,6 +45,54 @@ const KENO_TABLES = {
 function kenoTable(n, risk = 'classic') {
   const t = KENO_TABLES[n]
   return [...(t?.[risk] || t?.classic || [])]
+}
+
+// Plinko
+// Plinko: n rows of pegs, the ball ends in slot 0..n (binomial). Multipliers are symmetric, highest at the edges.
+const PLINKO = { minRows: 8, maxRows: 16, edge: 0.99, risks: ['low', 'medium', 'high'] }
+const PL_HI = { low: [5.6, 16], medium: [13, 110], high: [29, 1000] }
+const PL_FLOOR = { low: 0.5, medium: 0.3, high: 0.2 }
+const plC = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i; return r }
+function plinkoProbs(rows) { return Array.from({ length: rows + 1 }, (_, k) => plC(rows, k) / 2 ** rows) }
+function plinkoTable(rows, risk = 'medium') {
+  const n = Math.max(PLINKO.minRows, Math.min(PLINKO.maxRows, Math.floor(rows) || 8))
+  const [a, b] = PL_HI[risk] || PL_HI.medium, lo = PL_FLOOR[risk] ?? PL_FLOOR.medium
+  const hi = a * Math.pow(b / a, (n - PLINKO.minRows) / (PLINKO.maxRows - PLINKO.minRows))
+  const P = plinkoProbs(n), half = n / 2
+  const at = (p) => P.map((_, k) => lo + (hi - lo) * Math.pow(Math.abs(k - half) / half, p))
+  const rtp = (p) => at(p).reduce((s, m, k) => s + m * P[k], 0)
+  let l = 0.2, h = 30 // rtp falls as p grows: bisect to the target return
+  for (let i = 0; i < 60; i++) { const m = (l + h) / 2; if (rtp(m) > PLINKO.edge) l = m; else h = m }
+  return at((l + h) / 2).map((m) => Math.floor(m * 100) / 100)
+}
+
+// Roulette
+// European roulette (single zero). Payouts are total multiples of the stake (stake included).
+const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
+const REDS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
+const ROULETTE = { maxBets: 24, payouts: { straight: 36, red: 2, black: 2, odd: 2, even: 2, low: 2, high: 2, dozen: 3, column: 3 } }
+const rColor = (n) => (n === 0 ? 'green' : REDS.includes(n) ? 'red' : 'black')
+function rouletteMult(bet, n) {
+  const { type, value } = bet
+  let win = false
+  if (type === 'straight') win = n === value
+  else if (n === 0) win = false
+  else if (type === 'red') win = rColor(n) === 'red'
+  else if (type === 'black') win = rColor(n) === 'black'
+  else if (type === 'odd') win = n % 2 === 1
+  else if (type === 'even') win = n % 2 === 0
+  else if (type === 'low') win = n <= 18
+  else if (type === 'high') win = n >= 19
+  else if (type === 'dozen') win = Math.ceil(n / 12) === value
+  else if (type === 'column') win = (n % 3 === 0 ? 3 : n % 3) === value
+  return win ? ROULETTE.payouts[type] : 0
+}
+function validBet(b) {
+  if (!b || !(b.type in ROULETTE.payouts)) return false
+  if (!Number.isInteger(b.amount) || b.amount <= 0) return false
+  if (b.type === 'straight') return Number.isInteger(b.value) && b.value >= 0 && b.value <= 36
+  if (b.type === 'dozen' || b.type === 'column') return Number.isInteger(b.value) && b.value >= 1 && b.value <= 3
+  return true
 }
 
 const _u32 = new Uint32Array(1)
@@ -132,6 +181,12 @@ function publicGame(game, row, now) {
       active: st.active, dealer: done ? st.dealer : [st.dealer[0]], dealerTotal: done ? bjTotal(st.dealer) : bjVal(st.dealer[0]),
       canDouble: !done && bjCanDouble(st), canSplit: !done && bjCanSplit(st), outcome: st.outcome || null,
       side: st.sideRes || null, sidePayout: st.sidePayout || 0 }
+  }
+  if (game === 'plinko') {
+    return { ...base, rows: st.rows, risk: st.risk, path: st.path, slot: st.slot, mult: st.mult }
+  }
+  if (game === 'roulette') {
+    return { ...base, bets: st.bets, number: st.number, color: rColor(st.number) }
   }
   if (game === 'keno') {
     return { ...base, picks: st.picks, risk: st.risk || 'classic', draw: st.draw, hits: st.hits, mult: st.mult }
@@ -366,8 +421,14 @@ export default {
 
         // ---- start ----
         if (pathname === '/casino/start') {
+          let rBets = null
+          if (game === 'roulette') {
+            rBets = Array.isArray(body.bets) ? body.bets.map((b) => ({ type: b?.type, value: b?.value == null ? null : Number(b.value), amount: Number(b?.amount) })) : []
+            if (!rBets.length || rBets.length > ROULETTE.maxBets || !rBets.every((b) => validBet(b) && b.amount >= CASINO.minBet && b.amount <= CASINO.maxBet)) return json({ error: 'invalid bets' }, 400)
+            body.bet = rBets.reduce((a, b) => a + b.amount, 0)
+          }
           const bet = parseInt(body.bet, 10)
-          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > CASINO.maxBet) return json({ error: 'invalid bet', min: CASINO.minBet, max: CASINO.maxBet }, 400)
+          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > (game === 'roulette' ? CASINO.maxBet * 5 : CASINO.maxBet)) return json({ error: 'invalid bet', min: CASINO.minBet, max: CASINO.maxBet }, 400)
 
           let existing = await loadActive()
           if (existing) {
@@ -390,6 +451,11 @@ export default {
             if (!okSide(pp) || !okSide(t3)) return json({ error: 'invalid side bet' }, 400)
             sides = { pp, t3 }; stake = bet + pp + t3
           }
+          if (game === 'plinko') {
+            const rows = parseInt(body.rows, 10)
+            if (!Number.isInteger(rows) || rows < PLINKO.minRows || rows > PLINKO.maxRows || !PLINKO.risks.includes(body.risk)) return json({ error: 'invalid plinko' }, 400)
+            params = { rows, risk: body.risk }
+          }
           if (game === 'keno') {
             const picks = Array.isArray(body.picks) ? body.picks.map(Number) : []
             const ok = picks.length >= 1 && picks.length <= KENO.max && new Set(picks).size === picks.length && picks.every((x) => Number.isInteger(x) && x >= 1 && x <= KENO.size)
@@ -410,7 +476,7 @@ export default {
           const charge = await seAdd(-stake)
           if (!charge.ok) return json({ error: 'charge failed' }, 502)
 
-          let state, kenoPayout = 0
+          let state, kenoPayout = 0 // kenoPayout holds the instant payout for keno / plinko / roulette
           if (game === 'mines') {
             const tiles = shuffle(Array.from({ length: CASINO.grid }, (_, i) => i))
             state = { m: params.m, mines: tiles.slice(0, params.m).sort((a, b) => a - b), revealed: [] }
@@ -420,6 +486,16 @@ export default {
             const mult = kenoTable(params.picks.length, params.risk)[hits]
             state = { picks: params.picks, risk: params.risk, draw, hits, mult }
             kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
+          } else if (game === 'plinko') {
+            const path = Array.from({ length: params.rows }, () => rndInt(2))
+            const slot = path.reduce((a, b) => a + b, 0)
+            const mult = plinkoTable(params.rows, params.risk)[slot]
+            state = { rows: params.rows, risk: params.risk, path, slot, mult }
+            kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
+          } else if (game === 'roulette') {
+            const number = rndInt(37)
+            state = { bets: rBets, number }
+            kenoPayout = Math.min(Math.floor(rBets.reduce((a, b) => a + b.amount * rouletteMult(b, number), 0)), CASINO.maxPayout)
           } else if (game === 'blackjack') {
             const deck = shuffle(Array.from({ length: 52 * BJ_DECKS }, (_, i) => i % 52))
             const pc = [deck[0], deck[2]], dc = [deck[1], deck[3]]
@@ -434,13 +510,13 @@ export default {
 
           const ins = await fetch(rest, {
             method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' },
-            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet: stake, state, status: game === 'keno' ? 'done' : 'active', payout: kenoPayout }),
+            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet: stake, state, status: INSTANT_GAMES.includes(game) ? 'done' : 'active', payout: kenoPayout }),
           })
           const created = ins.ok ? (await ins.json())?.[0] : null
           if (!created) { const rf = await seAdd(stake); return json({ error: 'could not start', refunded: true, newPoints: rf.points ?? null }, 409) }
 
           let row = created, newPoints = charge.points
-          if (game === 'keno' && kenoPayout > 0) {
+          if (INSTANT_GAMES.includes(game) && kenoPayout > 0) {
             let p = await seAdd(kenoPayout); if (!p.ok) p = await seAdd(kenoPayout)
             if (p.points != null) newPoints = p.points
           }

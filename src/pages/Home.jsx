@@ -148,7 +148,7 @@ function gameRows(rows, type, entryLabel, awardLabel, dateKey) {
   });
 }
 
-const CASINO_NAMES = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash', keno: 'Keno' };
+const CASINO_NAMES = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash', keno: 'Keno', plinko: 'Plinko', roulette: 'Roulette' };
 const casinoRow = (r) => {
   const net = (r.payout || 0) - (r.bet || 0);
   return {

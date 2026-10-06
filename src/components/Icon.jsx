@@ -31,6 +31,9 @@ export function IconSprite() {
         <symbol id="send" viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></symbol>
         <symbol id="mines" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8l3 4-3 4-3-4z"/></symbol>
         <symbol id="keno" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14.5 17.5l2.2 2.2 4-4.4"/></symbol>
+        <symbol id="plinko" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/><circle cx="4.5" cy="15" r="1.4"/><circle cx="12" cy="15" r="1.4"/><circle cx="19.5" cy="15" r="1.4"/><path d="M4 20h4M10 20h4M16 20h4"/></symbol>
+        <symbol id="roulette" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></symbol>
+        <symbol id="originals" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></symbol>
         <symbol id="crash" viewBox="0 0 24 24"><path d="M3 20h18M4 16l5-5 4 3 7-8M15 6h5v5"/></symbol>
         <symbol id="cards" viewBox="0 0 24 24"><rect x="4" y="5" width="11" height="15" rx="2"/><path d="M9 3h8a3 3 0 013 3v10"/></symbol>
       </defs>

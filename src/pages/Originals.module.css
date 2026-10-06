@@ -1,0 +1,16 @@
+.page { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.head h1 { margin: 0; font: 800 clamp(28px, 4vw, 40px)/1.05 "Bricolage Grotesque", sans-serif; letter-spacing: -.02em; color: #fff; }
+.head p { margin: 6px 0 0; color: #8d96ab; font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.card { position: relative; display: flex; flex-direction: column; gap: 18px; padding: 20px; min-height: 230px; border-radius: 20px; border: 1px solid #252b3a; background: #131720; color: #fff; overflow: hidden; isolation: isolate; transition: transform .18s, border-color .18s, box-shadow .18s; }
+.card::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--g1) 30%, transparent), transparent 60%); opacity: .75; transition: opacity .18s; }
+.card:hover { transform: translateY(-4px); border-color: var(--g1); box-shadow: 0 22px 44px -22px var(--g1); }
+.card:hover::before { opacity: 1; }
+.art { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 18px; color: var(--g2); background: color-mix(in srgb, var(--g1) 18%, #0f131b); border: 1px solid color-mix(in srgb, var(--g1) 45%, #252b3a); }
+.body { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.body b { font: 800 22px/1.1 "Bricolage Grotesque", sans-serif; }
+.body small { color: #a8b0c4; font-size: 13px; line-height: 1.45; }
+.stats { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+.stats i { font-style: normal; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); color: #c7cde0; font: 700 11px "DM Sans", sans-serif; }
+.play { position: absolute; right: 18px; top: 20px; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; background: var(--g1); color: #06130e; font: 800 12px "DM Sans", sans-serif; }
+@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } .card { min-height: 0; } }

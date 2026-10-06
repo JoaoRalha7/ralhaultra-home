@@ -6,6 +6,9 @@ import BonusHunts from './pages/BonusHunts';
 import Blackjack from './pages/Blackjack';
 import Crash from './pages/Crash';
 import Keno from './pages/Keno';
+import Plinko from './pages/Plinko';
+import Roulette from './pages/Roulette';
+import Originals from './pages/Originals';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Legal from './pages/Legal';
@@ -104,6 +107,9 @@ export default function App() {
         <Route path="blackjack" element={<Blackjack />} />
         <Route path="crash" element={<Crash />} />
         <Route path="keno" element={<Keno />} />
+        <Route path="plinko" element={<Plinko />} />
+        <Route path="roulette" element={<Roulette />} />
+        <Route path="originals" element={<Originals />} />
         <Route path="terms" element={<Legal />} />
         <Route path="privacy" element={<Legal />} />
         <Route path="cookies" element={<Legal />} />

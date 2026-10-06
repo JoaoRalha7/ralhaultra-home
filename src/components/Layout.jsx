@@ -14,7 +14,7 @@ import { supabaseDash } from '../lib/supabase';
 const NAV_GROUPS = [
   [['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard']],
   [['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop']],
-  [['mines', 'Mines', '/mines'], ['cards', 'Blackjack', '/blackjack'], ['crash', 'Crash', '/crash'], ['keno', 'Keno', '/keno']],
+  [['originals', 'Originals', '/originals']],
   [
     ['slots', 'Slots', '/slots'],
     ['spark', 'Bonus Hunts', '/bonus-hunts'],
@@ -24,6 +24,8 @@ const NAV_GROUPS = [
     ['users', 'Community', '/community'],
   ],
 ];
+
+const ORIGINAL_PATHS = ['/originals', '/mines', '/blackjack', '/crash', '/keno', '/plinko', '/roulette'];
 
 const GAMES = [
   ['pick_games', 'Pick & Win', 'pick'],
@@ -144,7 +146,7 @@ export default function Layout() {
           {NAV_GROUPS.map((group, gi) => (
             <div className="grp" key={gi}>
               {group.map(([icon, label, to]) => (
-                <NavLink key={to} to={to} end={to === '/'} title={label} aria-label={label} className={({ isActive }) => `nav${isActive ? ' on' : ''}`}>
+                <NavLink key={to} to={to} end={to === '/'} title={label} aria-label={label} className={({ isActive }) => `nav${isActive || (to === '/originals' && ORIGINAL_PATHS.some((p) => location.pathname.startsWith(p))) ? ' on' : ''}`}>
                   <Icon name={icon} />
                   <span className="lbl">{label}</span>
                 </NavLink>
