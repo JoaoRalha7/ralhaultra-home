@@ -6,6 +6,7 @@ import InfoModal from '../components/InfoModal';
 import { RedirectModal, TwitchPlayerModal, FeaturedOfferModal } from '../components/HomeModals';
 import { casinoToOffer } from '../data/casinoToOffer';
 import { OFFERS } from '../data/fallback';
+import { useAuth } from '../hooks/useAuth';
 import { useTwitchStatus } from '../hooks/useTwitchStatus';
 import { supabase, supabaseDash } from '../lib/supabase';
 import '../styles/ralhaultra-home.css';
@@ -122,7 +123,10 @@ export default function Home() {
   const [showFeatured, setShowFeatured] = useState(false);
   const [player, setPlayer] = useState(null);
   const [streams, setStreams] = useState([]);
+  const { user } = useAuth();
+  const me = user?.user_metadata?.full_name?.toLowerCase() || null;
   const [board, setBoard] = useState([]);
+  const [mine, setMine] = useState(null);
   const [ci, setCi] = useState(0);
   const dragX = useRef(null);
   const [activity, setActivity] = useState(null);
@@ -164,6 +168,26 @@ export default function Home() {
       .then((d) => { if (d?.streams?.length) setStreams(d.streams); })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!me) { setMine(null); return undefined; }
+    let dead = false;
+    (async () => {
+      const PAGE = 100;
+      for (let o = 0; o < 3000 && !dead; o += PAGE) {
+        try {
+          const r = await fetch(`${SE_WORKER_URL}/leaderboard?limit=${PAGE}&offset=${o}`);
+          if (!r.ok) return;
+          const d = await r.json();
+          const list = d.users || [];
+          const k = list.findIndex((u) => u.username?.toLowerCase() === me);
+          if (k >= 0) { if (!dead) setMine({ ...list[k], rank: o + k + 1 }); return; }
+          if (!d.hasMore || list.length < PAGE) return;
+        } catch { return; }
+      }
+    })();
+    return () => { dead = true; };
+  }, [me]);
 
   const loadActivity = useCallback(async () => {
     try {
@@ -284,7 +308,7 @@ export default function Home() {
                   <button
                     type="button" key={v.id}
                     className={`cv${off === 0 ? ' on' : ''}`}
-                    style={{ transform: `translateX(calc(-50% + ${off * 185}px)) scale(${1 - a * 0.13})`, zIndex: 10 - a, opacity: a > 2 ? 0 : 1 }}
+                    style={{ transform: `translateX(calc(-50% + ${off * 155}px)) scale(${1 - a * 0.13})`, zIndex: 10 - a, opacity: a > 2 ? 0 : 1 }}
                     onClick={() => (off === 0 ? vids && play(v) : setCi(i))}
                     aria-label={v.title}
                     tabIndex={a > 1 ? -1 : 0}
@@ -312,12 +336,19 @@ export default function Home() {
             {board.length === 0 ? <p className="lbn">Leaderboard unavailable right now.</p> : (
               <ol>
                 {board.slice(0, 5).map((u, i) => (
-                  <li key={u.username}>
+                  <li key={u.username} className={mine && mine.rank === i + 1 ? 'me' : ''}>
                     <span className={`lbr r${i + 1}`}>{i + 1}</span>
-                    <b>{u.username}</b>
+                    <b>{u.username}{mine && mine.rank === i + 1 && <em className="you">YOU</em>}</b>
                     <span className="lbp2">{Number(u.points || 0).toLocaleString('en-GB')}<span className="coin" /></span>
                   </li>
                 ))}
+                {mine && mine.rank > 5 && (
+                  <li className="me sep">
+                    <span className="lbr">{mine.rank}</span>
+                    <b>{mine.username}<em className="you">YOU</em></b>
+                    <span className="lbp2">{Number(mine.points || 0).toLocaleString('en-GB')}<span className="coin" /></span>
+                  </li>
+                )}
               </ol>
             )}
           </aside>

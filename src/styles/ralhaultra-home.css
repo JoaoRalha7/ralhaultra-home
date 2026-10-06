@@ -301,3 +301,12 @@ button.vbig,button.vi{font:inherit;color:inherit;text-align:left;cursor:pointer}
 .cover{overflow:hidden;border-radius:18px;background:radial-gradient(70% 90% at 50% 40%,#17305f55,transparent 70%)}
 .cover .carArr{background:#0b0e14cc}
 .cover{overflow:clip}
+
+.lbp li.me{background:#3b82f61a;border-radius:10px;padding-left:8px;padding-right:8px;margin:0 -8px}
+.lbp li.sep{margin-top:8px;border-top:1px dashed var(--line)}
+.you{font:800 10px "Bricolage Grotesque",sans-serif;font-style:normal;margin-left:8px;padding:2px 6px;border-radius:6px;background:var(--acc);color:#fff;letter-spacing:.04em}
+.cover{height:250px}
+.cv{width:250px;padding:8px 8px 10px}
+.cv .th{height:132px}
+.cover .carArr{top:100px}
+@media (max-width:640px){.cv{width:220px}.cv .th{height:118px}.cover{height:280px}.cover .carArr{top:90px}}
