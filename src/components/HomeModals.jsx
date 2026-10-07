@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from '../legacy/Home.module.css';
+import { featuredOf } from '../data/featuredOffer';
 
 const TWITCH_CHANNEL = 'jralha_';
 
@@ -95,20 +96,23 @@ export function TwitchPlayerModal({ type, id, title, meta, onClose }) {
   )
 }
 
-export function FeaturedOfferModal({ casino: c, onClose, onRedirect }) {
-  const accent = c.featured_accent_color || '#3b82f6'
+export function FeaturedOfferModal({ casino: c, onClose, onRedirect, inline = false }) {
+  const fo = featuredOf(c)
+  const accent = fo.accent
   const [copied, setCopied] = useState(false)
-  const amount = String(c.featured_offer_amount || '').trim()
-  const chips = String(c.featured_offer_details || '').split(/[·|•]/).map(x => x.trim()).filter(Boolean)
+  const amount = fo.amount
+  const chips = fo.details.split(/[·|•]/).map(x => x.trim()).filter(Boolean)
   const size = amount.length <= 6 ? 'xl' : amount.length <= 14 ? 'lg' : 'md'
 
   useEffect(() => {
+    if (inline) return undefined
     const onKey = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, inline])
 
   const handleClaim = () => {
+    if (inline) return
     onRedirect(c.claim_url, c.promo_code)
     onClose()
   }
@@ -119,7 +123,7 @@ export function FeaturedOfferModal({ casino: c, onClose, onRedirect }) {
   }
 
   return (
-    <div className="fmOverlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Exclusive offer">
+    <div className={inline ? 'fmInline' : 'fmOverlay'} onClick={inline ? undefined : onClose} role={inline ? undefined : 'dialog'} aria-modal={inline ? undefined : 'true'} aria-label="Exclusive offer">
       <div className="fmCard" onClick={e => e.stopPropagation()} style={{ '--ac': accent }}>
         <div className="fmSparks" aria-hidden="true">
           {[10, 25, 40, 58, 72, 88].map((l, i) => <i key={l} style={{ left: `${l}%`, animationDelay: `${(i * 1.1) % 5}s`, animationDuration: `${5 + (i % 3) * 2}s` }} />)}
@@ -138,7 +142,7 @@ export function FeaturedOfferModal({ casino: c, onClose, onRedirect }) {
 
         <span className="fmPill">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zm0 0c2-4 6-4 6-1.5S14 8 12 8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
-          {c.featured_offer_title || 'Exclusive bonus'}
+          {fo.title}
         </span>
 
         <div className="fmHero">

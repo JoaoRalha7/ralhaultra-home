@@ -478,3 +478,15 @@
 .pvCard { padding-top:14px; }
 .pvCard :global(.oc2) { max-width:380px; margin:0 auto; }
 .pvNote { margin:0; font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.35); }
+
+/* ── Featured tab (auto) ── */
+.featHero { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 16px; border-radius:14px; background:linear-gradient(90deg,rgba(250,204,21,.1),rgba(255,255,255,.02)); border:1px solid rgba(250,204,21,.28); }
+.featHero b { display:block; font-size:14px; color:#fff; }
+.featHero span { display:block; margin-top:3px; font-size:12px; color:rgba(255,255,255,.5); }
+.autoTag { margin-left:8px; font-size:9.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:1px 7px; border-radius:999px; color:#4ade80; background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.3); }
+.autoReset { margin-left:8px; font-size:10.5px; font-weight:700; padding:0; border:0; background:none; color:#93c5fd; cursor:pointer; font-family:var(--font); text-transform:none; letter-spacing:0; }
+.autoReset:hover { text-decoration:underline; }
+.swatches { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.swatch { width:28px; height:28px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; box-shadow:inset 0 0 0 2px #080a0f; }
+.swatchOn { border-color:#fff; }
+.featPreview { border-radius:16px; border:1px solid rgba(255,255,255,.08); background:#06080d; padding:14px 14px 8px; }

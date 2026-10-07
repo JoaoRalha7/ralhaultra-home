@@ -616,3 +616,4 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 @media (max-width:480px){.fmCard{padding:40px 18px 16px}.fmAmount.xl{font-size:72px}.fmAmount.lg{font-size:44px}.fmGhost{font-size:96px}.fmTear{width:calc(100% + 36px);margin-left:-18px;margin-right:-18px}}
 @media (prefers-reduced-motion:reduce){.fmOverlay,.fmCard{animation:none}.fmSparks,.fmCta:after{display:none}}
 .fmTag{z-index:2}.fmCard:after{z-index:0}
+.fmInline{display:grid;place-items:center;padding:22px 0 6px}.fmInline .fmCard{animation:none;width:min(400px,100%)}

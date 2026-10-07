@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase, supabaseDash } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import OfferRow from './OfferRow'
+import { FeaturedOfferModal } from './HomeModals'
+import { autoFeatured } from '../data/featuredOffer'
 import { casinoToOffer } from '../data/casinoToOffer'
 import styles from './AdminPanel.module.css'
 
@@ -341,53 +343,49 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
           )}
 
           {/* FEATURED */}
-          {tab === 'featured' && (
-            <div className={styles.tabContent}>
-              <p className={styles.tabHint}>
-                Shown as a popup the moment a user enters the site. Only one casino can be featured at a time —
-                turning this on here will turn it off for any other casino.
-              </p>
-
-              <div className={styles.formRow2}>
-                <div className={styles.field}>
-                  <label className={styles.label}>Offer Title</label>
-                  <input className={styles.input} value={form.featured_offer_title || ''} onChange={e => set('featured_offer_title', e.target.value)} placeholder="Free Spins" />
+          {tab === 'featured' && (() => {
+            const cur = { ...form, features, casino_info: ci, welcome_bonus: bonus }
+            const auto = autoFeatured(cur)
+            const COLORS = ['#3b82f6', '#2ee6a6', '#f5c542', '#ff8a2b', '#ef4444', '#ec4899', '#a855f7', '#22d3ee']
+            const Ov = ({ k, label, ph }) => (
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  {label}
+                  {form[k] ? <button type="button" className={styles.autoReset} onClick={() => set(k, '')}>Reset to auto</button> : <span className={styles.autoTag}>Auto</span>}
+                </label>
+                <input className={styles.input} value={form[k] || ''} onChange={e => set(k, e.target.value)} placeholder={ph || 'Auto'} />
+              </div>
+            )
+            return (
+              <div className={styles.tabContent}>
+                <div className={styles.featHero}>
+                  <div>
+                    <b>Show this casino in the entry popup</b>
+                    <span>Only one casino is featured at a time. Turning this on turns it off for the others.</span>
+                  </div>
+                  <Toggle checked={!!form.is_featured} onChange={v => set('is_featured', v)} />
                 </div>
+                <p className={styles.tabHint}>
+                  Everything is built from what you already filled in (welcome bonus, info, features, promo code and claim link).
+                  Only fill the fields below if you want to override something.
+                </p>
+                <Ov k="featured_offer_title" label="Title" ph={auto.title} />
+                <Ov k="featured_offer_amount" label="Big text" ph={auto.amount || 'Add a Welcome Bonus in Content'} />
+                <Ov k="featured_offer_details" label="Chips (separate with ·)" ph={auto.details || 'Fill Info to get chips'} />
                 <div className={styles.field}>
-                  <label className={styles.label}>Accent Color</label>
-                  <div className={styles.colorFieldWrap}>
-                    <input type="color" className={styles.colorSwatch} value={form.featured_accent_color || '#3b82f6'} onChange={e => set('featured_accent_color', e.target.value)} />
-                    <input className={styles.input} value={form.featured_accent_color || ''} onChange={e => set('featured_accent_color', e.target.value)} placeholder="#3b82f6" />
+                  <label className={styles.label}>Accent color{form.featured_accent_color && <button type="button" className={styles.autoReset} onClick={() => set('featured_accent_color', '')}>Reset to auto</button>}</label>
+                  <div className={styles.swatches}>
+                    {COLORS.map(c => <button key={c} type="button" aria-label={c} className={`${styles.swatch} ${(form.featured_accent_color || auto.accent) === c ? styles.swatchOn : ''}`} style={{ background: c }} onClick={() => set('featured_accent_color', c)} />)}
+                    <input type="color" className={styles.colorSwatch} value={form.featured_accent_color || auto.accent} onChange={e => set('featured_accent_color', e.target.value)} />
                   </div>
                 </div>
-              </div>
-
-              <div className={styles.field}>
-                <label className={styles.label}>Offer Amount</label>
-                <input className={styles.input} value={form.featured_offer_amount || ''} onChange={e => set('featured_offer_amount', e.target.value)} placeholder="100FS  ·  or  ·  200% até €1000" />
-              </div>
-
-              <div className={styles.field}>
-                <label className={styles.label}>Offer Details</label>
-                <input className={styles.input} value={form.featured_offer_details || ''} onChange={e => set('featured_offer_details', e.target.value)} placeholder="Endorphina · The Emirates · €0.20 · Wagering x25 · 7 days" />
-              </div>
-
-              <p className={styles.tabHint} style={{ marginTop: 4 }}>
-                Promo code and claim link reuse the <strong>Promo Code</strong> and <strong>Claim URL</strong> fields from the Basic tab.
-              </p>
-
-              {/* Live preview */}
-              <div className={styles.featuredPreviewWrap} style={{ '--accent': form.featured_accent_color || '#3b82f6' }}>
-                <div className={styles.featuredPreviewBar}>EXCLUSIVE OFFER PREVIEW</div>
-                <div className={styles.featuredPreviewBody}>
-                  {form.logo_url && <img src={form.logo_url} alt="" className={styles.featuredPreviewLogo} onError={e => e.target.style.display = 'none'} />}
-                  <p className={styles.featuredPreviewAmount}>{form.featured_offer_amount || 'Offer amount'}</p>
-                  <p className={styles.featuredPreviewDetails}>{form.featured_offer_details || 'Offer details will appear here'}</p>
-                  {form.promo_code && <span className={styles.featuredPreviewCode}>{form.promo_code}</span>}
+                <div className={styles.featPreview}>
+                  <div className={styles.pvHead}><span>Popup preview</span></div>
+                  <FeaturedOfferModal inline casino={{ ...cur }} onClose={() => {}} onRedirect={() => {}} />
                 </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* METHODS */}
           {tab === 'methods' && (
