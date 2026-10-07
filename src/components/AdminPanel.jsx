@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, supabaseDash } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import OfferRow from './OfferRow'
+import { casinoToOffer } from '../data/casinoToOffer'
 import styles from './AdminPanel.module.css'
 
 const BUCKET = 'images'
@@ -27,6 +29,11 @@ const IconClose  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="n
 const IconPlus   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
 const IconUpload = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="17 8 12 3 7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
 const IconCheck  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+
+const IconUp     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 15l6-6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IconDown   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IconCopy   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+const IconStar   = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7 7 .6-5.3 4.7 1.7 7.2L12 17.8 5.6 21.5l1.7-7.2L2 9.6 9 9z"/></svg>
 
 // ── Toggle ─────────────────────────────────────────────────
 function Toggle({ checked, onChange, label }) {
@@ -162,6 +169,7 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
   const [selMethods,  setSelMethods]  = useState([])
   const [saving,      setSaving]      = useState(false)
   const [errors,      setErrors]      = useState({})
+  const [pv,          setPv]          = useState(0)
 
   useEffect(() => {
     if (casino) {
@@ -218,7 +226,7 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
     { id: 'basic',    label: 'Basic',    err: !!(errors.name || errors.claim_url) },
     { id: 'media',    label: 'Media',    err: !!errors.logo_url },
     { id: 'info',     label: 'Info',     err: false },
-    { id: 'featured', label: '⭐ Featured', err: false },
+    { id: 'featured', label: 'Featured', err: false },
     { id: 'methods',  label: 'Methods',  err: false },
     { id: 'content',  label: 'Content',  err: false },
   ]
@@ -245,6 +253,7 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
           ))}
         </div>
 
+        <div className={styles.modalSplit}>
         <div className={styles.modalBody}>
           {/* BASIC */}
           {tab === 'basic' && (
@@ -274,10 +283,10 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
               <div className={styles.togglesGrid}>
                 {[
                   { k: 'is_active',      label: 'Active',          sub: 'Visible to users',       val: !!form.is_active },
-                  { k: 'is_featured',    label: '⭐ FEATURED',     sub: 'Shown in entry popup',     val: !!form.is_featured },
-                  { k: 'is_hot',         label: '🔥 HOT',          sub: 'Shows HOT badge',         val: !!form.is_hot },
-                  { k: 'is_new',         label: '✨ NEW',          sub: 'Shows NEW badge',         val: !!form.is_new },
-                  { k: 'is_freespins',   label: '🎰 FREESPINS',    sub: 'Shows FREESPINS badge',   val: !!form.is_freespins },
+                  { k: 'is_featured',    label: 'Featured',     sub: 'Shown in entry popup',     val: !!form.is_featured },
+                  { k: 'is_hot',         label: 'Hot',             sub: 'Shows HOT badge',         val: !!form.is_hot },
+                  { k: 'is_new',         label: 'New',            sub: 'Shows NEW badge',         val: !!form.is_new },
+                  { k: 'is_freespins',   label: 'Free spins',      sub: 'Shows FREESPINS badge',   val: !!form.is_freespins },
                   { k: 'promo_required', label: 'Promo Required',  sub: 'Must use promo code',     val: !!form.promo_required },
                   { k: 'kyc_required',   label: 'KYC Required',    sub: 'Identity verification',   val: !!form.kyc_required },
                   { k: 'vpn_allowed',    label: 'VPN Allowed',     sub: 'VPN access permitted',    val: form.vpn_allowed !== false },
@@ -413,6 +422,20 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
           )}
         </div>
 
+        <aside className={styles.pvPane}>
+          <div className={styles.pvHead}>
+            <span>Live preview</span>
+            <div className={styles.pvSw}>
+              {[0, 1, 2].map((i) => <button key={i} type="button" aria-label={`Preview color ${i + 1}`} className={`${styles.pvDot} ${pv === i ? styles.pvDotOn : ''}`} data-i={i} onClick={() => setPv(i)} />)}
+            </div>
+          </div>
+          <div className={styles.pvCard}>
+            <OfferRow o={casinoToOffer({ ...form, features, casino_info: ci, welcome_bonus: bonus }, pv)} rank={form.is_featured ? 1 : null} />
+          </div>
+          <p className={styles.pvNote}>This is how the card looks in Top Offers on the Home page. Headline and sub-line come from the first two Features.</p>
+        </aside>
+        </div>
+
         <div className={styles.modalFooter}>
           <button className={styles.btnGhost} onClick={onClose}>Cancel</button>
           <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
@@ -494,29 +517,45 @@ function MethodModal({ method, onSave, onClose }) {
 }
 
 // ── Casino Row ─────────────────────────────────────────────
-function CasinoRow({ casino, onEdit, onDelete, onToggle }) {
+function Tag({ tone, children }) {
+  return <span className={`${styles.tag} ${styles['tag_' + tone]}`}>{children}</span>
+}
+
+function CasinoRow({ casino, index, last, canReorder, onEdit, onDelete, onToggle, onMove, onDuplicate }) {
+  const ci = casino.casino_info || {}
+  const f0 = Array.isArray(casino.features) && casino.features[0] ? String(casino.features[0].value ?? casino.features[0]) : ''
   return (
-    <div className={`${styles.itemRow} ${!casino.is_active ? styles.itemRowDim : ''}`}>
-      <div className={styles.itemLogo}>
+    <div className={`${styles.cRow} ${!casino.is_active ? styles.itemRowDim : ''}`}>
+      <div className={styles.cOrder}>
+        <button className={styles.ordBtn} disabled={!canReorder || index === 0} onClick={() => onMove(casino.id, -1)} aria-label="Move up"><IconUp /></button>
+        <span>{index + 1}</span>
+        <button className={styles.ordBtn} disabled={!canReorder || last} onClick={() => onMove(casino.id, 1)} aria-label="Move down"><IconDown /></button>
+      </div>
+      <div className={styles.cLogo}>
         {casino.logo_url
           ? <img src={casino.logo_url} alt={casino.name} onError={e => e.target.style.opacity='.2'} />
           : <span>{(casino.name||'?')[0]}</span>}
       </div>
       <div className={styles.itemMain}>
-        <div className={styles.itemName}>{casino.name}</div>
-        <div className={styles.itemMeta}>
-          <span className={styles.metaChip}>#{casino.sort_order ?? 0}</span>
-          {casino.promo_code && <span className={styles.metaChip} style={{ color: '#93c5fd', borderColor: 'rgba(59,130,246,.3)' }}>{casino.promo_code}</span>}
-          {casino.is_featured && <span className={styles.metaChip} style={{ color: '#facc15', borderColor: 'rgba(250,204,21,.35)' }}>⭐ FEATURED</span>}
-          {casino.is_hot && <span className={styles.metaChip} style={{ color: '#f87171', borderColor: 'rgba(239,68,68,.3)' }}>HOT</span>}
-          {casino.is_new && <span className={styles.metaChip} style={{ color: '#4ade80', borderColor: 'rgba(34,197,94,.3)' }}>NEW</span>}
-          {casino.is_freespins && <span className={styles.metaChip} style={{ color: '#93c5fd', borderColor: 'rgba(59,130,246,.3)' }}>FREESPINS</span>}
+        <div className={styles.cTop}>
+          <span className={styles.itemName}>{casino.name}</span>
+          {casino.is_featured && <Tag tone="gold"><IconStar /> Featured</Tag>}
+          {casino.is_hot && <Tag tone="red">Hot</Tag>}
+          {casino.is_new && <Tag tone="green">New</Tag>}
+          {casino.is_freespins && <Tag tone="blue">Free spins</Tag>}
+        </div>
+        <div className={styles.cSub}>
+          {f0 && <span className={styles.cBonus}>{f0}</span>}
+          {casino.promo_code && <span className={styles.cCode}>{casino.promo_code}</span>}
+          {ci.min_deposit && <span>Min {String(ci.min_deposit.value ?? ci.min_deposit)}</span>}
+          {ci.license && <span>{String(ci.license.value ?? ci.license)}</span>}
         </div>
       </div>
       <div className={styles.itemActions}>
         <Toggle checked={!!casino.is_active} onChange={v => onToggle(casino.id, v)} />
-        <button className={styles.iconBtnSm} onClick={() => onEdit(casino)}><IconEdit /></button>
-        <button className={`${styles.iconBtnSm} ${styles.iconBtnDanger}`} onClick={() => onDelete(casino.id)}><IconTrash /></button>
+        <button className={styles.iconBtnSm} title="Duplicate" onClick={() => onDuplicate(casino)}><IconCopy /></button>
+        <button className={styles.iconBtnSm} title="Edit" onClick={() => onEdit(casino)}><IconEdit /></button>
+        <button className={`${styles.iconBtnSm} ${styles.iconBtnDanger}`} title="Delete" onClick={() => onDelete(casino.id)}><IconTrash /></button>
       </div>
     </div>
   )
@@ -559,6 +598,7 @@ export default function AdminPanel({ onClose }) {
   const [editMethod, setEditMethod] = useState(null)
   const [newMethod,  setNewMethod]  = useState(false)
   const [search,     setSearch]     = useState('')
+  const [filter,     setFilter]     = useState('all')
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -581,6 +621,25 @@ export default function AdminPanel({ onClose }) {
     await supabase.from('casinos').update({ is_active: val }).eq('id', id)
     setCasinos(cs => cs.map(c => c.id === id ? { ...c, is_active: val } : c))
   }
+  const moveCasino = async (id, dir) => {
+    const list = [...casinos]
+    const i = list.findIndex(c => c.id === id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= list.length) return
+    ;[list[i], list[j]] = [list[j], list[i]]
+    const next = list.map((c, idx) => ({ ...c, sort_order: idx }))
+    setCasinos(next)
+    const old = new Map(casinos.map(c => [c.id, c.sort_order]))
+    await Promise.all(next.filter(c => old.get(c.id) !== c.sort_order)
+      .map(c => supabase.from('casinos').update({ sort_order: c.sort_order }).eq('id', c.id)))
+  }
+  const duplicateCasino = async (c) => {
+    const copy = { ...c, name: `${c.name} (copy)`, is_featured: false, is_active: false, sort_order: casinos.length }
+    delete copy.id; delete copy.created_at; delete copy.updated_at
+    const { error } = await supabase.from('casinos').insert(copy)
+    if (error) { alert(error.message); return }
+    loadAll()
+  }
   const deleteMethod = async (id) => {
     if (!confirm('Delete this method?')) return
     await supabase.from('deposit_methods').delete().eq('id', id); loadAll()
@@ -591,7 +650,16 @@ export default function AdminPanel({ onClose }) {
   }
 
   const q = search.toLowerCase()
-  const filteredCasinos = casinos.filter(c => !q || c.name?.toLowerCase().includes(q))
+  const FILTERS = [
+    ['all', 'All', () => true],
+    ['active', 'Active', c => c.is_active],
+    ['inactive', 'Inactive', c => !c.is_active],
+    ['featured', 'Featured', c => c.is_featured],
+    ['hot', 'Hot / New', c => c.is_hot || c.is_new],
+  ]
+  const fn = FILTERS.find(f => f[0] === filter)[2]
+  const filteredCasinos = casinos.filter(c => (!q || c.name?.toLowerCase().includes(q)) && fn(c))
+  const canReorder = !q && filter === 'all'
   const filteredMethods = methods.filter(m => !q || m.name?.toLowerCase().includes(q) || m.slug?.toLowerCase().includes(q))
 
   return (
@@ -602,7 +670,7 @@ export default function AdminPanel({ onClose }) {
           {/* Sidebar */}
           <aside className={styles.sidebar}>
             <div className={styles.sidebarBrand}>
-              <div className={styles.brandIcon}>⚙</div>
+              <div className={styles.brandIcon}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></div>
               <span>Admin</span>
             </div>
 
@@ -652,13 +720,23 @@ export default function AdminPanel({ onClose }) {
               </div>
             </div>
 
+            {section === 'casinos' && !loading && (
+              <div className={styles.filterBar}>
+                {FILTERS.map(([id, label, f]) => (
+                  <button key={id} type="button" className={`${styles.fChip} ${filter === id ? styles.fChipOn : ''}`} onClick={() => setFilter(id)}>
+                    {label}<b>{casinos.filter(f).length}</b>
+                  </button>
+                ))}
+                {!canReorder && <span className={styles.fHint}>Clear search and filter to reorder</span>}
+              </div>
+            )}
             <div className={styles.mainBody}>
               {loading ? (
                 <div className={styles.loadingState}><div className={styles.spinner} /><span>Loading...</span></div>
               ) : section === 'casinos' ? (
                 filteredCasinos.length === 0
                   ? <div className={styles.emptyState}>{search ? 'No casinos match your search.' : 'No casinos yet.'}</div>
-                  : <div className={styles.list}>{filteredCasinos.map(c => <CasinoRow key={c.id} casino={c} onEdit={setEditCasino} onDelete={deleteCasino} onToggle={toggleCasino} />)}</div>
+                  : <div className={styles.list}>{filteredCasinos.map((c, i) => <CasinoRow key={c.id} casino={c} index={i} last={i === filteredCasinos.length - 1} canReorder={canReorder} onEdit={setEditCasino} onDelete={deleteCasino} onToggle={toggleCasino} onMove={canReorder ? moveCasino : () => {}} onDuplicate={duplicateCasino} />)}</div>
               ) : (
                 filteredMethods.length === 0
                   ? <div className={styles.emptyState}>{search ? 'No methods match.' : 'No methods yet.'}</div>

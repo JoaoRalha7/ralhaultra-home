@@ -432,3 +432,49 @@
   .formRow2 { grid-template-columns: 1fr; }
   .methodsGrid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 }
+/* ── Casinos list v2 ── */
+.filterBar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:12px 20px 0; }
+.fChip { display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 12px; border-radius:999px; border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.03); color:rgba(255,255,255,.55); font-size:12px; font-weight:600; font-family:var(--font); cursor:pointer; transition:.15s; }
+.fChip b { font-size:11px; padding:1px 7px; border-radius:999px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.7); }
+.fChip:hover { color:#fff; border-color:rgba(255,255,255,.2); }
+.fChipOn { color:#fff; background:rgba(59,130,246,.16); border-color:rgba(59,130,246,.5); }
+.fChipOn b { background:#3b82f6; color:#fff; }
+.fHint { font-size:11px; color:rgba(255,255,255,.3); margin-left:auto; }
+
+.cRow { display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:14px; background:linear-gradient(90deg,rgba(255,255,255,.045),rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.07); transition:border-color .15s, background .15s; }
+.cRow:hover { border-color:rgba(59,130,246,.4); background:linear-gradient(90deg,rgba(59,130,246,.08),rgba(255,255,255,.03)); }
+.cOrder { display:flex; flex-direction:column; align-items:center; gap:0; width:26px; flex-shrink:0; font-size:11px; font-weight:800; color:rgba(255,255,255,.4); }
+.ordBtn { width:24px; height:18px; display:grid; place-items:center; border:0; background:none; color:rgba(255,255,255,.4); cursor:pointer; border-radius:5px; padding:0; }
+.ordBtn:hover:not(:disabled) { background:rgba(255,255,255,.1); color:#fff; }
+.ordBtn:disabled { opacity:.2; cursor:default; }
+.cLogo { width:72px; height:48px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:7px; overflow:hidden; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); font-size:18px; font-weight:800; color:rgba(255,255,255,.4); }
+.cLogo img { width:100%; height:100%; object-fit:contain; }
+.cTop { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:5px; }
+.cTop .itemName { margin:0; }
+.cSub { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:rgba(255,255,255,.45); }
+.cSub>span+span:before { content:""; display:inline-block; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.25); margin-right:8px; vertical-align:middle; }
+.cBonus { color:rgba(255,255,255,.75); font-weight:600; }
+.cCode { font-family:ui-monospace,monospace; font-weight:700; color:#93c5fd; }
+.tag { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; border:1px solid transparent; }
+.tag_gold { color:#facc15; background:rgba(250,204,21,.1); border-color:rgba(250,204,21,.3); }
+.tag_red { color:#f87171; background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); }
+.tag_green { color:#4ade80; background:rgba(34,197,94,.1); border-color:rgba(34,197,94,.3); }
+.tag_blue { color:#93c5fd; background:rgba(59,130,246,.1); border-color:rgba(59,130,246,.3); }
+
+/* ── Editor with live preview ── */
+.modal:has(.modalSplit) { width:min(1280px,96vw); }
+.modalSplit { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr); overflow:hidden; }
+.modalSplit .modalBody { min-height:0; }
+.pvPane { display:none; }
+@media (min-width:1050px) {
+  .modalSplit { grid-template-columns:minmax(0,1fr) 400px; }
+  .pvPane { display:flex; flex-direction:column; gap:14px; padding:20px; overflow-y:auto; border-left:1px solid rgba(255,255,255,.07); background:radial-gradient(120% 60% at 50% 0%,rgba(59,130,246,.08),transparent 70%),#06080d; }
+}
+.pvHead { display:flex; align-items:center; justify-content:space-between; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.45); }
+.pvSw { display:flex; gap:6px; }
+.pvDot { width:18px; height:18px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; }
+.pvDot[data-i="0"] { background:#2ee6a6; } .pvDot[data-i="1"] { background:#f5c542; } .pvDot[data-i="2"] { background:#38bdf8; }
+.pvDotOn { border-color:#fff; }
+.pvCard { padding-top:14px; }
+.pvCard :global(.oc2) { max-width:380px; margin:0 auto; }
+.pvNote { margin:0; font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.35); }
