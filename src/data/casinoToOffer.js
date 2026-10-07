@@ -21,7 +21,7 @@ const txt = (x) => {
 function bonusParts(c, f) {
   const b = Array.isArray(c.welcome_bonus) ? c.welcome_bonus[0] || {} : {};
   const pct = txt(b.pct);
-  const upTo = txt(b.up_to);
+  const upTo = txt(b.up_to).replace(/^up\s*to\s*/i, '');
   const fs = txt(b.fs);
   if (pct) return { big: pct, rest: 'Welcome bonus', sub: [upTo && `Up to ${upTo}`, fs && `+ ${fs}`].filter(Boolean).join(' ') };
   if (fs) {

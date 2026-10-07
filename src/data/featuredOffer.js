@@ -16,7 +16,7 @@ export function autoFeatured(c = {}) {
   const f = Array.isArray(c.features) ? c.features : [];
   const ci = c.casino_info || {};
   const pct = txt(b.pct);
-  const upTo = txt(b.up_to);
+  const upTo = txt(b.up_to).replace(/^up\s*to\s*/i, '');
   const fs = txt(b.fs);
 
   let amount = '';
