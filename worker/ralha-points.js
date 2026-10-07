@@ -166,6 +166,83 @@ function crashResolve(st, now) {
   return { status: 'active', mult: crashMultAt(elapsed) }
 }
 
+// ── Live crash: one shared round at a time, a new one every ~15s ─────────────────────
+// Rounds live in crash_rounds (crash_at stays secret until the round is over), bets in crash_bets.
+// Nothing runs on a timer: whoever calls the API after a round ended creates the next one, and
+// auto cash-outs are settled lazily with a compare-and-swap, so a payout can only happen once.
+const CL = { betMs: 15000, keep: 16, feed: 25, lockMs: 300 }
+const clEnd = (r) => Number(r.start_ms) + Math.ceil(crashAtMs(Number(r.crash_at)))
+const clSb = (env, sbH, path, init = {}) => fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { ...sbH, ...(init.headers || {}) } })
+async function clPay(env, username, amount) { // add points in StreamElements (one retry)
+  for (let i = 0; i < 2; i++) {
+    const r = await fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${username}/${amount}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } })
+    if (r.ok) { const d = await r.json(); return { ok: true, points: d.newAmount ?? d.points ?? null } }
+  }
+  return { ok: false }
+}
+async function clRounds(env, sbH) {
+  const r = await clSb(env, sbH, `crash_rounds?select=seq,start_ms,crash_at&order=seq.desc&limit=${CL.keep}`)
+  const rows = r.ok ? await r.json() : []
+  return Array.isArray(rows) ? rows : []
+}
+async function clBets(env, sbH, seq) {
+  const r = await clSb(env, sbH, `crash_bets?seq=eq.${seq}&order=created_at.asc&limit=300`)
+  const rows = r.ok ? await r.json() : []
+  return Array.isArray(rows) ? rows : []
+}
+// pay every auto cash-out whose target the round has already passed (claimed once, by compare-and-swap)
+async function clSettle(env, sbH, round, now, bets) {
+  bets = bets || await clBets(env, sbH, round.seq)
+  const crashAt = Number(round.crash_at), elapsed = now - Number(round.start_ms)
+  await Promise.all(bets.map(async (b) => {
+    if (b.cashed_at != null || b.auto == null) return
+    const a = Number(b.auto)
+    if (!(a <= crashAt && elapsed >= crashAtMs(a))) return
+    const payout = Math.min(Math.floor(b.bet * a), CASINO.maxPayout)
+    const c = await clSb(env, sbH, `crash_bets?id=eq.${b.id}&cashed_at=is.null`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ cashed_at: a, payout }) })
+    const row = c.ok ? (await c.json())?.[0] : null
+    if (!row) { const cur = (await (await clSb(env, sbH, `crash_bets?id=eq.${b.id}`)).json())?.[0]; if (cur) Object.assign(b, cur); return }
+    Object.assign(b, row)
+    const p = await clPay(env, b.username, payout)
+    if (p.ok) { await clSb(env, sbH, `crash_bets?id=eq.${b.id}`, { method: 'PATCH', body: JSON.stringify({ paid: true }) }); b.paid = true }
+  }))
+  return bets
+}
+// returns the newest rounds (index 0 is the live one), creating the next round once the last one ended
+async function clEnsure(env, sbH, now) {
+  let rounds = await clRounds(env, sbH)
+  const cur = rounds[0]
+  if (cur && now < clEnd(cur)) return rounds
+  if (cur) await clSettle(env, sbH, cur, now)
+  const next = { seq: cur ? Number(cur.seq) + 1 : 1, start_ms: Math.max(cur ? clEnd(cur) : 0, now) + CL.betMs, crash_at: newCrashPoint() }
+  const ins = await clSb(env, sbH, 'crash_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(next) })
+  if (ins.ok) rounds = [next, ...rounds].slice(0, CL.keep)
+  else rounds = await clRounds(env, sbH) // someone else created it first
+  return rounds
+}
+let CL_CACHE = null // public state, reused for a moment so many viewers cost one set of queries
+async function clState(env, sbH, now) {
+  if (CL_CACHE && now - CL_CACHE.at < 600 && now < CL_CACHE.until) return CL_CACHE.data
+  const rounds = await clEnsure(env, sbH, now)
+  const cur = rounds[0]
+  if (!cur) return { error: 'no round' }
+  const bets = await clSettle(env, sbH, cur, now)
+  const fr = await clSb(env, sbH, `crash_bets?seq=lt.${cur.seq}&order=created_at.desc&limit=${CL.feed}&select=username,bet,cashed_at,payout,created_at,seq`)
+  const feed = fr.ok ? await fr.json() : []
+  const status = now < Number(cur.start_ms) ? 'betting' : now < clEnd(cur) ? 'flying' : 'crashed'
+  const last = rounds[1] || null
+  const data = {
+    ok: true, serverNow: now, rate: CASINO.crashRate, betMs: CL.betMs,
+    round: { seq: Number(cur.seq), startAt: Number(cur.start_ms), status, crashAt: status === 'crashed' ? Number(cur.crash_at) : null },
+    last: last ? { seq: Number(last.seq), crashAt: Number(last.crash_at) } : null,
+    history: rounds.slice(1).map((r) => Number(r.crash_at)),
+    bets: bets.map((b) => ({ u: b.username, bet: b.bet, cashedAt: b.cashed_at == null ? null : Number(b.cashed_at), payout: b.payout })),
+    feed: (Array.isArray(feed) ? feed : []).map((b) => ({ u: b.username, bet: b.bet, cashedAt: b.cashed_at == null ? null : Number(b.cashed_at), payout: b.payout, at: b.created_at, seq: b.seq })),
+  }
+  CL_CACHE = { at: now, until: status === 'betting' ? Number(cur.start_ms) : status === 'flying' ? clEnd(cur) : now, data }
+  return data
+}
+
 function publicGame(game, row, now) {
   let st = row.state
   if (game === 'blackjack' && !st.hands) st = { ...st, hands: [{ cards: st.player || [], bet: row.bet }], active: 0 } // round started before splits existed
@@ -354,6 +431,79 @@ export default {
         if (!res.ok) return json({ error: `SE API erro ${res.status}`, detail: await res.text() }, res.status)
         const data = await res.json()
         return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
+      }
+
+      // ── POST /crash/state | /crash/bet | /crash/cashout | /crash/mine (live shared rounds) ──
+      if (pathname.startsWith('/crash/') && request.method === 'POST') {
+        const now = Date.now()
+        if (pathname === '/crash/state') return json(await clState(env, sbHeaders, now))
+
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+        const body = await request.json().catch(() => ({}))
+        const seUrl = `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${who.username}`
+        const seH = { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' }
+
+        if (pathname === '/crash/bet') {
+          const bet = parseInt(body.bet, 10)
+          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > CASINO.maxBet) return json({ error: 'invalid bet', min: CASINO.minBet, max: CASINO.maxBet }, 400)
+          let auto = null
+          if (body.auto != null && body.auto !== '') {
+            auto = Math.round(Number(body.auto) * 100) / 100
+            if (!(auto >= 1.01 && auto <= CASINO.crashCap)) return json({ error: 'invalid auto' }, 400)
+          }
+          const cur = (await clEnsure(env, sbHeaders, now))[0]
+          if (!cur || now >= Number(cur.start_ms) - CL.lockMs) return json({ error: 'round closed' }, 409)
+          const balRes = await fetch(seUrl, { headers: seH })
+          if (!balRes.ok) return json({ error: 'balance check failed' }, 502)
+          const { points: current = 0 } = await balRes.json()
+          if (current < bet) return json({ error: 'insufficient', currentPoints: current }, 400)
+          // claim the seat first (one bet per player and round), then charge
+          const ins = await clSb(env, sbHeaders, 'crash_bets', { method: 'POST', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ seq: cur.seq, user_id: who.id, username: who.username, bet, auto }) })
+          const row = ins.ok ? (await ins.json())?.[0] : null
+          if (!row) return json({ error: 'already bet' }, 409)
+          const charge = await fetch(`${seUrl}/${-bet}`, { method: 'PUT', headers: seH })
+          if (!charge.ok) { await clSb(env, sbHeaders, `crash_bets?id=eq.${row.id}`, { method: 'DELETE' }); return json({ error: 'charge failed' }, 502) }
+          const cd = await charge.json()
+          CL_CACHE = null
+          return json({ ok: true, seq: Number(cur.seq), bet, auto, newPoints: cd.newAmount ?? cd.points ?? null })
+        }
+
+        if (pathname === '/crash/cashout') {
+          const cur = (await clEnsure(env, sbHeaders, now))[0]
+          if (!cur || Number(body.seq) !== Number(cur.seq) || now >= clEnd(cur)) return json({ error: 'round over' }, 409)
+          if (now < Number(cur.start_ms)) return json({ error: 'too early' }, 400)
+          const bets = await clSettle(env, sbHeaders, cur, now)
+          const mine = bets.find((b) => b.user_id === who.id)
+          if (!mine) return json({ error: 'no bet' }, 404)
+          if (mine.cashed_at != null) return json({ ok: true, already: true, cashedAt: Number(mine.cashed_at), payout: mine.payout })
+          const m = crashMultAt(now - Number(cur.start_ms))
+          if (!(m >= 1)) return json({ error: 'too early' }, 400)
+          const payout = Math.min(Math.floor(mine.bet * m), CASINO.maxPayout)
+          const c = await clSb(env, sbHeaders, `crash_bets?id=eq.${mine.id}&cashed_at=is.null`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ cashed_at: m, payout }) })
+          const row = c.ok ? (await c.json())?.[0] : null
+          if (!row) return json({ error: 'conflict' }, 409)
+          CL_CACHE = null
+          const p = await clPay(env, who.username, payout)
+          if (p.ok) await clSb(env, sbHeaders, `crash_bets?id=eq.${mine.id}`, { method: 'PATCH', body: JSON.stringify({ paid: true }) })
+          return json({ ok: true, cashedAt: m, payout, newPoints: p.points ?? null })
+        }
+
+        if (pathname === '/crash/mine') {
+          // retry any win that was marked but never paid (e.g. StreamElements was down), then list my recent bets
+          const old = new Date(now - 20000).toISOString()
+          const un = await clSb(env, sbHeaders, `crash_bets?user_id=eq.${who.id}&cashed_at=not.is.null&paid=eq.false&created_at=lt.${old}&limit=5`)
+          for (const b of (un.ok ? await un.json() : [])) {
+            const cl = await clSb(env, sbHeaders, `crash_bets?id=eq.${b.id}&paid=eq.false`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ paid: true }) })
+            if (!(cl.ok && (await cl.json())?.[0])) continue
+            const p = await clPay(env, who.username, b.payout)
+            if (!p.ok) await clSb(env, sbHeaders, `crash_bets?id=eq.${b.id}`, { method: 'PATCH', body: JSON.stringify({ paid: false }) })
+          }
+          const r = await clSb(env, sbHeaders, `crash_bets?user_id=eq.${who.id}&order=created_at.desc&limit=20&select=seq,bet,cashed_at,payout,created_at`)
+          const rows = r.ok ? await r.json() : []
+          return json({ ok: true, bets: (Array.isArray(rows) ? rows : []).map((b) => ({ seq: b.seq, bet: b.bet, cashedAt: b.cashed_at == null ? null : Number(b.cashed_at), payout: b.payout, at: b.created_at })) })
+        }
+        return json({ error: 'not found' }, 404)
       }
 
       // ── POST /casino/start | /casino/action | /casino/state ───────────────────

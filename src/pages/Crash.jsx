@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, HistoryStrip, Page, Result, fmt, playSfx, useCasino, useFlag, MIN_BET } from './CasinoShared'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { BetPanel, Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET } from './CasinoShared'
+import { workerPost } from '../lib/points'
 import styles from './Casino.module.css'
 
 const multAt = (rate, ms) => Math.floor(Math.exp(rate * Math.max(0, ms)) * 100) / 100
+const WORKER = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 const tone = (m) => (m >= 10 ? 'gold' : m >= 5 ? 'violet' : m >= 2 ? 'cyan' : 'white')
 
 function Graph({ rate, ms, mult, crashed }) {
@@ -50,81 +52,253 @@ function Graph({ rate, ms, mult, crashed }) {
   )
 }
 
+const ERRS = {
+  'round closed': 'Betting is closed, wait for the next round.',
+  'already bet': 'You already have a bet in this round.',
+  'round over': 'Too late, the round already crashed.',
+  insufficient: 'Not enough points.',
+  'too early': 'The round has not started yet.',
+}
+const hue = (name) => { let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360; return h }
+const ago = (iso, now) => {
+  const s = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000))
+  return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`
+}
+const sign = (n) => `${n >= 0 ? '+' : '-'}${fmt(Math.abs(n))}`
+const Av = ({ name }) => <i className={styles.lvAv} style={{ background: `hsl(${hue(name)} 55% 42%)` }}>{name.slice(0, 1).toUpperCase()}</i>
+
 export default function Crash() {
   const g = useCasino('crash')
   const [bet, setBet] = useState(100)
   const [auto, setAuto] = useState('')
+  const [autoOn, setAutoOn] = useState(false)
+  const [data, setData] = useState(null) // last public state from the server
+  const [offset, setOffset] = useState(0) // server clock minus local clock
   const [now, setNow] = useState(Date.now())
-  const r = g.round
-  const active = r?.status === 'active'
-  const done = r?.status === 'done'
-  const raf = useRef(0)
+  const [placed, setPlaced] = useState(null) // my bet right after placing it: { seq, bet, auto }
+  const [cashed, setCashed] = useState(null) // { seq, at, payout } after my own cash out
+  const [over, setOver] = useState(null) // crash screen: { seq, crashAt, until, lost }
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [tab, setTab] = useState('global')
+  const [personal, setPersonal] = useState([])
   const shaking = useFlag(g.shake)
+  const raf = useRef(0)
+  const R = useRef({})
+  const me = (g.twitchUser || '').toLowerCase()
 
+  const serverNow = now + offset
+  const round = data?.round
+  const t = round ? serverNow - round.startAt : 0
+  const phase = !round ? 'load' : over && over.until > now ? 'over' : t < 0 ? 'betting' : 'flying'
+  const rate = data?.rate || 0.00008
+  const live = phase === 'flying' ? multAt(rate, t) : null
+  const mineSrv = data?.bets.find((b) => b.u === me)
+  const mine = mineSrv || (placed && round && placed.seq === round.seq ? { u: me, bet: placed.bet, cashedAt: null, payout: 0 } : null)
+  const myCash = mine?.cashedAt ?? (cashed && round && cashed.seq === round.seq ? cashed.at : null)
+  const active = !!mine && myCash == null
+  R.current = { data, over, mine, active, me }
+
+  // one clock: smooth while flying, coarse otherwise
   useEffect(() => {
-    if (!active) return
-    const tick = () => { setNow(Date.now()); raf.current = requestAnimationFrame(tick) }
-    raf.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf.current)
-  }, [active])
+    if (phase === 'flying') {
+      const tick = () => { setNow(Date.now()); raf.current = requestAnimationFrame(tick) }
+      raf.current = requestAnimationFrame(tick)
+      return () => cancelAnimationFrame(raf.current)
+    }
+    const id = setInterval(() => setNow(Date.now()), 250)
+    return () => clearInterval(id)
+  }, [phase === 'flying']) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ask the server whether the round crashed (it alone knows the crash point)
+  const loadMine = useCallback(async () => {
+    const { ok, data: d } = await workerPost('/crash/mine')
+    if (ok && d.bets) setPersonal(d.bets)
+  }, [])
+
+  const pull = useCallback(async () => {
+    const sent = Date.now()
+    try {
+      const res = await fetch(`${WORKER}/crash/state`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      const d = await res.json()
+      if (!d.ok) return
+      const recv = Date.now()
+      setOffset(d.serverNow - (sent + recv) / 2)
+      const prev = R.current.data?.round
+      if (prev && d.round.seq > prev.seq) {
+        // the round we were watching ended: show how it crashed for a moment
+        const crashAt = d.last && d.last.seq === prev.seq ? d.last.crashAt : null
+        const was = R.current.active
+        if (crashAt && d.round.seq === prev.seq + 1) {
+          setOver({ seq: prev.seq, crashAt, until: Date.now() + 3200, lost: was })
+          if (was) { g.cheer(-1); setCashed(null) }
+        }
+        setPlaced(null)
+        if (R.current.me) loadMine()
+      }
+      setData(d)
+    } catch { /* keep the last state, try again */ }
+  }, [g.cheer, loadMine]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { if (g.user) loadMine() }, [g.user, loadMine])
   useEffect(() => {
-    if (!active) return
-    const t = setInterval(() => g.poll(), 450)
-    return () => clearInterval(t)
-  }, [active, g.poll])
+    let off = false, timer
+    const loop = async () => {
+      if (off) return
+      if (document.visibilityState === 'visible') await pull()
+      if (off) return
+      const d = R.current.data
+      const flying = d && Date.now() >= d.round.startAt - 0
+      timer = setTimeout(loop, flying || R.current.over ? 800 : 2000)
+    }
+    loop()
+    const vis = () => { if (document.visibilityState === 'visible') pull() }
+    document.addEventListener('visibilitychange', vis)
+    return () => { off = true; clearTimeout(timer); document.removeEventListener('visibilitychange', vis) }
+  }, [pull])
 
-  const serverNow = now + g.offset
-  const ms = r ? serverNow - r.startedAt : 0
-  const live = active ? multAt(r.rate, ms) : null
-  const crashed = done && !r.cashedAt
-  const shown = done ? (r.cashedAt || r.crashAt) : (live ?? 1)
-  const starting = active && ms < 0
-  const potential = active && live ? Math.floor(r.bet * live) : 0
-  const rate = r?.rate || 0.00008
+  // when the countdown reaches zero, ask for the state right away so the flight starts in sync
+  useEffect(() => {
+    if (phase !== 'betting' || !round) return
+    const ms = round.startAt - (Date.now() + offset)
+    if (ms <= 0) return
+    const id = setTimeout(pull, ms + 60)
+    return () => clearTimeout(id)
+  }, [round?.seq, phase === 'betting', offset]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const place = async () => {
+    if (busy || !round) return
+    setBusy(true); setErr('')
+    const a = autoOn && auto !== '' ? Number(auto) : null
+    const { ok, data: d } = await workerPost('/crash/bet', { bet: Number(bet), auto: a })
+    setBusy(false)
+    if (!ok) { setErr(ERRS[d.error] || 'Something went wrong. Try again.'); return }
+    playSfx('click')
+    setPlaced({ seq: d.seq, bet: d.bet, auto: d.auto })
+    if (d.newPoints != null) g.setPoints(d.newPoints)
+    pull()
+  }
+  const cash = async () => {
+    if (busy || !round || !active) return
+    setBusy(true); setErr('')
+    const { ok, data: d } = await workerPost('/crash/cashout', { seq: round.seq })
+    setBusy(false)
+    if (!ok) { setErr(ERRS[d.error] || 'Something went wrong. Try again.'); pull(); return }
+    setCashed({ seq: round.seq, at: d.cashedAt, payout: d.payout })
+    if (d.newPoints != null) g.setPoints(d.newPoints)
+    g.cheer(d.payout - (mine?.bet || 0))
+    pull(); loadMine()
+  }
+
+  const crashedView = phase === 'over'
+  const shown = crashedView ? over.crashAt : (live ?? 1)
+  const potential = active && live ? Math.floor(mine.bet * live) : 0
+  const left = round ? Math.max(0, Math.ceil((round.startAt - serverNow) / 1000)) : 0
+  const bettingOpen = !!round && t < 0
+  const closing = bettingOpen && round.startAt - serverNow < 400
+  const myCashOver = cashed && over && cashed.seq === over.seq ? cashed.at : null
+  const players = data?.bets || []
+  const chips = (data?.history || []).slice(0, 12).map((v) => ({ tone: v >= 2 ? 'win' : 'lose', label: `${v.toFixed(2)}x`, title: `Crashed at ${v.toFixed(2)}x` }))
+
+  let cta
+  if (!g.user) cta = <button type="button" className={styles.cta} disabled>Log in to play</button>
+  else if (phase === 'flying' && active) cta = <button type="button" className={`${styles.cta} ${styles.pulse}`} disabled={busy} onClick={cash}>{`Cash out ${fmt(potential)}`}</button>
+  else if (phase === 'flying' && myCash != null) cta = <button type="button" className={styles.cta} disabled>{`Cashed out ${myCash.toFixed(2)}x`}</button>
+  else if (phase === 'flying') cta = <button type="button" className={styles.cta} disabled>Round in progress</button>
+  else if (bettingOpen && mine) cta = <button type="button" className={styles.cta} disabled>{`Bet placed, starts in ${left}s`}</button>
+  else if (bettingOpen) cta = <button type="button" className={styles.cta} disabled={busy || closing || Number(bet) < MIN_BET} onClick={place}>Place bet</button>
+  else cta = <button type="button" className={styles.cta} disabled>Next round soon</button>
+
+  const rowsG = data?.feed || []
+  const personalRows = personal.map((b) => {
+    const live_ = round && b.seq >= round.seq && b.cashedAt == null
+    return { seq: b.seq, bet: b.bet, at: b.at, res: b.cashedAt != null ? b.payout - b.bet : live_ ? null : -b.bet, x: b.cashedAt }
+  })
 
   return (
-    <Page game="crash" title="Crash" sub="The multiplier keeps climbing until it crashes. Cash out before it does.">
+    <Page game="crash" title="Crash" sub="A new round every few seconds, shared with everyone. Bet before launch and cash out before it crashes.">
       <div className={styles.layout}>
-        <BetPanel points={g.points} bet={bet} setBet={setBet} locked={active} loggedIn={!!g.user}>
-          <label className={styles.lbl} htmlFor="auto">Auto cash out (optional)</label>
-          <div className={styles.betRow}>
-            <input id="auto" type="number" step="0.1" min="1.01" placeholder="e.g. 2.00" value={auto} disabled={active} onChange={(e) => setAuto(e.target.value)} />
-            <span>x</span>
-          </div>
-          <div className={styles.quick}>
-            {[1.5, 2, 5, 10].map((v) => <button key={v} type="button" disabled={active} className={Number(auto) === v ? styles.on : ''} onClick={() => setAuto(String(v))}>{v}x</button>)}
-          </div>
-          {active ? (
-            <button type="button" className={`${styles.cta} ${!starting ? styles.pulse : ''}`} disabled={g.busy || starting} onClick={() => { playSfx('cash'); g.act('cashout') }}>
-              {starting ? 'Starting...' : `Cash out ${fmt(potential)}`}
-            </button>
-          ) : (
-            <button type="button" className={styles.cta} disabled={g.busy || !g.user || Number(bet) < MIN_BET}
-              onClick={() => { playSfx('click'); g.start({ bet: Number(bet), auto: auto === '' ? null : Number(auto) }) }}>
-              {g.user ? 'Place bet' : 'Log in to play'}
-            </button>
+        <BetPanel points={g.points} bet={bet} setBet={setBet} locked={!!mine || !bettingOpen} loggedIn={!!g.user}>
+          <button type="button" className={`${styles.turbo} ${autoOn ? styles.on : ''}`} aria-pressed={autoOn} disabled={!!mine} onClick={() => setAutoOn((v) => !v)}>
+            <span>Auto cash out<small>Cash out when the multiplier reaches your target</small></span><i />
+          </button>
+          {autoOn && (
+            <>
+              <div className={styles.betRow}>
+                <input id="auto" aria-label="Auto cash out target" type="number" step="0.1" min="1.01" placeholder="e.g. 2.00" value={auto} disabled={!!mine} onChange={(e) => setAuto(e.target.value)} />
+                <span>x</span>
+              </div>
+              <div className={styles.quick}>
+                {[1.5, 2, 5, 10].map((v) => <button key={v} type="button" disabled={!!mine} className={Number(auto) === v ? styles.on : ''} onClick={() => setAuto(String(v))}>{v}x</button>)}
+              </div>
+            </>
           )}
-          {g.err && <p className={styles.err}>{g.err}</p>}
-          <p className={styles.note}>The round starts as soon as you bet. Set an auto cash out to lock in a target.</p>
+          {cta}
+          {(err || g.err) && <p className={styles.err}>{err || g.err}</p>}
+          <div className={styles.lvHead}><span>This round</span><b>{players.length} {players.length === 1 ? 'player' : 'players'}</b></div>
+          <div className={styles.lvPlayers}>
+            {!players.length && <p className={styles.lvEmpty}>No bets yet this round</p>}
+            {players.map((b) => (
+              <div key={b.u} className={`${styles.lvRow} ${b.u === me ? styles.lvMe : ''}`}>
+                <span className={styles.lvName}><Av name={b.u} />{b.u}</span>
+                <span className={styles.lvBet}>{fmt(b.bet)}</span>
+                <span className={b.cashedAt != null ? styles.pos : styles.lvDim}>{b.cashedAt != null ? `${b.cashedAt.toFixed(2)}x` : phase === 'flying' ? 'playing' : '-'}</span>
+              </div>
+            ))}
+          </div>
+          <p className={styles.note}>One bet per round. Bets close at launch. Set an auto cash out to lock in a target while you are away.</p>
         </BetPanel>
 
         <section className={`${styles.stage} ${styles.space} ${shaking ? styles.shake : ''}`}>
-          <HistoryStrip items={g.history} />
-          <div className={`${styles.crashBox} ${crashed ? styles.crashed : ''}`}>
+          <HistoryStrip items={chips} />
+          <div className={`${styles.crashBox} ${crashedView ? styles.crashed : ''}`}>
             <div className={styles.stars} aria-hidden="true" />
-            <Graph rate={rate} ms={Math.max(0, done ? Math.log(shown) / rate : ms)} mult={shown} crashed={crashed} />
-            <div className={`${styles.big} ${styles['c_' + tone(shown)]}`}>
-              {starting ? <span className={styles.wait}>Get ready</span> : <span>{shown.toFixed(2)}<small>x</small></span>}
-              {crashed && <em>Crashed</em>}
-              {active && r.auto && !starting && <i>Auto at {r.auto.toFixed(2)}x</i>}
-            </div>
+            <Graph rate={rate} ms={Math.max(0, crashedView ? Math.log(Math.max(1, shown)) / rate : phase === 'flying' ? t : 0)} mult={shown} crashed={crashedView} />
+            {phase === 'betting' || phase === 'load' ? (
+              <div className={styles.lvCountBox}>
+                <small>Next round</small>
+                <b>{phase === 'load' ? '...' : `${left}s`}</b>
+                <span>Place your bet before launch</span>
+              </div>
+            ) : (
+              <div className={`${styles.big} ${styles['c_' + tone(shown)]}`}>
+                <span>{shown.toFixed(2)}<small>x</small></span>
+                {crashedView && <em>Crashed</em>}
+                {phase === 'flying' && active && mine && <i className={styles.lvNote}>Your bet {fmt(mine.bet)}</i>}
+                {crashedView && myCashOver != null && <i className={styles.lvNote}>You cashed out at {myCashOver.toFixed(2)}x</i>}
+              </div>
+            )}
           </div>
-          {done && <Result won={r.payout > 0} payout={r.payout} bet={r.bet}
-            label={crashed ? `Crashed at ${r.crashAt.toFixed(2)}x` : `Cashed out ${r.cashedAt.toFixed(2)}x`} onAgain={() => g.setRound(null)} />}
+
           <Confetti fire={g.fire} colors={['#60a5fa', '#a78bfa', '#f5c542', '#fff', '#22d3ee']} />
         </section>
+          <div className={`${styles.lvCard} ${styles.lvDock}`}>
+            <div className={styles.lvTabs} role="tablist">
+              <button type="button" role="tab" aria-selected={tab === 'global'} className={tab === 'global' ? styles.on : ''} onClick={() => setTab('global')}>Global</button>
+              <button type="button" role="tab" aria-selected={tab === 'personal'} className={tab === 'personal' ? styles.on : ''} onClick={() => { setTab('personal'); if (g.user) loadMine() }}>Personal</button>
+            </div>
+            <div className={`${styles.lvRow} ${styles.lvTh}`}><span>Player</span><span>Bet</span><span>Result</span></div>
+            <div className={styles.lvList}>
+              {tab === 'global' ? (
+                rowsG.length ? rowsG.map((b, i) => {
+                  const res = b.cashedAt != null ? b.payout - b.bet : -b.bet
+                  return (
+                    <div key={`${b.seq}-${b.u}-${i}`} className={styles.lvRow}>
+                      <span className={styles.lvName}><Av name={b.u} /><em>{b.u}<small>{ago(b.at, now)}</small></em></span>
+                      <span className={styles.lvBet}>{fmt(b.bet)}</span>
+                      <span className={res >= 0 ? styles.pos : styles.neg}>{sign(res)}</span>
+                    </div>
+                  )
+                }) : <p className={styles.lvEmpty}>Finished bets appear here</p>
+              ) : !g.user ? <p className={styles.lvEmpty}>Log in to see your bets</p>
+                : personalRows.length ? personalRows.map((b, i) => (
+                  <div key={`${b.seq}-${i}`} className={styles.lvRow}>
+                    <span className={styles.lvName}><em>Round {b.seq}<small>{ago(b.at, now)}</small></em></span>
+                    <span className={styles.lvBet}>{fmt(b.bet)}</span>
+                    <span className={b.res == null ? styles.lvDim : b.res >= 0 ? styles.pos : styles.neg}>{b.res == null ? 'playing' : `${sign(b.res)}${b.x ? ` (${b.x.toFixed(2)}x)` : ''}`}</span>
+                  </div>
+                )) : <p className={styles.lvEmpty}>You have not played yet</p>}
+            </div>
+          </div>
       </div>
     </Page>
   )
