@@ -15,8 +15,9 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
   const [copied, setCopied] = useState(false);
   const hasCode = o.code && o.code !== '-';
   const m = String(o.headline || '').match(/^(\d+\s?%?|€\s?\d[\d.,]*)\s+(.*)$/);
-  const big = m ? m[1] : o.headline;
-  const rest = m ? m[2] : '';
+  const big = o.big || (m ? m[1] : o.headline);
+  const rest = o.big ? o.rest : (m ? m[2] : '');
+  const isNum = Boolean(o.big) || Boolean(m);
   const tag = o.badge ? o.badge : rank === 1 ? 'TOP PICK' : null;
   const copy = () => {
     try { navigator.clipboard.writeText(String(o.code)); } catch { /* clipboard unavailable */ }
@@ -40,8 +41,8 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
       </div>
       <span className="oPill"><Icon name={o.freespins !== false ? 'spark' : 'gift'} />{o.freespins !== false ? 'Free spins' : 'Welcome bonus'}</span>
       <div className="oHero">
-        {m && <span className="oGhost" aria-hidden="true">{big}</span>}
-      <div className={`oBig${m ? '' : ' txt'}`}>{big}</div>
+        {isNum && <span className="oGhost" aria-hidden="true">{big}</span>}
+      <div className={`oBig${isNum ? '' : ' txt'}`}>{big}</div>
       {rest && <div className="oRest">{rest}</div>}
       {o.sub && <div className="oSub">{o.sub}</div>}
       </div>
