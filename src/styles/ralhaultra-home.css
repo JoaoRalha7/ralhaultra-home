@@ -710,3 +710,22 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oClaim{margin-top:0 !important}
 .oc2:hover{background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 12%,#0d1119),#0a0d14 62%);box-shadow:0 14px 30px -22px #000;border-color:color-mix(in srgb,var(--ac) 52%,#1c2230);transform:translateY(-2px)}
 .oChip:hover{background:none}
+
+/* ===== Offers: hover on every part (very soft) ===== */
+.oc2 .oLogo img,.oc2 .oLogo span,.oc2 .oPill,.oc2 .oBig,.oc2 .oRest,.oc2 .oSub,.oc2 .oChip,.oc2 .oChip .i,.oc2 .oCode,.oc2 .oCode i,.oc2 .oMore,.oc2 .oTag{transition:transform .18s,background .18s,border-color .18s,color .18s,opacity .18s}
+.oc2:hover{background:radial-gradient(240px circle at var(--mx) var(--my),color-mix(in srgb,var(--ac) 6%,transparent),transparent 70%),linear-gradient(180deg,color-mix(in srgb,var(--ac) 12%,#0d1119),#0a0d14 62%)}
+.oc2 .oLogo:hover img,.oc2 .oLogo:hover span{transform:scale(1.05)}
+.oc2 .oPill:hover{background:color-mix(in srgb,var(--ac) 20%,transparent);border-color:var(--ac)}
+.oc2 .oBig:hover{transform:scale(1.03)}
+.oc2 .oRest:hover{color:var(--ac)}
+.oc2 .oSub:hover{background:color-mix(in srgb,var(--ac) 26%,transparent)}
+.oc2 .oChip:hover{background:color-mix(in srgb,var(--ac) 10%,transparent)}
+.oc2 .oChip:hover .i{transform:scale(1.2)}
+.oc2 .oCode:hover{border-style:solid;background:color-mix(in srgb,var(--ac) 8%,#0b0e14)}
+.oc2 .oMore:hover{background:color-mix(in srgb,var(--ac) 12%,transparent);border-color:var(--ac);color:#fff}
+.oc2 .oClaim{transition:filter .15s}
+.oc2 .oClaim:hover{filter:brightness(1.06)}
+.oc2 .oClaim .i{transition:transform .15s}
+.oc2 .oClaim:hover .i{transform:translateX(3px)}
+.oc2 .oTag:hover{background:color-mix(in srgb,var(--ac) 16%,#0a0d14)}
+@media (prefers-reduced-motion:reduce){.oc2 *{transition:none !important}}
