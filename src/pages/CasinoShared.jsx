@@ -156,7 +156,7 @@ export function UserAv({ name, src, size = 26, ring }) {
 }
 
 export function HistoryStrip({ items }) {
-  if (!items.length) return <div className={styles.hist}><span className={styles.histEmpty}>Your recent rounds appear here</span></div>
+  if (!items.length) return <div className={styles.hist} />
   return (
     <div className={styles.hist} aria-label="Recent rounds">
       {items.map((h, i) => <span key={i} className={`${styles.hChip} ${styles['h_' + h.tone]}`} title={h.title}>{h.label}</span>)}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Confetti, Page, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, HistoryStrip, Page, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import shared from './Casino.module.css'
 import styles from './Blackjack.module.css'
 
@@ -19,13 +19,13 @@ function Card({ c, hidden, delay = 0, reveal, tone }) {
         <div className={`${styles.face} ${styles.front} ${suit?.red ? styles.red : ''}`}>
           {!hidden && (
             <>
-              <b>{RANKS[c % 13]}</b>
-              <svg viewBox="0 0 24 24" className={styles.pipSm} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
+              <span className={`${styles.idx} ${styles.idxTl}`}><b>{RANKS[c % 13]}</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg></span>
+              <span className={`${styles.idx} ${styles.idxBr}`}><b>{RANKS[c % 13]}</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg></span>
               <svg viewBox="0 0 24 24" className={styles.pip} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
             </>
           )}
         </div>
-        <div className={`${styles.face} ${styles.back}`}><span>RU</span></div>
+        <div className={`${styles.face} ${styles.back}`}><i /></div>
       </div>
     </div>
   )
@@ -136,6 +136,7 @@ export default function Blackjack() {
         </aside>
 
         <section className={`${styles.table} ${shaking ? shared.shake : ''}`}>
+          <div className={styles.histWrap}><HistoryStrip items={g.history} /></div>
           <div className={styles.shoe} aria-hidden="true" />
           {r && (
             <div className={styles.dealer}>

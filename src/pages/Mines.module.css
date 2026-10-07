@@ -70,3 +70,5 @@
 @keyframes popIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } }
 
 @media (max-width: 1100px) { .stage { min-height: 440px; } .grid { gap: 6px; } }
+
+.histWrap { position: absolute; top: 14px; left: 18px; right: 18px; z-index: 2; }

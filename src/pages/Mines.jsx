@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Confetti, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import shared from './Casino.module.css'
 import styles from './Mines.module.css'
 
@@ -190,6 +190,7 @@ export default function Mines() {
         </aside>
 
         <section className={`${styles.stage} ${shaking ? shared.shake : ''}`}>
+          <div className={styles.histWrap}><HistoryStrip items={g.history} /></div>
           <div className={styles.grid}>
             {Array.from({ length: 25 }, (_, i) => {
               const shown = r?.revealed?.includes(i)
