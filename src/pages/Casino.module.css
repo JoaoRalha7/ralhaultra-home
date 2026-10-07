@@ -426,3 +426,35 @@
 @media (prefers-reduced-motion: reduce) { .jpBulb, .jpIdle, .jpHotNum { animation: none !important; } }
 .jpStage .resPush { border-color: rgba(253,230,138,.45); background: linear-gradient(180deg, rgba(253,230,138,.12), rgba(15,19,27,.8)); }
 .jpStage .resPush b { color: #fde68a; }
+
+/* ── Compact layout: everything within one screen, no scrolling on desktop ── */
+.page { padding: 0 0 20px; }
+.head { align-items: center; margin-bottom: 12px; }
+.head > div { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.title { font-size: clamp(24px, 2.6vw, 30px); }
+.sub { display: none; }
+.snd { width: 36px; height: 36px; border-radius: 10px; }
+.layout { grid-template-columns: 300px minmax(0, 1fr); gap: 14px; }
+.panel { padding: 14px; gap: 8px; border-radius: 18px; top: 76px; }
+.balance { padding: 8px 12px; }
+.balance b { font-size: 19px; }
+.betRow { height: 40px; }
+.quick button { height: 32px; }
+.cta, .ctaAlt { height: 44px; }
+.stage { min-height: 0; padding: 12px 16px 14px; gap: 10px; border-radius: 18px; }
+.hist { min-height: 24px; }
+.mines { width: min(100%, 360px); gap: 8px; margin-top: 0; }
+.tile { border-radius: 12px; }
+.ladder { padding-top: 0; }
+.table { gap: 12px; padding: 50px 24px 14px; width: min(100%, 600px); }
+.cards { min-height: 100px; }
+.card { width: 70px; height: 100px; margin-left: -32px; }
+.pip { width: 32px; height: 32px; }
+.chips { height: 44px; }
+.result { padding: 10px 16px; }
+.resAmt { font-size: 28px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .panel { position: static; } }
+.wheelWrap { width: min(100%, 300px); margin-top: 0; }
+.rTable { grid-template-rows: repeat(3, 38px) 34px 34px; gap: 3px; }
+.rTableWrap { padding: 8px; }
+.jpWheelWrap { width: min(100%, 320px); margin-top: 0; }
