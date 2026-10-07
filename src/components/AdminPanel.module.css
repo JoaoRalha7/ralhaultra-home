@@ -528,3 +528,14 @@
 .statTxt small { font-size:11.5px; color:rgba(255,255,255,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .statOptEmpty .statTxt small { font-style:italic; color:rgba(255,255,255,.28); }
 .statOpt input:focus-visible + .statBox { outline:2px solid #93c5fd; outline-offset:2px; }
+
+/* ── Card text + card colors ── */
+.cardText { display:flex; flex-direction:column; gap:12px; padding:14px; border-radius:14px; border:1px solid rgba(59,130,246,.3); background:rgba(59,130,246,.06); }
+.cardTextHead b { display:block; font-size:13.5px; color:#fff; }
+.cardTextHead span { display:block; margin-top:3px; font-size:12px; color:rgba(255,255,255,.5); }
+.autoTag { margin-left:8px; }
+.pvLbl { font-size:11px; }
+.pvColors { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.pvAuto { height:22px; padding:0 10px; border-radius:999px; border:1px solid rgba(255,255,255,.2); background:none; color:rgba(255,255,255,.6); font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font); }
+.pvAutoOn { background:#fff; color:#0b0e14; border-color:#fff; }
+.pvDot { width:22px; height:22px; box-shadow:inset 0 0 0 2px #06080d; }

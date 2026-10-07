@@ -1,9 +1,18 @@
 import { pickStats } from './offerStats';
-const PALETTE = [
-  ['#2ee6a6', '#04251e', '#0b4a3c'],
-  ['#f5c542', '#241a02', '#5e4508'],
-  ['#38bdf8', '#06192e', '#0d3f66'],
+export const PALETTE = [
+  ['#2ee6a6', '#04251e', '#0b4a3c'], // emerald
+  ['#f5c542', '#241a02', '#5e4508'], // gold
+  ['#38bdf8', '#06192e', '#0d3f66'], // sky
+  ['#ff8a2b', '#2a1204', '#6b3208'], // orange
+  ['#ef4444', '#2a0808', '#6b1414'], // red
+  ['#ec4899', '#2a0818', '#6b1442'], // pink
+  ['#a855f7', '#1a0b2e', '#44207a'], // violet
+  ['#6366f1', '#0d0f2e', '#262a7a'], // indigo
+  ['#14b8a6', '#04201e', '#0b4f4a'], // teal
+  ['#a3e635', '#14200a', '#3b560f'], // lime
+  ['#e2e8f0', '#12151b', '#2c3440'], // silver
 ];
+export const PALETTE_NAMES = ['Emerald', 'Gold', 'Sky', 'Orange', 'Red', 'Pink', 'Violet', 'Indigo', 'Teal', 'Lime', 'Silver'];
 
 // DB values may be strings or small objects like { title, value }; always return plain text.
 const txt = (x) => {
@@ -32,7 +41,8 @@ function bonusParts(c, f) {
 }
 
 export function casinoToOffer(c, i = 0) {
-  const [accent, c1, c2] = PALETTE[i % PALETTE.length];
+  const pick = Number.isInteger(c.casino_info?.card_color) && PALETTE[c.casino_info.card_color] ? c.casino_info.card_color : i % 3;
+  const [accent, c1, c2] = PALETTE[pick];
   const f = Array.isArray(c.features) ? c.features : [];
   const ci = c.casino_info || {};
   const bp = txt(f[0]) ? null : bonusParts(c, f);

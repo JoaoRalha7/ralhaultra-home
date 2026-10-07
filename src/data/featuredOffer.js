@@ -1,3 +1,4 @@
+import { PALETTE } from './casinoToOffer';
 // Builds the Featured popup content from the casino's own fields.
 // Anything filled in the Featured tab overrides the automatic value.
 const txt = (x) => {
@@ -35,7 +36,7 @@ export function autoFeatured(c = {}) {
   if (txt(f[1])) chips.push(txt(f[1]));
   if (c.kyc_required === false) chips.push('No KYC');
 
-  return { title, amount, details: chips.join(' · '), accent: '#3b82f6' };
+  return { title, amount, details: chips.join(' · '), accent: PALETTE[ci.card_color]?.[0] || '#3b82f6' };
 }
 
 export function featuredOf(c = {}) {

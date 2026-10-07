@@ -5,7 +5,7 @@ import OfferRow from './OfferRow'
 import { FeaturedOfferModal } from './HomeModals'
 import { autoFeatured } from '../data/featuredOffer'
 import { STAT_DEFS, selectedStatKeys } from '../data/offerStats'
-import { casinoToOffer } from '../data/casinoToOffer'
+import { casinoToOffer, PALETTE, PALETTE_NAMES } from '../data/casinoToOffer'
 import styles from './AdminPanel.module.css'
 
 const BUCKET = 'images'
@@ -172,7 +172,6 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
   const [selMethods,  setSelMethods]  = useState([])
   const [saving,      setSaving]      = useState(false)
   const [errors,      setErrors]      = useState({})
-  const [pv,          setPv]          = useState(0)
 
   useEffect(() => {
     if (casino) {
@@ -453,8 +452,38 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
           <div className={styles.sec}><Sec id="content" title="Bonus & content" />
           {open.content && (
             <div className={styles.tabContent}>
-              <ArrayField label="Features"      value={features}   onChange={setFeatures}   placeholder="e.g. Fast withdrawals" />
+              {(() => {
+                const T = (x) => (x && typeof x === 'object' ? (x.value ?? x.title ?? x.text ?? x.label ?? x.name ?? x.feature ?? Object.values(x).find(v => typeof v === 'string') ?? '') : x) || ''
+                const b0 = bonus[0] || {}
+                const upTo = String(b0.up_to || '').replace(/^up\s*to\s*/i, '')
+                const autoBig = b0.pct ? `${b0.pct} Welcome bonus` : b0.fs ? `${b0.fs} Free spins` : ''
+                const autoSub = [upTo && `Up to ${upTo}`, b0.pct && b0.fs && `+ ${b0.fs}`].filter(Boolean).join(' ')
+                const setF = (i, v) => {
+                  const a = [...features]
+                  while (a.length <= i) a.push('')
+                  a[i] = v
+                  while (a.length > 2 && a[a.length - 1] === '') a.pop()
+                  setFeatures(a)
+                }
+                return (
+                  <div className={styles.cardText}>
+                    <div className={styles.cardTextHead}>
+                      <b>Card text</b>
+                      <span>What shows on the big offer card and the entry popup. Leave empty to build it from the Welcome Bonus below.</span>
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Big text <span className={styles.autoTag}>Feature 1</span></label>
+                      <input className={styles.input} value={T(features[0])} onChange={e => setF(0, e.target.value)} placeholder={autoBig || '150% Welcome Bonus'} />
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Pill under it <span className={styles.autoTag}>Feature 2</span></label>
+                      <input className={styles.input} value={T(features[1])} onChange={e => setF(1, e.target.value)} placeholder={autoSub || 'Up to €500 + 200 FS'} />
+                    </div>
+                  </div>
+                )
+              })()}
               <BonusField value={bonus} onChange={setBonus} />
+              <ArrayField label="More features (casino details page)" value={features.slice(2)} onChange={(rest) => setFeatures([features[0] ?? '', features[1] ?? '', ...rest])} placeholder="e.g. Fast withdrawals" />
               <ArrayField label="VIP Benefits"  value={vip}        onChange={setVip}        placeholder="e.g. Personal manager" />
               <ArrayField label="How to Claim"  value={howToClaim} onChange={setHowToClaim} placeholder="e.g. Register with code" />
             </div>
@@ -465,12 +494,16 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
         <aside className={styles.pvPane}>
           <div className={styles.pvHead}>
             <span>Live preview</span>
-            <div className={styles.pvSw}>
-              {[0, 1, 2].map((i) => <button key={i} type="button" aria-label={`Preview color ${i + 1}`} className={`${styles.pvDot} ${pv === i ? styles.pvDotOn : ''}`} data-i={i} onClick={() => setPv(i)} />)}
-            </div>
+            <span className={styles.pvLbl}>Card color</span>
+          </div>
+          <div className={styles.pvColors}>
+            <button type="button" className={`${styles.pvAuto} ${Number.isInteger(ci.card_color) ? '' : styles.pvAutoOn}`} onClick={() => setCi('card_color', undefined)} title="Color by position in the list">Auto</button>
+            {PALETTE.map(([ac], i) => (
+              <button key={i} type="button" title={PALETTE_NAMES[i]} aria-label={PALETTE_NAMES[i]} className={`${styles.pvDot} ${ci.card_color === i ? styles.pvDotOn : ''}`} style={{ background: ac }} onClick={() => setCi('card_color', i)} />
+            ))}
           </div>
           <div className={styles.pvCard}>
-            <OfferRow o={casinoToOffer({ ...form, features, casino_info: ci, welcome_bonus: bonus }, pv)} rank={form.is_featured ? 1 : null} />
+            <OfferRow o={casinoToOffer({ ...form, features, casino_info: ci, welcome_bonus: bonus }, 0)} rank={form.is_featured ? 1 : null} />
           </div>
           <p className={styles.pvNote}>This is how the card looks in Top Offers on the Home page. Headline and sub-line come from the first two Features.</p>
         </aside>
