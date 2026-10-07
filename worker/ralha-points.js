@@ -25,6 +25,13 @@ const ADMIN_IDS = ['13878854-d588-4c49-ad36-1428920902bd']
 const CASINO = { minBet: 10, maxBet: 10000, maxPayout: 250000, edge: 0.97, grid: 25, crashRate: 0.00008, crashCap: 1000 }
 const CASINO_GAMES = ['mines', 'blackjack', 'crash', 'keno', 'plinko', 'roulette']
 const INSTANT_GAMES = ['keno', 'plinko', 'roulette'] // settled in a single request
+// The result is already known when an instant round is saved, but the player is still watching the animation.
+// The feed only shows a round once that animation is over (updated_at is set in the future), so nothing is spoiled.
+function feedDelay(game, rows, count) {
+  if (game === 'plinko') return Math.max(95, 190 - rows * 6) * rows + (count > 1 ? (count - 1) * (count > 12 ? 70 : 115) : 0) + 700
+  if (game === 'roulette') return 7200
+  return 3600 // keno
+}
 
 // Keno: pick 1-10 of 40, the house draws 10. Paytable is derived from the exact odds (~99% RTP, 1000x cap).
 const KENO = { size: 40, draw: 10, max: 10, edge: 0.99, cap: 1000 }
@@ -631,11 +638,12 @@ export default {
             const chg = await seAdd(-total)
             if (!chg.ok) return json({ error: 'charge failed' }, 502)
             const tab = plinkoTable(params.rows, params.risk)
+            const feedAt = new Date(Date.now() + feedDelay('plinko', params.rows, count)).toISOString()
             const rowsOut = Array.from({ length: count }, () => {
               const path = Array.from({ length: params.rows }, () => rndInt(2))
               const slot = path.reduce((a, b) => a + b, 0)
               const mult = tab[slot]
-              return { user_id: who.id, username: who.username, game, bet, state: { rows: params.rows, risk: params.risk, path, slot, mult }, status: 'done', payout: Math.min(Math.floor(bet * mult), CASINO.maxPayout) }
+              return { user_id: who.id, username: who.username, game, bet, state: { rows: params.rows, risk: params.risk, path, slot, mult }, status: 'done', payout: Math.min(Math.floor(bet * mult), CASINO.maxPayout), updated_at: feedAt }
             })
             const insB = await fetch(rest, { method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify(rowsOut) })
             const made = insB.ok ? await insB.json() : null
@@ -687,7 +695,7 @@ export default {
 
           const ins = await fetch(rest, {
             method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' },
-            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet: stake, state, status: INSTANT_GAMES.includes(game) ? 'done' : 'active', payout: kenoPayout }),
+            body: JSON.stringify({ user_id: who.id, username: who.username, game, bet: stake, state, status: INSTANT_GAMES.includes(game) ? 'done' : 'active', payout: kenoPayout, ...(INSTANT_GAMES.includes(game) ? { updated_at: new Date(Date.now() + feedDelay(game, params.rows, 1)).toISOString() } : {}) }),
           })
           const created = ins.ok ? (await ins.json())?.[0] : null
           if (!created) { const rf = await seAdd(stake); return json({ error: 'could not start', refunded: true, newPoints: rf.points ?? null }, 409) }
@@ -1219,7 +1227,7 @@ export default {
       if (pathname === '/casino-feed') {
         const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
         const r = await fetch(
-          `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=${Math.min(limit * 30, 300)}`,
+          `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&updated_at=lte.${new Date().toISOString()}&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=${Math.min(limit * 30, 300)}`,
           { headers: sbHeaders }
         )
         if (!r.ok) return json({ rounds: [] })
