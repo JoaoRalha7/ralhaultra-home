@@ -25,7 +25,7 @@ const NAV_GROUPS = [
   ],
 ];
 
-const ORIGINAL_PATHS = ['/originals', '/mines', '/blackjack', '/crash', '/keno', '/plinko', '/roulette'];
+const ORIGINAL_PATHS = ['/originals', '/mines', '/blackjack', '/crash', '/keno', '/plinko', '/roulette', '/jackpot'];
 
 const GAMES = [
   ['pick_games', 'Pick & Win', 'pick'],

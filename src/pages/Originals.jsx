@@ -9,6 +9,7 @@ export const ORIGINALS = [
   { to: '/keno', icon: 'keno', name: 'Keno', tag: 'Pick up to 10 numbers and match the draw.', stats: ['4 risk levels', 'Auto and turbo'], g1: '#ec4899', g2: '#f9a8d4' },
   { to: '/plinko', icon: 'plinko', name: 'Plinko', tag: 'Drop the ball through the pegs into a multiplier.', stats: ['8 to 16 rows', 'Auto and turbo'], g1: '#06b6d4', g2: '#67e8f9' },
   { to: '/roulette', icon: 'roulette', name: 'Roulette', tag: 'European wheel with a single zero and multi-chip bets.', stats: ['Return 97.3%', 'Auto spin'], g1: '#e11d48', g2: '#fda4af' },
+  { to: '/jackpot', icon: 'jackpot', name: 'Jackpot', tag: 'Everyone adds points to the pot. A wheel picks the winner by share.', stats: ['60 second pots', '5% fee'], g1: '#f97316', g2: '#fdba74' },
 ]
 
 export default function Originals() {

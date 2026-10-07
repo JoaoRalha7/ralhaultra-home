@@ -6,6 +6,7 @@
 .page[data-game="keno"] { --g1: #ec4899; --g2: #f9a8d4; }
 .page[data-game="plinko"] { --g1: #06b6d4; --g2: #67e8f9; }
 .page[data-game="roulette"] { --g1: #e11d48; --g2: #fda4af; }
+.page[data-game="jackpot"] { --g1: #f97316; --g2: #fdba74; }
 
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
 .title { font: 800 clamp(30px, 4vw, 46px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; color: var(--ru-text); }
@@ -34,6 +35,7 @@
 .cta, .ctaAlt { height: 52px; border-radius: 14px; border: 0; font: 800 15px "DM Sans", sans-serif; letter-spacing: .02em; cursor: pointer; transition: transform .12s, filter .12s; }
 .cta { background: linear-gradient(180deg, color-mix(in srgb, var(--g1) 100%, #fff 14%), var(--g1)); color: #06130e; box-shadow: 0 12px 28px -12px var(--g1), inset 0 1px 0 rgba(255,255,255,.35); }
 .page[data-game="crash"] .cta, .page[data-game="keno"] .cta, .page[data-game="roulette"] .cta { color: #fff; }
+.page[data-game="jackpot"] .cta { color: #1a0d02; }
 .ctaAlt { background: #1d2330; color: #fff; border: 1px solid var(--line); }
 .cta:hover:not(:disabled), .ctaAlt:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
 .cta:active:not(:disabled), .ctaAlt:active:not(:disabled) { transform: translateY(1px) scale(.99); }
@@ -343,4 +345,33 @@
   .page[data-game="crash"] .layout > .panel { grid-row: auto; }
   .page[data-game="crash"] .layout > .stage, .lvDock { grid-column: 1; grid-row: auto; }
   .lvDock { order: 1; }
+}
+
+/* ---- Jackpot ---- */
+.jpStage { min-height: 0; }
+.jpWheelWrap { position: relative; width: min(100%, 400px); margin: 4px auto 0; isolation: isolate; }
+.jpWheelWrap::before { content: ""; position: absolute; inset: -6%; z-index: -1; border-radius: 50%; background: radial-gradient(circle, rgba(249,115,22,.26), transparent 66%); }
+.jpWheel { width: 100%; height: auto; display: block; filter: drop-shadow(0 18px 30px rgba(0,0,0,.5)); }
+.jpRim { fill: #141a26; stroke: #f97316; stroke-width: 2; }
+.jpSeg { stroke: #0b0f16; stroke-width: 2; }
+.jpHub { fill: #0d121b; stroke: rgba(249,115,22,.5); stroke-width: 1.5; }
+.jpPointer { fill: #fde68a; stroke: #b45309; stroke-width: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+.jpCenter { position: absolute; left: 50%; top: 50%; width: 56%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 3px; pointer-events: none; }
+.jpCenter small { font: 800 11px "DM Sans", sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.jpCenter b { font: 800 clamp(26px, 6.500vw, 40px)/1 "Bricolage Grotesque", sans-serif; font-variant-numeric: tabular-nums; color: #fff; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jpCenter span { font: 600 12px "DM Sans", sans-serif; color: var(--g2); }
+.jpWinName { font-size: clamp(18px, 4.500vw, 26px) !important; color: var(--g2) !important; }
+.jpRow { display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(90px, 36%); align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(15,19,27,.7); border: 1px solid transparent; font: 700 13px "DM Sans", sans-serif; font-variant-numeric: tabular-nums; }
+.jpRow > :nth-child(2) { text-align: right; }
+.jpDot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.jpPct { position: relative; height: 22px; border-radius: 7px; background: #0b0f16; overflow: hidden; }
+.jpPct i { position: absolute; inset: 0 auto 0 0; opacity: .55; }
+.jpPct b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; color: #fff; }
+.jpWon { border-color: #fde68a; box-shadow: 0 0 0 1px #fde68a, 0 0 18px rgba(253,230,138,.35); }
+.jpDock { display: grid; gap: 16px; align-content: start; }
+.page[data-game="jackpot"] .layout > .panel { grid-row: 1 / span 2; }
+.page[data-game="jackpot"] .layout > .stage { grid-column: 2; grid-row: 1; align-self: start; }
+@media (max-width: 1000px) {
+  .page[data-game="jackpot"] .layout > .panel { grid-row: auto; }
+  .page[data-game="jackpot"] .layout > .stage { grid-column: 1; grid-row: auto; }
 }

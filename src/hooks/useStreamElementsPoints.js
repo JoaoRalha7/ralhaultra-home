@@ -19,7 +19,10 @@ async function fetchPoints(k) {
   const data = await res.json()
   return { points: data.points ?? 0, stale: ver !== v0 && store.has(k) }
 }
-const pull = (k) => fetchPoints(k).then((r) => { if (!r.stale) put(k, r.points) })
+// a game animating its result can hold back server refreshes so the balance does not spoil it
+let held = false
+export const holdPointsPulls = (on) => { held = !!on }
+const pull = (k) => (held ? Promise.resolve() : fetchPoints(k).then((r) => { if (!r.stale) put(k, r.points) }))
 
 // opts.poll: refresh every N ms while the tab is visible (used by the header)
 export function useStreamElementsPoints(twitchUsername, opts = {}) {

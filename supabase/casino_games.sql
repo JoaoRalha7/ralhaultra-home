@@ -47,3 +47,31 @@ create index if not exists crash_bets_user on public.crash_bets (user_id, create
 create index if not exists crash_bets_recent on public.crash_bets (created_at desc);
 alter table public.crash_rounds enable row level security;
 alter table public.crash_bets enable row level security;
+
+
+-- Jackpot (pots of 60s, a wheel picks the winner by share). Run in the MAIN Supabase project. Worker-only access.
+create table if not exists public.jackpot_rounds (
+  seq           bigint primary key,
+  end_ms        bigint,
+  status        text not null default 'open' check (status in ('open','done')),
+  winner_id     uuid,
+  winner_name   text,
+  winner_amount integer,
+  pot           integer not null default 0,
+  fee           integer not null default 0,
+  payout        integer not null default 0,
+  ticket        numeric(14,12),
+  paid          boolean not null default false,
+  created_at    timestamptz not null default now()
+);
+create table if not exists public.jackpot_entries (
+  id         uuid primary key default gen_random_uuid(),
+  seq        bigint not null references public.jackpot_rounds(seq) on delete cascade,
+  user_id    uuid not null,
+  username   text not null,
+  amount     integer not null check (amount > 0),
+  created_at timestamptz not null default now()
+);
+create index if not exists jackpot_entries_seq on public.jackpot_entries (seq, created_at);
+alter table public.jackpot_rounds enable row level security;
+alter table public.jackpot_entries enable row level security;

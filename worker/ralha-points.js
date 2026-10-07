@@ -297,6 +297,84 @@ async function getUser(request, env, sbHeaders) {
   return username ? { id: u.id, username } : null
 }
 
+
+// ── Jackpot: everyone puts points in one pot, a wheel picks the winner by share ─────
+// The timer (60s) starts when the 2nd player joins. When it ends the first request to arrive settles the round:
+// the winner is drawn with a CSPRNG weighted by stake, claimed with a compare-and-swap, and paid once.
+const JP = { roundMs: 60000, spinMs: 8000, resultMs: 6000, fee: 0.05, minBet: 10, maxDeposit: 10000, maxTotal: 50000, maxPlayers: 40, lockMs: 800, keep: 12 }
+const jpSb = clSb
+async function jpRounds(env, sbH) {
+  const r = await jpSb(env, sbH, `jackpot_rounds?select=*&order=seq.desc&limit=${JP.keep}`)
+  const rows = r.ok ? await r.json() : []
+  return Array.isArray(rows) ? rows : []
+}
+async function jpPlayers(env, sbH, seq) { // entries summed per player, in order of first deposit
+  const r = await jpSb(env, sbH, `jackpot_entries?seq=eq.${seq}&order=created_at.asc&limit=500&select=user_id,username,amount`)
+  const rows = r.ok ? await r.json() : []
+  const by = new Map()
+  for (const e of (Array.isArray(rows) ? rows : [])) {
+    const p = by.get(e.user_id)
+    if (p) p.amount += e.amount; else by.set(e.user_id, { id: e.user_id, u: e.username, amount: e.amount })
+  }
+  return [...by.values()]
+}
+async function jpSettle(env, sbH, round) {
+  const players = await jpPlayers(env, sbH, round.seq)
+  const pot = players.reduce((a, p) => a + p.amount, 0)
+  if (!players.length || !pot) return round
+  const t = rndFloat()
+  let acc = 0, win = players[players.length - 1]
+  for (const p of players) { acc += p.amount; if (t * pot < acc) { win = p; break } }
+  const fee = Math.floor(pot * JP.fee), payout = pot - fee
+  const c = await jpSb(env, sbH, `jackpot_rounds?seq=eq.${round.seq}&status=eq.open`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ status: 'done', winner_id: win.id, winner_name: win.u, winner_amount: win.amount, pot, fee, payout, ticket: t }) })
+  const row = c.ok ? (await c.json())?.[0] : null
+  if (!row) return (await jpRounds(env, sbH)).find((r) => r.seq === round.seq) || round
+  const p = await clPay(env, win.u, payout)
+  if (p.ok) { await jpSb(env, sbH, `jackpot_rounds?seq=eq.${round.seq}`, { method: 'PATCH', body: JSON.stringify({ paid: true }) }); row.paid = true }
+  return row
+}
+// newest rounds (index 0 is the live one): settles a finished timer and opens the next pot after the result was shown
+async function jpEnsure(env, sbH, now) {
+  let rounds = await jpRounds(env, sbH)
+  let cur = rounds[0]
+  const make = async (seq) => {
+    const ins = await jpSb(env, sbH, 'jackpot_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify({ seq }) })
+    return ins.ok ? [{ seq, status: 'open', end_ms: null, pot: 0, paid: false }, ...rounds].slice(0, JP.keep) : await jpRounds(env, sbH)
+  }
+  if (!cur) return make(1)
+  if (cur.status === 'open' && cur.end_ms != null && now >= Number(cur.end_ms)) { cur = await jpSettle(env, sbH, cur); rounds = [cur, ...rounds.slice(1)] }
+  if (cur.status === 'done') {
+    const end = Number(cur.end_ms)
+    if (now >= end + JP.spinMs + JP.resultMs) return make(Number(cur.seq) + 1)
+    if (!cur.paid && now > end + 20000) { // a payout that failed earlier: claim it once and retry
+      const cl = await jpSb(env, sbH, `jackpot_rounds?seq=eq.${cur.seq}&paid=eq.false`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ paid: true }) })
+      if (cl.ok && (await cl.json())?.[0]) { const p = await clPay(env, cur.winner_name, cur.payout); if (!p.ok) await jpSb(env, sbH, `jackpot_rounds?seq=eq.${cur.seq}`, { method: 'PATCH', body: JSON.stringify({ paid: false }) }) }
+    }
+  }
+  return rounds
+}
+let JP_CACHE = null
+async function jpState(env, sbH, now) {
+  if (JP_CACHE && now - JP_CACHE.at < 700) return JP_CACHE.data
+  const rounds = await jpEnsure(env, sbH, now)
+  const cur = rounds[0]
+  if (!cur) return { error: 'no round' }
+  const players = await jpPlayers(env, sbH, cur.seq)
+  const pot = players.reduce((a, p) => a + p.amount, 0)
+  const done = cur.status === 'done'
+  const data = {
+    ok: true, serverNow: now, cfg: { roundMs: JP.roundMs, spinMs: JP.spinMs, resultMs: JP.resultMs, fee: JP.fee, min: JP.minBet, max: JP.maxDeposit, total: JP.maxTotal },
+    round: {
+      seq: Number(cur.seq), endAt: cur.end_ms == null ? null : Number(cur.end_ms), pot, done,
+      players: players.map((p) => ({ u: p.u, amount: p.amount })),
+      winner: done ? { u: cur.winner_name, amount: cur.winner_amount, payout: cur.payout, fee: cur.fee, ticket: Number(cur.ticket) } : null,
+    },
+    history: rounds.filter((r) => r.status === 'done' && r.seq !== cur.seq).map((r) => ({ seq: Number(r.seq), u: r.winner_name, pot: r.pot, payout: r.payout, amount: r.winner_amount })),
+  }
+  JP_CACHE = { at: now, data }
+  return data
+}
+
 export default {
   async fetch(request, env) {
     const origin    = request.headers.get('Origin') || ''
@@ -438,6 +516,44 @@ export default {
         if (!res.ok) return json({ error: `SE API erro ${res.status}`, detail: await res.text() }, res.status)
         const data = await res.json()
         return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
+      }
+
+      // ── POST /jackpot/state | /jackpot/deposit ────────────────────────────────────
+      if (pathname.startsWith('/jackpot/') && request.method === 'POST') {
+        const now = Date.now()
+        if (pathname === '/jackpot/state') return json(await jpState(env, sbHeaders, now))
+        if (pathname !== '/jackpot/deposit') return json({ error: 'not found' }, 404)
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+        const body = await request.json().catch(() => ({}))
+        const amount = parseInt(body.amount, 10)
+        if (!Number.isInteger(amount) || amount < JP.minBet || amount > JP.maxDeposit) return json({ error: 'invalid bet', min: JP.minBet, max: JP.maxDeposit }, 400)
+
+        const rounds = await jpEnsure(env, sbHeaders, now)
+        const cur = rounds[0]
+        if (!cur || cur.status !== 'open' || (cur.end_ms != null && now >= Number(cur.end_ms) - JP.lockMs)) return json({ error: 'round closed' }, 409)
+        const players = await jpPlayers(env, sbHeaders, cur.seq)
+        const mine = players.find((p) => p.id === who.id)
+        if (!mine && players.length >= JP.maxPlayers) return json({ error: 'pot full' }, 409)
+        if ((mine?.amount || 0) + amount > JP.maxTotal) return json({ error: 'stake limit' }, 400)
+
+        const seUrl = `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${who.username}`
+        const seH = { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' }
+        const balRes = await fetch(seUrl, { headers: seH })
+        if (!balRes.ok) return json({ error: 'balance check failed' }, 502)
+        const { points: current = 0 } = await balRes.json()
+        if (current < amount) return json({ error: 'insufficient', currentPoints: current }, 400)
+        const charge = await fetch(`${seUrl}/${-amount}`, { method: 'PUT', headers: seH })
+        if (!charge.ok) return json({ error: 'charge failed' }, 502)
+        const cd = await charge.json()
+        const ins = await jpSb(env, sbHeaders, 'jackpot_entries', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify({ seq: cur.seq, user_id: who.id, username: who.username, amount }) })
+        if (!ins.ok) { const rf = await clPay(env, who.username, amount); return json({ error: 'could not join', refunded: true, newPoints: rf.points ?? null }, 409) }
+        // the timer starts when a second player joins (compare-and-swap: only the first request sets it)
+        if (cur.end_ms == null && (mine ? players.length : players.length + 1) >= 2) {
+          await jpSb(env, sbHeaders, `jackpot_rounds?seq=eq.${cur.seq}&end_ms=is.null&status=eq.open`, { method: 'PATCH', body: JSON.stringify({ end_ms: now + JP.roundMs }) })
+        }
+        JP_CACHE = null
+        return json({ ok: true, seq: Number(cur.seq), amount, newPoints: cd.newAmount ?? cd.points ?? null })
       }
 
       // ── POST /crash/state | /crash/bet | /crash/cashout | /crash/mine (live shared rounds) ──
@@ -1239,16 +1355,21 @@ export default {
           if (g) { g.bet += x.bet || 0; g.payout += x.payout || 0; g.count += 1 } else grouped.set(k, { ...x, bet: x.bet || 0, payout: x.payout || 0, count: 1 })
         }
         const rows = [...grouped.values()].slice(0, limit)
-        // live crash bets of finished rounds count as casino rounds too
+        // live crash bets and jackpot winners count as casino rounds too (each source can fail on its own)
+        let extra = []
         try {
           const cur = (await clRounds(env, sbHeaders))[0]
           if (cur) {
             const upto = Date.now() >= clEnd(cur) ? Number(cur.seq) + 1 : Number(cur.seq)
             const cb = await clSb(env, sbHeaders, `crash_bets?seq=lt.${upto}&order=created_at.desc&limit=${limit}&select=username,bet,cashed_at,payout,created_at`)
-            const crashRows = (cb.ok ? await cb.json() : []).map((b) => ({ username: b.username, game: 'crash', bet: b.bet, payout: b.cashed_at == null ? 0 : b.payout, updated_at: b.created_at }))
-            return json({ rounds: [...rows, ...crashRows].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, limit) })
+            extra = extra.concat((cb.ok ? await cb.json() : []).map((b) => ({ username: b.username, game: 'crash', bet: b.bet, payout: b.cashed_at == null ? 0 : b.payout, updated_at: b.created_at })))
           }
         } catch { /* feed still works without crash */ }
+        try {
+          const jr = await jpSb(env, sbHeaders, `jackpot_rounds?status=eq.done&order=seq.desc&limit=${limit}&select=winner_name,winner_amount,payout,end_ms`)
+          if (jr.ok) extra = extra.concat((await jr.json()).filter((x) => Number(x.end_ms) + JP.spinMs <= Date.now()).map((x) => ({ username: x.winner_name, game: 'jackpot', bet: x.winner_amount, payout: x.payout, updated_at: new Date(Number(x.end_ms) + JP.spinMs).toISOString() })))
+        } catch { /* feed still works without jackpot */ }
+        if (extra.length) return json({ rounds: [...rows, ...extra].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, limit) })
         return json({ rounds: rows })
       }
 
