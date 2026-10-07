@@ -555,3 +555,24 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oMore .i{transition:transform .15s}
 .oMore:hover{background:color-mix(in srgb,var(--ac) 12%,transparent);border-color:var(--ac);color:#fff}
 .oMore:hover .i{transform:translateX(3px)}
+
+/* ===== Offers: creative layer ===== */
+.oc2>*:not(.oSparks){position:relative;z-index:1}
+.oc2 .oTag{position:absolute}
+.oc2:hover:before{-webkit-mask-image:none;mask-image:none}
+.oSpot{display:none}
+.oc2{--mx:50%;--my:30%}
+.oc2>.oSparks+*{margin-top:0}
+.oc2:hover{background:radial-gradient(260px circle at var(--mx) var(--my),color-mix(in srgb,var(--ac) 22%,transparent),transparent 70%),radial-gradient(90% 55% at 50% 0%,color-mix(in srgb,var(--ac) 26%,transparent),transparent 70%),linear-gradient(180deg,color-mix(in srgb,var(--c2) 70%,#07090e),#07090e 92%)}
+.oSparks{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.oSparks i{position:absolute;bottom:-8px;width:4px;height:4px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px 1px var(--ac);opacity:0;animation:oRise 7s linear infinite}
+@keyframes oRise{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:.9}100%{transform:translateY(-420px) scale(1.2);opacity:0}}
+.oHero{position:relative;display:flex;flex-direction:column;align-items:center;width:100%;padding:6px 0 4px}
+.oGhost{position:absolute;left:50%;top:-6px;transform:translateX(-50%);font:800 clamp(110px,12vw,160px)/1 "Bricolage Grotesque",sans-serif;color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--ac) 22%,transparent);opacity:.7;white-space:nowrap;pointer-events:none;z-index:-1;-webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);mask-image:linear-gradient(180deg,#000 30%,transparent)}
+.oHero>.oBig,.oHero>.oRest,.oHero>.oSub{position:relative}
+.oTear{position:relative;width:calc(100% + 40px);margin:18px -20px 0;height:0;border-top:2px dashed color-mix(in srgb,var(--ac) 30%,transparent)}
+.oTear i{position:absolute;top:-11px;width:20px;height:20px;border-radius:50%;background:var(--ru-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ac) 40%,#1a1f2b)}
+.oTear i:first-child{left:-10px;clip-path:inset(0 0 0 50%)}
+.oTear i:last-child{right:-10px;clip-path:inset(0 50% 0 0)}
+.oChips{padding-top:18px}
+@media (prefers-reduced-motion:reduce){.oSparks{display:none}}
