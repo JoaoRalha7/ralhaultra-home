@@ -403,7 +403,7 @@ export default function Home() {
 
       <section>
         <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
-        <div className="ocards">
+        <div className="ocards" data-n={Math.min(offers.length, 4)}>
           {offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} />)}
         </div>
       </section>
