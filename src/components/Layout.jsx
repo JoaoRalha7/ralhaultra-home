@@ -12,17 +12,30 @@ import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
 import { supabaseDash } from '../lib/supabase';
 
 const NAV_GROUPS = [
-  [['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard']],
-  [['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop']],
-  [['originals', 'Originals', '/originals']],
-  [
-    ['slots', 'Slots', '/slots'],
-    ['spark', 'Bonus Hunts', '/bonus-hunts'],
-    ['ball', 'Tournaments', '/torneios'],
-    ['pulse', 'Stats', '/stats'],
-    ['play', 'Stream', '/stream'],
-    ['users', 'Community', '/community'],
-  ],
+  { label: 'Discover', items: [['home', 'Home', '/', 'blue'], ['tag', 'Casinos & Offers', '/offers', 'green'], ['trophy', 'Leaderboard', '/leaderboard', 'gold']] },
+  { label: 'Rewards', items: [['gift', 'Giveaways & Raffles', '/giveaways', 'pink'], ['bag', 'Shop', '/shop', 'violet']] },
+  { label: 'Casino', items: [['originals', 'Originals', '/originals', 'orange']] },
+  {
+    label: 'Stream',
+    items: [
+      ['slots', 'Slots', '/slots', 'cyan'],
+      ['spark', 'Bonus Hunts', '/bonus-hunts', 'gold'],
+      ['ball', 'Tournaments', '/torneios', 'green'],
+      ['pulse', 'Stats', '/stats', 'blue'],
+      ['play', 'Stream', '/stream', 'red'],
+      ['users', 'Community', '/community', 'violet'],
+    ],
+  },
+];
+
+const ORIGINAL_GAMES = [
+  ['mines', 'Mines', '/mines', '#10b981'],
+  ['cards', 'Blackjack', '/blackjack', '#f5c542'],
+  ['crash', 'Crash', '/crash', '#8b5cf6'],
+  ['keno', 'Keno', '/keno', '#ec4899'],
+  ['plinko', 'Plinko', '/plinko', '#22d3ee'],
+  ['roulette', 'Roulette', '/roulette', '#e11d48'],
+  ['jackpot', 'Jackpot', '/jackpot', '#f97316'],
 ];
 
 const ORIGINAL_PATHS = ['/originals', '/mines', '/blackjack', '/crash', '/keno', '/plinko', '/roulette', '/jackpot'];
@@ -143,14 +156,30 @@ export default function Layout() {
 
         {open && <div className="scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
         <aside>
-          {NAV_GROUPS.map((group, gi) => (
-            <div className="grp" key={gi}>
-              {group.map(([icon, label, to]) => (
-                <NavLink key={to} to={to} end={to === '/'} title={label} aria-label={label} className={({ isActive }) => `nav${isActive || (to === '/originals' && ORIGINAL_PATHS.some((p) => location.pathname.startsWith(p))) ? ' on' : ''}`}>
-                  <Icon name={icon} />
-                  <span className="lbl">{label}</span>
-                </NavLink>
-              ))}
+          {NAV_GROUPS.map((group) => (
+            <div className="grp" key={group.label}>
+              <div className="grpTitle">{group.label}</div>
+              {group.items.map(([icon, label, to, tone]) => {
+                const inOrig = to === '/originals' && ORIGINAL_PATHS.some((p) => location.pathname.startsWith(p));
+                return (
+                  <div key={to} className="navItem">
+                    <NavLink to={to} end={to === '/'} title={label} aria-label={label} data-tone={tone} className={({ isActive }) => `nav${isActive || inOrig ? ' on' : ''}`}>
+                      <span className="ico"><Icon name={icon} /></span>
+                      <span className="lbl">{label}</span>
+                    </NavLink>
+                    {inOrig && (
+                      <div className="subnav">
+                        {ORIGINAL_GAMES.map(([gi, gl, gt, gc]) => (
+                          <NavLink key={gt} to={gt} className={({ isActive }) => `sub${isActive ? ' on' : ''}`} style={{ '--c': gc }}>
+                            <Icon name={gi} />
+                            <span>{gl}</span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
           {user && <button type="button" className="drawerOut" onClick={signOut}>Logout</button>}
