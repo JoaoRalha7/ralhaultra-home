@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET } from './CasinoShared'
+import { BetPanel, Coin, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET } from './CasinoShared'
 import { holdPointsPulls } from '../hooks/useStreamElementsPoints'
 import { workerPost } from '../lib/points'
 import styles from './Casino.module.css'
@@ -14,7 +14,8 @@ const ERRS = {
 }
 const COLORS = ['#f97316', '#38bdf8', '#a78bfa', '#34d399', '#f472b6', '#facc15', '#fb7185', '#2dd4bf', '#818cf8', '#a3e635', '#e879f9', '#60a5fa']
 const colorOf = (i) => COLORS[i % COLORS.length]
-const C = 150, RO = 140, RI = 92
+const C = 150, RO = 140, RI = 92, RR = 148
+const CIRC = 2 * Math.PI * RR
 const pt = (deg, r) => { const a = ((deg - 90) * Math.PI) / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)] }
 function arc(a0, a1) {
   if (a1 - a0 >= 359.99) a1 = a0 + 359.99
@@ -22,36 +23,61 @@ function arc(a0, a1) {
   const big = a1 - a0 > 180 ? 1 : 0
   return `M${x0} ${y0} A${RO} ${RO} 0 ${big} 1 ${x1} ${y1} L${x2} ${y2} A${RI} ${RI} 0 ${big} 0 ${x3} ${y3}Z`
 }
+const mix = (hex, t) => { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.round(v + (255 - v) * t); return `rgb(${f(n >> 16)}, ${f((n >> 8) & 255)}, ${f(n & 255)})` }
 const pctOf = (a, pot) => (pot ? (a / pot) * 100 : 0)
 const fmtPct = (v) => (v >= 10 ? v.toFixed(0) : v.toFixed(1)) + '%'
 const clock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
+const BULBS = Array.from({ length: 32 }, (_, i) => i)
+const TICKS = Array.from({ length: 60 }, (_, i) => i)
 
-function Wheel({ players, pot, rot, ms, avatars, children }) {
+function Wheel({ players, pot, rot, ms, avatars, progress, mode, winIdx, children }) {
   let acc = 0
   return (
-    <div className={styles.jpWheelWrap}>
-      <svg viewBox="0 0 300 300" className={styles.jpWheel} role="img" aria-label="Jackpot wheel">
-        <defs><clipPath id="jpClip"><circle r="13" /></clipPath></defs>
-        <circle cx={C} cy={C} r="148" className={styles.jpRim} />
+    <div className={`${styles.jpWheelWrap} ${styles['jpm_' + mode]}`}>
+      <svg viewBox="-20 -20 340 340" className={styles.jpWheel} role="img" aria-label="Jackpot wheel">
+        <defs>
+          <clipPath id="jpClip"><circle r="14" /></clipPath>
+          <radialGradient id="jpHub" cx="50%" cy="40%" r="75%"><stop offset="0" stopColor="#1b2332" /><stop offset="1" stopColor="#080b12" /></radialGradient>
+          <linearGradient id="jpSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".2" /><stop offset=".5" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity=".25" /></linearGradient>
+          <linearGradient id="jpGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff3c4" /><stop offset=".55" stopColor="#f5c542" /><stop offset="1" stopColor="#b45309" /></linearGradient>
+          {players.map((p, i) => (
+            <radialGradient key={p.u} id={`jpg${i}`} cx="50%" cy="50%" r="60%"><stop offset="0" stopColor={mix(colorOf(i), 0.38)} /><stop offset="1" stopColor={colorOf(i)} /></radialGradient>
+          ))}
+        </defs>
+
+        <circle cx={C} cy={C} r="166" className={styles.jpBezel} />
+        {BULBS.map((i) => { const [x, y] = pt(i * (360 / BULBS.length), 158); return <circle key={i} cx={x} cy={y} r="2.800" className={styles.jpBulb} style={{ animationDelay: `${(i / BULBS.length) * -1.6}s` }} /> })}
+
+        <circle cx={C} cy={C} r={RR} className={styles.jpTrack} />
+        {mode === 'counting' && <circle cx={C} cy={C} r={RR} className={styles.jpProg} strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - Math.max(0, Math.min(1, progress)))} transform={`rotate(-90 ${C} ${C})`} />}
+        {mode === 'waiting' && <circle cx={C} cy={C} r={RR} className={styles.jpIdle} />}
+
         <g style={{ transformOrigin: `${C}px ${C}px`, transform: `rotate(${rot}deg)`, transition: ms ? `transform ${ms}ms cubic-bezier(.1,.6,.08,1)` : 'none' }}>
           {players.length ? players.map((p, i) => {
             const a0 = (acc / pot) * 360; acc += p.amount; const a1 = (acc / pot) * 360
             const mid = (a0 + a1) / 2, [x, y] = pt(mid, 116), url = avatars?.[p.u.toLowerCase()]
+            const dim = winIdx >= 0 && i !== winIdx
             return (
-              <g key={p.u}>
-                <path d={arc(a0, a1)} fill={colorOf(i)} className={styles.jpSeg} />
-                {a1 - a0 >= 22 && (
+              <g key={p.u} className={`${styles.jpSegG} ${dim ? styles.jpDim : ''} ${i === winIdx ? styles.jpWin : ''}`}>
+                <path d={arc(a0, a1)} fill={`url(#jpg${i})`} className={styles.jpSeg} />
+                {a1 - a0 >= 20 && (
                   <g transform={`translate(${x} ${y}) rotate(${mid})`}>
-                    <circle r="15" fill="#0b0f16" stroke="#fff" strokeOpacity=".85" strokeWidth="1.5" />
-                    {url ? <image href={url} x="-13" y="-13" width="26" height="26" clipPath="url(#jpClip)" preserveAspectRatio="xMidYMid slice" /> : <text textAnchor="middle" dominantBaseline="central" className={styles.jpInit}>{p.u.slice(0, 1).toUpperCase()}</text>}
+                    <circle r="17" fill={colorOf(i)} stroke="#fff" strokeOpacity=".9" strokeWidth="1.600" />
+                    {url ? <image href={url} x="-14" y="-14" width="28" height="28" clipPath="url(#jpClip)" preserveAspectRatio="xMidYMid slice" /> : <text textAnchor="middle" dominantBaseline="central" className={styles.jpInit}>{p.u.slice(0, 1).toUpperCase()}</text>}
                   </g>
                 )}
               </g>
             )
-          }) : <circle cx={C} cy={C} r={(RO + RI) / 2} fill="none" stroke="#1d2433" strokeWidth={RO - RI} />}
+          }) : <circle cx={C} cy={C} r={(RO + RI) / 2} fill="none" stroke="#161d2b" strokeWidth={RO - RI} />}
         </g>
-        <circle cx={C} cy={C} r={RI - 2} className={styles.jpHub} />
-        <path d={`M${C} 24 l10 -20 h-20z`} className={styles.jpPointer} />
+
+        {TICKS.map((i) => { const [x0, y0] = pt(i * 6, RO + 1), [x1, y1] = pt(i * 6, RO + (i % 5 ? 3 : 6)); return <line key={i} x1={x0} y1={y0} x2={x1} y2={y1} className={i % 5 ? styles.jpTick : styles.jpTickBig} /> })}
+        <circle cx={C} cy={C} r={RO} className={styles.jpOuterEdge} />
+        <circle cx={C} cy={C} r={RI} className={styles.jpInnerEdge} />
+        <circle cx={C} cy={C} r={RI - 1} fill="url(#jpHub)" />
+        <circle cx={C} cy={C} r={RO} fill="url(#jpSheen)" pointerEvents="none" />
+        <path d={`M${C} ${C - RR + 22} l12 -26 q-12 -9 -24 0z`} className={styles.jpPointer} />
+        <circle cx={C} cy={C - RR + 2} r="3" fill="#fff7d6" />
       </svg>
       <div className={styles.jpCenter}>{children}</div>
     </div>
@@ -168,13 +194,18 @@ export default function Jackpot() {
   const winner = phase === 'result' ? r.winner : null
   const winIdx = winner ? players.findIndex((p) => p.u === winner.u) : -1
 
+  const hot = phase === 'counting' && left < 10000
   let center = null
   if (!r) center = <small>Loading</small>
-  else if (phase === 'waiting') center = <><small>Waiting for players</small><b>{fmt(pot)}</b><span>{players.length < 2 ? 'The timer starts when a second player joins' : ''}</span></>
-  else if (phase === 'counting') center = <><small>Drawing in</small><b>{clock(left)}</b><span>Pot {fmt(pot)}</span></>
-  else if (phase === 'drawing') center = <><small>Drawing</small><b>...</b></>
-  else if (phase === 'spinning') center = <><small>Pot</small><b>{fmt(pot)}</b></>
-  else center = <><span className={styles.jpWinAv}><UserAv name={winner.u} src={avs?.[winner.u.toLowerCase()]} size={44} ring="#fde68a" /></span><b className={styles.jpWinName}>{winner.u}</b><span>{fmt(winner.payout)} pts</span></>
+  else if (phase === 'waiting') center = <><small>Current pot</small><b className={styles.jpPot}><Coin s={22} />{fmt(pot)}</b><span>{players.length < 2 ? 'The timer starts when a second player joins' : ''}</span></>
+  else if (phase === 'counting') center = <><small>Drawing in</small><b className={`${styles.jpClock} ${hot ? styles.jpHotNum : ''}`}>{clock(left)}</b><span className={styles.jpPotLine}><Coin s={14} />{fmt(pot)}</span></>
+  else if (phase === 'drawing') center = <><small>Drawing</small><b className={styles.jpClock}>...</b></>
+  else if (phase === 'spinning') center = <><small>Good luck</small><b className={styles.jpPot}><Coin s={22} />{fmt(pot)}</b></>
+  else center = <><span className={styles.jpWinAv}><UserAv name={winner.u} src={avs?.[winner.u.toLowerCase()]} size={46} ring="#fde68a" /></span><b className={styles.jpWinName}>{winner.u}</b><span className={styles.jpPotLine}>wins <Coin s={14} />{fmt(winner.payout)}</span></>
+
+  const add = Number(amount) || 0
+  const after = mine || add ? pctOf((mine?.amount || 0) + add, pot + add) : 0
+  const sorted = players.map((p, i) => ({ ...p, i })).sort((a, b) => b.amount - a.amount)
 
   return (
     <Page game="jackpot" title="Jackpot" sub="Everyone adds points to one pot. When the timer ends a wheel picks the winner, and the more you add the better your chance.">
@@ -185,8 +216,15 @@ export default function Jackpot() {
           </button>
           {err && <p className={styles.err}>{err}</p>}
           {g.err && <p className={styles.err}>{g.err}</p>}
+          {open && add >= MIN_BET && (
+            <div className={styles.jpPreview}>
+              <div><small>{mine ? 'Now' : 'Chance'}</small><b>{mine ? fmtPct(myPct) : '-'}</b></div>
+              <i aria-hidden="true">&rarr;</i>
+              <div><small>After</small><b className={styles.jpUp}>{fmtPct(after)}</b></div>
+            </div>
+          )}
           {mine && (
-            <div className={styles.autoStat}><span>Your stake</span><span>{fmt(mine.amount)} pts ({fmtPct(myPct)})</span></div>
+            <div className={styles.autoStat}><span>Your stake</span><span>{fmt(mine.amount)} pts</span></div>
           )}
           <p className={styles.note}>
             The timer ({cfg ? cfg.roundMs / 1000 : 60}s) starts when a second player joins. Add as often as you like until it ends. The winner takes the pot minus a {cfg ? Math.round(cfg.fee * 100) : 5}% fee. Your chance is your share of the pot.
@@ -201,7 +239,7 @@ export default function Jackpot() {
             <div className={phase === 'counting' && left < 10000 ? styles.ribGold : ''}><small>Time left</small><b>{phase === 'counting' ? clock(left) : phase === 'waiting' ? '--' : '0:00'}</b></div>
           </div>
 
-          <Wheel players={players} pot={pot} avatars={avs} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
+          <Wheel players={players} pot={pot} avatars={avs} progress={left != null && cfg ? left / cfg.roundMs : 0} mode={phase === 'result' ? 'result' : phase} winIdx={winIdx} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
 
           {winner && (
             <div className={`${styles.result} ${winner.u === me ? styles.resWin : styles.resPush}`} role="status">
@@ -219,11 +257,13 @@ export default function Jackpot() {
             <div className={styles.lvHead}><span>This pot</span><b>{players.length} {players.length === 1 ? 'player' : 'players'}</b></div>
             <div className={styles.lvList}>
               {!players.length && <p className={styles.lvEmpty}>Nobody has joined yet. Be the first.</p>}
-              {players.map((p, i) => (
-                <div key={p.u} className={`${styles.jpRow} ${p.u === me ? styles.lvMe : ''} ${i === winIdx ? styles.jpWon : ''}`}>
-                  <span className={styles.lvName}><UserAv name={p.u} src={avs?.[p.u.toLowerCase()]} ring={colorOf(i)} />{p.u}</span>
-                  <span className={styles.lvBet}>{fmt(p.amount)}</span>
-                  <span className={styles.jpPct}><i style={{ width: `${pctOf(p.amount, pot)}%`, background: colorOf(i) }} /><b>{fmtPct(pctOf(p.amount, pot))}</b></span>
+              {sorted.map((p, k) => (
+                <div key={p.u} className={`${styles.jpRow} ${p.u === me ? styles.lvMe : ''} ${p.i === winIdx ? styles.jpWon : ''}`} style={{ '--c': colorOf(p.i) }}>
+                  <span className={styles.lvName}>
+                    <UserAv name={p.u} src={avs?.[p.u.toLowerCase()]} size={32} ring={colorOf(p.i)} />
+                    <em>{p.u}{k === 0 && sorted.length > 1 && <b className={styles.jpTag}>Leader</b>}<small>{fmt(p.amount)} pts</small></em>
+                  </span>
+                  <span className={styles.jpPct}><i style={{ width: `${pctOf(p.amount, pot)}%` }} /><b>{fmtPct(pctOf(p.amount, pot))}</b></span>
                 </div>
               ))}
             </div>
