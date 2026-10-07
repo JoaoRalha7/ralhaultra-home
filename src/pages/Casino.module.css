@@ -543,3 +543,10 @@
 /* ── Hide scrollbars inside the game shell (scrolling still works) ── */
 .layout, .layout * { scrollbar-width: none !important; }
 .layout::-webkit-scrollbar, .layout *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* ── Jackpot list: rows keep their natural height; avatar ring is not clipped ── */
+.lvDock .lvList { align-content: start; padding: 3px; }
+.jpRow .lvName { overflow: visible; padding-left: 3px; }
+.jpRow .lvName em { overflow: hidden; }
+.jpRow { min-height: 0; }
+.jpDock .lvCard + .lvCard { border-radius: 0; }
