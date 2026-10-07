@@ -458,3 +458,22 @@
 .rTable { grid-template-rows: repeat(3, 38px) 34px 34px; gap: 3px; }
 .rTableWrap { padding: 8px; }
 .jpWheelWrap { width: min(100%, 320px); margin-top: 0; }
+
+/* ── Crash and Jackpot: bet panel | game in the middle | live info on the right ── */
+.layout:has(> .lvDock) { grid-template-columns: 290px minmax(0, 1fr) 290px; }
+.layout:has(> .lvDock) > .lvDock { grid-column: 3; grid-row: 1; align-self: start; position: sticky; top: 76px; }
+.layout:has(> .lvDock) .lvList { max-height: 230px; }
+.jpDock { gap: 10px; }
+.jpDock .lvList { max-height: 190px; }
+@media (max-width: 1280px) {
+  .layout:has(> .lvDock) { grid-template-columns: 280px minmax(0, 1fr); }
+  .layout:has(> .lvDock) > .lvDock { grid-column: 2; grid-row: 2; position: static; }
+}
+@media (max-width: 900px) {
+  .layout:has(> .lvDock) { grid-template-columns: 1fr; }
+  .layout:has(> .lvDock) > .lvDock { grid-column: 1; grid-row: auto; }
+}
+.layout:has(> .lvDock) > .panel { grid-row: 1; }
+.layout:has(> .lvDock) > .stage { grid-column: 2; grid-row: 1; align-self: start; }
+@media (max-width: 1280px) { .layout:has(> .lvDock) > .panel { grid-row: 1 / span 2; } }
+@media (max-width: 900px) { .layout:has(> .lvDock) > .panel, .layout:has(> .lvDock) > .stage { grid-column: 1; grid-row: auto; } }
