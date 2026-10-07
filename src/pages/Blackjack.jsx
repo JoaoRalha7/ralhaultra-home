@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { BetPanel, ChipStack, Confetti, HistoryStrip, Page, Result, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
-import styles from './Casino.module.css'
+import { Confetti, Page, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import shared from './Casino.module.css'
+import styles from './Blackjack.module.css'
 
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
 const SUITS = [
@@ -10,138 +11,147 @@ const SUITS = [
   { red: false, d: 'M12 3a4 4 0 00-3.500 6A4.500 4.500 0 106 17a4.400 4.400 0 003-1.200L8 22h8l-1-6.200A4.400 4.400 0 0018 17a4.500 4.500 0 10-2.500-8A4 4 0 0012 3z' },
 ]
 
-// delay: ms before the card leaves the shoe. reveal: turn a face-down card over in place (dealer hole card).
-function Card({ c, hidden, delay = 0, reveal }) {
+function Card({ c, hidden, delay = 0, reveal, tone }) {
   const suit = hidden ? null : SUITS[Math.floor((c % 52) / 13)]
   return (
-    <div className={`${styles.card} ${reveal ? '' : styles.cardFly}`} style={{ '--dl': `${delay}ms` }} aria-label={hidden ? 'Hidden card' : RANKS[c % 13]}>
+    <div className={`${styles.card} ${reveal ? '' : styles.fly} ${tone ? styles[tone] : ''}`} style={{ '--dl': `${delay}ms` }} aria-label={hidden ? 'Hidden card' : RANKS[c % 13]}>
       <div className={`${styles.cardIn} ${hidden ? styles.down : reveal ? styles.revealTurn : styles.turnTurn}`}>
-        <div className={`${styles.face} ${styles.cFront} ${suit?.red ? styles.red : ''}`}>
+        <div className={`${styles.face} ${styles.front} ${suit?.red ? styles.red : ''}`}>
           {!hidden && (
             <>
               <b>{RANKS[c % 13]}</b>
-              <svg viewBox="0 0 24 24" className={styles.pip} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
               <svg viewBox="0 0 24 24" className={styles.pipSm} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
+              <svg viewBox="0 0 24 24" className={styles.pip} aria-hidden="true"><path d={suit.d} fill="currentColor" /></svg>
             </>
           )}
         </div>
-        <div className={`${styles.face} ${styles.cBack}`}><span /></div>
+        <div className={`${styles.face} ${styles.back}`}><span>RU</span></div>
       </div>
     </div>
   )
 }
 
-const LABEL = { win: 'You win', blackjack: 'Blackjack', push: 'Push', lose: 'Dealer wins', bust: 'Bust', dealer_blackjack: 'Dealer blackjack', multi: 'Round over' }
-const HAND = { win: 'Win', push: 'Push', lose: 'Lose', bust: 'Bust', blackjack: 'Blackjack' }
-const SIDE_NAME = {
-  perfect: 'Perfect pair', colored: 'Colored pair', mixed: 'Mixed pair',
-  suitedTrips: 'Suited trips', straightFlush: 'Straight flush', trips: 'Three of a kind', straight: 'Straight', flush: 'Flush',
+// "9 / 19" while an ace can still count either way
+const showTotal = (cards, total, live) => {
+  if (!live) return String(total)
+  const hard = cards.reduce((a, c) => a + Math.min((c % 13) + 1, 10), 0)
+  return cards.some((c) => c % 13 === 0) && hard + 10 <= 21 ? `${hard} / ${hard + 10}` : String(total)
 }
+const RES = { win: ['WIN', 'win'], blackjack: ['BLACKJACK', 'win'], push: ['PUSH', 'push'], lose: ['LOSE', 'lose'], bust: ['BUST', 'lose'] }
 
-const clampSide = (v) => { const n = Math.floor(Number(v)) || 0; return n < MIN_BET ? 0 : Math.min(MAX_BET, n) }
+const clamp = (v) => Math.max(0, Math.min(MAX_BET, Math.floor(Number(v)) || 0))
+const IC = {
+  hit: <path d="M12 5v14M5 12h14" />,
+  stand: <path d="M6 12.500l4 4 8-9" />,
+  split: <path d="M12 4v6M12 10l-6 4v6M12 10l6 4v6" />,
+  double: <path d="M7 12h10M12 7v10M4 4h16v16H4z" />,
+}
+const Ico = ({ n }) => <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{IC[n]}</svg>
 
-function SideInput({ label, hint, value, setValue, disabled }) {
+function Money({ label, value, setValue, disabled, min }) {
+  const set = (v) => setValue(Math.max(min, Math.min(MAX_BET, Math.floor(v) || min)))
   return (
-    <label className={styles.sideIn}>
-      <span>{label}<small>{hint}</small></span>
-      <input type="number" inputMode="numeric" min="0" placeholder="0" value={value} disabled={disabled}
-        onChange={(e) => setValue(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
-        onBlur={() => setValue(clampSide(value) || '')} />
-    </label>
+    <div className={styles.fld}>
+      <span className={styles.lab}>{label}</span>
+      <div className={`${styles.money} ${disabled ? styles.off : ''}`}>
+        <i className={styles.coin} aria-hidden="true" />
+        <input type="number" inputMode="numeric" min={min} value={value} disabled={disabled} placeholder="0"
+          onChange={(e) => setValue(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
+          onBlur={() => setValue(min === 0 && !clamp(value) ? '' : set(value))} />
+        <button type="button" disabled={disabled} onClick={() => set((Number(value) || 0) / 2)}>1/2</button>
+        <button type="button" disabled={disabled} onClick={() => set((Number(value) || min || MIN_BET) * 2)}>2x</button>
+      </div>
+    </div>
   )
 }
 
 export default function Blackjack() {
   const g = useCasino('blackjack')
+  const [tab, setTab] = useState('standard')
   const [bet, setBet] = useState(100)
   const [pp, setPp] = useState('')
   const [t3, setT3] = useState('')
+  const [seats, setSeats] = useState(1)
   const r = g.round
   const active = r?.status === 'active'
   const done = r?.status === 'done'
   const shaking = useFlag(g.shake)
   const act = (a) => { playSfx('click'); g.act(a) }
-  const stake = Number(bet) + clampSide(pp) + clampSide(t3)
-  const multi = r && r.hands.length > 1
+  const ppv = tab === 'side' ? clamp(pp) : 0, t3v = tab === 'side' ? clamp(t3) : 0
+  const place = () => { playSfx('click'); g.start({ bet: Number(bet), pp: ppv >= MIN_BET ? ppv : 0, t3: t3v >= MIN_BET ? t3v : 0, seats }) }
+  const n = r?.hands.length || 0
+  const first = (i, ci) => (ci * (n + 1) + i) * 170 // opening deal order: every seat, then the dealer
 
   return (
-    <Page game="blackjack" title="Blackjack" sub="Beat the dealer without going over 21. Blackjack pays 3:2. Split pairs and add side bets.">
-      <div className={styles.layout}>
-        <BetPanel points={g.points} bet={bet} setBet={setBet} locked={active} loggedIn={!!g.user}>
-          {active ? (
-            <div className={styles.actions}>
-              <button type="button" className={styles.cta} disabled={g.busy} onClick={() => act('hit')}>Hit</button>
-              <button type="button" className={styles.ctaAlt} disabled={g.busy} onClick={() => act('stand')}>Stand</button>
-              <button type="button" className={styles.ctaAlt} disabled={g.busy || !r.canDouble} onClick={() => act('double')}>Double</button>
-              <button type="button" className={styles.ctaAlt} disabled={g.busy || !r.canSplit} onClick={() => act('split')}>Split</button>
-            </div>
-          ) : (
+    <Page game="blackjack" title="Blackjack" sub="">
+      <div className={shared.layout}>
+        <aside className={`${shared.panel} ${styles.panel}`}>
+          <div className={styles.tabs} role="tablist">
+            <button type="button" role="tab" aria-selected={tab === 'standard'} className={tab === 'standard' ? styles.on : ''} onClick={() => setTab('standard')}>Standard</button>
+            <button type="button" role="tab" aria-selected={tab === 'side'} className={tab === 'side' ? styles.on : ''} onClick={() => setTab('side')}>Side Bets</button>
+          </div>
+          <Money label="Bet Amount" value={bet} setValue={setBet} disabled={active} min={MIN_BET} />
+          {tab === 'side' && (
             <>
-              <span className={styles.lbl}>Side bets</span>
-              <SideInput label="Perfect Pairs" hint="Your 2 cards pair. Up to 29:1" value={pp} setValue={setPp} disabled={g.busy} />
-              <SideInput label="21+3" hint="Your 2 cards + dealer card. Up to 100:1" value={t3} setValue={setT3} disabled={g.busy} />
-              <button type="button" className={styles.cta} disabled={g.busy || !g.user || Number(bet) < MIN_BET}
-                onClick={() => { playSfx('click'); g.start({ bet: Number(bet), pp: clampSide(pp), t3: clampSide(t3) }) }}>
-                {g.user ? `Deal${stake !== Number(bet) ? ` (${fmt(stake)})` : ''}` : 'Log in to play'}
-              </button>
+              <Money label="Perfect Pairs" value={pp} setValue={setPp} disabled={active} min={0} />
+              <Money label="21+3" value={t3} setValue={setT3} disabled={active} min={0} />
             </>
           )}
-          {g.err && <p className={styles.err}>{g.err}</p>}
-          <p className={styles.note}>Dealer stands on 17. Double on any two cards, split up to 4 hands (split aces get one card each). Side bets are paid when the hand is dealt.</p>
-        </BetPanel>
-
-        <section className={`${styles.stage} ${styles.felt} ${shaking ? styles.shake : ''}`}>
-          <HistoryStrip items={g.history} />
-          <div className={styles.shoe} aria-hidden="true"><i /><i /><i /></div>
-
-          <div className={styles.table}>
-            <svg className={styles.arc} viewBox="0 0 600 70" aria-hidden="true">
-              <defs><path id="bjArc" d="M30 60 Q300 -20 570 60" /></defs>
-              <text><textPath href="#bjArc" startOffset="50%" textAnchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
-            </svg>
-
-            {!r ? (
-              <div className={styles.idle}>
-                <ChipStack amount={Number(bet)} />
-                <span>Place your bet and deal</span>
-              </div>
-            ) : (
-              <>
-                <div className={styles.hand}>
-                  <h3>Dealer <span>{r.dealerTotal}{!done && '+'}</span></h3>
-                  <div className={styles.cards}>
-                    {r.dealer.map((c, i) => (
-                      <Card key={i === 1 && done ? 'dh-open' : `d${i}`} c={c} reveal={i === 1 && done}
-                        delay={i === 0 ? 200 : i === 1 ? 0 : 750 + (i - 2) * 600} />
-                    ))}
-                    {active && <Card key="dh" hidden delay={600} />}
-                  </div>
-                </div>
-
-                {r.side && (
-                  <div className={styles.sideRes}>
-                    {r.side.pp && <span className={r.side.pp.mult ? styles.sideWin : ''}>Perfect Pairs {r.side.pp.mult ? `${SIDE_NAME[r.side.pp.kind]} +${fmt(r.side.pp.stake * r.side.pp.mult)}` : `-${fmt(r.side.pp.stake)}`}</span>}
-                    {r.side.t3 && <span className={r.side.t3.mult ? styles.sideWin : ''}>21+3 {r.side.t3.mult ? `${SIDE_NAME[r.side.t3.kind]} +${fmt(r.side.t3.stake * r.side.t3.mult)}` : `-${fmt(r.side.t3.stake)}`}</span>}
-                  </div>
-                )}
-
-                <div className={`${styles.seats} ${multi ? styles.multi : ''}`}>
-                  {r.hands.map((h, hi) => (
-                    <div key={hi} className={`${styles.seat} ${active && hi === r.active && multi ? styles.seatOn : ''} ${h.done && active ? styles.seatDone : ''} ${done && h.result === 'bust' ? styles.seatBust : ''} ${done && (h.result === 'win' || h.result === 'blackjack') ? (h.result === 'blackjack' ? styles.seatBj : styles.seatWin) : ''} ${done && h.result === 'lose' ? styles.seatLose : ''}`}>
-                      <div className={styles.hand}>
-                        <h3>{multi ? `Hand ${hi + 1}` : 'You'} <span key={h.total} className={`${styles.totPop} ${h.total === 21 ? styles.t21 : ''}`}>{h.total}</span></h3>
-                        <div className={styles.cards}>{h.cards.map((c, i) => <Card key={`p${hi}-${i}`} c={c} delay={i === 0 ? 0 : i === 1 ? 400 : 0} />)}</div>
-                      </div>
-                      <div className={styles.betLine}><ChipStack amount={h.bet} /><b>{fmt(h.bet)}</b>{h.doubled && <em>Doubled</em>}
-                        {done && h.result && <em className={h.payout > h.bet ? styles.emWin : h.payout === h.bet ? '' : styles.emLose}>{HAND[h.result]}</em>}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+          <div className={styles.fld}>
+            <span className={styles.lab}>Seats</span>
+            <div className={styles.seatsSel}>
+              {[1, 2, 3].map((s) => <button key={s} type="button" disabled={active} className={seats === s ? styles.on : ''} onClick={() => setSeats(s)}>{s}</button>)}
+            </div>
           </div>
+          <div className={styles.acts}>
+            <button type="button" disabled={!active || g.busy} onClick={() => act('hit')}><Ico n="hit" />Hit</button>
+            <button type="button" disabled={!active || g.busy} onClick={() => act('stand')}><Ico n="stand" />Stand</button>
+            <button type="button" disabled={!active || g.busy || !r?.canSplit} onClick={() => act('split')}><Ico n="split" />Split</button>
+            <button type="button" disabled={!active || g.busy || !r?.canDouble} onClick={() => act('double')}><Ico n="double" />Double</button>
+          </div>
+          <button type="button" className={styles.place} disabled={active || g.busy || !g.user || Number(bet) < MIN_BET} onClick={place}>{g.user ? 'Place Bet' : 'Log in to play'}</button>
+          {g.err && <p className={styles.err}>{g.err}</p>}
+        </aside>
 
-          {done && <Result won={r.payout > r.bet} push={r.payout === r.bet} payout={r.payout} bet={r.bet} label={LABEL[r.outcome] || 'Round over'} onAgain={() => g.setRound(null)} />}
+        <section className={`${styles.table} ${shaking ? shared.shake : ''}`}>
+          <div className={styles.shoe} aria-hidden="true" />
+          {r && (
+            <div className={styles.dealer}>
+              <span className={styles.pill}>{r.dealerTotal}</span>
+              <div className={styles.cards}>
+                {r.dealer.map((c, i) => <Card key={`${r.id}-d${i}${i === 1 && done ? 'o' : ''}`} c={c} reveal={i === 1 && done} delay={i === 0 ? first(n, 0) : i === 1 ? 0 : 750 + (i - 2) * 600} />)}
+                {active && <Card key={`${r.id}-dh`} hidden delay={first(n, 1)} />}
+              </div>
+            </div>
+          )}
+          <div className={styles.rules}><b>Blackjack 3:2</b><span>Dealer stands on 17</span></div>
+          {r && (
+            <div className={styles.seats}>
+              {r.hands.map((h, hi) => {
+                const on = active && hi === r.active && !h.done
+                const res = done || h.result ? RES[h.result] : null
+                const tone = res ? res[1] : null
+                const side = h.side && [h.side.pp && h.side.pp.mult ? `PP ${h.side.pp.mult}:1` : null, h.side.t3 && h.side.t3.mult ? `21+3 ${h.side.t3.mult}:1` : null].filter(Boolean)
+                return (
+                  <div key={hi} className={styles.seat}>
+                    <div className={styles.tags}>
+                      <span className={`${styles.pill} ${on ? styles.pillOn : ''} ${tone ? styles['p_' + tone] : ''}`}>{showTotal(h.cards, h.total, !h.done)}</span>
+                      {h.doubled && <small className={styles.tag}>DOUBLE</small>}
+                      {res && <small className={`${styles.tag} ${styles['t_' + tone]}`}>{res[0]}</small>}
+                      {side?.map((t) => <small key={t} className={`${styles.tag} ${styles.t_win}`}>{t}</small>)}
+                    </div>
+                    <div className={styles.hand}>
+                      {on && n > 1 && <i className={styles.chev} aria-hidden="true">&rsaquo;</i>}
+                      <div className={styles.cards}>
+                        {h.cards.map((c, i) => <Card key={`${r.id}-${hi}-${i}`} c={c} tone={done ? tone : null} delay={i < 2 && h.cards.length <= 2 ? first(hi, i) : 0} />)}
+                      </div>
+                      {on && n > 1 && <i className={styles.chev} aria-hidden="true">&lsaquo;</i>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
           <Confetti fire={g.fire} colors={['#f5c542', '#fde68a', '#34d399', '#fff', '#93c5fd']} />
         </section>
       </div>

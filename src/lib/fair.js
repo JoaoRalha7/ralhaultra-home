@@ -20,7 +20,8 @@ const SUITS = ['♠', '♥', '♦', '♣']
 const card = (c) => `${RANKS[c % 13]}${SUITS[Math.floor(c / 13) % 4]}`
 
 export const GAME_OPTS = {
-  roulette: [], keno: [], blackjack: [], jackpot: [],
+  roulette: [], keno: [], jackpot: [],
+  blackjack: [{ k: 'seats', label: 'Seats', def: 1, min: 1, max: 3 }],
   mines: [{ k: 'mines', label: 'Mines', def: 3, min: 1, max: 24 }],
   plinko: [{ k: 'rows', label: 'Rows', def: 16, min: 8, max: 16 }, { k: 'balls', label: 'Balls in the bet', def: 1, min: 1, max: 25 }],
   crash: [],
@@ -50,12 +51,10 @@ export async function derive(game, server, client, nonce, o = {}) {
     })
   }
   if (game === 'blackjack') {
+    const n = Math.min(3, Math.max(1, Math.floor(o.seats) || 1))
     const d = rg.shuffle(Array.from({ length: 312 }, (_, i) => i % 52))
-    return [
-      { label: 'Player', value: `${card(d[0])} ${card(d[2])}` },
-      { label: 'Dealer', value: `${card(d[1])} ${card(d[3])}` },
-      { label: 'Next cards', value: d.slice(4, 12).map(card).join(' ') },
-    ]
+    const seatsOut = Array.from({ length: n }, (_, i) => ({ label: `Seat ${i + 1}`, value: `${card(d[i])} ${card(d[n + 1 + i])}` }))
+    return [...seatsOut, { label: 'Dealer (up card, hole card)', value: `${card(d[n])} ${card(d[2 * n + 1])}` }, { label: 'Next cards', value: d.slice(2 * n + 2, 2 * n + 10).map(card).join(' ') }]
   }
   if (game === 'jackpot') return [{ label: 'Ticket (0-1, the winner is where ticket x pot falls)', value: rg.float().toFixed(12) }]
   const u = rg.float()

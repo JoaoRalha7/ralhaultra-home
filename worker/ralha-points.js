@@ -196,7 +196,7 @@ function sideT3(a, b, c) {
 const bjStake = (s) => s.hands.reduce((a, h) => a + h.bet, 0) + (s.sideStake || 0)
 const bjCanSplit = (s) => {
   const h = s.hands[s.active]
-  return !!h && !h.done && h.cards.length === 2 && s.hands.length < 4 && !h.noResplit && bjVal(h.cards[0]) === bjVal(h.cards[1])
+  return !!h && !h.done && h.cards.length === 2 && s.hands.length < 6 && !h.noResplit && bjVal(h.cards[0]) === bjVal(h.cards[1])
 }
 const bjCanDouble = (s) => { const h = s.hands[s.active]; return !!h && !h.done && h.cards.length === 2 && !h.noDouble }
 
@@ -353,7 +353,7 @@ function publicGame(game, row, now) {
       nextMult: minesMult(k + 1, st.m), minePositions: done ? st.mines : null, hit: st.hit ?? null }
   }
   if (game === 'blackjack') {
-    return { ...base, hands: st.hands.map((h) => ({ cards: h.cards, bet: h.bet, total: bjTotal(h.cards), doubled: !!h.doubled, done: !!h.done, result: h.result || null, payout: h.payout || 0 })),
+    return { ...base, hands: st.hands.map((h) => ({ cards: h.cards, bet: h.bet, side: h.side || null, total: bjTotal(h.cards), doubled: !!h.doubled, done: !!h.done, result: h.result || null, payout: h.payout || 0 })),
       active: st.active, dealer: done ? st.dealer : [st.dealer[0]], dealerTotal: done ? bjTotal(st.dealer) : bjVal(st.dealer[0]),
       canDouble: !done && bjCanDouble(st), canSplit: !done && bjCanSplit(st), outcome: st.outcome || null,
       side: st.sideRes || null, sidePayout: st.sidePayout || 0 }
@@ -904,7 +904,10 @@ export default {
             const t3 = body.t3 == null || body.t3 === '' ? 0 : parseInt(body.t3, 10)
             const okSide = (v) => Number.isInteger(v) && v >= 0 && v <= CASINO.maxBet && (v === 0 || v >= CASINO.minBet)
             if (!okSide(pp) || !okSide(t3)) return json({ error: 'invalid side bet' }, 400)
-            sides = { pp, t3 }; stake = bet + pp + t3
+            const seats = body.seats == null || body.seats === '' ? 1 : parseInt(body.seats, 10)
+            if (!Number.isInteger(seats) || seats < 1 || seats > 3) return json({ error: 'invalid seats' }, 400)
+            params = { seats }
+            sides = { pp, t3 }; stake = seats * (bet + pp + t3) // every seat plays the same bet and side bets
           }
           if (game === 'plinko') {
             const rows = parseInt(body.rows, 10)
@@ -985,12 +988,18 @@ export default {
             kenoPayout = Math.min(Math.floor(rBets.reduce((a, b) => a + b.amount * rouletteMult(b, number), 0)), CASINO.maxPayout)
           } else if (game === 'blackjack') {
             const deck = rg.shuffle(Array.from({ length: 52 * BJ_DECKS }, (_, i) => i % 52))
-            const pc = [deck[0], deck[2]], dc = [deck[1], deck[3]]
-            const sideRes = {}
+            // deal order: one card to each seat, dealer up card, second card to each seat, dealer hole card
+            const n = params.seats
+            const dc = [deck[n], deck[2 * n + 1]]
             let sidePayout = 0
-            if (sides.pp) { const r = sidePP(pc[0], pc[1]); sideRes.pp = { stake: sides.pp, ...r }; sidePayout += sides.pp * r.mult }
-            if (sides.t3) { const r = sideT3(pc[0], pc[1], dc[0]); sideRes.t3 = { stake: sides.t3, ...r }; sidePayout += sides.t3 * r.mult }
-            state = { fair: fx.fair, deck: deck.slice(4), dealer: dc, hands: [{ cards: pc, bet }], active: 0, sideStake: sides.pp + sides.t3, sideRes: sides.pp || sides.t3 ? sideRes : null, sidePayout }
+            const hands = Array.from({ length: n }, (_, i) => {
+              const cards = [deck[i], deck[n + 1 + i]], h = { cards, bet }, side = {}
+              if (sides.pp) { const r = sidePP(cards[0], cards[1]); side.pp = { stake: sides.pp, ...r }; sidePayout += sides.pp * r.mult }
+              if (sides.t3) { const r = sideT3(cards[0], cards[1], dc[0]); side.t3 = { stake: sides.t3, ...r }; sidePayout += sides.t3 * r.mult }
+              if (side.pp || side.t3) h.side = side
+              return h
+            })
+            state = { fair: fx.fair, deck: deck.slice(2 * n + 2), dealer: dc, hands, active: n - 1, sideStake: n * (sides.pp + sides.t3), sidePayout }
           } else {
             state = { fair: fx.fair, crashAt: newCrashPoint(rg.float()), startedAt: Date.now() + 600, auto: params.auto || null }
           }
@@ -1008,13 +1017,22 @@ export default {
             if (p.points != null) newPoints = p.points
           }
           if (game === 'blackjack') {
-            const pBJ = isBJ(state.hands[0].cards), dBJ = isBJ(state.dealer)
-            if (pBJ || dBJ) {
-              const main = pBJ && dBJ ? bet : pBJ ? bet * 2.5 : 0
-              const result = pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'lose'
-              const hands = [{ ...state.hands[0], done: true, result, payout: main }]
-              const f = await finish(created, { ...state, hands, outcome: pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'dealer_blackjack' }, main + state.sidePayout)
-              if (f.row) { row = f.row; newPoints = f.newPoints ?? newPoints }
+            // naturals are settled at once: blackjack pays 3:2, a dealer blackjack ends the round
+            const dBJ = isBJ(state.dealer)
+            const hs = state.hands.map((h) => {
+              const pBJ = isBJ(h.cards)
+              if (!pBJ && !dBJ) return h
+              return { ...h, done: true, nat: true, result: pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'lose', payout: pBJ && dBJ ? h.bet : pBJ ? h.bet * 2.5 : 0 }
+            })
+            if (hs.some((h) => h.nat)) {
+              const open = hs.findLastIndex((h) => !h.done)
+              if (open < 0) {
+                const f = await finish(created, { ...state, hands: hs, outcome: hs.length > 1 ? 'multi' : dBJ && !isBJ(hs[0].cards) ? 'dealer_blackjack' : hs[0].result }, hs.reduce((a, h) => a + h.payout, 0) + state.sidePayout)
+                if (f.row) { row = f.row; newPoints = f.newPoints ?? newPoints }
+              } else {
+                const sv = await save(created, { state: { ...state, hands: hs, active: open } })
+                if (sv) row = sv
+              }
             }
           }
           return out(row, { newPoints })
@@ -1060,14 +1078,15 @@ export default {
             const cur = row.state
             if (!cur.hands) return json({ error: 'round expired' }, 409)
             const clone = () => ({ ...cur, deck: [...cur.deck], hands: cur.hands.map((h) => ({ ...h, cards: [...h.cards] })) })
-            const nextActive = (s) => { const i = s.hands.findIndex((h) => !h.done); if (i >= 0) s.active = i; return i < 0 }
+            const nextActive = (s) => { const i = s.hands.findLastIndex((h) => !h.done); if (i >= 0) s.active = i; return i < 0 } // seats play from the right
             // all hands finished: dealer plays (unless everyone busted), then settle every hand
             const finishRound = async (s) => {
-              const anyLive = s.hands.some((h) => bjTotal(h.cards) <= 21)
+              const anyLive = s.hands.some((h) => !h.nat && bjTotal(h.cards) <= 21)
               if (anyLive) while (bjTotal(s.dealer) < 17) s.dealer = [...s.dealer, s.deck.shift()]
               const d = bjTotal(s.dealer)
               let total = 0
               s.hands = s.hands.map((h) => {
+                if (h.nat) { total += h.payout; return h }
                 const p = bjTotal(h.cards)
                 let result, payout
                 if (p > 21) { result = 'bust'; payout = 0 }
