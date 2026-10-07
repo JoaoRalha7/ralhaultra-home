@@ -1,73 +1,52 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
 
-function Stat({ icon, label, value, copy }) {
-  const [done, setDone] = useState(false);
-  if (copy && value && value !== '-') {
-    return (
-      <button
-        type="button"
-        className={`st code${done ? ' done' : ''}`}
-        title="Copy code"
-        onClick={() => {
-          try { navigator.clipboard.writeText(String(value)); } catch { /* clipboard unavailable */ }
-          setDone(true);
-          setTimeout(() => setDone(false), 1500);
-        }}
-      >
-        <span className="ic"><Icon name={icon} /></span>
-        <div>
-          <small>{done ? 'Copied' : label}</small>
-          <b>{value}</b>
-        </div>
-      </button>
-    );
-  }
+function Chip({ icon, label, value }) {
   return (
-    <div className="st">
-      <span className="ic"><Icon name={icon} /></span>
-      <div>
-        <small>{label}</small>
-        <b>{value}</b>
-      </div>
+    <div className="oChip">
+      <Icon name={icon} />
+      <small>{label}</small>
+      <b>{value}</b>
     </div>
   );
 }
 
 export default function OfferRow({ o, rank, onClaim, onInfo }) {
+  const [copied, setCopied] = useState(false);
+  const hasCode = o.code && o.code !== '-';
+  const m = String(o.headline || '').match(/^(\d+\s?%?|€\s?\d[\d.,]*)\s+(.*)$/);
+  const big = m ? m[1] : o.headline;
+  const rest = m ? m[2] : '';
+  const tag = o.badge ? o.badge : rank === 1 ? 'TOP PICK' : null;
+  const copy = () => {
+    try { navigator.clipboard.writeText(String(o.code)); } catch { /* clipboard unavailable */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
   return (
-    <article className="oc" style={{ '--ac': o.accent }}>
-      <div
-        className="bn"
-        style={{
-          background: o.banner
-            ? `linear-gradient(90deg, rgba(0,0,0,.82), rgba(0,0,0,.1)), url(${o.banner}) center / cover`
-            : `radial-gradient(90% 90% at 85% 40%, ${o.c2}, transparent 70%), ${o.c1}`,
-        }}
-      >
-        {rank != null && <span className="rank">#{rank}</span>}
-        <div className="badges">
-          {o.badge && <span className={`bd b-${o.badge.toLowerCase()}`}>{o.badge}</span>}
-          {o.freespins !== false && <span className="bd b-fs">Free spins</span>}
-        </div>
-        <small>Claim the</small>
-        <h3>{o.headline}</h3>
-        <div className="sub">{o.sub}</div>
-        {o.logo ? <img className="brandLogo" src={o.logo} alt={o.brand} /> : <span className="brand">{o.brand}</span>}
+    <article className="oc2" style={{ '--ac': o.accent, '--c1': o.c1, '--c2': o.c2 }}>
+      {o.banner && <div className="oBg" style={{ backgroundImage: `url(${o.banner})` }} />}
+      {tag && <span className="oTag"><Icon name="trophy" />{tag}</span>}
+      <div className="oLogo">
+        {o.logo ? <img src={o.logo} alt={o.brand} /> : <span>{o.brand}</span>}
       </div>
-      <div className="stats">
-        <Stat icon="wallet" label="Min deposit" value={o.deposit} />
-        <Stat icon="gift" label="Bonus" value={o.bonus} />
-        <Stat icon="spark" label="Free spins" value={o.spins} />
-        <Stat icon="clock" label="Withdraw" value={o.withdraw} />
-        <Stat icon="shield" label="License" value={o.license} />
-        <Stat icon="tag" label="Code" value={o.code} copy />
+      <span className="oPill"><Icon name={o.freespins !== false ? 'spark' : 'gift'} />{o.freespins !== false ? 'Free spins' : 'Welcome bonus'}</span>
+      <div className={`oBig${m ? '' : ' txt'}`}>{big}</div>
+      {rest && <div className="oRest">{rest}</div>}
+      {o.sub && <div className="oSub">{o.sub}</div>}
+      <div className="oChips">
+        <Chip icon="wallet" label="Min deposit" value={o.deposit} />
+        <Chip icon="clock" label="Withdraw" value={o.withdraw} />
+        <Chip icon="shield" label="License" value={o.license} />
       </div>
-      <div className="btns">
-        <button type="button" className="btn-claim" onClick={() => onClaim?.(o)}>Claim offer<Icon name="right" size={12} /></button>
-        <button type="button" className="btn-more" onClick={() => onInfo?.(o)}>More info<Icon name="right" size={12} /></button>
-      </div>
+      {hasCode && (
+        <button type="button" className={`oCode${copied ? ' done' : ''}`} onClick={copy}>
+          <span><small>Promo code</small><b>{o.code}</b></span>
+          <i><Icon name="tag" />{copied ? 'Copied' : 'Copy'}</i>
+        </button>
+      )}
+      <button type="button" className="oClaim" onClick={() => onClaim?.(o)}>Claim offer<Icon name="right" size={14} /></button>
+      <button type="button" className="oMore" onClick={() => onInfo?.(o)}>More info</button>
     </article>
   );
 }
-
