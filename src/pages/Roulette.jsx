@@ -99,6 +99,7 @@ export default function Roulette() {
   const [res, setRes] = useState(null) // finished round
   const wRef = useRef(null), bRef = useRef(null), cRef = useRef(null)
   const rot = useRef(0)
+  const hasSpun = useRef(false)
   const [shownNum, setShownNum] = useState(null)
 
   const R = useRef({})
@@ -130,6 +131,22 @@ export default function Roulette() {
   const setW = (a) => wRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`)
   const setB = (a, r) => { bRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`); cRef.current?.setAttribute('cy', String(C - r)) }
   const showBall = () => { if (bRef.current) bRef.current.style.opacity = '1' }
+  // idle: the wheel keeps turning slowly while nobody is spinning (after a spin it first rests on the result)
+  useEffect(() => {
+    if (spinning || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
+    let raf = 0, last = 0
+    const tick = (now) => {
+      if (last) { rot.current = (rot.current + (now - last) * 0.018) % 360; setW(rot.current) }
+      last = now
+      raf = requestAnimationFrame(tick)
+    }
+    const t = setTimeout(() => {
+      if (bRef.current) bRef.current.style.opacity = '0'
+      raf = requestAnimationFrame(tick)
+    }, hasSpun.current ? 2600 : 0)
+    return () => { clearTimeout(t); cancelAnimationFrame(raf) }
+  }, [spinning]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const snap = (idx) => { rot.current = (((-idx * SLICE) % 360) + 360) % 360; setW(rot.current); setB(0, R_POCKET); showBall() }
 
   // wheel turns clockwise and slows down, the ball runs the track the other way, then spirals in
@@ -166,6 +183,7 @@ export default function Roulette() {
 
   const spin = async () => {
     const { bets: bs, turbo: tb } = R.current
+    hasSpun.current = true
     setSpinning(true); setRes(null); setShownNum(null)
     g.quiet.current = tb; g.hold.current = true
     const data = await g.start({ bets: bs.map((b) => ({ type: b.type, value: b.value, amount: b.amount })) })
