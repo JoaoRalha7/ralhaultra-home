@@ -533,3 +533,9 @@
 }
 .page[data-game="crash"] .crashBox { display: flex; min-height: 0; }
 .page[data-game="crash"] .graph { width: 100%; height: 100%; }
+
+/* ── Live feed column: fill the height, scroll inside, never cut a row ── */
+.layout > .lvDock { display: flex; flex-direction: column; gap: 10px; }
+.lvDock .lvList { flex: 1; min-height: 0; max-height: none !important; overflow-y: auto; scrollbar-width: thin; }
+.jpDock .lvCard { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.lvDock .lvTabs, .lvDock .lvTh, .lvDock .lvHead { flex: none; }

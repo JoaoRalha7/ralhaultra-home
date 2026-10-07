@@ -1,3 +1,4 @@
+import OriginalsBelow from '../components/OriginalsBelow'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
@@ -298,6 +299,7 @@ export function Page({ title, sub, game, children }) {
         <SoundToggle />
       </header>
       {children}
+      <OriginalsBelow />
     </div>
   )
 }
