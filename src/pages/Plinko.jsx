@@ -19,12 +19,13 @@ export default function Plinko() {
   const [auto, setAuto] = useState(false)
   const [stat, setStat] = useState({ n: 0, net: 0 })
   const [playing, setPlaying] = useState(false)
-  const [ball, setBall] = useState(null) // { x, y } in board units
-  const [hit, setHit] = useState(null) // { slot, id }
+  const [balls, setBalls] = useState([]) // in flight: { k, x, y } in board units
+  const [hits, setHits] = useState({}) // slot -> balls landed in the current drop
+  const [count, setCount] = useState(1)
   const [last, setLast] = useState(null)
 
   const R = useRef({})
-  R.current = { rows, risk, turbo, cfg }
+  R.current = { rows, risk, turbo, cfg, count }
   const stop = useRef(false)
   const alive = useRef(true)
   const raf = useRef(0)
@@ -40,42 +41,70 @@ export default function Plinko() {
   const binY = PAD_T + (rows + 1) * dy
   const binX = (k) => cx + ((2 * k - rows) * dx) / 2
 
-  // one ball: follows the server path peg by peg
-  const drop = (path, nrows, speed) => new Promise((resolve) => {
+  // drops several balls at once (staggered); every ball follows its server path peg by peg
+  const fall = (items, nrows, speed, onLand) => new Promise((resolve) => {
     const dxx = (W - 56) / (nrows + 2), dyy = Math.min(30, 420 / (nrows + 1))
-    const xs = [0]; path.forEach((p) => xs.push(xs[xs.length - 1] + (p ? 1 : -1)))
-    const per = speed, total = per * nrows, t0 = performance.now()
+    const total = speed * nrows
+    const xs = items.map((it) => { const a = [0]; it.path.forEach((p) => a.push(a[a.length - 1] + (p ? 1 : -1))); return a })
+    const landed = items.map(() => false)
+    let done = 0, lastTick = 0
+    const t0 = performance.now()
     const tick = (now) => {
       if (!alive.current) return resolve()
-      const el = Math.min(now - t0, total), row = Math.min(nrows - 1, Math.floor(el / per)), t = (el - row * per) / per
-      const e = t * t * (3 - 2 * t)
-      const x = cx + ((xs[row] + (xs[row + 1] - xs[row]) * e) * dxx) / 2
-      const y = PAD_T + row * dyy + dyy * t * t - Math.sin(Math.PI * t) * 7
-      setBall({ x, y })
-      if (el < total && (row < nrows - 1 || t < 1)) { raf.current = requestAnimationFrame(tick); if (t > 0.02 && t < 0.12) playSfx('click') } else resolve()
+      const out = []
+      items.forEach((it, i) => {
+        if (landed[i]) return
+        const el = now - t0 - it.delay
+        if (el < 0) return
+        if (el >= total) { landed[i] = true; done++; onLand(i); return }
+        const row = Math.min(nrows - 1, Math.floor(el / speed)), t = (el - row * speed) / speed, e = t * t * (3 - 2 * t)
+        const x = cx + ((xs[i][row] + (xs[i][row + 1] - xs[i][row]) * e) * dxx) / 2
+        const y = PAD_T + row * dyy + dyy * t * t - Math.sin(Math.PI * t) * 7
+        out.push({ k: i, x, y })
+        if (items.length === 1 && t > 0.02 && t < 0.12) playSfx('click')
+      })
+      if (items.length > 1 && now - lastTick > 90 && out.length && !g.quiet.current) { lastTick = now; playSfx('click') }
+      setBalls(out)
+      if (done < items.length) raf.current = requestAnimationFrame(tick); else { setBalls([]); resolve() }
     }
     raf.current = requestAnimationFrame(tick)
   })
 
-  const playRound = async (stake) => {
+  const playRound = async (stake, count = 1) => {
     const { rows: rw, risk: rk, turbo: tb } = R.current
-    setPlaying(true); setHit(null)
-    g.quiet.current = tb; g.hold.current = true
+    setPlaying(true); setHits({})
+    g.quiet.current = tb
+    if (count > 1) {
+      const data = await g.batch({ bet: stake, rows: rw, risk: rk, count })
+      const list = data?.balls
+      if (!Array.isArray(list) || !list.length) { setPlaying(false); return null }
+      const speed = Math.max(95, 190 - rw * 6), gap = list.length > 12 ? 70 : 115
+      const land = (i) => { const r = list[i]; g.settle(r); setHits((h) => ({ ...h, [r.slot]: (h[r.slot] || 0) + 1 })); setLast({ ...r, bet: stake * list.length, payout: list.reduce((a, x) => a + x.payout, 0), mult: list.reduce((a, x) => a + x.payout, 0) / (stake * list.length) }) }
+      if (!tb) await fall(list.map((r, i) => ({ path: r.path, delay: i * gap })), rw, speed, land)
+      else list.forEach((_, i) => land(i))
+      if (!alive.current) return null
+      const tot = list.reduce((a, x) => a + x.payout, 0), cost = stake * list.length
+      if (data.newPoints != null) g.setPoints(data.newPoints)
+      g.cheer(tot - cost)
+      setPlaying(false)
+      return { bet: cost, payout: tot, count: list.length }
+    }
+    g.hold.current = true
     const data = await g.start({ bet: stake, rows: rw, risk: rk })
     if (!data?.state || data.state.game !== 'plinko') { g.release(); setPlaying(false); return null }
     const s = data.state
-    if (!tb) { await drop(s.path, s.rows, Math.max(95, 190 - s.rows * 6)); setBall(null) }
+    if (!tb) await fall([{ path: s.path, delay: 0 }], s.rows, Math.max(95, 190 - s.rows * 6), () => {})
     if (!alive.current) return s
-    setHit({ slot: s.slot, id: s.id }); setLast(s)
+    setHits({ [s.slot]: 1 }); setLast(s)
     if (tb) await sleep(60)
     g.release()
     setPlaying(false)
-    return s
+    return { ...s, count: 1 }
   }
 
   const playOnce = async () => {
     if (locked || Number(bet) < MIN_BET) return
-    await playRound(Number(bet))
+    await playRound(Number(bet), count)
   }
 
   const runAuto = async () => {
@@ -87,9 +116,9 @@ export default function Plinko() {
       const c = R.current.cfg
       const max = Math.floor(num(c.rounds))
       if (max && n >= max) break
-      const s = await playRound(cur)
+      const s = await playRound(cur, R.current.count)
       if (!s) break
-      n++; const profit = s.payout - s.bet; net += profit
+      n += s.count; const profit = s.payout - s.bet; net += profit
       setStat({ n, net })
       if (num(c.stopProfit) && net >= num(c.stopProfit)) break
       if (num(c.stopLoss) && -net >= num(c.stopLoss)) break
@@ -124,7 +153,12 @@ export default function Plinko() {
           <span className={styles.lbl}>Rows <b className={styles.mcount}>{rows}</b></span>
           <input type="range" min={PLINKO.minRows} max={PLINKO.maxRows} step="1" value={rows} disabled={locked} aria-label="Number of rows"
             className={styles.range} style={{ '--p': `${((rows - PLINKO.minRows) / (PLINKO.maxRows - PLINKO.minRows)) * 100}%` }}
-            onChange={(e) => { setRows(Number(e.target.value)); setHit(null) }} />
+            onChange={(e) => { setRows(Number(e.target.value)); setHits({}) }} />
+
+          <span className={styles.lbl}>Balls per drop</span>
+          <div className={`${styles.quick} ${styles.ballRow}`}>
+            {[1, 5, 10, 25].map((n) => <button key={n} type="button" disabled={locked} className={count === n ? styles.on : ''} onClick={() => setCount(n)}>{n}</button>)}
+          </div>
 
           {mode === 'auto' && (
             <>
@@ -146,7 +180,7 @@ export default function Plinko() {
 
           {auto && (
             <div className={styles.autoStat}>
-              <span>Ball {stat.n}</span>
+              <span>Balls {stat.n}</span>
               <span className={stat.net >= 0 ? styles.pos : styles.neg}>{stat.net >= 0 ? '+' : '-'}{fmt(Math.abs(stat.net))} pts</span>
             </div>
           )}
@@ -156,7 +190,7 @@ export default function Plinko() {
           ) : mode === 'auto' ? (
             <button type="button" className={styles.cta} disabled={disabledStart} onClick={runAuto}>{g.user ? 'Start auto bet' : 'Log in to play'}</button>
           ) : (
-            <button type="button" className={styles.cta} disabled={disabledStart} onClick={playOnce}>{g.user ? 'Drop ball' : 'Log in to play'}</button>
+            <button type="button" className={styles.cta} disabled={disabledStart} onClick={playOnce}>{!g.user ? 'Log in to play' : count > 1 ? `Drop ${count} balls (${fmt(Number(bet) * count)})` : 'Drop ball'}</button>
           )}
           {g.err && <p className={styles.err}>{g.err}</p>}
           <p className={styles.note}>Each ball falls through random bounces decided by the server. Return is about 98.5% to 99%. More rows and higher risk mean rarer but bigger edge payouts.</p>
@@ -167,7 +201,7 @@ export default function Plinko() {
           <div className={styles.ribbon}>
             <div><small>Rows</small><b>{rows}</b></div>
             <div><small>Risk</small><b style={{ textTransform: 'capitalize' }}>{risk}</b></div>
-            <div><small>Last multiplier</small><b>{last ? `${last.mult.toFixed(2)}x` : '-'}</b></div>
+            <div><small>{count > 1 ? 'Drop multiplier' : 'Last multiplier'}</small><b>{last ? `${last.mult.toFixed(2)}x` : '-'}</b></div>
             <div className={last && profit > 0 ? styles.ribGold : ''}><small>Profit</small><b>{last ? `${profit >= 0 ? '+' : '-'}${fmt(Math.abs(profit))}` : '-'}</b></div>
           </div>
 
@@ -178,13 +212,14 @@ export default function Plinko() {
             {table.map((m, k) => {
               const bw = dx * 0.9
               return (
-                <g key={`${k}-${hit && hit.slot === k ? hit.id : 0}`} className={`${styles.pbin} ${styles['pb_' + tone(m)]} ${hit && hit.slot === k ? styles.pbHit : ''}`}>
+                <g key={`${k}-${hits[k] || 0}`} className={`${styles.pbin} ${styles['pb_' + tone(m)]} ${hits[k] ? styles.pbHit : ''}`}>
                   <rect x={binX(k) - bw / 2} y={binY} width={bw} height={BIN_H} rx="6" />
+                  {hits[k] > 1 && <text x={binX(k)} y={binY - 5} textAnchor="middle" className={styles.pbCount}>x{hits[k]}</text>}
                   <text x={binX(k)} y={binY + BIN_H / 2 + 4} textAnchor="middle" fontSize={rows > 13 ? 10.5 : rows > 10 ? 12 : 14}>{m >= 1000 ? '1k' : m >= 100 ? Math.round(m) : m}</text>
                 </g>
               )
             })}
-            {ball && <circle cx={ball.x} cy={ball.y} r="7" className={styles.pball} />}
+            {balls.map((b) => <circle key={b.k} cx={b.x} cy={b.y} r={balls.length > 4 ? 5.500 : 7} className={styles.pball} />)}
           </svg>
           <Confetti fire={g.fire} colors={['#22d3ee', '#67e8f9', '#f5c542', '#f472b6', '#fff']} />
         </section>

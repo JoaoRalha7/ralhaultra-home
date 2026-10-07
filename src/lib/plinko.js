@@ -1,5 +1,5 @@
 // Plinko: n rows of pegs, the ball ends in slot 0..n (binomial). Multipliers are symmetric, highest at the edges.
-export const PLINKO = { minRows: 8, maxRows: 16, edge: 0.99, risks: ['low', 'medium', 'high'] }
+export const PLINKO = { minRows: 8, maxRows: 16, maxBalls: 25, edge: 0.99, risks: ['low', 'medium', 'high'] }
 const PL_HI = { low: [5.6, 16], medium: [13, 110], high: [29, 1000] }
 const PL_FLOOR = { low: 0.5, medium: 0.3, high: 0.2 }
 const plC = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i; return r }

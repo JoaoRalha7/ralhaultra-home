@@ -270,6 +270,8 @@
 .pbin text { fill: #fff; font-family: "DM Sans", sans-serif; font-weight: 800; font-variant-numeric: tabular-nums; pointer-events: none; }
 .pb_hot rect { fill: #be123c; } .pb_warm rect { fill: #c2410c; } .pb_amber rect { fill: #b45309; } .pb_mild rect { fill: #a16207; } .pb_cold rect { fill: #334155; }
 .pbHit { animation: pbBump .5s cubic-bezier(.2,1.5,.4,1); transform-box: fill-box; transform-origin: center; }
+.pbin .pbCount { fill: #fde68a; font: 800 11px "DM Sans", sans-serif; pointer-events: none; }
+.ballRow button { font-size: 13px; }
 .pbHit rect { stroke: #fff; stroke-width: 2; }
 @keyframes pbBump { 0% { transform: translateY(0); } 35% { transform: translateY(9px) scale(1.06); } 100% { transform: translateY(0) scale(1); } }
 

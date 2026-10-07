@@ -49,7 +49,7 @@ function kenoTable(n, risk = 'classic') {
 
 // Plinko
 // Plinko: n rows of pegs, the ball ends in slot 0..n (binomial). Multipliers are symmetric, highest at the edges.
-const PLINKO = { minRows: 8, maxRows: 16, edge: 0.99, risks: ['low', 'medium', 'high'] }
+const PLINKO = { minRows: 8, maxRows: 16, maxBalls: 25, edge: 0.99, risks: ['low', 'medium', 'high'] }
 const PL_HI = { low: [5.6, 16], medium: [13, 110], high: [29, 1000] }
 const PL_FLOOR = { low: 0.5, medium: 0.3, high: 0.2 }
 const plC = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i; return r }
@@ -467,6 +467,33 @@ export default {
             const a = Math.round(Number(body.auto) * 100) / 100
             if (!(a >= 1.01 && a <= CASINO.crashCap)) return json({ error: 'invalid auto' }, 400)
             params = { auto: a }
+          }
+
+          // plinko: several balls in one request = one balance check, one charge, one payout
+          if (game === 'plinko' && body.count != null && body.count !== '' && parseInt(body.count, 10) !== 1) {
+            const count = parseInt(body.count, 10)
+            if (!Number.isInteger(count) || count < 1 || count > PLINKO.maxBalls) return json({ error: 'invalid plinko' }, 400)
+            const total = bet * count
+            const bRes = await fetch(seUrl, { headers: seH })
+            if (!bRes.ok) return json({ error: 'balance check failed' }, 502)
+            const { points: have = 0 } = await bRes.json()
+            if (have < total) return json({ error: 'insufficient', currentPoints: have }, 400)
+            const chg = await seAdd(-total)
+            if (!chg.ok) return json({ error: 'charge failed' }, 502)
+            const tab = plinkoTable(params.rows, params.risk)
+            const rowsOut = Array.from({ length: count }, () => {
+              const path = Array.from({ length: params.rows }, () => rndInt(2))
+              const slot = path.reduce((a, b) => a + b, 0)
+              const mult = tab[slot]
+              return { user_id: who.id, username: who.username, game, bet, state: { rows: params.rows, risk: params.risk, path, slot, mult }, status: 'done', payout: Math.min(Math.floor(bet * mult), CASINO.maxPayout) }
+            })
+            const insB = await fetch(rest, { method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify(rowsOut) })
+            const made = insB.ok ? await insB.json() : null
+            if (!Array.isArray(made) || made.length !== count) { const rf = await seAdd(total); return json({ error: 'could not start', refunded: true, newPoints: rf.points ?? null }, 409) }
+            const totalPay = made.reduce((a, r) => a + (r.payout || 0), 0)
+            let newPts = chg.points
+            if (totalPay > 0) { let pp = await seAdd(totalPay); if (!pp.ok) pp = await seAdd(totalPay); if (pp.points != null) newPts = pp.points }
+            return json({ ok: true, active: false, balls: made.map((r) => publicGame(game, r, Date.now())), newPoints: newPts })
           }
 
           const balRes = await fetch(seUrl, { headers: seH })

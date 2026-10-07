@@ -248,13 +248,28 @@ export function useCasino(game) {
   }, [game, apply])
 
   const start = useCallback((body) => call('/casino/start', body), [call])
+  // several instant rounds in one request (plinko balls): no round state, the caller animates and settles them
+  const batch = useCallback(async (body) => {
+    setErr('')
+    try {
+      const { ok, data } = await workerPost('/casino/start', { game, ...body })
+      if (!ok) { setErr(ERR[data.error] || 'Something went wrong. Try again.'); return null }
+      return data
+    } catch { setErr('Connection error. Try again.'); return null }
+  }, [game])
+  const settle = useCallback((r) => fx(r, false), [fx])
+  const cheer = useCallback((net) => {
+    if (quiet.current) return
+    playSfx(net > 0 ? 'win' : net === 0 ? 'cash' : 'lose')
+    if (net > 0) setFire((f) => f + 1); else if (net < 0) setShake((x) => x + 1)
+  }, [])
   const act = useCallback((action, extra) => call('/casino/action', { action, ...extra }), [call])
   const poll = useCallback(async () => {
     const { ok, data } = await workerPost('/casino/state', { game })
     if (ok && data.active !== undefined && data.state) apply(data)
   }, [game, apply])
 
-  return { user, twitchUser, points, round, setRound, busy, err, setErr, start, act, poll, offset, refresh, history, fire, shake, quiet, hold, release }
+  return { user, twitchUser, points, round, setRound, busy, err, setErr, start, batch, settle, cheer, setPoints, act, poll, offset, refresh, history, fire, shake, quiet, hold, release }
 }
 
 export function Page({ title, sub, game, children }) {
