@@ -814,3 +814,5 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oc2:hover .oPayI img,.oPayI:hover img{filter:none;opacity:.95}
 .oPayI:hover em{color:var(--ac)}
 .oPayMore{font-size:10.5px;font-weight:800;color:var(--ac);letter-spacing:.02em}
+.oPayI img{filter:none;opacity:1}
+.oPayI em{color:#c4cbdb}
