@@ -703,3 +703,10 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oSub{background:color-mix(in srgb,var(--ac) 14%,transparent);color:#e9edf6}
 .oClaim{background:var(--ac);color:#0a0d14}
 .oMore{border-color:#ffffff1c;background:none}
+
+/* ===== Offers: alignment + calm hover ===== */
+.ocards{justify-content:start;align-items:stretch}
+.oSpacer{flex:1 1 14px;min-height:14px}
+.oClaim{margin-top:0 !important}
+.oc2:hover{background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 12%,#0d1119),#0a0d14 62%);box-shadow:0 14px 30px -22px #000;border-color:color-mix(in srgb,var(--ac) 52%,#1c2230);transform:translateY(-2px)}
+.oChip:hover{background:none}
