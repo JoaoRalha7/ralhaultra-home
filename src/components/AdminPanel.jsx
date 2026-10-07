@@ -150,7 +150,7 @@ function ArrayField({ label, value = [], onChange, placeholder }) {
             {value.map((item, i) => (
               <div key={i} className={styles.arrayItem}>
                 <span className={styles.arrayIndex}>{i + 1}</span>
-                <input className={styles.input} value={item || ''} onChange={e => update(i, e.target.value)} placeholder={placeholder} />
+                <input className={styles.input} value={(item && typeof item === 'object' ? (item.value ?? item.title ?? item.text ?? item.label ?? '') : item) || ''} onChange={e => update(i, e.target.value)} placeholder={placeholder} />
                 <button type="button" className={styles.removeBtn} onClick={() => remove(i)}><IconTrash /></button>
               </div>
             ))}
