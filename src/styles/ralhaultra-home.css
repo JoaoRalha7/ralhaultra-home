@@ -729,3 +729,14 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oc2 .oClaim:hover .i{transform:translateX(3px)}
 .oc2 .oTag:hover{background:color-mix(in srgb,var(--ac) 16%,#0a0d14)}
 @media (prefers-reduced-motion:reduce){.oc2 *{transition:none !important}}
+
+/* ===== Top Offers: clean (aligned to the hero grid) ===== */
+.ocards{grid-template-columns:repeat(4,minmax(0,1fr));justify-content:stretch;gap:16px}
+@media (max-width:1100px){.ocards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.ocards{grid-template-columns:minmax(0,1fr)}}
+.oc2:before,.oc2:after{display:none}
+.oc2{background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 9%,#0d1119),#0a0d14 65%)}
+.oActions{display:flex;gap:8px;align-items:stretch}
+.oActions .oClaim{flex:1;width:auto}
+.oActions .oMore{width:44px;height:44px;margin:0;padding:0;flex:none;border-radius:12px}
+.oActions{width:100%}

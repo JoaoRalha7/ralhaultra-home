@@ -61,8 +61,12 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
         </button>
       )}
       <div className="oSpacer" />
-      <button type="button" className="oClaim" onClick={() => onClaim?.(o)}>Claim offer<Icon name="right" size={14} /></button>
-      <button type="button" className="oMore" onClick={() => onInfo?.(o)}>More info<Icon name="right" size={13} /></button>
+      <div className="oActions">
+        <button type="button" className="oClaim" onClick={() => onClaim?.(o)}>Claim offer<Icon name="right" size={14} /></button>
+        <button type="button" className="oMore" onClick={() => onInfo?.(o)} aria-label={`More info about ${o.brand}`} title="More info">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+        </button>
+      </div>
     </article>
   );
 }
