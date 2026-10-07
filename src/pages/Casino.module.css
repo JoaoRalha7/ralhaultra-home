@@ -477,3 +477,27 @@
 .layout:has(> .lvDock) > .stage { grid-column: 2; grid-row: 1; align-self: start; }
 @media (max-width: 1280px) { .layout:has(> .lvDock) > .panel { grid-row: 1 / span 2; } }
 @media (max-width: 900px) { .layout:has(> .lvDock) > .panel, .layout:has(> .lvDock) > .stage { grid-column: 1; grid-row: auto; } }
+
+/* ── One shell: controls, game and live info live in a single panel (no separate cards) ── */
+.layout { gap: 0; border: 1px solid var(--line); border-radius: 18px; background: #0d1018; overflow: hidden; align-items: stretch; }
+.layout > .panel { position: static; border: 0; border-radius: 0; background: transparent; border-right: 1px solid var(--line); box-shadow: none; }
+.layout > .stage { border: 0; border-radius: 0; align-self: stretch !important; }
+.layout > .lvDock { position: static !important; align-self: stretch !important; border-left: 1px solid var(--line); padding: 14px; background: transparent; }
+.lvDock .lvCard { border: 0; background: transparent; padding: 0; }
+.jpDock .lvCard + .lvCard { border-top: 1px solid var(--line); padding-top: 12px; }
+.layout:has(> .lvDock) > .lvDock { grid-column: 3; grid-row: 1; }
+@media (max-width: 1280px) {
+  .layout:has(> .lvDock) > .lvDock { grid-column: 2; grid-row: 2; border-left: 0; border-top: 1px solid var(--line); }
+}
+@media (max-width: 900px) {
+  .layout > .panel { border-right: 0; border-bottom: 1px solid var(--line); }
+  .layout > .lvDock { border-left: 0; border-top: 1px solid var(--line); }
+}
+.layout > .lvDock { border: 0; border-radius: 0; border-left: 1px solid var(--line); }
+@media (max-width: 1280px) { .layout:has(> .lvDock) > .lvDock { border-left: 0; border-top: 1px solid var(--line); } }
+@media (max-width: 900px) { .layout > .lvDock { border-left: 0; border-top: 1px solid var(--line); } }
+.page .layout:has(> .lvDock) > .panel { grid-row: 1; }
+.page .layout:has(> .lvDock) > .stage { grid-row: 1; }
+@media (max-width: 1280px) { .page .layout:has(> .lvDock) > .panel { grid-row: 1 / span 2; } }
+@media (max-width: 900px) { .page .layout:has(> .lvDock) > .panel, .page .layout:has(> .lvDock) > .stage { grid-row: auto; } }
+.layout > .lvDock { align-content: start; }
