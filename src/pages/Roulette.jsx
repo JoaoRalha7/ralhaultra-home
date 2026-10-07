@@ -10,22 +10,41 @@ const SLICE = 360 / WHEEL.length
 const short = (n) => (n >= 1000 ? `${+(n / 1000).toFixed(1)}k` : String(n))
 const key = (t, v) => `${t}:${v ?? ''}`
 
-// a point on the wheel at angle deg (0 = top, clockwise) and radius r
-const pt = (deg, r) => { const a = ((deg - 90) * Math.PI) / 180; return [150 + r * Math.cos(a), 150 + r * Math.sin(a)] }
+// geometry: viewBox 360, centre 180. pockets r 104-138, ball track r 140-170
+const C = 180
+const R_TRACK = 156, R_POCKET = 130
+const pt = (deg, r) => { const a = ((deg - 90) * Math.PI) / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)] }
 function slicePath(i) {
   const a0 = i * SLICE - SLICE / 2, a1 = i * SLICE + SLICE / 2
-  const [x0, y0] = pt(a0, 140), [x1, y1] = pt(a1, 140), [x2, y2] = pt(a1, 92), [x3, y3] = pt(a0, 92)
-  return `M${x0} ${y0} A140 140 0 0 1 ${x1} ${y1} L${x2} ${y2} A92 92 0 0 0 ${x3} ${y3}Z`
+  const [x0, y0] = pt(a0, 138), [x1, y1] = pt(a1, 138), [x2, y2] = pt(a1, 104), [x3, y3] = pt(a0, 104)
+  return `M${x0} ${y0} A138 138 0 0 1 ${x1} ${y1} L${x2} ${y2} A104 104 0 0 0 ${x3} ${y3}Z`
 }
+const SPOKES = [0, 90, 180, 270]
+const DEFLECT = [22, 67, 112, 157, 202, 247, 292, 337]
 
-function Wheel({ wheelRot, ballRot, drop, anim, ms, number }) {
+function Wheel({ wRef, bRef, cRef, spinning, hit, number }) {
   return (
-    <div className={styles.wheelWrap}>
-      <svg viewBox="0 0 300 300" className={styles.wheel} role="img" aria-label="Roulette wheel">
-        <circle cx="150" cy="150" r="148" className={styles.wRim} />
-        <g style={{ transformOrigin: '150px 150px', transform: `rotate(${wheelRot}deg)`, transition: anim ? `transform ${ms}ms cubic-bezier(.12,.62,.16,1)` : 'none' }}>
+    <div className={`${styles.wheelWrap} ${spinning ? styles.wSpin : ''}`}>
+      <svg viewBox="0 0 360 360" className={styles.wheel} role="img" aria-label="Roulette wheel">
+        <defs>
+          <radialGradient id="rwWood" cx="50%" cy="50%" r="50%"><stop offset="86%" stopColor="#2a1a0c" /><stop offset="100%" stopColor="#0f0a05" /></radialGradient>
+          <radialGradient id="rwTrack" cx="50%" cy="50%" r="50%"><stop offset="78%" stopColor="#0a0d14" /><stop offset="90%" stopColor="#1b2230" /><stop offset="100%" stopColor="#0a0d14" /></radialGradient>
+          <radialGradient id="rwCone" cx="50%" cy="50%" r="50%"><stop offset="0%" stopColor="#3a2a12" /><stop offset="55%" stopColor="#1b1409" /><stop offset="100%" stopColor="#0d0a05" /></radialGradient>
+          <radialGradient id="rwGold" cx="35%" cy="30%" r="80%"><stop offset="0%" stopColor="#fff3c4" /><stop offset="45%" stopColor="#f5c542" /><stop offset="100%" stopColor="#8a5a08" /></radialGradient>
+          <radialGradient id="rwBall" cx="35%" cy="30%" r="75%"><stop offset="0%" stopColor="#fff" /><stop offset="60%" stopColor="#e5e7eb" /><stop offset="100%" stopColor="#9ca3af" /></radialGradient>
+          <linearGradient id="rwSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fff" stopOpacity=".22" /><stop offset="45%" stopColor="#fff" stopOpacity="0" /><stop offset="100%" stopColor="#000" stopOpacity=".28" /></linearGradient>
+        </defs>
+
+        <circle cx={C} cy={C} r="178" fill="url(#rwWood)" />
+        <circle cx={C} cy={C} r="176" fill="none" stroke="#f5c542" strokeWidth="2" />
+        <circle cx={C} cy={C} r="170" fill="url(#rwTrack)" />
+        <circle cx={C} cy={C} r="170" fill="none" stroke="rgba(245,197,66,.55)" strokeWidth="1" />
+        {DEFLECT.map((d) => { const [x, y] = pt(d, 163); return <rect key={d} x={x - 3} y={y - 3} width="6" height="6" transform={`rotate(${d + 45} ${x} ${y})`} fill="url(#rwGold)" /> })}
+
+        <g ref={wRef} transform={`rotate(0 ${C} ${C})`}>
+          <circle cx={C} cy={C} r="140" fill="#0b0f16" />
           {WHEEL.map((n, i) => {
-            const [tx, ty] = pt(i * SLICE, 116)
+            const [tx, ty] = pt(i * SLICE, 120)
             return (
               <g key={n}>
                 <path d={slicePath(i)} className={styles['w_' + rColor(n)]} />
@@ -33,15 +52,25 @@ function Wheel({ wheelRot, ballRot, drop, anim, ms, number }) {
               </g>
             )
           })}
-          <circle cx="150" cy="150" r="88" className={styles.wHub} />
-          <circle cx="150" cy="150" r="22" className={styles.wCap} />
+          <circle cx={C} cy={C} r="138" fill="none" stroke="#f5c542" strokeWidth="1.6" />
+          <circle cx={C} cy={C} r="104" fill="url(#rwCone)" stroke="#f5c542" strokeWidth="1.4" />
+          <circle cx={C} cy={C} r="78" fill="none" stroke="rgba(245,197,66,.25)" strokeWidth="1" />
+          {SPOKES.map((d) => {
+            const [x1, y1] = pt(d, 22), [x2, y2] = pt(d, 66), [kx, ky] = pt(d, 70)
+            return <g key={d}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke="url(#rwGold)" strokeWidth="5" strokeLinecap="round" /><circle cx={kx} cy={ky} r="5.500" fill="url(#rwGold)" /></g>
+          })}
+          <circle cx={C} cy={C} r="24" fill="url(#rwGold)" stroke="#6b4a06" strokeWidth="1" />
+          <circle cx={C} cy={C} r="9" fill="#fff3c4" opacity=".8" />
+          {hit != null && <path d={slicePath(hit)} className={styles.wHit} />}
         </g>
-        <g style={{ transformOrigin: '150px 150px', transform: `rotate(${ballRot}deg)`, transition: anim ? `transform ${ms}ms cubic-bezier(.2,.55,.25,1)` : 'none' }}>
-          <circle cx="150" cy="14" r="6" className={styles.wBall} style={{ transform: `translateY(${drop ? 30 : 0}px)`, transition: 'transform .55s cubic-bezier(.3,1.6,.5,1)' }} />
+
+        <circle cx={C} cy={C} r="170" fill="url(#rwSheen)" pointerEvents="none" />
+        <g ref={bRef} className={styles.wBallG} transform={`rotate(0 ${C} ${C})`} style={{ opacity: 0 }}>
+          <circle ref={cRef} cx={C} cy={C - R_TRACK} r="6" fill="url(#rwBall)" className={styles.wBall} />
         </g>
-        <path d="M150 2 l7 12 h-14z" className={styles.wPointer} />
+        <path d={`M${C} 20 l9 -17 h-18z`} className={styles.wPointer} />
       </svg>
-      <div className={`${styles.wResult} ${number != null ? styles['wr_' + rColor(number)] : ''}`}>{number != null ? number : ''}</div>
+      <div key={number ?? 'none'} className={`${styles.wResult} ${number != null ? styles['wr_' + rColor(number)] : ''}`}>{number != null ? number : ''}</div>
     </div>
   )
 }
@@ -68,7 +97,8 @@ export default function Roulette() {
   const [stat, setStat] = useState({ n: 0, net: 0 })
   const [spinning, setSpinning] = useState(false)
   const [res, setRes] = useState(null) // finished round
-  const [wheel, setWheel] = useState({ rot: 0, ball: 0, drop: false, anim: false })
+  const wRef = useRef(null), bRef = useRef(null), cRef = useRef(null)
+  const rot = useRef(0)
   const [shownNum, setShownNum] = useState(null)
 
   const R = useRef({})
@@ -97,6 +127,43 @@ export default function Roulette() {
   const clear = () => { if (!locked) { setBets([]); setRes(null); setShownNum(null) } }
   const double = () => { if (!locked) setBets((b) => b.map((x) => ({ ...x, amount: Math.min(MAX_BET, x.amount * 2) }))) }
 
+  const setW = (a) => wRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`)
+  const setB = (a, r) => { bRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`); cRef.current?.setAttribute('cy', String(C - r)) }
+  const showBall = () => { if (bRef.current) bRef.current.style.opacity = '1' }
+  const snap = (idx) => { rot.current = (((-idx * SLICE) % 360) + 360) % 360; setW(rot.current); setB(0, R_POCKET); showBall() }
+
+  // wheel turns clockwise and slows down, the ball runs the track the other way, then spirals in
+  // and hops into the winning pocket, which finishes under the pointer (top)
+  const animate = (idx) => new Promise((resolve) => {
+    const T = 6200, N = 6, w0 = rot.current
+    const base = -idx * SLICE
+    const wEnd = base + 360 * (Math.ceil((w0 - base) / 360) + 3)
+    const t0 = performance.now()
+    let lastPk = null, lastTick = 0
+    showBall(); setB(N * 360, R_TRACK)
+    const frame = (now) => {
+      if (!alive.current) return resolve()
+      const p = Math.min(1, (now - t0) / T)
+      const ew = 1 - Math.pow(1 - p, 3), eb = 1 - Math.pow(1 - p, 4)
+      const th = w0 + (wEnd - w0) * ew
+      let ph = N * 360 * (1 - eb), r = R_TRACK
+      if (p > 0.6) {
+        const k = (p - 0.6) / 0.4, sm = k * k * (3 - 2 * k)
+        r = R_TRACK + (R_POCKET - R_TRACK) * sm
+        if (p > 0.78) { const d = (p - 0.78) / 0.22, dec = Math.pow(1 - d, 2); r -= 7 * Math.abs(Math.sin(d * 19)) * dec; ph += 3.500 * Math.sin(d * 23) * dec }
+      }
+      setW(th); setB(ph, r)
+      if (p > 0.5 && !g.quiet.current) {
+        const pk = Math.floor((ph - th) / SLICE)
+        if (lastPk != null && pk !== lastPk && now - lastTick > 70) { lastTick = now; playSfx('click') }
+        lastPk = pk
+      }
+      if (p < 1) requestAnimationFrame(frame)
+      else { rot.current = ((base % 360) + 360) % 360; setW(rot.current); setB(0, R_POCKET); resolve() }
+    }
+    requestAnimationFrame(frame)
+  })
+
   const spin = async () => {
     const { bets: bs, turbo: tb } = R.current
     setSpinning(true); setRes(null); setShownNum(null)
@@ -104,25 +171,10 @@ export default function Roulette() {
     const data = await g.start({ bets: bs.map((b) => ({ type: b.type, value: b.value, amount: b.amount })) })
     if (!data?.state || data.state.game !== 'roulette') { g.release(); setSpinning(false); return null }
     const s = data.state
-    if (!tb) {
-      const idx = WHEEL.indexOf(s.number), ms = 4800
-      setWheel((w) => {
-        const delta = ((-(idx * SLICE) - (w.rot % 360)) % 360 + 360) % 360
-        return { rot: w.rot + 360 * 4 + delta, ball: w.ball - 360 * 7, drop: false, anim: true }
-      })
-      playSfx('card')
-      await sleep(ms - 600)
-      if (!alive.current) return s
-      setWheel((w) => ({ ...w, drop: true }))
-      await sleep(900)
-    } else {
-      const idx = WHEEL.indexOf(s.number)
-      setWheel((w) => ({ rot: w.rot - (w.rot % 360) - idx * SLICE, ball: w.ball, drop: true, anim: false }))
-      await sleep(60)
-    }
+    const idx = WHEEL.indexOf(s.number)
+    if (!tb) { playSfx('card'); await animate(idx) } else snap(idx)
     if (!alive.current) return s
     setShownNum(s.number); setRes(s)
-    setWheel((w) => ({ ...w, drop: false, anim: false }))
     g.release()
     setSpinning(false)
     return s
@@ -218,7 +270,7 @@ export default function Roulette() {
             <div className={res && profit > 0 ? styles.ribGold : ''}><small>Profit</small><b>{res ? `${profit >= 0 ? '+' : '-'}${fmt(Math.abs(profit))}` : '-'}</b></div>
           </div>
 
-          <Wheel wheelRot={wheel.rot} ballRot={wheel.ball} drop={wheel.drop} anim={wheel.anim} ms={4800} number={shownNum} />
+          <Wheel wRef={wRef} bRef={bRef} cRef={cRef} spinning={spinning} hit={shownNum != null ? WHEEL.indexOf(shownNum) : null} number={shownNum} />
 
           <div className={styles.rTableWrap}>
             <div className={styles.rTable}>
