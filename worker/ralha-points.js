@@ -664,6 +664,33 @@ export default {
       }
 
       // ── POST /casino/start | /casino/action | /casino/state ───────────────────
+      // ── POST /bets/mine (finished rounds of the logged-in player, all originals) ──
+      if (pathname === '/bets/mine' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+        const r = await fetch(
+          `${env.SUPABASE_URL}/rest/v1/casino_games?user_id=eq.${who.id}&status=eq.done&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=300`,
+          { headers: sbHeaders }
+        )
+        const grouped = new Map()
+        for (const x of (r.ok ? await r.json() : [])) {
+          const k = `${x.game}|${x.updated_at}`
+          const g = grouped.get(k)
+          if (g) { g.bet += x.bet || 0; g.payout += x.payout || 0 } else grouped.set(k, { ...x, bet: x.bet || 0, payout: x.payout || 0 })
+        }
+        let extra = []
+        try {
+          const cur = (await clRounds(env, sbHeaders))[0]
+          if (cur) {
+            const upto = Date.now() >= clEnd(cur) ? Number(cur.seq) + 1 : Number(cur.seq)
+            const cb = await clSb(env, sbHeaders, `crash_bets?user_id=eq.${who.id}&seq=lt.${upto}&order=created_at.desc&limit=50&select=username,bet,cashed_at,payout,created_at`)
+            extra = (cb.ok ? await cb.json() : []).map((b) => ({ username: b.username, game: 'crash', bet: b.bet, payout: b.cashed_at == null ? 0 : b.payout, updated_at: b.created_at }))
+          }
+        } catch { /* crash history is optional */ }
+        const rounds = [...grouped.values(), ...extra].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, 50)
+        return json({ ok: true, rounds })
+      }
+
       if (pathname.startsWith('/casino/') && request.method === 'POST') {
         const who = await getUser(request, env, sbHeaders)
         if (!who) return json({ error: 'unauthorized' }, 401)
@@ -1376,6 +1403,14 @@ export default {
       // ── GET /casino-feed (public: finished rounds only, no game state) ────────
       if (pathname === '/casino-feed') {
         const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
+        // ?sort=top: biggest single payouts (all time) instead of the latest rounds
+        if (searchParams.get('sort') === 'top') {
+          const t = await fetch(
+            `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&payout=gt.0&select=username,game,bet,payout,updated_at&order=payout.desc&limit=${limit}`,
+            { headers: sbHeaders }
+          )
+          return json({ rounds: t.ok ? await t.json() : [] })
+        }
         const r = await fetch(
           `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&updated_at=lte.${new Date().toISOString()}&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=${Math.min(limit * 30, 300)}`,
           { headers: sbHeaders }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
+import OriginalsBets from '../components/OriginalsBets'
 import styles from './Originals.module.css'
 
 export const ORIGINALS = [
@@ -32,6 +33,7 @@ export default function Originals() {
           </Link>
         ))}
       </div>
+      <OriginalsBets />
     </div>
   )
 }

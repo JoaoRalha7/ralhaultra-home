@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-const WORKER = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
+export const WORKER = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 
 async function authHeaders() {
   const { data } = await supabase.auth.getSession()
