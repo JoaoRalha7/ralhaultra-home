@@ -187,10 +187,38 @@ function OfferCarousel({ children }) {
     el.scrollBy({ left: dir * (card.getBoundingClientRect().width + 16), behavior: 'smooth' });
   };
   const slide = n > 3;
+  const drag = useRef(null);
+  const onDown = (e) => {
+    if (!slide || e.pointerType !== 'mouse' || e.button !== 0) return;
+    drag.current = { x: e.clientX, l: ref.current.scrollLeft, moved: false };
+  };
+  const onMove = (e) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.x;
+    if (!d.moved && Math.abs(dx) > 6) {
+      d.moved = true;
+      ref.current.classList.add('dragging');
+    }
+    if (d.moved) ref.current.scrollLeft = d.l - dx;
+  };
+  const onUp = () => {
+    const d = drag.current;
+    if (!d) return;
+    drag.current = null;
+    const el = ref.current;
+    if (d.moved) {
+      // keep the click from firing on the card under the cursor, then re-enable snap
+      const stop = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      el.addEventListener('click', stop, { capture: true, once: true });
+      setTimeout(() => el.removeEventListener('click', stop, true), 0);
+      requestAnimationFrame(() => el.classList.remove('dragging'));
+    }
+  };
   return (
     <div className={`ocWrap${slide ? ' slide' : ''}`}>
       {slide && !edge.l && <button type="button" className="ocArrow l" aria-label="Previous offers" onClick={() => go(-1)}><Icon name="left" /></button>}
-      <div className="ocards" data-n={Math.min(n, 4)} ref={ref} onScroll={slide ? sync : undefined}>{children}</div>
+      <div className="ocards" data-n={Math.min(n, 4)} ref={ref} onScroll={slide ? sync : undefined} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp} onPointerCancel={onUp}>{children}</div>
       {slide && !edge.r && <button type="button" className="ocArrow r" aria-label="Next offers" onClick={() => go(1)}><Icon name="right" /></button>}
     </div>
   );

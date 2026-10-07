@@ -766,3 +766,6 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .ocArrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .ocArrow.l{left:-14px}.ocArrow.r{right:-14px}
 @media (max-width:700px){.ocArrow{display:none}}
+.ocWrap.slide .ocards{cursor:grab}
+.ocWrap.slide .ocards.dragging{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto;user-select:none}
+.ocWrap.slide .ocards.dragging *{pointer-events:none}
