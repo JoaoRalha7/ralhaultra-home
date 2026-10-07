@@ -517,3 +517,19 @@
 .crOver { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 6px; pointer-events: none; }
 .crOver em { font: 800 40px "Bricolage Grotesque", sans-serif; color: #f87171; font-style: normal; text-transform: uppercase; letter-spacing: .06em; text-shadow: 0 0 30px #f8717155; }
 .crMine { position: absolute; left: 62px; top: 16px; padding: 5px 12px; border-radius: 999px; background: #ffffff10; font-style: normal; }
+
+/* ── Fixed shell: 1340 x 700 for every game (shrinks to the screen when smaller) ── */
+.page { width: 100%; max-width: 1340px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+.layout { grid-template-rows: minmax(0, 1fr); }
+@media (min-width: 1101px) {
+  .layout:not(:has(> .lvDock)) { height: 700px; grid-template-columns: 300px minmax(0, 1fr); }
+  .layout > .panel { overflow-y: auto; min-height: 0; scrollbar-width: thin; }
+  .layout > .stage { min-height: 0; overflow: auto; scrollbar-width: thin; }
+  .mines { width: min(100%, 480px); }
+}
+@media (min-width: 1281px) {
+  .layout:has(> .lvDock) { height: 700px; grid-template-columns: 290px minmax(0, 1fr) 290px; }
+  .layout > .lvDock { overflow-y: auto; min-height: 0; }
+}
+.page[data-game="crash"] .crashBox { display: flex; min-height: 0; }
+.page[data-game="crash"] .graph { width: 100%; height: 100%; }

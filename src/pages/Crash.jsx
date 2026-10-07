@@ -18,7 +18,7 @@ function niceStep(max) {
 }
 
 function Graph({ rate, ms, mult, crashed, target }) {
-  const W = 640, H = 400, PL = 56, PB = 30, PT = 22, PR = 22
+  const W = 640, H = 520, PL = 56, PB = 30, PT = 22, PR = 22
   const tMax = Math.max(8000, ms * 1.12)
   const yMax = Math.max(2.5, mult * 1.2)
   const X = (t) => PL + (t / tMax) * (W - PL - PR)
