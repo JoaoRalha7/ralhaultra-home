@@ -1,3 +1,4 @@
+import ProvablyFair from '../components/ProvablyFair'
 import OriginalsBelow from '../components/OriginalsBelow'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
@@ -48,6 +49,18 @@ export function playSfx(name) {
       t += dur * 0.9
     }
   } catch { /* audio is optional */ }
+}
+
+export function FairButton() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button type="button" className={styles.snd} onClick={() => setOpen(true)} aria-label="Provably fair" title="Provably fair">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.500-3 8-7 10-4-2-7-5.500-7-10V6z" /><path d="M9 12l2 2 4-4" /></svg>
+      </button>
+      {open && <ProvablyFair onClose={() => setOpen(false)} />}
+    </>
+  )
 }
 
 export function SoundToggle() {
@@ -296,7 +309,10 @@ export function Page({ title, sub, game, children }) {
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.sub}>{sub}</p>
         </div>
-        <SoundToggle />
+        <div className={styles.headBtns}>
+          <FairButton />
+          <SoundToggle />
+        </div>
       </header>
       {children}
       <OriginalsBelow />

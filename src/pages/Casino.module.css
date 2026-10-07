@@ -597,3 +597,5 @@
 
 /* Roulette: bet chip centered on the spot */
 .rSpot .rChip { right: auto; top: 50%; left: 50%; transform: translate(-50%,-50%); min-width: 26px; height: 26px; z-index: 2; }
+
+.headBtns { display: flex; gap: 8px; flex: none; }

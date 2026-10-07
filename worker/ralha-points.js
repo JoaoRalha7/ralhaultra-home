@@ -112,6 +112,51 @@ function rndInt(n) { // unbiased integer in [0, n)
 function rndFloat() { crypto.getRandomValues(_u32); return _u32[0] / 0x100000000 }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rndInt(i + 1); [a[i], a[j]] = [a[j], a[i]] } return a }
 
+// ── Provably fair ─────────────────────────────────────────────────────────────
+// Every outcome comes from HMAC-SHA256(serverSeed, `${clientSeed}:${nonce}:${block}`). The player sees
+// sha256(serverSeed) before betting, picks the client seed, and the nonce rises with every bet.
+// 128 blocks x 8 words = 1024 uint32 words per bet, consumed in order (unbiased rejection sampling).
+// Keep the generator below identical to src/lib/fair.js (the Verify tab recomputes it in the browser).
+const _enc = new TextEncoder()
+const toHex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+const sha256hex = async (str) => toHex(await crypto.subtle.digest('SHA-256', _enc.encode(str)))
+const newSeedHex = () => { const a = new Uint8Array(32); crypto.getRandomValues(a); return toHex(a) }
+async function fairRng(server, client, nonce) {
+  const key = await crypto.subtle.importKey('raw', _enc.encode(server), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const blocks = await Promise.all(Array.from({ length: 128 }, (_, i) => crypto.subtle.sign('HMAC', key, _enc.encode(`${client}:${nonce}:${i}`))))
+  const w = new Uint32Array(1024)
+  blocks.forEach((b, i) => { const dv = new DataView(b); for (let j = 0; j < 8; j++) w[i * 8 + j] = dv.getUint32(j * 4) })
+  let p = 0
+  const next = () => { if (p >= w.length) throw new Error('fair stream exhausted'); return w[p++] }
+  const int = (n) => { const lim = Math.floor(0x100000000 / n) * n; let x; do { x = next() } while (x >= lim); return x % n }
+  return { float: () => next() / 0x100000000, int, shuffle: (a) => { for (let i = a.length - 1; i > 0; i--) { const j = int(i + 1); [a[i], a[j]] = [a[j], a[i]] } return a } }
+}
+const cleanClient = (v) => String(v ?? '').replace(/[^\w\-]/g, '').slice(0, 64)
+// active seed pair of a player (created on first use). Returns the row or null.
+async function fairPair(env, sbH, who) {
+  const q = `${env.SUPABASE_URL}/rest/v1/casino_seeds`
+  for (let i = 0; i < 3; i++) {
+    const r = await fetch(`${q}?user_id=eq.${who.id}&active=eq.true&limit=1`, { headers: sbH })
+    const row = r.ok ? (await r.json())?.[0] : null
+    if (row) return row
+    const server = newSeedHex()
+    await fetch(q, { method: 'POST', headers: { ...sbH, 'Prefer': 'return=minimal' }, body: JSON.stringify({ user_id: who.id, username: who.username, server_seed: server, server_hash: await sha256hex(server), client_seed: newSeedHex().slice(0, 24) }) })
+  }
+  return null
+}
+// reserve the next nonce (compare-and-swap, so two bets never share one) and build the generator
+async function fairNext(env, sbH, who) {
+  const q = `${env.SUPABASE_URL}/rest/v1/casino_seeds`
+  for (let i = 0; i < 5; i++) {
+    const pair = await fairPair(env, sbH, who)
+    if (!pair) return null
+    const r = await fetch(`${q}?id=eq.${pair.id}&nonce=eq.${pair.nonce}&active=eq.true`, { method: 'PATCH', headers: { ...sbH, 'Prefer': 'return=representation' }, body: JSON.stringify({ nonce: pair.nonce + 1 }) })
+    const ok = r.ok ? (await r.json())?.[0] : null
+    if (ok) return { rg: await fairRng(pair.server_seed, pair.client_seed, pair.nonce), fair: { h: pair.server_hash, c: pair.client_seed, n: pair.nonce } }
+  }
+  return null
+}
+
 // Mines multiplier after k safe reveals with m mines on a 25-tile grid (3% edge)
 function minesMult(k, m) {
   let x = CASINO.edge
@@ -186,8 +231,7 @@ async function saveAvatar(env, sbH, who) {
 // Crash multiplier helpers
 const crashAtMs = (m) => Math.log(m) / CASINO.crashRate
 const crashMultAt = (ms) => Math.floor(Math.exp(CASINO.crashRate * Math.max(0, ms)) * 100) / 100
-function newCrashPoint() {
-  const u = rndFloat()
+function newCrashPoint(u = rndFloat()) {
   return Math.min(CASINO.crashCap, Math.max(1, Math.floor((CASINO.edge / (1 - u)) * 100) / 100))
 }
 
@@ -283,7 +327,7 @@ function publicGame(game, row, now) {
   let st = row.state
   if (game === 'blackjack' && !st.hands) st = { ...st, hands: [{ cards: st.player || [], bet: row.bet }], active: 0 } // round started before splits existed
   const done = row.status === 'done'
-  const base = { game, id: row.id, bet: row.bet, status: row.status, payout: row.payout || 0, serverNow: now }
+  const base = { game, id: row.id, bet: row.bet, status: row.status, payout: row.payout || 0, serverNow: now, fair: st.fair ? { hash: st.fair.h, client: st.fair.c, nonce: st.fair.n } : null }
   if (game === 'mines') {
     const k = st.revealed.length
     return { ...base, mines: st.m, revealed: st.revealed, mult: k ? minesMult(k, st.m) : 1,
@@ -664,6 +708,53 @@ export default {
       }
 
       // ── POST /casino/start | /casino/action | /casino/state ───────────────────
+      // ── Provably fair: /fair/state | /fair/rotate | /fair/rounds (player) and /fair/log (admin) ──
+      if (pathname.startsWith('/fair/') && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who) return json({ error: 'unauthorized' }, 401)
+        const body = await request.json().catch(() => ({}))
+        const q = `${env.SUPABASE_URL}/rest/v1/casino_seeds`
+        if (pathname === '/fair/state' || pathname === '/fair/rotate') {
+          if (pathname === '/fair/rotate') {
+            const cur = await fairPair(env, sbHeaders, who)
+            if (!cur) return json({ error: 'fair seed unavailable' }, 502)
+            const server = newSeedHex()
+            const client = cleanClient(body.clientSeed) || newSeedHex().slice(0, 24)
+            const done = await fetch(`${q}?id=eq.${cur.id}&active=eq.true`, { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify({ active: false, revealed_at: new Date().toISOString() }) })
+            if (done.ok && (await done.json())?.[0]) {
+              await fetch(q, { method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ user_id: who.id, username: who.username, server_seed: server, server_hash: await sha256hex(server), client_seed: client }) })
+            }
+          }
+          const pair = await fairPair(env, sbHeaders, who)
+          const pr = await fetch(`${q}?user_id=eq.${who.id}&active=eq.false&order=revealed_at.desc&limit=1`, { headers: sbHeaders })
+          const prev = pr.ok ? (await pr.json())?.[0] : null
+          return json({ ok: true, hash: pair?.server_hash, client: pair?.client_seed, nonce: pair?.nonce ?? 0,
+            prev: prev ? { serverSeed: prev.server_seed, hash: prev.server_hash, client: prev.client_seed, nonces: prev.nonce } : null })
+        }
+        if (pathname === '/fair/rounds') {
+          const r = await fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?user_id=eq.${who.id}&status=eq.done&select=game,bet,payout,state,created_at&order=created_at.desc&limit=30`, { headers: sbHeaders })
+          const rows = (r.ok ? await r.json() : []).filter((x) => x.state?.fair)
+          const hs = [...new Set(rows.map((x) => x.state.fair.h))]
+          const sr = hs.length ? await fetch(`${q}?user_id=eq.${who.id}&active=eq.false&server_hash=in.(${hs.join(',')})&select=server_hash,server_seed`, { headers: sbHeaders }) : null
+          const rev = new Map((sr && sr.ok ? await sr.json() : []).map((x) => [x.server_hash, x.server_seed]))
+          return json({ ok: true, rounds: rows.map((x) => ({ game: x.game, bet: x.bet, payout: x.payout, at: x.created_at, hash: x.state.fair.h, client: x.state.fair.c, nonce: x.state.fair.n, ball: x.state.fair.ball ?? null, serverSeed: rev.get(x.state.fair.h) || null })) })
+        }
+        if (pathname === '/fair/log') { // admin: every round of every player, with its fair data
+          if (!ADMIN_IDS.includes(who.id)) return json({ error: 'unauthorized' }, 401)
+          const lim = Math.min(Math.max(parseInt(body.limit, 10) || 100, 1), 500)
+          const f = [`select=id,username,game,bet,payout,status,state,created_at`, `order=created_at.desc`, `limit=${lim}`]
+          if (body.user) f.push(`username=eq.${encodeURIComponent(String(body.user).toLowerCase())}`)
+          if (CASINO_GAMES.includes(body.game)) f.push(`game=eq.${body.game}`)
+          const r = await fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?${f.join('&')}`, { headers: sbHeaders })
+          const rows = r.ok ? await r.json() : []
+          const hs = [...new Set(rows.map((x) => x.state?.fair?.h).filter(Boolean))]
+          const sr = hs.length ? await fetch(`${q}?active=eq.false&server_hash=in.(${hs.join(',')})&select=server_hash,server_seed`, { headers: sbHeaders }) : null
+          const rev = new Map((sr && sr.ok ? await sr.json() : []).map((x) => [x.server_hash, x.server_seed]))
+          return json({ ok: true, rounds: rows.map((x) => { const fr = x.state?.fair; return { id: x.id, user: x.username, game: x.game, bet: x.bet, payout: x.payout, status: x.status, at: x.created_at, hash: fr?.h || null, client: fr?.c || null, nonce: fr?.n ?? null, ball: fr?.ball ?? null, serverSeed: fr ? rev.get(fr.h) || null : null } }) })
+        }
+        return json({ error: 'not found' }, 404)
+      }
+
       // ── POST /bets/mine (finished rounds of the logged-in player, all originals) ──
       if (pathname === '/bets/mine' && request.method === 'POST') {
         const who = await getUser(request, env, sbHeaders)
@@ -803,6 +894,10 @@ export default {
             params = { auto: a }
           }
 
+          const fx = await fairNext(env, sbHeaders, who)
+          if (!fx) return json({ error: 'fair seed unavailable' }, 502)
+          const rg = fx.rg
+
           // plinko: several balls in one request = one balance check, one charge, one payout
           if (game === 'plinko' && body.count != null && body.count !== '' && parseInt(body.count, 10) !== 1) {
             const count = parseInt(body.count, 10)
@@ -816,11 +911,11 @@ export default {
             if (!chg.ok) return json({ error: 'charge failed' }, 502)
             const tab = plinkoTable(params.rows, params.risk)
             const feedAt = new Date(Date.now() + feedDelay('plinko', params.rows, count)).toISOString()
-            const rowsOut = Array.from({ length: count }, () => {
-              const path = Array.from({ length: params.rows }, () => rndInt(2))
+            const rowsOut = Array.from({ length: count }, (_, bi) => {
+              const path = Array.from({ length: params.rows }, () => rg.int(2))
               const slot = path.reduce((a, b) => a + b, 0)
               const mult = tab[slot]
-              return { user_id: who.id, username: who.username, game, bet, state: { rows: params.rows, risk: params.risk, path, slot, mult }, status: 'done', payout: Math.min(Math.floor(bet * mult), CASINO.maxPayout), updated_at: feedAt }
+              return { user_id: who.id, username: who.username, game, bet, state: { rows: params.rows, risk: params.risk, path, slot, mult, fair: { ...fx.fair, ball: bi, balls: count } }, status: 'done', payout: Math.min(Math.floor(bet * mult), CASINO.maxPayout), updated_at: feedAt }
             })
             const insB = await fetch(rest, { method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify(rowsOut) })
             const made = insB.ok ? await insB.json() : null
@@ -840,34 +935,34 @@ export default {
 
           let state, kenoPayout = 0 // kenoPayout holds the instant payout for keno / plinko / roulette
           if (game === 'mines') {
-            const tiles = shuffle(Array.from({ length: CASINO.grid }, (_, i) => i))
-            state = { m: params.m, mines: tiles.slice(0, params.m).sort((a, b) => a - b), revealed: [] }
+            const tiles = rg.shuffle(Array.from({ length: CASINO.grid }, (_, i) => i))
+            state = { m: params.m, mines: tiles.slice(0, params.m).sort((a, b) => a - b), revealed: [], fair: fx.fair }
           } else if (game === 'keno') {
-            const draw = shuffle(Array.from({ length: KENO.size }, (_, i) => i + 1)).slice(0, KENO.draw)
+            const draw = rg.shuffle(Array.from({ length: KENO.size }, (_, i) => i + 1)).slice(0, KENO.draw)
             const hits = params.picks.filter((p) => draw.includes(p)).length
             const mult = kenoTable(params.picks.length, params.risk)[hits]
-            state = { picks: params.picks, risk: params.risk, draw, hits, mult }
+            state = { picks: params.picks, risk: params.risk, draw, hits, mult, fair: fx.fair }
             kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
           } else if (game === 'plinko') {
-            const path = Array.from({ length: params.rows }, () => rndInt(2))
+            const path = Array.from({ length: params.rows }, () => rg.int(2))
             const slot = path.reduce((a, b) => a + b, 0)
             const mult = plinkoTable(params.rows, params.risk)[slot]
-            state = { rows: params.rows, risk: params.risk, path, slot, mult }
+            state = { rows: params.rows, risk: params.risk, path, slot, mult, fair: { ...fx.fair, ball: 0, balls: 1 } }
             kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
           } else if (game === 'roulette') {
-            const number = rndInt(37)
-            state = { bets: rBets, number }
+            const number = rg.int(37)
+            state = { bets: rBets, number, fair: fx.fair }
             kenoPayout = Math.min(Math.floor(rBets.reduce((a, b) => a + b.amount * rouletteMult(b, number), 0)), CASINO.maxPayout)
           } else if (game === 'blackjack') {
-            const deck = shuffle(Array.from({ length: 52 * BJ_DECKS }, (_, i) => i % 52))
+            const deck = rg.shuffle(Array.from({ length: 52 * BJ_DECKS }, (_, i) => i % 52))
             const pc = [deck[0], deck[2]], dc = [deck[1], deck[3]]
             const sideRes = {}
             let sidePayout = 0
             if (sides.pp) { const r = sidePP(pc[0], pc[1]); sideRes.pp = { stake: sides.pp, ...r }; sidePayout += sides.pp * r.mult }
             if (sides.t3) { const r = sideT3(pc[0], pc[1], dc[0]); sideRes.t3 = { stake: sides.t3, ...r }; sidePayout += sides.t3 * r.mult }
-            state = { deck: deck.slice(4), dealer: dc, hands: [{ cards: pc, bet }], active: 0, sideStake: sides.pp + sides.t3, sideRes: sides.pp || sides.t3 ? sideRes : null, sidePayout }
+            state = { fair: fx.fair, deck: deck.slice(4), dealer: dc, hands: [{ cards: pc, bet }], active: 0, sideStake: sides.pp + sides.t3, sideRes: sides.pp || sides.t3 ? sideRes : null, sidePayout }
           } else {
-            state = { crashAt: newCrashPoint(), startedAt: Date.now() + 600, auto: params.auto || null }
+            state = { fair: fx.fair, crashAt: newCrashPoint(rg.float()), startedAt: Date.now() + 600, auto: params.auto || null }
           }
 
           const ins = await fetch(rest, {
