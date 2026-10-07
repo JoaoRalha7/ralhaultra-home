@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './InfoModal.module.css'
 import { Icon } from './Icon'
-import { pickStats } from '../data/offerStats'
+import { statsByKeys } from '../data/offerStats'
 import { PALETTE } from '../data/casinoToOffer'
 
 const P = {
@@ -207,7 +207,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
   const promo    = safeText(c.promo_code).trim()
 
   const accent = c._accent || PALETTE[ci.card_color]?.[0] || '#facc15'
-  const heroStats = pickStats(c).slice(0, 4)
+  const heroStats = statsByKeys(c, ['games', 'min_deposit', 'cashback', 'withdraw', 'license'])
 
   return (
     <div

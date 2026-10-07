@@ -31,3 +31,11 @@ export function pickStats(c) {
     .map((d) => ({ key: d.key, icon: d.icon, label: d.label, value: d.get(c) }))
     .filter((s) => s.value);
 }
+
+export function statsByKeys(c, keys) {
+  return keys
+    .map((k) => STAT_DEFS.find((d) => d.key === k))
+    .filter(Boolean)
+    .map((d) => ({ key: d.key, icon: d.icon, label: d.label, value: d.get(c) }))
+    .filter((s) => s.value);
+}
