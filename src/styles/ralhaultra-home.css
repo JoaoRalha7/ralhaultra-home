@@ -797,3 +797,11 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .ocArrow{transition:background .15s,border-color .15s,transform .15s,opacity .15s}
 .ocArrow:active{transform:scale(.94)}
 .ocArrow:focus-visible,.oc2 .oClaim:focus-visible,.oc2 .oMore:focus-visible,.oc2 .oCode:focus-visible{outline:2px solid var(--ac,#fff);outline-offset:2px}
+
+/* ===== Top Offers: less top gap, bigger logo ===== */
+.ocWrap.slide .ocards{margin-top:-24px}
+.oLogo{height:54px;margin-bottom:8px}
+.oLogo img{max-height:52px;max-width:210px}
+.oLogo span{font-size:19px}
+.ocards{margin-top:-10px}
+.ocWrap.slide .ocards{margin-top:-30px}
