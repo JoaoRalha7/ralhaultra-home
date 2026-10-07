@@ -1223,7 +1223,18 @@ export default {
           { headers: sbHeaders }
         )
         if (!r.ok) return json({ rounds: [] })
-        return json({ rounds: await r.json() })
+        const rows = await r.json()
+        // live crash bets of finished rounds count as casino rounds too
+        try {
+          const cur = (await clRounds(env, sbHeaders))[0]
+          if (cur) {
+            const upto = Date.now() >= clEnd(cur) ? Number(cur.seq) + 1 : Number(cur.seq)
+            const cb = await clSb(env, sbHeaders, `crash_bets?seq=lt.${upto}&order=created_at.desc&limit=${limit}&select=username,bet,cashed_at,payout,created_at`)
+            const crashRows = (cb.ok ? await cb.json() : []).map((b) => ({ username: b.username, game: 'crash', bet: b.bet, payout: b.cashed_at == null ? 0 : b.payout, updated_at: b.created_at }))
+            return json({ rounds: [...rows, ...crashRows].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, limit) })
+          }
+        } catch { /* feed still works without crash */ }
+        return json({ rounds: rows })
       }
 
       // ── GET /leaderboard ─────────────────────────────────────────────────────
