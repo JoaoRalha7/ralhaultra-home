@@ -220,12 +220,12 @@ export function useCasino(game) {
           : game === 'keno'
         ? { tone: win ? 'win' : push ? 'push' : 'lose', label: `${(r.mult || 0).toFixed(2)}x`, title: `${r.hits} hit${r.hits === 1 ? '' : 's'}, ${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
         : game === 'mines'
-        ? { tone: win ? 'win' : 'lose', label: win ? `${(r.payout / r.bet).toFixed(2)}x` : 'Mine', title: `${win ? '+' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
+        ? { tone: win ? 'win' : 'lose', label: win ? `${(r.payout / r.bet).toFixed(2)}x` : 'X', title: `${win ? '+' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
         : game === 'blackjack'
           ? { tone: win ? 'win' : push ? 'push' : 'lose', label: win ? 'Win' : push ? 'Push' : 'Loss', title: `${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
           : { tone: r.cashedAt ? 'win' : 'lose', label: `${(r.cashedAt || r.crashAt || 1).toFixed(2)}x`, title: r.cashedAt ? `Cashed out, +${fmt(r.payout - r.bet)} pts` : 'Crashed' }
     setHistory((h) => {
-      const next = [item, ...h].slice(0, 14)
+      const next = [item, ...h].slice(0, 40)
       try { localStorage.setItem(hkey, JSON.stringify(next)) } catch { /* ignore */ }
       return next
     })

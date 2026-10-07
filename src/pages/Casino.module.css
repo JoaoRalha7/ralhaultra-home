@@ -58,7 +58,7 @@
 
 .hist { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; min-height: 28px; align-items: center; }
 .histEmpty { font-size: 12px; color: #5a6070; }
-.hChip { flex: none; padding: 4px 10px; border-radius: 999px; font: 800 12px "DM Sans", sans-serif; font-variant-numeric: tabular-nums; border: 1px solid; }
+.hChip { flex: none; padding: 4px 10px; border-radius: 999px; font: 700 14px "DM Sans", sans-serif; font-variant-numeric: tabular-nums; border: 1px solid; }
 .h_win { color: #6ee7b7; background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.35); }
 .h_lose { color: #fca5a5; background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); }
 .h_push { color: #93c5fd; background: rgba(147,197,253,.1); border-color: rgba(147,197,253,.3); }
