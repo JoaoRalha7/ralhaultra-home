@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Confetti, HistoryStrip, Page, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import shared from './Casino.module.css'
 import styles from './Blackjack.module.css'
 
@@ -173,6 +173,13 @@ export default function Blackjack() {
                   </div>
                 )
               })}
+            </div>
+          )}
+          {shown && r.payout > r.bet && (
+            <div className={styles.pop} role="status" key={r.id}>
+              <b>{(r.payout / r.bet).toFixed(2)}&times;</b>
+              <hr />
+              <span><i className={styles.coin} />{fmt(r.payout)}</span>
             </div>
           )}
           <Confetti fire={g.fire} colors={['#f5c542', '#fde68a', '#34d399', '#fff', '#93c5fd']} />

@@ -363,6 +363,13 @@ export default function Crash() {
               {myCash != null ? <span className={styles.sub}>Cashed Out at <em>{myCash.toFixed(2)}x</em></span> : <span className={styles.amt}><i className={styles.coin} />{fmt(potential)}</span>}
             </div>
           )}
+          {cashed && round && (cashed.seq === round.seq || (over && cashed.seq === over.seq && phase === 'over')) && (
+            <div className={styles.pop} role="status" key={cashed.seq}>
+              <b>{cashed.at.toFixed(2)}&times;</b>
+              <hr />
+              <span><i className={styles.coin} />{fmt(cashed.payout)}</span>
+            </div>
+          )}
           <Confetti fire={g.fire} colors={['#22ff7a', '#6ee7b7', '#22d3ee', '#f5c542', '#fff']} />
         </section>
           <div className={`${shared.lvCard} ${shared.lvDock}`}>

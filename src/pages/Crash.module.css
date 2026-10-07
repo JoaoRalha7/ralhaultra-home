@@ -62,3 +62,9 @@
 .starts { margin: 0; color: #fff; font: 800 clamp(20px, 2.2vw, 26px) "DM Sans", sans-serif; }
 .starts b { color: #8b92a5; font-variant-numeric: tabular-nums; }
 @media (max-width: 1100px) { .stage { min-height: 420px; } }
+
+.pop { position: absolute; left: 50%; top: 76%; z-index: 4; width: 146px; padding: 12px 10px 10px; transform: translate(-50%, -50%); border-radius: 10px; border: 2px solid #22ff7a; background: #1b1d25; text-align: center; box-shadow: 0 14px 40px rgba(0,0,0,.6); animation: popIn .35s .1s cubic-bezier(.3,1.5,.5,1) both; pointer-events: none; }
+.pop b { display: block; color: #22ff7a; font: 800 24px/1 "Bricolage Grotesque", sans-serif; }
+.pop hr { width: 54%; margin: 9px auto; border: 0; height: 1px; background: rgba(255,255,255,.14); }
+.pop span { display: flex; align-items: center; justify-content: center; gap: 7px; color: #fff; font: 700 14px "DM Sans", sans-serif; }
+@keyframes popIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } }
