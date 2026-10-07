@@ -461,7 +461,7 @@ export default function Home() {
       <section>
         <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
         <OfferCarousel>
-          {offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} />)}
+          {offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} methodsBySlug={methodsBySlug} />)}
         </OfferCarousel>
       </section>
 

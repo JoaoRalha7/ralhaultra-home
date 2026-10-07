@@ -11,7 +11,29 @@ function Chip({ icon, label, value }) {
   );
 }
 
-export default function OfferRow({ o, rank, onClaim, onInfo }) {
+const MAX_PAY = 5;
+
+function PayRow({ slugs, methods }) {
+  const shown = slugs.slice(0, MAX_PAY);
+  const extra = slugs.length - shown.length;
+  return (
+    <div className="oPay" aria-label="Deposit methods">
+      {shown.map((slug) => {
+        const m = methods?.[slug];
+        const name = m?.name || slug;
+        return (
+          <span key={slug} className="oPayI" title={name}>
+            {m?.icon_url ? <img src={m.icon_url} alt={name} loading="lazy" /> : <em>{String(slug).slice(0, 2).toUpperCase()}</em>}
+          </span>
+        );
+      })}
+      {extra > 0 && <span className="oPayMore">+{extra}</span>}
+    </div>
+  );
+}
+
+export default function OfferRow({ o, rank, onClaim, onInfo, methodsBySlug }) {
+  const pays = Array.isArray(o.raw?.payments) ? o.raw.payments.filter(Boolean) : [];
   const [copied, setCopied] = useState(false);
   const hasCode = o.code && o.code !== '-';
   const m = String(o.headline || '').match(/^(\d+\s?%?|€\s?\d[\d.,]*)\s+(.*)$/);
@@ -53,6 +75,7 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
           { key: 'w', icon: 'clock', label: 'Withdraw', value: o.withdraw },
           { key: 'l', icon: 'shield', label: 'License', value: o.license },
         ]).map((st) => <Chip key={st.key} icon={st.icon} label={st.label} value={st.value} />)}
+        {pays.length > 0 && <PayRow slugs={pays} methods={methodsBySlug} />}
       </div>
       {hasCode && (
         <button type="button" className={`oCode${copied ? ' done' : ''}`} onClick={copy}>
