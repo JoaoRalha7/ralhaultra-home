@@ -86,6 +86,8 @@ export default function Crash() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [tab, setTab] = useState('manual')
+  const [feedTab, setFeedTab] = useState('global')
+  const [personal, setPersonal] = useState([])
   const [cashAt, setCashAt] = useState('2.00')
   const [queued, setQueued] = useState(false)
   const [autoRun, setAutoRun] = useState(false)
@@ -124,7 +126,10 @@ export default function Crash() {
     return () => clearInterval(id)
   }, [phase === 'flying' || phase === 'betting']) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadMine = useCallback(() => {}, []) // personal history lives in the bets feed under the game
+  const loadMine = useCallback(async () => {
+    const { ok, data: d } = await workerPost('/crash/mine')
+    if (ok && d.bets) setPersonal(d.bets)
+  }, [])
 
   const pull = useCallback(async () => {
     const sent = Date.now()
@@ -236,7 +241,12 @@ export default function Crash() {
   else if (queued) cta = <button type="button" className={`${styles.go} ${styles.dim}`} onClick={() => setQueued(false)}>Bet Placed</button>
   else cta = <button type="button" className={styles.go} disabled={Number(bet) < MIN_BET} onClick={() => setQueued(true)}>Bet (Next Round)</button>
 
-  const hist = (data?.history || []).slice(0, 16).reverse()
+  const rowsG = data?.feed || []
+  const personalRows = personal.map((b) => {
+    const live_ = round && b.seq >= round.seq && b.cashedAt == null
+    return { seq: b.seq, bet: b.bet, at: b.at, res: b.cashedAt != null ? b.payout - b.bet : live_ ? null : -b.bet, x: b.cashedAt }
+  })
+  const hist = (data?.history || []).slice(0, 24)
   const stepCash = (d) => setCashAt(String(Math.max(1.01, Math.round(((Number(cashAt) || 2) + d) * 100) / 100).toFixed(2)))
 
   const playersView = (
@@ -334,7 +344,7 @@ export default function Crash() {
 
         <section className={`${styles.stage} ${shaking ? shared.shake : ''}`}>
           <div className={styles.hist}>
-            {hist.map((v, i) => <span key={i} className={`${styles.pill} ${i === hist.length - 1 ? styles.pillNew : ''}`}>{v.toFixed(2)}x</span>)}
+            {hist.map((v, i) => <span key={i} className={`${styles.pill} ${i === 0 ? styles.pillNew : ''}`}>{v.toFixed(2)}x</span>)}
           </div>
           <Graph rate={rate} ms={Math.max(0, crashedView ? Math.log(Math.max(1, shown)) / rate : phase === 'flying' ? t : 0)} mult={shown} crashed={crashedView} idle={phase === 'betting' || phase === 'load'} />
           {phase === 'betting' || phase === 'load' ? (
@@ -355,6 +365,34 @@ export default function Crash() {
           )}
           <Confetti fire={g.fire} colors={['#22ff7a', '#6ee7b7', '#22d3ee', '#f5c542', '#fff']} />
         </section>
+          <div className={`${shared.lvCard} ${shared.lvDock}`}>
+            <div className={shared.lvTabs} role="tablist">
+              <button type="button" role="tab" aria-selected={feedTab === 'global'} className={feedTab === 'global' ? shared.on : ''} onClick={() => setFeedTab('global')}>Global</button>
+              <button type="button" role="tab" aria-selected={feedTab === 'personal'} className={feedTab === 'personal' ? shared.on : ''} onClick={() => { setFeedTab('personal'); if (g.user) loadMine() }}>Personal</button>
+            </div>
+            <div className={`${shared.lvRow} ${shared.lvTh}`}><span>Player</span><span>Bet</span><span>Result</span></div>
+            <div className={shared.lvList}>
+              {feedTab === 'global' ? (
+                rowsG.length ? rowsG.map((b, i) => {
+                  const res = b.cashedAt != null ? b.payout - b.bet : -b.bet
+                  return (
+                    <div key={`${b.seq}-${b.u}-${i}`} className={shared.lvRow}>
+                      <span className={shared.lvName}><Av name={b.u} map={avs} /><em>{b.u}<small>{ago(b.at, now)}</small></em></span>
+                      <span className={shared.lvBet}>{fmt(b.bet)}</span>
+                      <span className={res >= 0 ? shared.pos : shared.neg}>{sign(res)}</span>
+                    </div>
+                  )
+                }) : <p className={shared.lvEmpty}>Finished bets appear here</p>
+              ) : !g.user ? <p className={shared.lvEmpty}>Log in to see your bets</p>
+                : personalRows.length ? personalRows.map((b, i) => (
+                  <div key={`${b.seq}-${i}`} className={shared.lvRow}>
+                    <span className={shared.lvName}><em>Round {b.seq}<small>{ago(b.at, now)}</small></em></span>
+                    <span className={shared.lvBet}>{fmt(b.bet)}</span>
+                    <span className={b.res == null ? shared.lvDim : b.res >= 0 ? shared.pos : shared.neg}>{b.res == null ? 'playing' : `${sign(b.res)}${b.x ? ` (${b.x.toFixed(2)}x)` : ''}`}</span>
+                  </div>
+                )) : <p className={shared.lvEmpty}>You have not played yet</p>}
+            </div>
+          </div>
       </div>
     </Page>
   )

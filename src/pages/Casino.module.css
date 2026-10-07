@@ -599,3 +599,8 @@
 .rSpot .rChip { right: auto; top: 50%; left: 50%; transform: translate(-50%,-50%); min-width: 26px; height: 26px; z-index: 2; }
 
 .headBtns { display: flex; gap: 8px; flex: none; }
+
+/* feed tabs: flat, same look as the Manual/Auto tabs */
+.lvTabs { border: 0; border-radius: 999px; background: #0a0c11; }
+.lvTabs button { border-radius: 999px; color: #8b92a5; font-weight: 700; }
+.lvTabs .on { background: #232733; color: #fff; }
