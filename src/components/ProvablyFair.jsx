@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { workerPost } from '../lib/points'
+import { WORKER, workerPost } from '../lib/points'
 import { derive, sha256hex, GAME_OPTS } from '../lib/fair'
 import styles from './ProvablyFair.module.css'
 
-const GAME_NAMES = { mines: 'Mines', blackjack: 'Blackjack', keno: 'Keno', plinko: 'Plinko', roulette: 'Roulette', crash: 'Crash' }
+const GAME_NAMES = { mines: 'Mines', blackjack: 'Blackjack', keno: 'Keno', plinko: 'Plinko', roulette: 'Roulette', crash: 'Crash', jackpot: 'Jackpot' }
 const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
 const short = (s) => (s ? `${s.slice(0, 8)}…${s.slice(-6)}` : '-')
 
@@ -105,6 +105,32 @@ function Verify({ init }) {
   )
 }
 
+function Live({ onVerify }) {
+  const [rows, setRows] = useState(null)
+  useEffect(() => {
+    const get = (p) => fetch(`${WORKER}${p}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then((r) => r.json()).catch(() => ({}))
+    Promise.all([get('/crash/state'), get('/jackpot/state')]).then(([c, j]) => setRows([
+      ...(c.fair || []).map((r) => ({ ...r, game: 'crash', res: r.crashAt != null ? `${r.crashAt.toFixed(2)}x` : null })),
+      ...(j.fair || []).map((r) => ({ ...r, game: 'jackpot', res: r.ticket != null ? r.ticket.toFixed(6) : null })),
+    ]))
+  }, [])
+  return (
+    <div className={styles.pane}>
+      <p>Crash and Jackpot rounds are shared by everyone, so each round has its own server seed. Its hash is shown before the round starts, and the seed is revealed when it ends. The client seed is <code>crash-ROUND</code> or <code>jackpot-ROUND</code> and the nonce is 0.</p>
+      {!rows ? <p>Loading...</p> : !rows.length ? <p className={styles.note}>No rounds yet.</p> : (
+        <div className={styles.tbl}>
+          {rows.map((r) => (
+            <div key={`${r.game}${r.seq}`} className={styles.tr}>
+              <span>{GAME_NAMES[r.game]} #{r.seq}</span><span className={styles.dim} title={r.hash || ''}>{short(r.hash)}</span><span>{r.res || 'live'}</span>
+              {r.seed ? <button type="button" className={styles.link} onClick={() => onVerify({ game: r.game, server: r.seed, client: `${r.game}-${r.seq}`, nonce: 0 })}>Verify</button> : <span className={styles.dim}>hidden</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Logs() {
   const [rows, setRows] = useState(null), [user, setUser] = useState(''), [game, setGame] = useState('')
   const load = useCallback(async () => {
@@ -144,7 +170,7 @@ export default function ProvablyFair({ onClose }) {
   const [tab, setTab] = useState('overview'), [init, setInit] = useState(null), [admin, setAdmin] = useState(false)
   useEffect(() => { workerPost('/fair/log', { limit: 1 }).then((r) => setAdmin(r.ok)) }, [])
   useEffect(() => { const k = (e) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [onClose])
-  const tabs = [['overview', 'Overview'], ['seeds', 'Seeds'], ['verify', 'Verify'], ...(admin ? [['logs', 'Logs']] : [])]
+  const tabs = [['overview', 'Overview'], ['seeds', 'Seeds'], ['live', 'Live rounds'], ['verify', 'Verify'], ...(admin ? [['logs', 'Logs']] : [])]
   return (
     <div className={styles.ov} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal} role="dialog" aria-label="Provably Fair">
@@ -152,6 +178,7 @@ export default function ProvablyFair({ onClose }) {
         <div className={styles.tabs}>{tabs.map(([k, l]) => <button key={k} type="button" className={tab === k ? styles.on : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
         {tab === 'overview' && <Overview />}
         {tab === 'seeds' && <Seeds onVerify={(v) => { setInit(v); setTab('verify') }} />}
+        {tab === 'live' && <Live onVerify={(v) => { setInit(v); setTab('verify') }} />}
         {tab === 'verify' && <Verify init={init} key={init ? `${init.server}${init.nonce}` : 'x'} />}
         {tab === 'logs' && <Logs />}
       </div>

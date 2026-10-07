@@ -20,7 +20,7 @@ const SUITS = ['♠', '♥', '♦', '♣']
 const card = (c) => `${RANKS[c % 13]}${SUITS[Math.floor(c / 13) % 4]}`
 
 export const GAME_OPTS = {
-  roulette: [], keno: [], blackjack: [],
+  roulette: [], keno: [], blackjack: [], jackpot: [],
   mines: [{ k: 'mines', label: 'Mines', def: 3, min: 1, max: 24 }],
   plinko: [{ k: 'rows', label: 'Rows', def: 16, min: 8, max: 16 }, { k: 'balls', label: 'Balls in the bet', def: 1, min: 1, max: 25 }],
   crash: [],
@@ -57,6 +57,7 @@ export async function derive(game, server, client, nonce, o = {}) {
       { label: 'Next cards', value: d.slice(4, 12).map(card).join(' ') },
     ]
   }
+  if (game === 'jackpot') return [{ label: 'Ticket (0-1, the winner is where ticket x pot falls)', value: rg.float().toFixed(12) }]
   const u = rg.float()
   return [{ label: 'Crash point', value: `${Math.min(1000, Math.max(1, Math.floor((0.97 / (1 - u)) * 100) / 100)).toFixed(2)}x` }]
 }

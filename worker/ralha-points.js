@@ -121,10 +121,10 @@ const _enc = new TextEncoder()
 const toHex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
 const sha256hex = async (str) => toHex(await crypto.subtle.digest('SHA-256', _enc.encode(str)))
 const newSeedHex = () => { const a = new Uint8Array(32); crypto.getRandomValues(a); return toHex(a) }
-async function fairRng(server, client, nonce) {
+async function fairRng(server, client, nonce, nb = 128) {
   const key = await crypto.subtle.importKey('raw', _enc.encode(server), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  const blocks = await Promise.all(Array.from({ length: 128 }, (_, i) => crypto.subtle.sign('HMAC', key, _enc.encode(`${client}:${nonce}:${i}`))))
-  const w = new Uint32Array(1024)
+  const blocks = await Promise.all(Array.from({ length: nb }, (_, i) => crypto.subtle.sign('HMAC', key, _enc.encode(`${client}:${nonce}:${i}`))))
+  const w = new Uint32Array(nb * 8)
   blocks.forEach((b, i) => { const dv = new DataView(b); for (let j = 0; j < 8; j++) w[i * 8 + j] = dv.getUint32(j * 4) })
   let p = 0
   const next = () => { if (p >= w.length) throw new Error('fair stream exhausted'); return w[p++] }
@@ -249,7 +249,7 @@ function crashResolve(st, now) {
 // Rounds live in crash_rounds (crash_at stays secret until the round is over), bets in crash_bets.
 // Nothing runs on a timer: whoever calls the API after a round ended creates the next one, and
 // auto cash-outs are settled lazily with a compare-and-swap, so a payout can only happen once.
-const CL = { betMs: 15000, keep: 16, feed: 25, lockMs: 300 }
+const CL = { betMs: 10000, keep: 16, feed: 25, lockMs: 300, maxCatch: 1800000 }
 const clEnd = (r) => Number(r.start_ms) + Math.ceil(crashAtMs(Number(r.crash_at)))
 const clSb = (env, sbH, path, init = {}) => fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { ...sbH, ...(init.headers || {}) } })
 async function clPay(env, username, amount) { // add points in StreamElements (one retry)
@@ -260,7 +260,7 @@ async function clPay(env, username, amount) { // add points in StreamElements (o
   return { ok: false }
 }
 async function clRounds(env, sbH) {
-  const r = await clSb(env, sbH, `crash_rounds?select=seq,start_ms,crash_at&order=seq.desc&limit=${CL.keep}`)
+  const r = await clSb(env, sbH, `crash_rounds?select=*&order=seq.desc&limit=${CL.keep}`)
   const rows = r.ok ? await r.json() : []
   return Array.isArray(rows) ? rows : []
 }
@@ -287,16 +287,34 @@ async function clSettle(env, sbH, round, now, bets) {
   }))
   return bets
 }
-// returns the newest rounds (index 0 is the live one), creating the next round once the last one ended
+// Rounds run back to back on a fixed clock: the next one starts betMs after the previous crash, whether
+// or not anyone was watching. Whoever calls first (or the cron trigger) writes every round that has
+// passed since the last one, so the timeline never stops. Each round has a server seed: its hash is
+// public from creation, the seed itself is revealed once the round is over.
+const clMake = async (seq, startMs) => {
+  const server = newSeedHex()
+  const rg = await fairRng(server, `crash-${seq}`, 0, 1)
+  return { seq, start_ms: startMs, crash_at: newCrashPoint(rg.float()), server_seed: server, server_hash: await sha256hex(server) }
+}
 async function clEnsure(env, sbH, now) {
   let rounds = await clRounds(env, sbH)
   const cur = rounds[0]
   if (cur && now < clEnd(cur)) return rounds
   if (cur) await clSettle(env, sbH, cur, now)
-  const next = { seq: cur ? Number(cur.seq) + 1 : 1, start_ms: Math.max(cur ? clEnd(cur) : 0, now) + CL.betMs, crash_at: newCrashPoint() }
-  const ins = await clSb(env, sbH, 'crash_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(next) })
-  if (ins.ok) rounds = [next, ...rounds].slice(0, CL.keep)
-  else rounds = await clRounds(env, sbH) // someone else created it first
+  let seq = cur ? Number(cur.seq) : 0
+  let end = cur ? clEnd(cur) : now
+  if (now - end > CL.maxCatch) end = now // idle for a long time: restart the clock instead of writing hundreds of rounds
+  const made = []
+  for (let i = 0; i < 200; i++) {
+    const r = await clMake(++seq, end + CL.betMs)
+    made.push(r); end = clEnd(r)
+    if (end > now) break
+  }
+  let ins = await clSb(env, sbH, 'crash_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(made) })
+  if (!ins.ok) { // seed columns not created yet: keep the game running without them
+    ins = await clSb(env, sbH, 'crash_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(made.map(({ seq, start_ms, crash_at }) => ({ seq, start_ms, crash_at }))) })
+  }
+  rounds = ins.ok ? [...made.reverse(), ...rounds].slice(0, CL.keep) : await clRounds(env, sbH) // someone else created them first
   return rounds
 }
 let CL_CACHE = null // public state, reused for a moment so many viewers cost one set of queries
@@ -316,6 +334,7 @@ async function clState(env, sbH, now) {
     round: { seq: Number(cur.seq), startAt: Number(cur.start_ms), status, crashAt: status === 'crashed' ? Number(cur.crash_at) : null },
     last: last ? { seq: Number(last.seq), crashAt: Number(last.crash_at) } : null,
     history: rounds.slice(1).map((r) => Number(r.crash_at)),
+    fair: rounds.slice(0, 12).map((r) => ({ seq: Number(r.seq), hash: r.server_hash || null, seed: now >= clEnd(r) ? r.server_seed || null : null, crashAt: now >= clEnd(r) ? Number(r.crash_at) : null })),
     bets: bets.map((b) => ({ u: b.username, bet: b.bet, cashedAt: b.cashed_at == null ? null : Number(b.cashed_at), payout: b.payout })),
     feed: (Array.isArray(feed) ? feed : []).map((b) => ({ u: b.username, bet: b.bet, cashedAt: b.cashed_at == null ? null : Number(b.cashed_at), payout: b.payout, at: b.created_at, seq: b.seq })),
   }
@@ -396,7 +415,7 @@ async function jpSettle(env, sbH, round) {
   const players = await jpPlayers(env, sbH, round.seq)
   const pot = players.reduce((a, p) => a + p.amount, 0)
   if (!players.length || !pot) return round
-  const t = rndFloat()
+  const t = round.server_seed ? (await fairRng(round.server_seed, `jackpot-${round.seq}`, 0, 1)).float() : rndFloat()
   let acc = 0, win = players[players.length - 1]
   for (const p of players) { acc += p.amount; if (t * pot < acc) { win = p; break } }
   const fee = Math.floor(pot * JP.fee), payout = pot - fee
@@ -412,8 +431,10 @@ async function jpEnsure(env, sbH, now) {
   let rounds = await jpRounds(env, sbH)
   let cur = rounds[0]
   const make = async (seq) => {
-    const ins = await jpSb(env, sbH, 'jackpot_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify({ seq }) })
-    return ins.ok ? [{ seq, status: 'open', end_ms: null, pot: 0, paid: false }, ...rounds].slice(0, JP.keep) : await jpRounds(env, sbH)
+    const server = newSeedHex(), hash = await sha256hex(server)
+    let ins = await jpSb(env, sbH, 'jackpot_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify({ seq, server_seed: server, server_hash: hash }) })
+    if (!ins.ok) ins = await jpSb(env, sbH, 'jackpot_rounds', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify({ seq }) }) // seed columns not created yet
+    return ins.ok ? [{ seq, status: 'open', end_ms: null, pot: 0, paid: false, server_seed: server, server_hash: hash }, ...rounds].slice(0, JP.keep) : await jpRounds(env, sbH)
   }
   if (!cur) return make(1)
   if (cur.status === 'open' && cur.end_ms != null && now >= Number(cur.end_ms)) { cur = await jpSettle(env, sbH, cur); rounds = [cur, ...rounds.slice(1)] }
@@ -446,12 +467,21 @@ async function jpState(env, sbH, now) {
       winner: done ? { u: cur.winner_name, amount: cur.winner_amount, payout: cur.payout, fee: cur.fee, ticket: Number(cur.ticket) } : null,
     },
     history: rounds.filter((r) => r.status === 'done' && r.seq !== cur.seq).map((r) => ({ seq: Number(r.seq), u: r.winner_name, pot: r.pot, payout: r.payout, amount: r.winner_amount })),
+    fair: rounds.slice(0, 12).map((r) => ({ seq: Number(r.seq), hash: r.server_hash || null, seed: r.status === 'done' ? r.server_seed || null : null, ticket: r.status === 'done' && r.ticket != null ? Number(r.ticket) : null })),
   }
   JP_CACHE = { at: now, data }
   return data
 }
 
 export default {
+  // Cron Trigger (every minute): keeps Crash rounds running with nobody on the page, and settles jackpots
+  async scheduled(event, env, ctx) {
+    const sbHeaders = { 'Content-Type': 'application/json', 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}` }
+    ctx.waitUntil((async () => {
+      try { const now = Date.now(); const rounds = await clEnsure(env, sbHeaders, now); if (rounds[0]) await clSettle(env, sbHeaders, rounds[0], now) } catch (e) { console.error('cron crash', e.message) }
+      try { await jpEnsure(env, sbHeaders, Date.now()) } catch (e) { console.error('cron jackpot', e.message) }
+    })())
+  },
   async fetch(request, env) {
     const origin    = request.headers.get('Origin') || ''
     const isAllowed = ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')
