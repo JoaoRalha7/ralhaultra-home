@@ -162,7 +162,7 @@ function ArrayField({ label, value = [], onChange, placeholder }) {
 // ── Casino Modal ───────────────────────────────────────────
 function CasinoModal({ casino, methods, onSave, onClose }) {
   const isEdit = !!casino?.id
-  const [tab,         setTab]         = useState('basic')
+  const [open,        setOpen]        = useState({ basic: true, media: true, info: false, featured: false, methods: false, content: false })
   const [form,        setForm]        = useState({})
   const [features,    setFeatures]    = useState([])
   const [bonus,       setBonus]       = useState([])
@@ -199,7 +199,7 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
   }
 
   const handleSave = async () => {
-    if (!validate()) { setTab('basic'); return }
+    if (!validate()) { setOpen(o => ({ ...o, basic: true, media: true })); return }
     setSaving(true)
     try {
       const payload = { ...form, payments: selMethods, features, welcome_bonus: bonus, vip_benefits: vip, how_to_claim: howToClaim, casino_info: form.casino_info || {} }
@@ -224,14 +224,24 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
     finally { setSaving(false) }
   }
 
-  const TABS = [
-    { id: 'basic',    label: 'Basic',    err: !!(errors.name || errors.claim_url) },
-    { id: 'media',    label: 'Media',    err: !!errors.logo_url },
-    { id: 'info',     label: 'Info',     err: false },
-    { id: 'featured', label: 'Featured', err: false },
-    { id: 'methods',  label: 'Methods',  err: false },
-    { id: 'content',  label: 'Content',  err: false },
-  ]
+  const filled = (o) => Object.values(o || {}).filter(v => String(v?.value ?? v ?? '').trim()).length
+  const SUM = {
+    basic: [form.name, form.promo_code && `code ${form.promo_code}`].filter(Boolean).join(' · ') || 'Name, link and code',
+    media: form.logo_url ? (form.banner_url ? 'Logo + banner' : 'Logo set') : 'Logo missing',
+    info: `${filled(ci)} of 6 filled`,
+    featured: form.is_featured ? 'On - shown in the entry popup' : 'Off',
+    methods: `${selMethods.length} selected`,
+    content: `${features.length} features · ${bonus.length} bonus tiers · ${vip.length} VIP · ${howToClaim.length} steps`,
+  }
+  const ERR = { basic: !!(errors.name || errors.claim_url), media: !!errors.logo_url }
+  const Sec = ({ id, title }) => (
+    <button type="button" className={`${styles.secHead} ${open[id] ? styles.secHeadOpen : ''} ${ERR[id] ? styles.secHeadErr : ''}`} onClick={() => setOpen(o => ({ ...o, [id]: !o[id] }))} aria-expanded={!!open[id]}>
+      <span className={styles.secChev}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+      <span className={styles.secTitle}>{title}</span>
+      <span className={styles.secSum}>{SUM[id]}</span>
+    </button>
+  )
+  const allOpen = Object.values(open).every(Boolean)
 
   return (
     <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
@@ -247,18 +257,15 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
           <button className={styles.iconBtnSm} onClick={onClose}><IconClose /></button>
         </div>
 
-        <div className={styles.modalTabs}>
-          {TABS.map(t => (
-            <button key={t.id} className={`${styles.modalTab} ${tab === t.id ? styles.modalTabActive : ''} ${t.err ? styles.modalTabError : ''}`} onClick={() => setTab(t.id)}>
-              {t.label}{t.err && <span className={styles.errorDot} />}
-            </button>
-          ))}
-        </div>
-
         <div className={styles.modalSplit}>
         <div className={styles.modalBody}>
+          <div className={styles.secBar}>
+            <span>Click a section to open or close it</span>
+            <button type="button" onClick={() => setOpen({ basic: !allOpen, media: !allOpen, info: !allOpen, featured: !allOpen, methods: !allOpen, content: !allOpen })}>{allOpen ? 'Collapse all' : 'Expand all'}</button>
+          </div>
           {/* BASIC */}
-          {tab === 'basic' && (
+          <div className={styles.sec}><Sec id="basic" title="Essentials" />
+          {open.basic && (
             <div className={styles.tabContent}>
               <div className={styles.formRow2}>
                 <div className={styles.field}>
@@ -282,31 +289,31 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
                   <input className={styles.input} type="number" value={form.sort_order ?? 0} onChange={e => set('sort_order', Number(e.target.value))} />
                 </div>
               </div>
-              <div className={styles.togglesGrid}>
-                {[
-                  { k: 'is_active',      label: 'Active',          sub: 'Visible to users',       val: !!form.is_active },
-                  { k: 'is_featured',    label: 'Featured',     sub: 'Shown in entry popup',     val: !!form.is_featured },
-                  { k: 'is_hot',         label: 'Hot',             sub: 'Shows HOT badge',         val: !!form.is_hot },
-                  { k: 'is_new',         label: 'New',            sub: 'Shows NEW badge',         val: !!form.is_new },
-                  { k: 'is_freespins',   label: 'Free spins',      sub: 'Shows FREESPINS badge',   val: !!form.is_freespins },
-                  { k: 'promo_required', label: 'Promo Required',  sub: 'Must use promo code',     val: !!form.promo_required },
-                  { k: 'kyc_required',   label: 'KYC Required',    sub: 'Identity verification',   val: !!form.kyc_required },
-                  { k: 'vpn_allowed',    label: 'VPN Allowed',     sub: 'VPN access permitted',    val: form.vpn_allowed !== false },
-                ].map(({ k, label, sub, val }) => (
-                  <div key={k} className={styles.toggleCard}>
-                    <div className={styles.toggleCardInfo}>
-                      <span className={styles.toggleCardLabel}>{label}</span>
-                      <span className={styles.toggleCardSub}>{sub}</span>
-                    </div>
-                    <Toggle checked={val} onChange={v => set(k, v)} />
+              {[
+                ['Badges', [['is_hot', 'Hot'], ['is_new', 'New'], ['is_freespins', 'Free spins'], ['is_featured', 'Featured popup']]],
+                ['Rules', [['promo_required', 'Promo required'], ['kyc_required', 'KYC required'], ['vpn_allowed', 'VPN allowed']]],
+                ['Visibility', [['is_active', 'Active (visible to users)']]],
+              ].map(([grp, items]) => (
+                <div key={grp} className={styles.field}>
+                  <label className={styles.label}>{grp}</label>
+                  <div className={styles.pillRow}>
+                    {items.map(([k, lbl]) => {
+                      const on = k === 'vpn_allowed' ? form.vpn_allowed !== false : !!form[k]
+                      return (
+                        <button key={k} type="button" aria-pressed={on} className={`${styles.pill} ${on ? styles.pillOn : ''}`} onClick={() => set(k, !on)}>
+                          {on && <IconCheck />}{lbl}
+                        </button>
+                      )
+                    })}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           )}
+          </div>
 
-          {/* MEDIA */}
-          {tab === 'media' && (
+          <div className={styles.sec}><Sec id="media" title="Images" />
+          {open.media && (
             <div className={styles.tabContent}>
               <ImageField label="Logo *" value={form.logo_url} onChange={v => set('logo_url', v)} folder="casinos" />
               {errors.logo_url && <span className={styles.fieldError}>{errors.logo_url}</span>}
@@ -317,9 +324,10 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
               </div>
             </div>
           )}
+          </div>
 
-          {/* INFO */}
-          {tab === 'info' && (
+          <div className={styles.sec}><Sec id="info" title="Casino info" />
+          {open.info && (
             <div className={styles.tabContent}>
               <div className={styles.infoGrid}>
                 {[['games','Games','Slots, Live...'],['min_deposit','Min Deposit','$10'],['cashback','Cashback','10%'],['withdraw','Withdraw Time','Instant'],['license','License','Curaçao'],['established','Established','2020']].map(([k,lbl,ph]) => (
@@ -341,9 +349,10 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
               </div>
             </div>
           )}
+          </div>
 
-          {/* FEATURED */}
-          {tab === 'featured' && (() => {
+          <div className={styles.sec}><Sec id="featured" title="Featured popup" />
+          {open.featured && (() => {
             const cur = { ...form, features, casino_info: ci, welcome_bonus: bonus }
             const auto = autoFeatured(cur)
             const COLORS = ['#3b82f6', '#2ee6a6', '#f5c542', '#ff8a2b', '#ef4444', '#ec4899', '#a855f7', '#22d3ee']
@@ -386,9 +395,10 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
               </div>
             )
           })()}
+          </div>
 
-          {/* METHODS */}
-          {tab === 'methods' && (
+          <div className={styles.sec}><Sec id="methods" title="Payment methods" />
+          {open.methods && (
             <div className={styles.tabContent}>
               <p className={styles.tabHint}>{selMethods.length} method{selMethods.length !== 1 ? 's' : ''} selected</p>
               <div className={styles.methodsGrid}>
@@ -408,9 +418,10 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
               </div>
             </div>
           )}
+          </div>
 
-          {/* CONTENT */}
-          {tab === 'content' && (
+          <div className={styles.sec}><Sec id="content" title="Bonus & content" />
+          {open.content && (
             <div className={styles.tabContent}>
               <ArrayField label="Features"      value={features}   onChange={setFeatures}   placeholder="e.g. Fast withdrawals" />
               <BonusField value={bonus} onChange={setBonus} />
@@ -418,6 +429,7 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
               <ArrayField label="How to Claim"  value={howToClaim} onChange={setHowToClaim} placeholder="e.g. Register with code" />
             </div>
           )}
+          </div>
         </div>
 
         <aside className={styles.pvPane}>
