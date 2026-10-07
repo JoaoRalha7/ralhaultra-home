@@ -550,3 +550,47 @@
 .jpRow .lvName em { overflow: hidden; }
 .jpRow { min-height: 0; }
 .jpDock .lvCard + .lvCard { border-radius: 0; }
+
+/* ── Roulette: flat wheel and a clean bet table ── */
+.page[data-game="roulette"] .wheelWrap { width: min(100%, 330px); }
+.page[data-game="roulette"] .wheel { filter: none; }
+.page[data-game="roulette"] .wheelWrap::before { display: none; }
+.w_red { fill: #c41e3a; stroke: #0b0d13; stroke-width: 1; }
+.w_black { fill: #3d3b4d; stroke: #0b0d13; stroke-width: 1; }
+.w_green { fill: #19b24b; stroke: #0b0d13; stroke-width: 1; }
+.wNum { font: 800 9.5px "DM Sans", sans-serif; fill: #fff; }
+.wHit { fill: rgba(255,255,255,.18); stroke: #fff; stroke-width: 2; filter: none; }
+.wPointer { fill: #fff; stroke: none; filter: none; }
+.wBall { filter: none; }
+.page[data-game="roulette"] .stage { background: #0f1118; }
+.page[data-game="roulette"] .stage::before { display: none; }
+
+.chipBox { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 14px; background: #171a24; border: 1px solid var(--line); }
+.chipDisc { --c: #facc15; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center; position: relative;
+  background: radial-gradient(circle, var(--c) 0 56%, transparent 57%), repeating-conic-gradient(#fff 0 14deg, var(--c) 14deg 30deg);
+  box-shadow: 0 3px 8px -3px #000; transition: transform .12s, box-shadow .12s; }
+.chipDisc b { position: relative; z-index: 1; font: 800 11px "DM Sans", sans-serif; color: #1b1300; }
+.chipDisc:hover { transform: translateY(-2px); }
+.cd_y { --c: #facc15; } .cd_o { --c: #fb923c; } .cd_g { --c: #4ade80; }
+.cdOn { box-shadow: 0 0 0 2px #0f1118, 0 0 0 4px #fff; }
+
+.rTools { display: flex; align-items: center; gap: 14px; color: #8d96ab; font: 700 13px "DM Sans", sans-serif; padding: 0 4px; }
+.rTools span { flex: 1; }
+.rTools button { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 4px 2px; transition: color .12s; }
+.rTools button:hover:not(:disabled) { color: #fff; }
+.rTools button:disabled { opacity: .45; cursor: default; }
+
+.rTableWrap { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.rTable { gap: 5px; }
+.rSpot { border: 0; border-radius: 7px; background: #3d3b4d; font-size: 15px; box-shadow: none; }
+.rSpot:hover:not(:disabled) { filter: brightness(1.15); transform: none; }
+.rn_red, .rSpot.rn_red { background: #c41e3a; }
+.rn_black, .rSpot.rn_black { background: #3d3b4d; }
+.rn_green, .rSpot.rn_green { background: #19b24b; }
+.rOut { background: transparent; border: 1px solid #5a5870; font-size: 13px; }
+.rOut:hover:not(:disabled) { border-color: #fff; filter: none; }
+.rOut.rRed { background: #c41e3a; border-color: transparent; color: transparent; }
+.rOut.rBlack { background: #3d3b4d; border-color: transparent; color: transparent; }
+.page[data-game="roulette"] .wheelWrap { width: min(100%, 270px); }
+.page[data-game="roulette"] .rTable { grid-template-rows: repeat(3, 40px) 36px 36px; gap: 4px; }
+.page[data-game="roulette"] .stage { gap: 8px; }

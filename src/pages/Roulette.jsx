@@ -35,16 +35,13 @@ function Wheel({ wRef, bRef, cRef, spinning, hit, number }) {
           <linearGradient id="rwSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fff" stopOpacity=".22" /><stop offset="45%" stopColor="#fff" stopOpacity="0" /><stop offset="100%" stopColor="#000" stopOpacity=".28" /></linearGradient>
         </defs>
 
-        <circle cx={C} cy={C} r="178" fill="url(#rwWood)" />
-        <circle cx={C} cy={C} r="176" fill="none" stroke="#f5c542" strokeWidth="2" />
-        <circle cx={C} cy={C} r="170" fill="url(#rwTrack)" />
-        <circle cx={C} cy={C} r="170" fill="none" stroke="rgba(245,197,66,.55)" strokeWidth="1" />
-        {DEFLECT.map((d) => { const [x, y] = pt(d, 163); return <rect key={d} x={x - 3} y={y - 3} width="6" height="6" transform={`rotate(${d + 45} ${x} ${y})`} fill="url(#rwGold)" /> })}
+        <circle cx={C} cy={C} r="178" fill="#10121a" />
+        <circle cx={C} cy={C} r="170" fill="#0b0d13" />
 
         <g ref={wRef} transform={`rotate(0 ${C} ${C})`}>
           <circle cx={C} cy={C} r="140" fill="#0b0f16" />
           {WHEEL.map((n, i) => {
-            const [tx, ty] = pt(i * SLICE, 120)
+            const [tx, ty] = pt(i * SLICE, 126)
             return (
               <g key={n}>
                 <path d={slicePath(i)} className={styles['w_' + rColor(n)]} />
@@ -52,19 +49,15 @@ function Wheel({ wRef, bRef, cRef, spinning, hit, number }) {
               </g>
             )
           })}
-          <circle cx={C} cy={C} r="138" fill="none" stroke="#f5c542" strokeWidth="1.6" />
-          <circle cx={C} cy={C} r="104" fill="url(#rwCone)" stroke="#f5c542" strokeWidth="1.4" />
-          <circle cx={C} cy={C} r="78" fill="none" stroke="rgba(245,197,66,.25)" strokeWidth="1" />
+          <circle cx={C} cy={C} r="104" fill="#07080c" />
           {SPOKES.map((d) => {
-            const [x1, y1] = pt(d, 22), [x2, y2] = pt(d, 66), [kx, ky] = pt(d, 70)
-            return <g key={d}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke="url(#rwGold)" strokeWidth="5" strokeLinecap="round" /><circle cx={kx} cy={ky} r="5.500" fill="url(#rwGold)" /></g>
+            const [x1, y1] = pt(d, 8), [x2, y2] = pt(d, 62), [kx, ky] = pt(d, 66)
+            return <g key={d}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#f2cf66" strokeWidth="5" strokeLinecap="round" /><circle cx={kx} cy={ky} r="5" fill="#f2cf66" /></g>
           })}
-          <circle cx={C} cy={C} r="24" fill="url(#rwGold)" stroke="#6b4a06" strokeWidth="1" />
-          <circle cx={C} cy={C} r="9" fill="#fff3c4" opacity=".8" />
+          <circle cx={C} cy={C} r="7" fill="#fff" />
           {hit != null && <path d={slicePath(hit)} className={styles.wHit} />}
         </g>
 
-        <circle cx={C} cy={C} r="170" fill="url(#rwSheen)" pointerEvents="none" />
         <g ref={bRef} className={styles.wBallG} transform={`rotate(0 ${C} ${C})`} style={{ opacity: 0 }}>
           <circle ref={cRef} cx={C} cy={C - R_TRACK} r="6" fill="url(#rwBall)" className={styles.wBall} />
         </g>
@@ -239,13 +232,8 @@ export default function Roulette() {
           </div>
 
           <span className={styles.lbl}>Chip value</span>
-          <div className={`${styles.quick} ${styles.chipRow}`}>
-            {CHIPS.map((c) => <button key={c} type="button" className={chip === c ? styles.on : ''} onClick={() => setChip(c)}>{short(c)}</button>)}
-          </div>
-          <div className={styles.quick}>
-            <button type="button" disabled={locked || !bets.length} onClick={undo}>Undo</button>
-            <button type="button" disabled={locked || !bets.length} onClick={double}>2x</button>
-            <button type="button" disabled={locked || !bets.length} onClick={clear}>Clear</button>
+          <div className={styles.chipBox}>
+            {CHIPS.map((c) => <button key={c} type="button" aria-label={`Chip ${c}`} aria-pressed={chip === c} className={`${styles.chipDisc} ${styles['cd_' + (c >= 1000 ? 'g' : c >= 100 ? 'o' : 'y')]} ${chip === c ? styles.cdOn : ''}`} onClick={() => setChip(c)}><b>{short(c)}</b></button>)}
           </div>
 
           {mode === 'auto' && (
@@ -290,6 +278,12 @@ export default function Roulette() {
 
           <Wheel wRef={wRef} bRef={bRef} cRef={cRef} spinning={spinning} hit={shownNum != null ? WHEEL.indexOf(shownNum) : null} number={shownNum} />
 
+          <div className={styles.rTools}>
+            <button type="button" disabled={locked || !bets.length} onClick={undo}>Undo</button>
+            <span />
+            <button type="button" disabled={locked || !bets.length} onClick={double}>Double</button>
+            <button type="button" disabled={locked || !bets.length} onClick={clear}>Clear</button>
+          </div>
           <div className={styles.rTableWrap}>
             <div className={styles.rTable}>
               <Spot c={ctx} t="straight" v={0} cls={`${styles.rn_green} ${shownNum === 0 ? styles.rHit : ''}`} style={{ gridColumn: 1, gridRow: '1 / 4' }}>0</Spot>
