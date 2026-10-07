@@ -152,3 +152,6 @@
   .page { padding: 16px 12px; }
   .title { font-size: 20px; }
 }
+/* ── Vertical grid (replaces the sideways carousel) ── */
+.track { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; overflow: visible; scroll-snap-type: none; cursor: default; padding: 6px 0 14px; }
+.oc { flex: none; scroll-snap-align: none; min-width: 0; }

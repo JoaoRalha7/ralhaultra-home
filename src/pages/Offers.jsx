@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { casinoToOffer } from '../data/casinoToOffer'
 import { Icon } from '../components/Icon'
@@ -162,10 +162,6 @@ export default function Offers() {
   const [selectedCasino, setSelectedCasino] = useState(null)
   const [redirect, setRedirect]             = useState(null)
   const [filter, setFilter]                 = useState('all')
-  const [canL, setCanL]                     = useState(false)
-  const [canR, setCanR]                     = useState(false)
-  const track = useRef(null)
-  const drag = useRef(null)
 
   const handleRedirect = (url, promo) =>
     setRedirect({ url, promo: (promo ?? '').toString().trim() })
@@ -205,43 +201,6 @@ export default function Offers() {
   const list = casinos.filter(c =>
     filter === 'all' || (filter === 'hot' && c.is_hot) || (filter === 'new' && c.is_new) || (filter === 'fs' && c.is_freespins))
 
-  const sync = useCallback(() => {
-    const el = track.current
-    if (!el) return
-    setCanL(el.scrollLeft > 4)
-    setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
-  }, [])
-  useEffect(() => {
-    sync()
-    const el = track.current
-    if (el) el.scrollTo({ left: 0 })
-    window.addEventListener('resize', sync)
-    return () => window.removeEventListener('resize', sync)
-  }, [list.length, filter, loading, sync])
-
-  const scrollBy = dir => {
-    const el = track.current
-    if (!el) return
-    const card = el.querySelector('article')
-    const w = (card?.offsetWidth || 300) + 16
-    el.scrollBy({ left: dir * w * 2, behavior: 'smooth' })
-  }
-  // mouse drag-to-scroll (touch already scrolls natively)
-  const onDown = e => { if (e.pointerType !== 'mouse') return; drag.current = { x: e.clientX, l: track.current.scrollLeft, moved: false } }
-  const onMove = e => {
-    const d = drag.current; if (!d) return
-    const dx = e.clientX - d.x
-    if (Math.abs(dx) > 5) { d.moved = true; track.current.style.scrollSnapType = 'none'; track.current.style.cursor = 'grabbing' }
-    if (d.moved) track.current.scrollLeft = d.l - dx
-  }
-  const onUp = () => {
-    const d = drag.current; if (!d) return
-    drag.current = null
-    const el = track.current
-    el.style.cursor = ''
-    requestAnimationFrame(() => { el.style.scrollSnapType = '' })
-  }
-
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -273,22 +232,11 @@ export default function Offers() {
         </div>
       ) : (
         <div className={styles.carWrap}>
-          {canL && (
-            <button type="button" className={`${styles.arr} ${styles.arrL}`} aria-label="Previous offers" onClick={() => scrollBy(-1)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-            </button>
-          )}
-          <div className={styles.track} ref={track} onScroll={sync}
-            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
+          <div className={styles.track}>
             {list.map((c, i) => (
               <OfferCard key={c.id} c={c} i={i} onInfo={setSelectedCasino} onClaim={x => handleRedirect(x.claim_url, x.promo_code)} />
             ))}
           </div>
-          {canR && (
-            <button type="button" className={`${styles.arr} ${styles.arrR}`} aria-label="Next offers" onClick={() => scrollBy(1)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
-            </button>
-          )}
         </div>
       )}
 
