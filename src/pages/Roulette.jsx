@@ -12,7 +12,7 @@ const key = (t, v) => `${t}:${v ?? ''}`
 
 // geometry: viewBox 360, centre 180. pockets r 104-138, ball track r 140-170
 const C = 180
-const R_TRACK = 156, R_POCKET = 130
+const R_TRACK = 152, R_POCKET = 113
 const pt = (deg, r) => { const a = ((deg - 90) * Math.PI) / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)] }
 function slicePath(i) {
   const a0 = i * SLICE - SLICE / 2, a1 = i * SLICE + SLICE / 2
@@ -61,7 +61,6 @@ function Wheel({ wRef, bRef, cRef, spinning, hit, number }) {
         <g ref={bRef} className={styles.wBallG} transform={`rotate(0 ${C} ${C})`} style={{ opacity: 0 }}>
           <circle ref={cRef} cx={C} cy={C - R_TRACK} r="6" fill="url(#rwBall)" className={styles.wBall} />
         </g>
-        <path d={`M${C} 20 l9 -17 h-18z`} className={styles.wPointer} />
       </svg>
       <div key={number ?? 'none'} className={`${styles.wResult} ${number != null ? styles['wr_' + rColor(number)] : ''}`}>{number != null ? number : ''}</div>
     </div>
@@ -92,7 +91,8 @@ export default function Roulette() {
   const [res, setRes] = useState(null) // finished round
   const wRef = useRef(null), bRef = useRef(null), cRef = useRef(null)
   const rot = useRef(0)
-  const hasSpun = useRef(false)
+  const lockedIdx = useRef(null) // pocket the ball sits in (rides with the wheel)
+  const animRef = useRef(false)
   const [shownNum, setShownNum] = useState(null)
 
   const R = useRef({})
@@ -124,66 +124,71 @@ export default function Roulette() {
   const setW = (a) => wRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`)
   const setB = (a, r) => { bRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`); cRef.current?.setAttribute('cy', String(C - r)) }
   const showBall = () => { if (bRef.current) bRef.current.style.opacity = '1' }
-  // idle: the wheel keeps turning slowly while nobody is spinning (after a spin it first rests on the result)
+  // the wheel never stops: it turns at a steady speed, with the ball riding in its pocket between spins
+  const ROT = 0.018 // degrees per ms
   useEffect(() => {
-    if (spinning || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
     let raf = 0, last = 0
     const tick = (now) => {
-      if (last) { rot.current = (rot.current + (now - last) * 0.018) % 360; setW(rot.current) }
+      if (!animRef.current) {
+        if (last) rot.current = (rot.current + (now - last) * ROT) % 360
+        setW(rot.current)
+        if (lockedIdx.current != null) setB(rot.current + lockedIdx.current * SLICE, R_POCKET)
+      }
       last = now
       raf = requestAnimationFrame(tick)
     }
-    const t = setTimeout(() => {
-      if (bRef.current) bRef.current.style.opacity = '0'
-      raf = requestAnimationFrame(tick)
-    }, hasSpun.current ? 2600 : 0)
-    return () => { clearTimeout(t); cancelAnimationFrame(raf) }
-  }, [spinning]) // eslint-disable-line react-hooks/exhaustive-deps
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const snap = (idx) => { rot.current = (((-idx * SLICE) % 360) + 360) % 360; setW(rot.current); setB(0, R_POCKET); showBall() }
+  const lock = (idx) => { lockedIdx.current = idx; setB(rot.current + idx * SLICE, R_POCKET); showBall() }
 
-  // wheel turns clockwise and slows down, the ball runs the track the other way, then spirals in
-  // and hops into the winning pocket, which finishes under the pointer (top)
+  // the wheel keeps its speed; the ball runs the track the other way, slows down, spirals in and
+  // drops into the winning pocket wherever that pocket happens to be at that moment
   const animate = (idx) => new Promise((resolve) => {
-    const T = 6200, N = 6, w0 = rot.current
-    const base = -idx * SLICE
-    const wEnd = base + 360 * (Math.ceil((w0 - base) / 360) + 3)
-    const t0 = performance.now()
+    const T = 6200, N = 6
+    const w0 = rot.current, t0 = performance.now()
+    const target = idx * SLICE
+    const prev = lockedIdx.current
+    const gap = prev == null ? 0 : ((((prev * SLICE - target) % 360) + 360) % 360)
+    const span = N * 360 + gap
     let lastPk = null, lastTick = 0
-    showBall(); setB(N * 360, R_TRACK)
+    animRef.current = true
+    showBall()
     const frame = (now) => {
-      if (!alive.current) return resolve()
+      if (!alive.current) { animRef.current = false; return resolve() }
       const p = Math.min(1, (now - t0) / T)
-      const ew = 1 - Math.pow(1 - p, 3), eb = 1 - Math.pow(1 - p, 4)
-      const th = w0 + (wEnd - w0) * ew
-      let ph = N * 360 * (1 - eb), r = R_TRACK
+      const th = w0 + ROT * (now - t0)
+      const eb = 1 - Math.pow(1 - p, 4)
+      let rel = target + span * (1 - eb), r = R_TRACK
+      if (prev != null && p < 0.06) r = R_POCKET + (R_TRACK - R_POCKET) * (p / 0.06)
       if (p > 0.6) {
         const k = (p - 0.6) / 0.4, sm = k * k * (3 - 2 * k)
         r = R_TRACK + (R_POCKET - R_TRACK) * sm
-        if (p > 0.78) { const d = (p - 0.78) / 0.22, dec = Math.pow(1 - d, 2); r -= 7 * Math.abs(Math.sin(d * 19)) * dec; ph += 3.500 * Math.sin(d * 23) * dec }
+        if (p > 0.78) { const d = (p - 0.78) / 0.22, dec = Math.pow(1 - d, 2); r -= 7 * Math.abs(Math.sin(d * 19)) * dec; rel += 3.5 * Math.sin(d * 23) * dec }
       }
-      setW(th); setB(ph, r)
+      setW(th); setB(th + rel, r)
       if (p > 0.5 && !g.quiet.current) {
-        const pk = Math.floor((ph - th) / SLICE)
+        const pk = Math.floor(rel / SLICE)
         if (lastPk != null && pk !== lastPk && now - lastTick > 70) { lastTick = now; playSfx('click') }
         lastPk = pk
       }
       if (p < 1) requestAnimationFrame(frame)
-      else { rot.current = ((base % 360) + 360) % 360; setW(rot.current); setB(0, R_POCKET); resolve() }
+      else { rot.current = ((th % 360) + 360) % 360; animRef.current = false; lock(idx); resolve() }
     }
     requestAnimationFrame(frame)
   })
 
   const spin = async () => {
     const { bets: bs, turbo: tb } = R.current
-    hasSpun.current = true
     setSpinning(true); setRes(null); setShownNum(null)
     g.quiet.current = tb; g.hold.current = true
     const data = await g.start({ bets: bs.map((b) => ({ type: b.type, value: b.value, amount: b.amount })) })
     if (!data?.state || data.state.game !== 'roulette') { g.release(); setSpinning(false); return null }
     const s = data.state
     const idx = WHEEL.indexOf(s.number)
-    if (!tb) { playSfx('card'); await animate(idx) } else snap(idx)
+    if (!tb) { playSfx('card'); await animate(idx) } else lock(idx)
     if (!alive.current) return s
     setShownNum(s.number); setRes(s)
     g.release()
