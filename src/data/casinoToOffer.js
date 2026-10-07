@@ -1,4 +1,5 @@
 import { pickStats } from './offerStats';
+import { offerOf } from './offerText';
 export const PALETTE = [
   ['#2ee6a6', '#04251e', '#0b4a3c'], // emerald
   ['#f5c542', '#241a02', '#5e4508'], // gold
@@ -27,29 +28,16 @@ const txt = (x) => {
 };
 
 // Maps a row of the `casinos` table to the props OfferRow expects.
-function bonusParts(c, f) {
-  const b = Array.isArray(c.welcome_bonus) ? c.welcome_bonus[0] || {} : {};
-  const pct = txt(b.pct);
-  const upTo = txt(b.up_to).replace(/^up\s*to\s*/i, '');
-  const fs = txt(b.fs);
-  if (pct) return { big: pct, rest: 'Welcome bonus', sub: [upTo && `Up to ${upTo}`, fs && `+ ${fs}`].filter(Boolean).join(' ') };
-  if (fs) {
-    const m = fs.match(/^(\d+)\s*(.*)$/);
-    return m ? { big: m[1], rest: 'Free spins', sub: txt(f[0]) } : { big: fs, rest: '', sub: txt(f[0]) };
-  }
-  return null;
-}
-
 export function casinoToOffer(c, i = 0) {
   const pick = Number.isInteger(c.casino_info?.card_color) && PALETTE[c.casino_info.card_color] ? c.casino_info.card_color : i % 3;
   const [accent, c1, c2] = PALETTE[pick];
   const f = Array.isArray(c.features) ? c.features : [];
   const ci = c.casino_info || {};
-  const bp = txt(f[0]) ? null : bonusParts(c, f);
+  const op = offerOf(c);
   return {
     stats: pickStats(c),
-    big: bp?.big || '',
-    rest: bp?.rest || '',
+    big: op.big,
+    rest: op.label,
     id: c.id,
     raw: c,
     brand: txt(c.name),
@@ -60,10 +48,10 @@ export function casinoToOffer(c, i = 0) {
     accent,
     c1,
     c2,
-    headline: txt(f[0]) || txt(c.name),
-    sub: bp ? bp.sub : txt(f[1]),
+    headline: [op.big, op.label].filter(Boolean).join(' ') || txt(c.name),
+    sub: op.sub,
     deposit: txt(ci.min_deposit) || '-',
-    bonus: txt(f[0]) || '-',
+    bonus: [op.big, op.label].filter(Boolean).join(' ') || '-',
     spins: c.is_freespins ? 'Yes' : '-',
     withdraw: txt(ci.withdraw) || '-',
     license: txt(ci.license) || '-',

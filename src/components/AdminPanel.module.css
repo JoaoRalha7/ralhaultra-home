@@ -539,3 +539,38 @@
 .pvAuto { height:22px; padding:0 10px; border-radius:999px; border:1px solid rgba(255,255,255,.2); background:none; color:rgba(255,255,255,.6); font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font); }
 .pvAutoOn { background:#fff; color:#0b0e14; border-color:#fff; }
 .pvDot { width:22px; height:22px; box-shadow:inset 0 0 0 2px #06080d; }
+
+/* ── Editor v3 ── */
+.modalBody { gap:14px; }
+.startFrom { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; border:1px dashed rgba(255,255,255,.14); }
+.startFrom span { font-size:12px; font-weight:700; color:rgba(255,255,255,.5); white-space:nowrap; }
+.startFrom select { flex:1; }
+.card2 { flex-shrink:0; border:1px solid rgba(255,255,255,.08); border-radius:16px; background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015)); }
+.card2Head { display:flex; align-items:center; gap:12px; padding:14px 16px 0; }
+.card2N { width:26px; height:26px; border-radius:50%; display:grid; place-items:center; flex-shrink:0; background:#3b82f6; color:#fff; font-size:12px; font-weight:800; }
+.card2T { flex:1; min-width:0; }
+.card2T b { display:block; font-size:14.5px; color:#fff; }
+.card2T span { display:block; margin-top:2px; font-size:12px; color:rgba(255,255,255,.45); }
+.card2Body { display:flex; flex-direction:column; gap:14px; padding:14px 16px 16px; }
+.pillSm { height:28px; padding:0 11px; font-size:12px; }
+.pillGold.pillGold, .pillGold { color:#facc15; background:rgba(250,204,21,.14); border-color:rgba(250,204,21,.55); }
+.statGrid2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.statRow { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:11px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.02); transition:.15s; }
+.statRowOn { border-color:rgba(59,130,246,.5); background:rgba(59,130,246,.08); }
+.statCheck { width:20px; height:20px; border-radius:6px; flex-shrink:0; display:grid; place-items:center; border:1.5px solid rgba(255,255,255,.3); background:none; color:#fff; padding:0; cursor:pointer; }
+.statRowOn .statCheck { background:#3b82f6; border-color:#3b82f6; }
+.statName { font-size:12.5px; font-weight:700; color:#fff; width:92px; flex-shrink:0; }
+.statInput { flex:1; min-width:0; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,.1); background:rgba(0,0,0,.25); color:#fff; padding:0 9px; font-size:12.5px; font-family:var(--font); outline:none; }
+.statInput:focus { border-color:#3b82f6; }
+.statAuto { flex:1; font-size:11.5px; color:rgba(255,255,255,.4); }
+.moreWrap { display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+.moreBtn { display:flex; align-items:center; gap:10px; width:100%; padding:13px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.07); background:rgba(255,255,255,.02); color:#fff; text-align:left; cursor:pointer; font-family:var(--font); }
+.moreBtn:hover { background:rgba(255,255,255,.04); }
+.moreBtn b { font-size:13.5px; }
+.moreBtn span:last-child { margin-left:auto; font-size:12px; color:rgba(255,255,255,.4); }
+.moreBtnOpen .secChev { transform:rotate(90deg); color:#3b82f6; }
+.moreBody { display:flex; flex-direction:column; gap:16px; padding:16px; border-radius:14px; border:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.015); }
+.pvTabs { display:flex; gap:4px; padding:3px; border-radius:11px; background:rgba(255,255,255,.05); }
+.pvTabs button { flex:1; height:30px; border:0; border-radius:8px; background:none; color:rgba(255,255,255,.5); font-size:12.5px; font-weight:700; cursor:pointer; font-family:var(--font); }
+.pvTabOn { background:#fff !important; color:#0b0e14 !important; }
+@media (max-width:700px) { .statGrid2 { grid-template-columns:1fr; } }

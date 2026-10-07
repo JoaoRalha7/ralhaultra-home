@@ -5,6 +5,7 @@ import OfferRow from './OfferRow'
 import { FeaturedOfferModal } from './HomeModals'
 import { autoFeatured } from '../data/featuredOffer'
 import { STAT_DEFS, selectedStatKeys } from '../data/offerStats'
+import { offerOf, txt } from '../data/offerText'
 import { casinoToOffer, PALETTE, PALETTE_NAMES } from '../data/casinoToOffer'
 import styles from './AdminPanel.module.css'
 
@@ -161,34 +162,89 @@ function ArrayField({ label, value = [], onChange, placeholder }) {
 }
 
 // ── Casino Modal ───────────────────────────────────────────
-function CasinoModal({ casino, methods, onSave, onClose }) {
-  const isEdit = !!casino?.id
-  const [open,        setOpen]        = useState({ basic: true, media: true, info: false, featured: false, methods: false, content: false })
-  const [form,        setForm]        = useState({})
-  const [features,    setFeatures]    = useState([])
-  const [bonus,       setBonus]       = useState([])
-  const [vip,         setVip]         = useState([])
-  const [howToClaim,  setHowToClaim]  = useState([])
-  const [selMethods,  setSelMethods]  = useState([])
-  const [saving,      setSaving]      = useState(false)
-  const [errors,      setErrors]      = useState({})
+const OFFER_LABELS = ['Welcome bonus', 'Free spins', 'No deposit bonus', 'Cashback', 'Reload bonus', 'Deposit match']
+const BADGES = [['is_hot', 'Hot'], ['is_new', 'New'], ['is_freespins', 'Free spins badge']]
+const COPY_KEYS = ['casino_info', 'features', 'welcome_bonus', 'vip_benefits', 'how_to_claim', 'payments', 'min_withdrawal', 'support', 'kyc_required', 'vpn_allowed', 'promo_required', 'is_freespins', 'is_hot', 'is_new', 'bg_color']
 
-  useEffect(() => {
-    if (casino) {
-      setForm({ ...casino })
-      setFeatures(Array.isArray(casino.features)       ? casino.features       : [])
-      setBonus(Array.isArray(casino.welcome_bonus)     ? casino.welcome_bonus  : [])
-      setVip(Array.isArray(casino.vip_benefits)        ? casino.vip_benefits   : [])
-      setHowToClaim(Array.isArray(casino.how_to_claim) ? casino.how_to_claim   : [])
-      setSelMethods(Array.isArray(casino.payments)     ? casino.payments       : [])
-    } else {
-      setForm({ is_active: true, vpn_allowed: true, sort_order: 0 })
-    }
-  }, [casino])
+function Card({ n, title, hint, children, right }) {
+  return (
+    <section className={styles.card2}>
+      <header className={styles.card2Head}>
+        <span className={styles.card2N}>{n}</span>
+        <div className={styles.card2T}><b>{title}</b>{hint && <span>{hint}</span>}</div>
+        {right}
+      </header>
+      <div className={styles.card2Body}>{children}</div>
+    </section>
+  )
+}
+
+function CasinoModal({ casino, methods, all = [], onSave, onClose, onRefresh }) {
+  const isEdit = !!casino?.id
+  const blank = { is_active: true, vpn_allowed: true, sort_order: 0 }
+  const [form,       setForm]       = useState(blank)
+  const [offer,      setOffer]      = useState({ big: '', label: '', sub: '' })
+  const [more,       setMore]       = useState([])
+  const [bonus,      setBonus]      = useState([])
+  const [vip,        setVip]        = useState([])
+  const [howToClaim, setHowToClaim] = useState([])
+  const [selMethods, setSelMethods] = useState([])
+  const [saving,     setSaving]     = useState(false)
+  const [errors,     setErrors]     = useState({})
+  const [pvTab,      setPvTab]      = useState('card')
+  const [adv,        setAdv]        = useState(false)
+  const [det,        setDet]        = useState(false)
+  const [flash,      setFlash]      = useState('')
+
+  const load = (c) => {
+    const T = (x) => txt(x)
+    const f = Array.isArray(c?.features) ? c.features : []
+    setForm(c ? { ...c } : blank)
+    setOffer(c ? offerOf(c) : { big: '', label: '', sub: '' })
+    setMore(f.slice(2).map(T))
+    setBonus(Array.isArray(c?.welcome_bonus) ? c.welcome_bonus : [])
+    setVip(Array.isArray(c?.vip_benefits) ? c.vip_benefits : [])
+    setHowToClaim(Array.isArray(c?.how_to_claim) ? c.how_to_claim : [])
+    setSelMethods(Array.isArray(c?.payments) ? c.payments : [])
+    setErrors({})
+  }
+  useEffect(() => { load(casino) }, [casino]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set   = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })) }
   const ci    = form.casino_info || {}
   const setCi = (k, v) => set('casino_info', { ...ci, [k]: v })
+  const setOf = (k, v) => setOffer(o => ({ ...o, [k]: v }))
+
+  // everything the public site will read, assembled from the editor state
+  const offerText = [offer.big, offer.label].filter(Boolean).join(' ')
+  const cur = {
+    ...form,
+    features: [offerText, offer.sub, ...more],
+    welcome_bonus: bonus,
+    casino_info: { ...ci, offer },
+  }
+
+  const copyFrom = (id) => {
+    const src = all.find(c => String(c.id) === String(id))
+    if (!src) return
+    const next = { ...form }
+    COPY_KEYS.forEach(k => { if (src[k] !== undefined) next[k] = src[k] })
+    next.casino_info = { ...(src.casino_info || {}) }
+    setForm(next)
+    setOffer(offerOf(src))
+    setMore((Array.isArray(src.features) ? src.features : []).slice(2).map(txt))
+    setBonus(Array.isArray(src.welcome_bonus) ? src.welcome_bonus : [])
+    setVip(Array.isArray(src.vip_benefits) ? src.vip_benefits : [])
+    setHowToClaim(Array.isArray(src.how_to_claim) ? src.how_to_claim : [])
+    setSelMethods(Array.isArray(src.payments) ? src.payments : [])
+  }
+
+  const fillFromBonus = () => {
+    const b = bonus[0] || {}
+    const upTo = String(b.up_to || '').replace(/^up\s*to\s*/i, '')
+    if (b.pct) setOffer({ big: b.pct, label: 'Welcome bonus', sub: [upTo && `Up to ${upTo}`, b.fs && `+ ${b.fs}`].filter(Boolean).join(' ') })
+    else if (b.fs) { const m = String(b.fs).match(/^(\d+)\s*(.*)$/); setOffer({ big: m ? m[1] : b.fs, label: 'Free spins', sub: offer.sub }) }
+  }
 
   const validate = () => {
     const e = {}
@@ -198,14 +254,14 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
     setErrors(e); return Object.keys(e).length === 0
   }
 
-  const handleSave = async () => {
-    if (!validate()) { setOpen(o => ({ ...o, basic: true, media: true })); return }
+  const handleSave = async (again = false) => {
+    if (!validate()) return
     setSaving(true)
     try {
-      const payload = { ...form, payments: selMethods, features, welcome_bonus: bonus, vip_benefits: vip, how_to_claim: howToClaim, casino_info: form.casino_info || {} }
+      const payload = { ...form, payments: selMethods, welcome_bonus: bonus, vip_benefits: vip, how_to_claim: howToClaim, features: cur.features, casino_info: cur.casino_info }
       delete payload.id
-
-      // Só um casino pode estar em destaque ao mesmo tempo — desliga os outros primeiro.
+      delete payload.created_at
+      delete payload.updated_at
       if (payload.is_featured) {
         const clearQuery = isEdit
           ? supabase.from('casinos').update({ is_featured: false }).eq('is_featured', true).neq('id', casino.id)
@@ -213,35 +269,36 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
         const { error: clearError } = await clearQuery
         if (clearError) throw clearError
       }
-
       const q = isEdit
         ? supabase.from('casinos').update(payload).eq('id', casino.id).select('id').single()
         : supabase.from('casinos').insert(payload).select('id').single()
       const { error } = await q
       if (error) throw error
-      onSave()
+      if (again) {
+        onRefresh?.()
+        load(null)
+        setFlash('Saved. Add the next one.')
+        setTimeout(() => setFlash(''), 3000)
+      } else onSave()
     } catch (e) { alert(e.message) }
     finally { setSaving(false) }
   }
 
-  const filled = (o) => Object.values(o || {}).filter(v => String(v?.value ?? v ?? '').trim()).length
-  const SUM = {
-    basic: [form.name, form.promo_code && `code ${form.promo_code}`].filter(Boolean).join(' · ') || 'Name, link and code',
-    media: form.logo_url ? (form.banner_url ? 'Logo + banner' : 'Logo set') : 'Logo missing',
-    info: `${filled(ci) - (Array.isArray(ci.card_stats) ? 1 : 0)} of 6 filled`,
-    featured: form.is_featured ? 'On - shown in the entry popup' : 'Off',
-    methods: `${selMethods.length} selected`,
-    content: `${features.length} features · ${bonus.length} bonus tiers · ${vip.length} VIP · ${howToClaim.length} steps`,
+  const sel = selectedStatKeys(cur)
+  const toggleStat = (k) => setCi('card_stats', sel.includes(k) ? sel.filter(x => x !== k) : [...sel, k])
+  const STAT_INPUT = {
+    min_deposit:    { get: () => ci.min_deposit,  put: v => setCi('min_deposit', v),  ph: '€20' },
+    withdraw:       { get: () => ci.withdraw,     put: v => setCi('withdraw', v),     ph: 'Up to 24h' },
+    license:        { get: () => ci.license,      put: v => setCi('license', v),      ph: 'Curaçao' },
+    cashback:       { get: () => ci.cashback,     put: v => setCi('cashback', v),     ph: '10%' },
+    min_withdrawal: { get: () => form.min_withdrawal, put: v => set('min_withdrawal', v), ph: '€10' },
+    games:          { get: () => ci.games,        put: v => setCi('games', v),        ph: 'Slots, Live' },
+    established:    { get: () => ci.established,  put: v => setCi('established', v),  ph: '2020' },
+    support:        { get: () => form.support,    put: v => set('support', v),        ph: '24/7 Live Chat' },
   }
-  const ERR = { basic: !!(errors.name || errors.claim_url), media: !!errors.logo_url }
-  const Sec = ({ id, title }) => (
-    <button type="button" className={`${styles.secHead} ${open[id] ? styles.secHeadOpen : ''} ${ERR[id] ? styles.secHeadErr : ''}`} onClick={() => setOpen(o => ({ ...o, [id]: !o[id] }))} aria-expanded={!!open[id]}>
-      <span className={styles.secChev}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-      <span className={styles.secTitle}>{title}</span>
-      <span className={styles.secSum}>{SUM[id]}</span>
-    </button>
-  )
-  const allOpen = Object.values(open).every(Boolean)
+
+  const featuredNow = !!form.is_featured
+  const overrideCount = ['featured_offer_title', 'featured_offer_amount', 'featured_offer_details', 'featured_accent_color'].filter(k => form[k]).length
 
   return (
     <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
@@ -250,268 +307,197 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
           <div className={styles.modalHeadLeft}>
             {form.logo_url && <img src={form.logo_url} alt="" className={styles.modalLogo} onError={e => e.target.style.display='none'} />}
             <div>
-              <div className={styles.modalTitle}>{isEdit ? (form.name || 'Edit Casino') : 'New Casino'}</div>
-              <div className={styles.modalSub}>{isEdit ? `Casino ID #${casino.id}` : 'Fill in the details below'}</div>
+              <div className={styles.modalTitle}>{isEdit ? (form.name || 'Edit casino') : 'New casino'}</div>
+              <div className={styles.modalSub}>{flash || (isEdit ? `Casino ID #${casino.id}` : 'Fill 1 and 2 and you are done. The rest is optional.')}</div>
             </div>
           </div>
           <button className={styles.iconBtnSm} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className={styles.modalSplit}>
-        <div className={styles.modalBody}>
-          <div className={styles.secBar}>
-            <span>Click a section to open or close it</span>
-            <button type="button" onClick={() => setOpen({ basic: !allOpen, media: !allOpen, info: !allOpen, featured: !allOpen, methods: !allOpen, content: !allOpen })}>{allOpen ? 'Collapse all' : 'Expand all'}</button>
-          </div>
-          {/* BASIC */}
-          <div className={styles.sec}><Sec id="basic" title="Essentials" />
-          {open.basic && (
-            <div className={styles.tabContent}>
+          <div className={styles.modalBody}>
+
+            {!isEdit && all.length > 0 && (
+              <div className={styles.startFrom}>
+                <span>Start from</span>
+                <select className={styles.input} value="" onChange={e => copyFrom(e.target.value)}>
+                  <option value="">Blank casino</option>
+                  {all.map(c => <option key={c.id} value={c.id}>Copy settings of {c.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            <Card n="1" title="Casino" hint="Who it is and where it links">
               <div className={styles.formRow2}>
                 <div className={styles.field}>
-                  <label className={styles.label}>Casino Name *</label>
-                  <input className={`${styles.input} ${errors.name ? styles.inputError : ''}`} value={form.name || ''} onChange={e => set('name', e.target.value)} placeholder="BC.Game" />
+                  <label className={styles.label}>Name *</label>
+                  <input className={`${styles.input} ${errors.name ? styles.inputError : ''}`} value={form.name || ''} onChange={e => set('name', e.target.value)} placeholder="Kings Game" />
                   {errors.name && <span className={styles.fieldError}>{errors.name}</span>}
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label}>Claim URL *</label>
-                  <input className={`${styles.input} ${errors.claim_url ? styles.inputError : ''}`} value={form.claim_url || ''} onChange={e => set('claim_url', e.target.value)} placeholder="https://..." />
-                  {errors.claim_url && <span className={styles.fieldError}>{errors.claim_url}</span>}
+                  <label className={styles.label}>Promo code</label>
+                  <input className={styles.input} value={form.promo_code || ''} onChange={e => set('promo_code', e.target.value)} placeholder="Jralha" />
                 </div>
               </div>
-              <div className={styles.formRow2}>
-                <div className={styles.field}>
-                  <label className={styles.label}>Promo Code</label>
-                  <input className={styles.input} value={form.promo_code || ''} onChange={e => set('promo_code', e.target.value)} placeholder="ralha" />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Sort Order</label>
-                  <input className={styles.input} type="number" value={form.sort_order ?? 0} onChange={e => set('sort_order', Number(e.target.value))} />
-                </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Claim link *</label>
+                <input className={`${styles.input} ${errors.claim_url ? styles.inputError : ''}`} value={form.claim_url || ''} onChange={e => set('claim_url', e.target.value)} placeholder="https://..." />
+                {errors.claim_url && <span className={styles.fieldError}>{errors.claim_url}</span>}
               </div>
-              {[
-                ['Badges', [['is_hot', 'Hot'], ['is_new', 'New'], ['is_freespins', 'Free spins'], ['is_featured', 'Featured popup']]],
-                ['Rules', [['promo_required', 'Promo required'], ['kyc_required', 'KYC required'], ['vpn_allowed', 'VPN allowed']]],
-                ['Visibility', [['is_active', 'Active (visible to users)']]],
-              ].map(([grp, items]) => (
-                <div key={grp} className={styles.field}>
-                  <label className={styles.label}>{grp}</label>
-                  <div className={styles.pillRow}>
-                    {items.map(([k, lbl]) => {
-                      const on = k === 'vpn_allowed' ? form.vpn_allowed !== false : !!form[k]
-                      return (
-                        <button key={k} type="button" aria-pressed={on} className={`${styles.pill} ${on ? styles.pillOn : ''}`} onClick={() => set(k, !on)}>
-                          {on && <IconCheck />}{lbl}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          </div>
-
-          <div className={styles.sec}><Sec id="media" title="Images" />
-          {open.media && (
-            <div className={styles.tabContent}>
               <ImageField label="Logo *" value={form.logo_url} onChange={v => set('logo_url', v)} folder="casinos" />
               {errors.logo_url && <span className={styles.fieldError}>{errors.logo_url}</span>}
-              <ImageField label="Banner" value={form.banner_url} onChange={v => set('banner_url', v)} folder="casinos" />
               <div className={styles.field}>
-                <label className={styles.label}>Background Color</label>
-                <input className={styles.input} value={form.bg_color || ''} onChange={e => set('bg_color', e.target.value)} placeholder="#0f1118" />
+                <label className={styles.label}>Status</label>
+                <div className={styles.pillRow}>
+                  <button type="button" aria-pressed={!!form.is_active} className={`${styles.pill} ${form.is_active ? styles.pillOn : ''}`} onClick={() => set('is_active', !form.is_active)}>{form.is_active && <IconCheck />}Visible</button>
+                  {BADGES.map(([k, lbl]) => (
+                    <button key={k} type="button" aria-pressed={!!form[k]} className={`${styles.pill} ${form[k] ? styles.pillOn : ''}`} onClick={() => set(k, !form[k])}>{form[k] && <IconCheck />}{lbl}</button>
+                  ))}
+                  <button type="button" aria-pressed={featuredNow} className={`${styles.pill} ${featuredNow ? styles.pillGold : ''}`} onClick={() => set('is_featured', !featuredNow)}>{featuredNow ? <IconCheck /> : <IconStar />}Entry popup</button>
+                </div>
               </div>
-            </div>
-          )}
-          </div>
+            </Card>
 
-          <div className={styles.sec}><Sec id="info" title="Casino info" />
-          {open.info && (
-            <div className={styles.tabContent}>
-              <div className={styles.infoGrid}>
-                {[['games','Games','Slots, Live...'],['min_deposit','Min Deposit','$10'],['cashback','Cashback','10%'],['withdraw','Withdraw Time','Instant'],['license','License','Curaçao'],['established','Established','2020']].map(([k,lbl,ph]) => (
-                  <div key={k} className={styles.field}>
-                    <label className={styles.label}>{lbl}</label>
-                    <input className={styles.input} value={ci[k] || ''} onChange={e => setCi(k, e.target.value)} placeholder={ph} />
-                  </div>
+            <Card n="2" title="Offer on the card" hint="Big text, label and pill. This is also what the entry popup shows."
+              right={bonus.length > 0 && <button type="button" className={styles.autoReset} onClick={fillFromBonus}>Fill from bonus tiers</button>}>
+              <div className={styles.formRow2}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Big text</label>
+                  <input className={styles.input} value={offer.big} onChange={e => setOf('big', e.target.value)} placeholder="500%" />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Label</label>
+                  <input className={styles.input} value={offer.label} onChange={e => setOf('label', e.target.value)} placeholder="Welcome bonus" />
+                </div>
+              </div>
+              <div className={styles.pillRow}>
+                {OFFER_LABELS.map(l => (
+                  <button key={l} type="button" className={`${styles.pill} ${styles.pillSm} ${offer.label === l ? styles.pillOn : ''}`} onClick={() => setOf('label', l)}>{l}</button>
                 ))}
               </div>
-              <div className={styles.formRow2} style={{ marginTop: 16 }}>
-                <div className={styles.field}>
-                  <label className={styles.label}>Min Withdrawal</label>
-                  <input className={styles.input} value={form.min_withdrawal || ''} onChange={e => set('min_withdrawal', e.target.value)} placeholder="$10" />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Support</label>
-                  <input className={styles.input} value={form.support || ''} onChange={e => set('support', e.target.value)} placeholder="24/7 Live Chat" />
-                </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Pill under it</label>
+                <input className={styles.input} value={offer.sub} onChange={e => setOf('sub', e.target.value)} placeholder="Up to 4000$ + 77 FS" />
               </div>
-              {(() => {
-                const cur = { ...form, casino_info: ci }
-                const sel = selectedStatKeys(cur)
-                const toggle = (k) => setCi('card_stats', sel.includes(k) ? sel.filter(x => x !== k) : [...sel, k])
-                return (
-                  <div className={styles.statPick}>
-                    <div className={styles.statPickHead}>
-                      <div>
-                        <b>Show on the offer card</b>
-                        <span>Tick what appears in the chips of the card ({sel.length} selected). Empty fields are skipped.</span>
-                      </div>
-                      <button type="button" className={styles.autoReset} onClick={() => setCi('card_stats', undefined)}>Reset</button>
+            </Card>
+
+            <Card n="3" title="Chips on the card" hint={`Tick what shows (${sel.length} selected) and type the value right here.`}
+              right={<button type="button" className={styles.autoReset} onClick={() => setCi('card_stats', undefined)}>Reset</button>}>
+              <div className={styles.statGrid2}>
+                {STAT_DEFS.map(d => {
+                  const inp = STAT_INPUT[d.key]
+                  const on = sel.includes(d.key)
+                  return (
+                    <div key={d.key} className={`${styles.statRow} ${on ? styles.statRowOn : ''}`}>
+                      <button type="button" role="checkbox" aria-checked={on} aria-label={d.label} className={styles.statCheck} onClick={() => toggleStat(d.key)}>{on && <IconCheck />}</button>
+                      <span className={styles.statName}>{d.label}</span>
+                      {inp
+                        ? <input className={styles.statInput} value={txt(inp.get())} onChange={e => inp.put(e.target.value)} placeholder={inp.ph} />
+                        : <span className={styles.statAuto}>{d.get(cur)} · from rules</span>}
                     </div>
-                    <div className={styles.statGrid}>
-                      {STAT_DEFS.map(d => {
-                        const v = d.get(cur)
-                        const on = sel.includes(d.key)
+                  )
+                })}
+              </div>
+            </Card>
+
+            <div className={styles.moreWrap}>
+              <button type="button" className={`${styles.moreBtn} ${det ? styles.moreBtnOpen : ''}`} onClick={() => setDet(v => !v)} aria-expanded={det}>
+                <span className={styles.secChev}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                <b>Casino page details</b>
+                <span>{bonus.length} bonus tiers · {more.length} features · {selMethods.length} methods · {vip.length} VIP · {howToClaim.length} steps</span>
+              </button>
+              {det && (
+                <div className={styles.moreBody}>
+                  <BonusField value={bonus} onChange={setBonus} />
+                  <ArrayField label="Features" value={more} onChange={setMore} placeholder="e.g. Fast withdrawals" />
+                  <ArrayField label="VIP benefits" value={vip} onChange={setVip} placeholder="e.g. Personal manager" />
+                  <ArrayField label="How to claim" value={howToClaim} onChange={setHowToClaim} placeholder="e.g. Register with the code" />
+                  <div className={styles.field}>
+                    <label className={styles.label}>Payment methods ({selMethods.length})</label>
+                    <div className={styles.methodsGrid}>
+                      {methods.map(m => {
+                        const active = selMethods.includes(m.slug)
                         return (
-                          <label key={d.key} className={`${styles.statOpt} ${on ? styles.statOptOn : ''} ${!v ? styles.statOptEmpty : ''}`}>
-                            <input type="checkbox" checked={on} onChange={() => toggle(d.key)} />
-                            <span className={styles.statBox}>{on && <IconCheck />}</span>
-                            <span className={styles.statTxt}><b>{d.label}</b><small>{v || 'empty'}</small></span>
-                          </label>
+                          <button key={m.slug} type="button" className={`${styles.methodCard} ${active ? styles.methodCardActive : ''}`}
+                            onClick={() => setSelMethods(ms => active ? ms.filter(s => s !== m.slug) : [...ms, m.slug])}>
+                            <div className={styles.methodCardIcon}>{m.icon_url ? <img src={m.icon_url} alt="" onError={e => e.target.style.display='none'} /> : m.name[0]}</div>
+                            <span className={styles.methodCardName}>{m.name}</span>
+                            {active && <span className={styles.methodCardCheck}><IconCheck /></span>}
+                          </button>
                         )
                       })}
                     </div>
                   </div>
-                )
-              })()}
-            </div>
-          )}
-          </div>
-
-          <div className={styles.sec}><Sec id="featured" title="Featured popup" />
-          {open.featured && (() => {
-            const cur = { ...form, features, casino_info: ci, welcome_bonus: bonus }
-            const auto = autoFeatured(cur)
-            const COLORS = ['#3b82f6', '#2ee6a6', '#f5c542', '#ff8a2b', '#ef4444', '#ec4899', '#a855f7', '#22d3ee']
-            const Ov = ({ k, label, ph }) => (
-              <div className={styles.field}>
-                <label className={styles.label}>
-                  {label}
-                  {form[k] ? <button type="button" className={styles.autoReset} onClick={() => set(k, '')}>Reset to auto</button> : <span className={styles.autoTag}>Auto</span>}
-                </label>
-                <input className={styles.input} value={form[k] || ''} onChange={e => set(k, e.target.value)} placeholder={ph || 'Auto'} />
-              </div>
-            )
-            return (
-              <div className={styles.tabContent}>
-                <div className={styles.featHero}>
-                  <div>
-                    <b>Show this casino in the entry popup</b>
-                    <span>Only one casino is featured at a time. Turning this on turns it off for the others.</span>
+                  <ImageField label="Banner" value={form.banner_url} onChange={v => set('banner_url', v)} folder="casinos" />
+                  <div className={styles.field}>
+                    <label className={styles.label}>Rules</label>
+                    <div className={styles.pillRow}>
+                      {[['promo_required', 'Promo required', !!form.promo_required], ['kyc_required', 'KYC required', !!form.kyc_required], ['vpn_allowed', 'VPN allowed', form.vpn_allowed !== false]].map(([k, l, on]) => (
+                        <button key={k} type="button" aria-pressed={on} className={`${styles.pill} ${on ? styles.pillOn : ''}`} onClick={() => set(k, !on)}>{on && <IconCheck />}{l}</button>
+                      ))}
+                    </div>
                   </div>
-                  <Toggle checked={!!form.is_featured} onChange={v => set('is_featured', v)} />
-                </div>
-                <p className={styles.tabHint}>
-                  Everything is built from what you already filled in (welcome bonus, info, features, promo code and claim link).
-                  Only fill the fields below if you want to override something.
-                </p>
-                <Ov k="featured_offer_title" label="Title" ph={auto.title} />
-                <Ov k="featured_offer_amount" label="Big text" ph={auto.amount || 'Add a Welcome Bonus in Content'} />
-                <Ov k="featured_offer_details" label="Chips (separate with ·)" ph={auto.details || 'Fill Info to get chips'} />
-                <div className={styles.field}>
-                  <label className={styles.label}>Accent color{form.featured_accent_color && <button type="button" className={styles.autoReset} onClick={() => set('featured_accent_color', '')}>Reset to auto</button>}</label>
-                  <div className={styles.swatches}>
-                    {COLORS.map(c => <button key={c} type="button" aria-label={c} className={`${styles.swatch} ${(form.featured_accent_color || auto.accent) === c ? styles.swatchOn : ''}`} style={{ background: c }} onClick={() => set('featured_accent_color', c)} />)}
-                    <input type="color" className={styles.colorSwatch} value={form.featured_accent_color || auto.accent} onChange={e => set('featured_accent_color', e.target.value)} />
-                  </div>
-                </div>
-                <div className={styles.featPreview}>
-                  <div className={styles.pvHead}><span>Popup preview</span></div>
-                  <FeaturedOfferModal inline casino={{ ...cur }} onClose={() => {}} onRedirect={() => {}} />
-                </div>
-              </div>
-            )
-          })()}
-          </div>
-
-          <div className={styles.sec}><Sec id="methods" title="Payment methods" />
-          {open.methods && (
-            <div className={styles.tabContent}>
-              <p className={styles.tabHint}>{selMethods.length} method{selMethods.length !== 1 ? 's' : ''} selected</p>
-              <div className={styles.methodsGrid}>
-                {methods.map(m => {
-                  const active = selMethods.includes(m.slug)
-                  return (
-                    <button key={m.slug} type="button" className={`${styles.methodCard} ${active ? styles.methodCardActive : ''}`}
-                      onClick={() => setSelMethods(ms => active ? ms.filter(s => s !== m.slug) : [...ms, m.slug])}>
-                      <div className={styles.methodCardIcon}>
-                        {m.icon_url ? <img src={m.icon_url} alt="" onError={e => e.target.style.display='none'} /> : m.name[0]}
-                      </div>
-                      <span className={styles.methodCardName}>{m.name}</span>
-                      {active && <span className={styles.methodCardCheck}><IconCheck /></span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-          </div>
-
-          <div className={styles.sec}><Sec id="content" title="Bonus & content" />
-          {open.content && (
-            <div className={styles.tabContent}>
-              {(() => {
-                const T = (x) => (x && typeof x === 'object' ? (x.value ?? x.title ?? x.text ?? x.label ?? x.name ?? x.feature ?? Object.values(x).find(v => typeof v === 'string') ?? '') : x) || ''
-                const b0 = bonus[0] || {}
-                const upTo = String(b0.up_to || '').replace(/^up\s*to\s*/i, '')
-                const autoBig = b0.pct ? `${b0.pct} Welcome bonus` : b0.fs ? `${b0.fs} Free spins` : ''
-                const autoSub = [upTo && `Up to ${upTo}`, b0.pct && b0.fs && `+ ${b0.fs}`].filter(Boolean).join(' ')
-                const setF = (i, v) => {
-                  const a = [...features]
-                  while (a.length <= i) a.push('')
-                  a[i] = v
-                  while (a.length > 2 && a[a.length - 1] === '') a.pop()
-                  setFeatures(a)
-                }
-                return (
-                  <div className={styles.cardText}>
-                    <div className={styles.cardTextHead}>
-                      <b>Card text</b>
-                      <span>What shows on the big offer card and the entry popup. Leave empty to build it from the Welcome Bonus below.</span>
+                  <div className={styles.formRow2}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Background color</label>
+                      <input className={styles.input} value={form.bg_color || ''} onChange={e => set('bg_color', e.target.value)} placeholder="#0f1118" />
                     </div>
                     <div className={styles.field}>
-                      <label className={styles.label}>Big text <span className={styles.autoTag}>Feature 1</span></label>
-                      <input className={styles.input} value={T(features[0])} onChange={e => setF(0, e.target.value)} placeholder={autoBig || '150% Welcome Bonus'} />
-                    </div>
-                    <div className={styles.field}>
-                      <label className={styles.label}>Pill under it <span className={styles.autoTag}>Feature 2</span></label>
-                      <input className={styles.input} value={T(features[1])} onChange={e => setF(1, e.target.value)} placeholder={autoSub || 'Up to €500 + 200 FS'} />
+                      <label className={styles.label}>Position (use the arrows in the list)</label>
+                      <input className={styles.input} type="number" value={form.sort_order ?? 0} onChange={e => set('sort_order', Number(e.target.value))} />
                     </div>
                   </div>
-                )
-              })()}
-              <BonusField value={bonus} onChange={setBonus} />
-              <ArrayField label="More features (casino details page)" value={features.slice(2)} onChange={(rest) => setFeatures([features[0] ?? '', features[1] ?? '', ...rest])} placeholder="e.g. Fast withdrawals" />
-              <ArrayField label="VIP Benefits"  value={vip}        onChange={setVip}        placeholder="e.g. Personal manager" />
-              <ArrayField label="How to Claim"  value={howToClaim} onChange={setHowToClaim} placeholder="e.g. Register with code" />
+                </div>
+              )}
+              <button type="button" className={`${styles.moreBtn} ${adv ? styles.moreBtnOpen : ''}`} onClick={() => setAdv(v => !v)} aria-expanded={adv}>
+                <span className={styles.secChev}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                <b>Customize the entry popup</b>
+                <span>{overrideCount ? `${overrideCount} custom` : 'Automatic (built from step 2)'}</span>
+              </button>
+              {adv && (
+                <div className={styles.moreBody}>
+                  <p className={styles.tabHint}>The popup copies the offer from step 2. Fill only what you want to change.</p>
+                  {[['featured_offer_title', 'Title', autoFeatured(cur).title], ['featured_offer_amount', 'Big text', autoFeatured(cur).amount], ['featured_offer_details', 'Chips (separate with ·)', autoFeatured(cur).details]].map(([k, l, ph]) => (
+                    <div key={k} className={styles.field}>
+                      <label className={styles.label}>{l}{form[k] ? <button type="button" className={styles.autoReset} onClick={() => set(k, '')}>Reset to auto</button> : <span className={styles.autoTag}>Auto</span>}</label>
+                      <input className={styles.input} value={form[k] || ''} onChange={e => set(k, e.target.value)} placeholder={ph || 'Auto'} />
+                    </div>
+                  ))}
+                  <div className={styles.field}>
+                    <label className={styles.label}>Popup color{form.featured_accent_color ? <button type="button" className={styles.autoReset} onClick={() => set('featured_accent_color', '')}>Reset to auto</button> : <span className={styles.autoTag}>Same as card</span>}</label>
+                    <div className={styles.swatches}>
+                      {PALETTE.map(([ac], i) => <button key={i} type="button" aria-label={PALETTE_NAMES[i]} className={`${styles.swatch} ${form.featured_accent_color === ac ? styles.swatchOn : ''}`} style={{ background: ac }} onClick={() => set('featured_accent_color', ac)} />)}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
           </div>
-        </div>
 
-        <aside className={styles.pvPane}>
-          <div className={styles.pvHead}>
-            <span>Live preview</span>
-            <span className={styles.pvLbl}>Card color</span>
-          </div>
-          <div className={styles.pvColors}>
-            <button type="button" className={`${styles.pvAuto} ${Number.isInteger(ci.card_color) ? '' : styles.pvAutoOn}`} onClick={() => setCi('card_color', undefined)} title="Color by position in the list">Auto</button>
-            {PALETTE.map(([ac], i) => (
-              <button key={i} type="button" title={PALETTE_NAMES[i]} aria-label={PALETTE_NAMES[i]} className={`${styles.pvDot} ${ci.card_color === i ? styles.pvDotOn : ''}`} style={{ background: ac }} onClick={() => setCi('card_color', i)} />
-            ))}
-          </div>
-          <div className={styles.pvCard}>
-            <OfferRow o={casinoToOffer({ ...form, features, casino_info: ci, welcome_bonus: bonus }, 0)} rank={form.is_featured ? 1 : null} />
-          </div>
-          <p className={styles.pvNote}>This is how the card looks in Top Offers on the Home page. Headline and sub-line come from the first two Features.</p>
-        </aside>
+          <aside className={styles.pvPane}>
+            <div className={styles.pvTabs}>
+              <button type="button" className={pvTab === 'card' ? styles.pvTabOn : ''} onClick={() => setPvTab('card')}>Card</button>
+              <button type="button" className={pvTab === 'popup' ? styles.pvTabOn : ''} onClick={() => setPvTab('popup')}>Entry popup</button>
+            </div>
+            <div className={styles.pvColors}>
+              <button type="button" className={`${styles.pvAuto} ${Number.isInteger(ci.card_color) ? '' : styles.pvAutoOn}`} onClick={() => setCi('card_color', undefined)} title="Color by position in the list">Auto</button>
+              {PALETTE.map(([ac], i) => (
+                <button key={i} type="button" title={PALETTE_NAMES[i]} aria-label={PALETTE_NAMES[i]} className={`${styles.pvDot} ${ci.card_color === i ? styles.pvDotOn : ''}`} style={{ background: ac }} onClick={() => setCi('card_color', i)} />
+              ))}
+            </div>
+            <div className={styles.pvCard}>
+              {pvTab === 'card'
+                ? <OfferRow o={casinoToOffer(cur, 0)} rank={featuredNow ? 1 : null} />
+                : <FeaturedOfferModal inline casino={cur} onClose={() => {}} onRedirect={() => {}} />}
+            </div>
+            <p className={styles.pvNote}>{pvTab === 'card' ? 'Top Offers on the Home page.' : featuredNow ? 'Shown to visitors when they enter the site.' : 'Not shown yet: switch on "Entry popup" in step 1.'}</p>
+          </aside>
         </div>
 
         <div className={styles.modalFooter}>
           <button className={styles.btnGhost} onClick={onClose}>Cancel</button>
-          <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
+          {!isEdit && <button className={styles.btnGhost} onClick={() => handleSave(true)} disabled={saving}>Save and add another</button>}
+          <button className={styles.btnPrimary} onClick={() => handleSave(false)} disabled={saving}>
             {saving ? <><span className={styles.spinnerSm} /> Saving...</> : <><IconCheck /> {isEdit ? 'Save changes' : 'Create casino'}</>}
           </button>
         </div>
@@ -821,7 +807,7 @@ export default function AdminPanel({ onClose }) {
       </div>
 
       {(newCasino || editCasino) && (
-        <CasinoModal casino={editCasino || null} methods={methods}
+        <CasinoModal casino={editCasino || null} methods={methods} all={casinos} onRefresh={loadAll}
           onSave={() => { setEditCasino(null); setNewCasino(false); loadAll() }}
           onClose={() => { setEditCasino(null); setNewCasino(false) }} />
       )}

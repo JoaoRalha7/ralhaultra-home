@@ -17,7 +17,7 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
   const m = String(o.headline || '').match(/^(\d+\s?%?|€\s?\d[\d.,]*)\s+(.*)$/);
   const big = o.big || (m ? m[1] : o.headline);
   const rest = o.big ? o.rest : (m ? m[2] : '');
-  const isNum = Boolean(o.big) || Boolean(m);
+  const isNum = o.big ? String(o.big).length <= 8 : Boolean(m);
   const tag = o.badge ? o.badge : rank === 1 ? 'TOP PICK' : null;
   const copy = () => {
     try { navigator.clipboard.writeText(String(o.code)); } catch { /* clipboard unavailable */ }
