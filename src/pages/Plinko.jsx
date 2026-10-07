@@ -79,7 +79,13 @@ export default function Plinko() {
       const list = data?.balls
       if (!Array.isArray(list) || !list.length) { setPlaying(false); return null }
       const speed = Math.max(95, 190 - rw * 6), gap = list.length > 12 ? 70 : 115
-      const land = (i) => { const r = list[i]; g.settle(r); setHits((h) => ({ ...h, [r.slot]: (h[r.slot] || 0) + 1 })); setLast({ ...r, bet: stake * list.length, payout: list.reduce((a, x) => a + x.payout, 0), mult: list.reduce((a, x) => a + x.payout, 0) / (stake * list.length) }) }
+      const acc = { n: 0, pay: 0 } // only what has landed so far: later balls must not leak into the totals
+      const land = (i) => {
+        const r = list[i]; g.settle(r)
+        acc.n++; acc.pay += r.payout
+        setHits((h) => ({ ...h, [r.slot]: (h[r.slot] || 0) + 1 }))
+        setLast({ ...r, bet: stake * acc.n, payout: acc.pay, mult: acc.pay / (stake * acc.n) })
+      }
       if (!tb) await fall(list.map((r, i) => ({ path: r.path, delay: i * gap })), rw, speed, land)
       else list.forEach((_, i) => land(i))
       if (!alive.current) return null

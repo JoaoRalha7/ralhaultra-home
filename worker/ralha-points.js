@@ -1219,11 +1219,18 @@ export default {
       if (pathname === '/casino-feed') {
         const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
         const r = await fetch(
-          `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=${limit}`,
+          `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=${Math.min(limit * 30, 300)}`,
           { headers: sbHeaders }
         )
         if (!r.ok) return json({ rounds: [] })
-        const rows = await r.json()
+        // a multi-ball plinko drop is one row in the feed (same player, game and instant): sum it up
+        const grouped = new Map()
+        for (const x of await r.json()) {
+          const k = `${x.username}|${x.game}|${x.updated_at}`
+          const g = grouped.get(k)
+          if (g) { g.bet += x.bet || 0; g.payout += x.payout || 0; g.count += 1 } else grouped.set(k, { ...x, bet: x.bet || 0, payout: x.payout || 0, count: 1 })
+        }
+        const rows = [...grouped.values()].slice(0, limit)
         // live crash bets of finished rounds count as casino rounds too
         try {
           const cur = (await clRounds(env, sbHeaders))[0]

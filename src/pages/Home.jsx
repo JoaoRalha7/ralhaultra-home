@@ -152,7 +152,7 @@ const CASINO_NAMES = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash', k
 const casinoRow = (r) => {
   const net = (r.payout || 0) - (r.bet || 0);
   return {
-    _type: 'casino', action: CASINO_NAMES[r.game] || r.game, username: r.username, created_at: r.updated_at,
+    _type: 'casino', action: `${CASINO_NAMES[r.game] || r.game}${r.count > 1 ? ` x${r.count}` : ''}`, username: r.username, created_at: r.updated_at,
     points: net, status: net > 0 ? 'WON' : net === 0 ? 'PUSH' : 'LOST',
   };
 };
