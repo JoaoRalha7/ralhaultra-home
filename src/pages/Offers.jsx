@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import CasinoCard from '../components/CasinoCard'
+import { casinoToOffer } from '../data/casinoToOffer'
+import { Icon } from '../components/Icon'
 import InfoModal from '../components/InfoModal'
 import styles from './Offers.module.css'
 
@@ -81,7 +82,7 @@ function bannerBg(c) {
 function Logo({ c, size = 44 }) {
   const [bad, setBad] = useState(false)
   return c.logo_url && !bad
-    ? <img src={c.logo_url} alt={c.name} className={styles.logoImg} style={{ width: size, height: size }} onError={() => setBad(true)} />
+    ? <img src={c.logo_url} alt={c.name} className={styles.logoImg} onError={() => setBad(true)} />
     : <span className={styles.logoFb} style={{ width: size, height: size }}>{(c.name || '?').slice(0, 2).toUpperCase()}</span>
 }
 function Tag({ c }) {
@@ -99,16 +100,6 @@ const Ico = {
   right: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>,
 }
 
-function headline(c) {
-  const t = txt(Array.isArray(c.features) ? c.features[0] : '')
-  const pct = t.match(/(\d[\d.,]*)\s*%/)
-  const fs  = t.match(/(\d[\d.,]*)\s*(?:free\s*spins|fs\b)/i)
-  if (c.is_freespins && fs) return ['Free spins', fs[1]]
-  if (pct) return ['Bonus value', `${pct[1]}%`]
-  if (fs)  return ['Free spins', fs[1]]
-  return ['Welcome offer', t || '-']
-}
-
 function PromoChip({ code, big }) {
   const [copied, setCopied] = useState(false)
   if (!code) return null
@@ -124,55 +115,39 @@ function PromoChip({ code, big }) {
   )
 }
 
-// ── Offer card (vertical, like the reference) ─────────────────────────────────
-function OfferCard({ c, onInfo, onClaim }) {
-  const f = Array.isArray(c.features) ? c.features : []
-  const ci = c.casino_info || {}
-  const [label, value] = headline(c)
-  const rows = [
-    ci.min_deposit && ['Min. deposit', ci.min_deposit, Ico.card],
-    ci.cashback    && ['Cashback', ci.cashback, Ico.loop],
-    ci.withdraw    && ['Withdrawal', ci.withdraw, Ico.clock],
-    ci.license     && ['License', ci.license, Ico.shield],
-  ].filter(Boolean).slice(0, 3)
+// ── Offer card (vertical, clean) ──────────────────────────────────────────────
+function OfferCard({ c, i, onInfo, onClaim }) {
+  const o = casinoToOffer(c, i)
   const code = txt(c.promo_code)
+  const style = { '--ac': o.accent, '--c1': o.c1, '--c2': o.c2 }
+  const hasBig = !!o.big
   return (
-    <article className={styles.oc}>
+    <article className={styles.oc} style={style}>
       <div className={styles.ocBanner}>
-        <div className={styles.ocBg} style={c.banner_url ? { backgroundImage: `url(${c.banner_url})` } : bannerBg(c)} />
-        <div className={styles.ocShade} />
+        {c.banner_url && <div className={styles.ocBg} style={{ backgroundImage: `url(${c.banner_url})` }} />}
         <div className={styles.ocTags}>
-          {!!c.is_hot && <span className={`${styles.ocTag} ${styles.ocHot}`}><i />HOT</span>}
-          {!!c.is_new && <span className={`${styles.ocTag} ${styles.ocNew}`}><i />NEW</span>}
-          {!!c.is_freespins && <span className={`${styles.ocTag} ${styles.ocFs}`}><i />FREE SPINS</span>}
+          {!!c.is_hot && <span className={styles.ocTag}><i />HOT</span>}
+          {!!c.is_new && <span className={styles.ocTag}><i />NEW</span>}
         </div>
-        {c.logo_url && <Logo c={c} size={72} />}
-        <div className={styles.ocName}>
-          <strong>{c.name}</strong>
-          <span>{txt(f[0]) || 'Exclusive offer'}</span>
-        </div>
+        {c.logo_url ? <Logo c={c} /> : <strong className={styles.ocBrand}>{c.name}</strong>}
       </div>
       <div className={styles.ocBody}>
-        <div className={styles.ocHead}>
-          <div className={styles.ocBig}>
-            <small>{label}</small>
-            <b>{value}</b>
-          </div>
-          <div className={styles.ocCode}>
-            <small>Code</small>
-            {code ? <PromoChip code={code} /> : <span className={styles.ocNoCode}>-</span>}
-          </div>
+        <div className={styles.ocOffer}>
+          <small>{hasBig ? (o.rest || 'Exclusive offer') : 'Exclusive offer'}</small>
+          <b>{hasBig ? o.big : o.headline}</b>
+          {o.sub && <span>{o.sub}</span>}
         </div>
-        <div className={styles.ocRows}>
-          {rows.map(([k, v, icon]) => (
-            <div key={k} className={styles.ocRow}><span>{icon}{k}</span><i /><b>{v}</b></div>
-          ))}
-        </div>
+        {o.stats.length > 0 && (
+          <div className={styles.ocRows}>
+            {o.stats.slice(0, 3).map((st) => (
+              <div key={st.key} className={styles.ocRow}><span><Icon name={st.icon} />{st.label}</span><b>{st.value}</b></div>
+            ))}
+          </div>
+        )}
+        {code && <div className={styles.ocCodeRow}><small>Code</small><PromoChip code={code} /></div>}
         <div className={styles.ocBtns}>
-          <button type="button" className={styles.ocClaim} onClick={() => onClaim(c)}>CLAIM BONUS</button>
-          <button type="button" className={styles.ocPlus} aria-label={`More about ${c.name}`} onClick={() => onInfo(c)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          </button>
+          <button type="button" className={styles.ocClaim} onClick={() => onClaim(c)}>Claim offer{Ico.right}</button>
+          <button type="button" className={styles.ocPlus} aria-label={`More about ${c.name}`} title="More info" onClick={() => onInfo({ ...c, _accent: o.accent })}>{Ico.info}</button>
         </div>
       </div>
     </article>
@@ -305,8 +280,8 @@ export default function Offers() {
           )}
           <div className={styles.track} ref={track} onScroll={sync}
             onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
-            {list.map(c => (
-              <OfferCard key={c.id} c={c} onInfo={setSelectedCasino} onClaim={x => handleRedirect(x.claim_url, x.promo_code)} />
+            {list.map((c, i) => (
+              <OfferCard key={c.id} c={c} i={i} onInfo={setSelectedCasino} onClaim={x => handleRedirect(x.claim_url, x.promo_code)} />
             ))}
           </div>
           {canR && (

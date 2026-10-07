@@ -25,51 +25,50 @@
 .carWrap { position: relative; }
 .track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 6px 2px 14px; cursor: grab; }
 .track::-webkit-scrollbar { display: none; }
-.arr { position: absolute; top: 120px; z-index: 5; width: 44px; height: 44px; border-radius: 50%; background: rgba(11,14,20,.92); border: 1px solid var(--line); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.arr { position: absolute; top: 110px; z-index: 5; width: 44px; height: 44px; border-radius: 50%; background: rgba(11,14,20,.92); border: 1px solid var(--line); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 .arr:hover { border-color: #3b82f6; background: #17305f; }
 .arrL { left: 8px; } .arrR { right: 8px; }
 
-.oc { flex: 0 0 292px; scroll-snap-align: start; background: #101319; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; transition: transform .2s, border-color .2s; }
-.oc:hover { transform: translateY(-4px); border-color: #3b82f655; }
-.ocBanner { position: relative; height: 216px; display: grid; place-items: center; overflow: hidden; }
-.ocBg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: transform .5s; }
-.oc:hover .ocBg { transform: scale(1.06); }
-.ocShade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(10,12,18,.96) 4%, rgba(10,12,18,.2) 55%, rgba(10,12,18,.1)); }
-.ocBanner > img, .ocBanner > span { position: relative; z-index: 1; margin-top: -30px; }
-.ocTags { position: absolute; top: 12px; left: 12px; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; }
-.ocTag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .06em; background: rgba(0,0,0,.6); color: #fff; backdrop-filter: blur(6px); border: 1px solid #ffffff22; }
-.ocTag i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.ocHot { color: #f87171; } .ocNew { color: #4ade80; } .ocFs { color: #fbbf24; }
-.ocName { position: absolute; left: 18px; right: 18px; bottom: 14px; z-index: 2; }
-.ocName strong { display: block; font: 800 20px 'Bricolage Grotesque', sans-serif; color: #fff; }
-.ocName span { display: block; color: #cbd5e1; font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.logoImg { object-fit: contain; border-radius: 14px; background: #0008; padding: 5px; border: 1px solid #ffffff22; flex: none; }
-.logoFb { display: grid; place-items: center; border-radius: 14px; background: linear-gradient(135deg, #3b82f655, #131720); border: 1px solid #ffffff22; font: 800 16px 'Bricolage Grotesque', sans-serif; color: #e5e7eb; flex: none; }
+.oc { --ac: #3b82f6; flex: 0 0 300px; scroll-snap-align: start; background: linear-gradient(180deg, color-mix(in srgb, var(--ac) 8%, #0e1218), #0b0e14 55%); border: 1px solid color-mix(in srgb, var(--ac) 24%, #1c2230); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: transform .18s, border-color .18s; }
+.oc:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--ac) 55%, #1c2230); }
+.ocBanner { position: relative; height: 128px; display: grid; place-items: center; overflow: hidden; background: linear-gradient(160deg, var(--c2, #0d3f66), var(--c1, #06192e)); }
+.ocBanner::after { content: ""; position: absolute; inset: 0; background: radial-gradient(color-mix(in srgb, var(--ac) 28%, transparent) 1px, transparent 1.6px) 0 0 / 14px 14px; -webkit-mask-image: linear-gradient(180deg, #000, transparent 90%); mask-image: linear-gradient(180deg, #000, transparent 90%); opacity: .5; pointer-events: none; }
+.ocBg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .22; }
+.ocBanner > img, .ocBanner > strong { position: relative; z-index: 1; }
+.ocTags { position: absolute; top: 12px; left: 12px; z-index: 2; display: flex; gap: 6px; }
+.ocTag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: .14em; background: #0a0d14; color: var(--ac); border: 1px solid color-mix(in srgb, var(--ac) 50%, #1c2230); }
+.ocTag i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.ocBrand { font: 800 24px 'Bricolage Grotesque', sans-serif; color: #fff; }
+.logoImg { max-width: 66%; max-height: 58px; object-fit: contain; flex: none; }
+.logoFb { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: #ffffff10; font: 800 16px 'Bricolage Grotesque', sans-serif; color: #e5e7eb; flex: none; }
 
-.ocBody { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
-.ocHead { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
-.ocBig small, .ocCode small { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); font-weight: 700; margin-bottom: 2px; }
-.ocBig b { font: 800 34px/1 'Bricolage Grotesque', sans-serif; color: #fff; display: block; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ocCode { text-align: right; }
-.ocCode .promo { height: 28px; padding: 0 10px; font-size: 11px; background: #232832; border: 0; color: #fff; border-radius: 8px; }
-.ocNoCode { display: inline-block; height: 28px; line-height: 28px; padding: 0 12px; border-radius: 8px; background: #232832; color: var(--mute); font-weight: 800; }
-.ocRows { display: flex; flex-direction: column; gap: 8px; }
-.ocRow { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 999px; background: #161a22; border: 1px solid #1f2430; font-size: 13px; }
-.ocRow span { display: inline-flex; align-items: center; gap: 8px; color: var(--mute); white-space: nowrap; }
-.ocRow span svg { width: 14px; height: 14px; }
-.ocRow i { flex: 1; height: 1px; background: #232a38; min-width: 6px; }
-.ocRow b { color: #fff; font-weight: 800; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
-.ocBtns { display: flex; gap: 10px; margin-top: auto; padding-top: 4px; }
-.ocClaim { flex: 1; height: 42px; border: 0; border-radius: 999px; background: linear-gradient(90deg, #f5f5f5, #c8c8cc); color: #111; font: 800 13px 'DM Sans', sans-serif; letter-spacing: .02em; cursor: pointer; transition: transform .15s, filter .15s; }
-.ocClaim:hover { transform: translateY(-2px); filter: brightness(1.06); }
-.ocPlus { width: 42px; height: 42px; border-radius: 50%; border: 1px solid #2a303d; background: #161a22; color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; }
-.ocPlus:hover { border-color: #3b82f6; background: #17305f; }
-.promo { display: inline-flex; align-items: center; gap: 7px; font: 800 13px 'DM Sans', sans-serif; letter-spacing: .04em; cursor: pointer; border: 0; }
-.promoOk { background: #22c55e33 !important; color: #86efac !important; }
+.ocBody { padding: 16px 16px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.ocOffer { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.ocOffer small { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ac); }
+.ocOffer b { font: 800 40px/1.05 'Bricolage Grotesque', sans-serif; color: #fff; letter-spacing: -.02em; }
+.ocOffer span { margin-top: 6px; font-size: 12.5px; color: #aab2c5; font-weight: 600; }
+.ocRows { display: flex; flex-direction: column; border-top: 1px solid #ffffff10; }
+.ocRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 36px; border-bottom: 1px solid #ffffff10; font-size: 13px; }
+.ocRow span { display: inline-flex; align-items: center; gap: 9px; color: var(--mute); white-space: nowrap; }
+.ocRow span svg { width: 14px; height: 14px; color: var(--ac); }
+.ocRow b { color: #fff; font-weight: 700; white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.ocCodeRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 0 0 2px; }
+.ocCodeRow small { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+.ocCodeRow .promo { height: 30px; padding: 0 12px; border-radius: 8px; border: 1px dashed color-mix(in srgb, var(--ac) 55%, transparent); background: color-mix(in srgb, var(--ac) 8%, transparent); color: var(--ac); font-size: 12.5px; transition: background .15s; }
+.ocCodeRow .promo:hover { background: color-mix(in srgb, var(--ac) 18%, transparent); }
+.ocBtns { display: flex; gap: 8px; margin-top: auto; }
+.ocClaim { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border: 0; border-radius: 12px; background: var(--ac); color: #0a0d14; font: 800 13px 'DM Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: filter .15s; }
+.ocClaim:hover { filter: brightness(1.07); }
+.ocClaim svg { transition: transform .15s; }
+.ocClaim:hover svg { transform: translateX(3px); }
+.ocPlus { width: 44px; height: 44px; border-radius: 12px; border: 1px solid #ffffff1c; background: none; color: #c9d0e0; display: grid; place-items: center; cursor: pointer; flex: none; transition: background .15s, border-color .15s, color .15s; }
+.ocPlus:hover { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 12%, transparent); color: #fff; }
+.promo { display: inline-flex; align-items: center; gap: 7px; font: 800 13px 'DM Sans', sans-serif; letter-spacing: .04em; cursor: pointer; }
+.promoOk { background: #22c55e33 !important; color: #86efac !important; border-color: #22c55e88 !important; }
 
 @media (max-width: 640px) {
   .title { font-size: 28px; }
-  .oc { flex-basis: 78%; }
+  .oc { flex-basis: 82%; }
   .arr { display: none; }
 }
 
