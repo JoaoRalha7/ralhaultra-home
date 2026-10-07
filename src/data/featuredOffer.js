@@ -2,7 +2,12 @@
 // Anything filled in the Featured tab overrides the automatic value.
 const txt = (x) => {
   if (x == null) return '';
-  if (typeof x === 'object') return txt(x.value ?? x.title ?? x.text ?? x.label ?? '');
+  if (typeof x === 'object') {
+    const known = x.value ?? x.title ?? x.text ?? x.label ?? x.name ?? x.feature;
+    if (known != null) return txt(known);
+    const first = Object.values(x).find((v) => typeof v === 'string' && v.trim());
+    return first ? first.trim() : '';
+  }
   return String(x).trim();
 };
 
@@ -15,7 +20,8 @@ export function autoFeatured(c = {}) {
   const fs = txt(b.fs);
 
   let amount = '';
-  if (pct && upTo) amount = `${pct} up to ${upTo}`;
+  if (txt(f[0])) amount = txt(f[0]);
+  else if (pct && upTo) amount = `${pct} up to ${upTo}`;
   else if (pct) amount = pct;
   else if (fs) amount = fs;
   else amount = txt(f[0]);

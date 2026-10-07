@@ -8,7 +8,12 @@ const PALETTE = [
 // DB values may be strings or small objects like { title, value }; always return plain text.
 const txt = (x) => {
   if (x == null) return '';
-  if (typeof x === 'object') return txt(x.value ?? x.title ?? x.text ?? x.label ?? '');
+  if (typeof x === 'object') {
+    const known = x.value ?? x.title ?? x.text ?? x.label ?? x.name ?? x.feature;
+    if (known != null) return txt(known);
+    const first = Object.values(x).find((v) => typeof v === 'string' && v.trim());
+    return first ? first.trim() : '';
+  }
   return String(x);
 };
 
@@ -30,7 +35,7 @@ export function casinoToOffer(c, i = 0) {
   const [accent, c1, c2] = PALETTE[i % PALETTE.length];
   const f = Array.isArray(c.features) ? c.features : [];
   const ci = c.casino_info || {};
-  const bp = bonusParts(c, f);
+  const bp = txt(f[0]) ? null : bonusParts(c, f);
   return {
     stats: pickStats(c),
     big: bp?.big || '',
