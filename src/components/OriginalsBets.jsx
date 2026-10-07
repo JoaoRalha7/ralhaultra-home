@@ -36,10 +36,10 @@ export default function OriginalsBets() {
         const { data } = await workerPost('/bets/mine')
         list = data?.rounds || []
       } else {
-        const r = await fetch(`${WORKER}/casino-feed?limit=50${tab === 'top' ? '&sort=top' : ''}`)
+        const r = await fetch(`${WORKER}/casino-feed?limit=10${tab === 'top' ? '&sort=top' : ''}`)
         list = r.ok ? (await r.json()).rounds || [] : []
       }
-      if (alive.current) setRows(list)
+      if (alive.current) setRows(list.slice(0, 10))
     } catch {
       if (alive.current) setRows([])
     }
