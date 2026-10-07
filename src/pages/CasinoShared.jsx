@@ -174,6 +174,7 @@ const INSTANT = ['keno', 'plinko', 'roulette']
 export function useCasino(game) {
   const { user, profile } = useAuth()
   const twitchUser = profile?.twitch_username || user?.user_metadata?.name || null
+  const avatar = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null
   const { points, setPoints, refresh } = useStreamElementsPoints(twitchUser)
   const [round, setRound] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -282,7 +283,7 @@ export function useCasino(game) {
     if (ok && data.active !== undefined && data.state) apply(data)
   }, [game, apply])
 
-  return { user, twitchUser, points, round, setRound, busy, err, setErr, start, batch, settle, cheer, setPoints, act, poll, offset, refresh, history, fire, shake, quiet, hold, release }
+  return { user, twitchUser, avatar, points, round, setRound, busy, err, setErr, start, batch, settle, cheer, setPoints, act, poll, offset, refresh, history, fire, shake, quiet, hold, release }
 }
 
 export function Page({ title, sub, game, children }) {

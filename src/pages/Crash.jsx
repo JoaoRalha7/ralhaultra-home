@@ -85,6 +85,7 @@ export default function Crash() {
   const raf = useRef(0)
   const R = useRef({})
   const me = (g.twitchUser || '').toLowerCase()
+  const avs = { ...(data?.avatars || {}), ...(me && g.avatar ? { [me]: g.avatar } : {}) }
 
   const serverNow = now + offset
   const round = data?.round
@@ -238,7 +239,7 @@ export default function Crash() {
             {!players.length && <p className={styles.lvEmpty}>No bets yet this round</p>}
             {players.map((b) => (
               <div key={b.u} className={`${styles.lvRow} ${b.u === me ? styles.lvMe : ''}`}>
-                <span className={styles.lvName}><Av name={b.u} map={data?.avatars} />{b.u}</span>
+                <span className={styles.lvName}><Av name={b.u} map={avs} />{b.u}</span>
                 <span className={styles.lvBet}>{fmt(b.bet)}</span>
                 <span className={b.cashedAt != null ? styles.pos : styles.lvDim}>{b.cashedAt != null ? `${b.cashedAt.toFixed(2)}x` : phase === 'flying' ? 'playing' : '-'}</span>
               </div>
@@ -282,7 +283,7 @@ export default function Crash() {
                   const res = b.cashedAt != null ? b.payout - b.bet : -b.bet
                   return (
                     <div key={`${b.seq}-${b.u}-${i}`} className={styles.lvRow}>
-                      <span className={styles.lvName}><Av name={b.u} map={data?.avatars} /><em>{b.u}<small>{ago(b.at, now)}</small></em></span>
+                      <span className={styles.lvName}><Av name={b.u} map={avs} /><em>{b.u}<small>{ago(b.at, now)}</small></em></span>
                       <span className={styles.lvBet}>{fmt(b.bet)}</span>
                       <span className={res >= 0 ? styles.pos : styles.neg}>{sign(res)}</span>
                     </div>

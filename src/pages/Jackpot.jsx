@@ -71,6 +71,7 @@ export default function Jackpot() {
   const R = useRef({})
   const spun = useRef(0)
   const me = (g.twitchUser || '').toLowerCase()
+  const avs = { ...(data?.avatars || {}), ...(me && g.avatar ? { [me]: g.avatar } : {}) }
 
   const r = data?.round
   const cfg = data?.cfg
@@ -173,7 +174,7 @@ export default function Jackpot() {
   else if (phase === 'counting') center = <><small>Drawing in</small><b>{clock(left)}</b><span>Pot {fmt(pot)}</span></>
   else if (phase === 'drawing') center = <><small>Drawing</small><b>...</b></>
   else if (phase === 'spinning') center = <><small>Pot</small><b>{fmt(pot)}</b></>
-  else center = <><span className={styles.jpWinAv}><UserAv name={winner.u} src={data?.avatars?.[winner.u.toLowerCase()]} size={44} ring="#fde68a" /></span><b className={styles.jpWinName}>{winner.u}</b><span>{fmt(winner.payout)} pts</span></>
+  else center = <><span className={styles.jpWinAv}><UserAv name={winner.u} src={avs?.[winner.u.toLowerCase()]} size={44} ring="#fde68a" /></span><b className={styles.jpWinName}>{winner.u}</b><span>{fmt(winner.payout)} pts</span></>
 
   return (
     <Page game="jackpot" title="Jackpot" sub="Everyone adds points to one pot. When the timer ends a wheel picks the winner, and the more you add the better your chance.">
@@ -200,7 +201,7 @@ export default function Jackpot() {
             <div className={phase === 'counting' && left < 10000 ? styles.ribGold : ''}><small>Time left</small><b>{phase === 'counting' ? clock(left) : phase === 'waiting' ? '--' : '0:00'}</b></div>
           </div>
 
-          <Wheel players={players} pot={pot} avatars={data?.avatars} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
+          <Wheel players={players} pot={pot} avatars={avs} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
 
           {winner && (
             <div className={`${styles.result} ${winner.u === me ? styles.resWin : styles.resPush}`} role="status">
@@ -220,7 +221,7 @@ export default function Jackpot() {
               {!players.length && <p className={styles.lvEmpty}>Nobody has joined yet. Be the first.</p>}
               {players.map((p, i) => (
                 <div key={p.u} className={`${styles.jpRow} ${p.u === me ? styles.lvMe : ''} ${i === winIdx ? styles.jpWon : ''}`}>
-                  <span className={styles.lvName}><UserAv name={p.u} src={data?.avatars?.[p.u.toLowerCase()]} ring={colorOf(i)} />{p.u}</span>
+                  <span className={styles.lvName}><UserAv name={p.u} src={avs?.[p.u.toLowerCase()]} ring={colorOf(i)} />{p.u}</span>
                   <span className={styles.lvBet}>{fmt(p.amount)}</span>
                   <span className={styles.jpPct}><i style={{ width: `${pctOf(p.amount, pot)}%`, background: colorOf(i) }} /><b>{fmtPct(pctOf(p.amount, pot))}</b></span>
                 </div>
@@ -234,7 +235,7 @@ export default function Jackpot() {
               {!(data?.history || []).length && <p className={styles.lvEmpty}>Finished pots appear here</p>}
               {(data?.history || []).map((h) => (
                 <div key={h.seq} className={styles.lvRow}>
-                  <span className={styles.lvName}><UserAv name={h.u} src={data?.avatars?.[String(h.u).toLowerCase()]} /><em>{h.u}<small>Pot {fmt(h.pot)}</small></em></span>
+                  <span className={styles.lvName}><UserAv name={h.u} src={avs?.[String(h.u).toLowerCase()]} /><em>{h.u}<small>Pot {fmt(h.pot)}</small></em></span>
                   <span className={styles.lvBet}>{fmt(h.amount)}</span>
                   <span className={styles.pos}>+{fmt(h.payout)}</span>
                 </div>

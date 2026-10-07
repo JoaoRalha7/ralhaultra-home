@@ -175,6 +175,14 @@ async function avatarsFor(env, sbH, names) {
   return out
 }
 
+
+// players whose profile has no picture yet: keep the one from their login so everybody sees it in the games
+async function saveAvatar(env, sbH, who) {
+  if (!who.avatar || who.savedAvatar) { if (who.avatar) AV_CACHE.set(who.username, { at: Date.now(), url: who.avatar }); return }
+  AV_CACHE.set(who.username, { at: Date.now(), url: who.avatar })
+  try { await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${who.id}&avatar_url=is.null`, { method: 'PATCH', headers: { ...sbH, 'Prefer': 'return=minimal' }, body: JSON.stringify({ avatar_url: who.avatar }) }) } catch { /* optional */ }
+}
+
 // Crash multiplier helpers
 const crashAtMs = (m) => Math.log(m) / CASINO.crashRate
 const crashMultAt = (ms) => Math.floor(Math.exp(CASINO.crashRate * Math.max(0, ms)) * 100) / 100
@@ -312,10 +320,11 @@ async function getUser(request, env, sbHeaders) {
   if (!r.ok) return null
   const u = await r.json()
   if (!u?.id) return null
-  const p = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${u.id}&select=twitch_username`, { headers: sbHeaders })
+  const p = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${u.id}&select=twitch_username,avatar_url`, { headers: sbHeaders })
   const prof = (await p.json())?.[0]
   const username = (prof?.twitch_username || u.user_metadata?.name || '').toLowerCase()
-  return username ? { id: u.id, username } : null
+  const pic = u.user_metadata?.avatar_url || u.user_metadata?.picture || null
+  return username ? { id: u.id, username, avatar: prof?.avatar_url || pic, savedAvatar: !!prof?.avatar_url } : null
 }
 
 
@@ -576,6 +585,7 @@ export default {
           await jpSb(env, sbHeaders, `jackpot_rounds?seq=eq.${cur.seq}&end_ms=is.null&status=eq.open`, { method: 'PATCH', body: JSON.stringify({ end_ms: now + JP.roundMs }) })
         }
         JP_CACHE = null
+        await saveAvatar(env, sbHeaders, who)
         return json({ ok: true, seq: Number(cur.seq), amount, newPoints: cd.newAmount ?? cd.points ?? null })
       }
 
@@ -612,6 +622,7 @@ export default {
           if (!charge.ok) { await clSb(env, sbHeaders, `crash_bets?id=eq.${row.id}`, { method: 'DELETE' }); return json({ error: 'charge failed' }, 502) }
           const cd = await charge.json()
           CL_CACHE = null
+          await saveAvatar(env, sbHeaders, who)
           return json({ ok: true, seq: Number(cur.seq), bet, auto, newPoints: cd.newAmount ?? cd.points ?? null })
         }
 
