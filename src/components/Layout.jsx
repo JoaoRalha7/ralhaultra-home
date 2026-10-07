@@ -42,7 +42,7 @@ function Avatar({ src }) {
 
 export default function Layout() {
   const { user, profile, isAdmin, isSettingUp, signOut } = useAuth();
-  const { points, setPoints, refresh } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name);
+  const { points, setPoints, refresh } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name, { poll: 30000 });
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [dailyOpen, setDailyOpen] = useState(false);
