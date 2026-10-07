@@ -647,3 +647,39 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oClaim:hover:before,.fmCta:hover:before{animation-duration:1.4s}
 @media (prefers-reduced-motion:reduce){.oClaim:before,.fmCta:before{animation:none;background:linear-gradient(var(--ac),var(--ac));opacity:.5}}
 .oClaim,.fmCta{margin-top:18px !important}
+
+/* ===== Offers: compact + tag + white snake ===== */
+.oc2{padding:26px 16px 14px;border-radius:20px}
+.oLogo{height:44px;margin-bottom:10px}
+.oLogo img{max-height:42px;max-width:170px}
+.oLogo span{font-size:16px}
+.oPill{padding:4px 12px;font-size:10px}
+.oHero{padding:0}
+.oGhost{display:none}
+.oBig{margin-top:10px;font-size:clamp(40px,4vw,56px);letter-spacing:-.02em}
+.oBig.txt{font-size:clamp(26px,2.6vw,34px)}
+.oRest{margin-top:4px;font-size:14px;letter-spacing:.18em}
+.oSub{margin-top:8px;padding:4px 12px;font-size:12px}
+.oTear{margin:14px -16px 0;width:calc(100% + 32px)}
+.oChips{padding-top:14px;gap:6px}
+.oChip{padding:7px 4px;gap:2px;border-radius:10px}
+.oChip .i{width:13px;height:13px}
+.oChip small{font-size:9px}
+.oChip b{font-size:12px}
+.oCode{margin-top:10px;border-radius:12px}
+.oCode span{padding:6px 12px}
+.oCode b{font-size:14px}
+.oCode i{padding:0 14px;font-size:10.5px}
+.oClaim{height:44px;font-size:12.5px;margin-top:14px !important}
+.oMore{height:32px;margin-top:8px;border-radius:10px;font-size:11px}
+
+/* tag */
+.oTag{gap:7px;padding:5px 14px;border-radius:8px;background:#0a0d14;color:var(--ac);border:1px solid color-mix(in srgb,var(--ac) 55%,#1c2230);font-size:10.5px;letter-spacing:.18em;box-shadow:0 0 0 4px #0a0d14}
+.oTag .oDot{width:6px;height:6px;border-radius:50%;background:var(--ac);animation:oBlink 1.6s ease-in-out infinite}
+@keyframes oBlink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.oTag .oDot{animation:none}}
+
+/* white snake running along the CTA border */
+.oClaim:before,.fmCta:before{inset:-4px;border-radius:18px;padding:2px;
+  background:conic-gradient(from var(--ang),transparent 0 58%,rgba(255,255,255,.18) 74%,#fff 99%,transparent 100%),linear-gradient(color-mix(in srgb,var(--ac) 30%,transparent),color-mix(in srgb,var(--ac) 30%,transparent));
+  animation:oSpin 2.4s linear infinite}

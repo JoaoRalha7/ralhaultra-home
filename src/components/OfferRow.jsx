@@ -35,7 +35,7 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
         {[8, 22, 37, 52, 66, 80, 92].map((l, i) => <i key={l} style={{ left: `${l}%`, animationDelay: `${(i * 1.3) % 6}s`, animationDuration: `${6 + (i % 3) * 2}s` }} />)}
       </div>
       {o.banner && <div className="oBg" style={{ backgroundImage: `url(${o.banner})` }} />}
-      {tag && <span className="oTag"><Icon name="trophy" />{tag}</span>}
+      {tag && <span className="oTag"><i className="oDot" />{tag}</span>}
       <div className="oLogo">
         {o.logo ? <img src={o.logo} alt={o.brand} /> : <span>{o.brand}</span>}
       </div>
