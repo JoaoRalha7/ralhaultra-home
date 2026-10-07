@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, HistoryStrip, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET } from './CasinoShared'
+import { BetPanel, Confetti, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET } from './CasinoShared'
 import { workerPost } from '../lib/points'
 import styles from './Casino.module.css'
 
@@ -7,45 +7,69 @@ const multAt = (rate, ms) => Math.floor(Math.exp(rate * Math.max(0, ms)) * 100) 
 const WORKER = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 const tone = (m) => (m >= 10 ? 'gold' : m >= 5 ? 'violet' : m >= 2 ? 'cyan' : 'white')
 
-function Graph({ rate, ms, mult, crashed }) {
-  const W = 640, H = 320, PL = 44, PB = 26, PT = 18, PR = 22
+function niceStep(max) {
+  if (max <= 3) return 0.5
+  if (max <= 6) return 1
+  if (max <= 12) return 2
+  if (max <= 30) return 5
+  if (max <= 60) return 10
+  if (max <= 150) return 25
+  return 100
+}
+
+function Graph({ rate, ms, mult, crashed, target }) {
+  const W = 640, H = 400, PL = 56, PB = 30, PT = 22, PR = 22
   const tMax = Math.max(8000, ms * 1.12)
-  const yMax = Math.max(2, mult * 1.18)
+  const yMax = Math.max(2.5, mult * 1.2)
   const X = (t) => PL + (t / tMax) * (W - PL - PR)
   const Y = (m) => H - PB - ((m - 1) / (yMax - 1)) * (H - PB - PT)
-  const steps = 70
+  const steps = 80
   const pts = []
   for (let i = 0; i <= steps; i++) { const t = (Math.max(ms, 0) * i) / steps; pts.push([X(t), Y(Math.exp(rate * t))]) }
   const line = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
   const [lx, ly] = pts[pts.length - 1]
-  const [px, py] = pts[Math.max(0, pts.length - 4)]
-  const ang = (Math.atan2(ly - py, lx - px) * 180) / Math.PI
-  const col = crashed ? '#f87171' : '#60a5fa'
-  const ticks = [1, 1.5, 2, 3, 5, 10, 20, 50, 100].filter((v) => v <= yMax)
+  const col = crashed ? '#f87171' : '#a78bfa'
+  const step = niceStep(yMax)
+  const ticks = []
+  for (let v = 1; v <= yMax + 1e-9; v += step) ticks.push(Math.round(v * 100) / 100)
+  const secs = Math.floor(tMax / 1000)
+  const xs = []
+  const xStep = secs > 40 ? 10 : secs > 20 ? 4 : 2
+  for (let sec = xStep; sec <= secs; sec += xStep) xs.push(sec)
+  const label = `${mult.toFixed(2)}x`
+  const bw = 22 + label.length * 15
+  const bx = Math.min(W - PR - bw / 2, Math.max(PL + bw / 2, lx))
+  const by = Math.max(PT + 22, ly - 34)
   return (
     <svg className={styles.graph} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Multiplier curve">
       <defs>
-        <linearGradient id="crArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={col} stopOpacity=".35" /><stop offset="1" stopColor={col} stopOpacity="0" /></linearGradient>
-        <filter id="crGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4" /></filter>
+        <linearGradient id="crArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={col} stopOpacity=".32" /><stop offset="1" stopColor={col} stopOpacity="0" /></linearGradient>
       </defs>
-      {ticks.map((v) => (
-        <g key={v}>
-          <line x1={PL} x2={W - PR} y1={Y(v)} y2={Y(v)} stroke="#fff" strokeOpacity=".07" />
-          <text x={PL - 8} y={Y(v) + 4} textAnchor="end" className={styles.axis}>{v}x</text>
+      {xs.map((sec) => (
+        <g key={`x${sec}`}>
+          <line x1={X(sec * 1000)} x2={X(sec * 1000)} y1={PT} y2={H - PB} stroke="#fff" strokeOpacity=".05" />
+          <text x={X(sec * 1000)} y={H - 8} textAnchor="middle" className={styles.axis}>{sec}s</text>
         </g>
       ))}
-      <polygon points={`${PL},${H - PB} ${line} ${lx},${H - PB}`} fill="url(#crArea)" />
-      <polyline points={line} fill="none" stroke={col} strokeWidth="9" strokeOpacity=".5" strokeLinecap="round" strokeLinejoin="round" filter="url(#crGlow)" />
-      <polyline points={line} fill="none" stroke={col} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      {crashed ? (
-        <g transform={`translate(${lx} ${ly})`} className={styles.boomFx}>
-          <circle r="10" fill="#fca5a5" /><circle r="22" fill="none" stroke="#f87171" strokeWidth="3" /><circle r="38" fill="none" stroke="#f87171" strokeOpacity=".5" strokeWidth="2" />
+      {ticks.map((v) => (
+        <g key={v}>
+          <line x1={PL} x2={W - PR} y1={Y(v)} y2={Y(v)} stroke="#fff" strokeOpacity=".06" />
+          <text x={PL - 8} y={Y(v) + 4} textAnchor="end" className={styles.axis}>{v.toFixed(2)}x</text>
         </g>
-      ) : (
-        <g transform={`translate(${lx} ${ly}) rotate(${ang})`}>
-          <path d="M-18 -7l-9 -6 3 6 -3 6zM-18 -7h22c8 0 13 3 15 7-2 4-7 7-15 7h-22z" fill="#e0ecff" stroke="#93c5fd" strokeWidth="1.5" strokeLinejoin="round" />
-          <circle cx="2" cy="0" r="3.500" fill="#3b82f6" />
-          <path d="M-28 -3l-14 3 14 3z" fill="#fbbf24" className={styles.flame} />
+      ))}
+      {target && target > 1 && target <= yMax && (
+        <g>
+          <line x1={PL} x2={W - PR} y1={Y(target)} y2={Y(target)} stroke="#34d399" strokeOpacity=".7" strokeDasharray="5 5" />
+          <text x={PL + 4} y={Y(target) - 5} className={styles.axis} fill="#34d399">{target.toFixed(2)}x</text>
+        </g>
+      )}
+      <polygon points={`${PL},${H - PB} ${line} ${lx},${H - PB}`} fill="url(#crArea)" />
+      <polyline points={line} fill="none" stroke={crashed ? '#f87171' : '#fff'} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      {ms > 0 && (
+        <g>
+          <circle cx={lx} cy={ly} r="5" fill={crashed ? '#f87171' : '#fff'} />
+          <rect x={bx - bw / 2} y={by - 22} width={bw} height="44" rx="10" fill="#05060a" fillOpacity=".88" stroke={crashed ? '#f87171' : '#ffffff22'} />
+          <text x={bx} y={by + 10} textAnchor="middle" className={styles.tipTxt} fill={crashed ? '#fca5a5' : '#fff'}>{label}</text>
         </g>
       )}
     </svg>
@@ -197,7 +221,6 @@ export default function Crash() {
   const closing = bettingOpen && round.startAt - serverNow < 400
   const myCashOver = cashed && over && cashed.seq === over.seq ? cashed.at : null
   const players = data?.bets || []
-  const chips = (data?.history || []).slice(0, 12).map((v) => ({ tone: v >= 2 ? 'win' : 'lose', label: `${v.toFixed(2)}x`, title: `Crashed at ${v.toFixed(2)}x` }))
 
   let cta
   if (!g.user) cta = <button type="button" className={styles.cta} disabled>Log in to play</button>
@@ -218,6 +241,10 @@ export default function Crash() {
     <Page game="crash" title="Crash" sub="A new round every few seconds, shared with everyone. Bet before launch and cash out before it crashes.">
       <div className={styles.layout}>
         <BetPanel points={g.points} bet={bet} setBet={setBet} locked={!!mine || !bettingOpen} loggedIn={!!g.user}>
+          <div className={styles.crStatus}>
+            <span>{phase === 'flying' ? 'Round running' : crashedView ? 'Round over' : bettingOpen ? `Betting open - ${left}s` : 'Next round soon'}</span>
+            {(phase === 'flying' || crashedView) && <b className={crashedView ? styles.neg : ''}>{shown.toFixed(2)}x</b>}
+          </div>
           <button type="button" className={`${styles.turbo} ${autoOn ? styles.on : ''}`} aria-pressed={autoOn} disabled={!!mine} onClick={() => setAutoOn((v) => !v)}>
             <span>Auto cash out<small>Cash out when the multiplier reaches your target</small></span><i />
           </button>
@@ -249,23 +276,25 @@ export default function Crash() {
         </BetPanel>
 
         <section className={`${styles.stage} ${styles.space} ${shaking ? styles.shake : ''}`}>
-          <HistoryStrip items={chips} />
+          <div className={styles.crHist}>
+            {(data?.history || []).slice(0, 14).map((v, i) => <span key={i} className={`${styles.crPill} ${v >= 2 ? styles.crHi : ''}`} title={`Crashed at ${v.toFixed(2)}x`}>{v.toFixed(2)}x</span>)}
+            {!(data?.history || []).length && <span className={styles.histEmpty}>Finished rounds appear here</span>}
+          </div>
           <div className={`${styles.crashBox} ${crashedView ? styles.crashed : ''}`}>
             <div className={styles.stars} aria-hidden="true" />
-            <Graph rate={rate} ms={Math.max(0, crashedView ? Math.log(Math.max(1, shown)) / rate : phase === 'flying' ? t : 0)} mult={shown} crashed={crashedView} />
+            <Graph rate={rate} ms={Math.max(0, crashedView ? Math.log(Math.max(1, shown)) / rate : phase === 'flying' ? t : 0)} mult={shown} crashed={crashedView} target={autoOn && auto !== '' ? Number(auto) : (mine?.auto || placed?.auto || null)} />
             {phase === 'betting' || phase === 'load' ? (
               <div className={styles.lvCountBox}>
-                <small>Next round</small>
                 <b>{phase === 'load' ? '...' : `${left}s`}</b>
-                <span>Place your bet before launch</span>
+                <span>Betting open</span>
               </div>
             ) : (
-              <div className={`${styles.big} ${styles['c_' + tone(shown)]}`}>
-                <span>{shown.toFixed(2)}<small>x</small></span>
-                {crashedView && <em>Crashed</em>}
-                {phase === 'flying' && active && mine && <i className={styles.lvNote}>Your bet {fmt(mine.bet)}</i>}
-                {crashedView && myCashOver != null && <i className={styles.lvNote}>You cashed out at {myCashOver.toFixed(2)}x</i>}
-              </div>
+              crashedView ? (
+                <div className={`${styles.big} ${styles.crOver}`}>
+                  <em>Crashed</em>
+                  {myCashOver != null && <i className={styles.lvNote}>You cashed out at {myCashOver.toFixed(2)}x</i>}
+                </div>
+              ) : phase === 'flying' && active && mine ? <i className={`${styles.lvNote} ${styles.crMine}`}>Your bet {fmt(mine.bet)}</i> : null
             )}
           </div>
 

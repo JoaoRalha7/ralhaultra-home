@@ -501,3 +501,19 @@
 @media (max-width: 1280px) { .page .layout:has(> .lvDock) > .panel { grid-row: 1 / span 2; } }
 @media (max-width: 900px) { .page .layout:has(> .lvDock) > .panel, .page .layout:has(> .lvDock) > .stage { grid-row: auto; } }
 .layout > .lvDock { align-content: start; }
+
+/* ── Crash: clean chart, round pills, status line ── */
+.crHist { display: flex; gap: 8px; overflow: hidden; align-items: center; min-height: 34px; }
+.crPill { flex: none; padding: 7px 14px; border-radius: 999px; background: #161a23; color: #e6e9f2; font: 800 12px "DM Sans", sans-serif; font-variant-numeric: tabular-nums; }
+.crHi { background: #a855f7; color: #12061f; }
+.crStatus { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: var(--mute); font-size: 13px; font-weight: 600; padding: 2px 2px 0; }
+.crStatus b { color: #fff; font: 800 15px "DM Sans", sans-serif; font-variant-numeric: tabular-nums; }
+.tipTxt { font: 800 28px "Bricolage Grotesque", sans-serif; }
+.page[data-game="crash"] .crashBox { border: 0; background: transparent; border-radius: 0; flex: 1; }
+.page[data-game="crash"] .stars { display: none; }
+.page[data-game="crash"] .stage { background: #0d1018; }
+.page[data-game="crash"] .stage::before { display: none; }
+.lvCountBox b { color: #a78bfa; }
+.crOver { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 6px; pointer-events: none; }
+.crOver em { font: 800 40px "Bricolage Grotesque", sans-serif; color: #f87171; font-style: normal; text-transform: uppercase; letter-spacing: .06em; text-shadow: 0 0 30px #f8717155; }
+.crMine { position: absolute; left: 62px; top: 16px; padding: 5px 12px; border-radius: 999px; background: #ffffff10; font-style: normal; }
