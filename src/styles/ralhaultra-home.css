@@ -576,3 +576,43 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oTear i:last-child{right:-10px;clip-path:inset(0 50% 0 0)}
 .oChips{padding-top:18px}
 @media (prefers-reduced-motion:reduce){.oSparks{display:none}}
+
+/* ===== Featured offer popup ===== */
+.fmOverlay{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:20px;background:radial-gradient(60% 50% at 50% 40%,#0b0e14aa,#05070bdd);backdrop-filter:blur(8px);animation:fmFade .25s ease both;overflow:auto}
+.fmCard{--ac:#3b82f6;position:relative;isolation:isolate;width:min(420px,100%);display:flex;flex-direction:column;align-items:center;text-align:center;padding:42px 26px 20px;border-radius:28px;color:#fff;background:radial-gradient(90% 50% at 50% 0%,color-mix(in srgb,var(--ac) 30%,transparent),transparent 70%),linear-gradient(180deg,color-mix(in srgb,var(--ac) 14%,#0a0d14),#06080d 90%);box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 55%,#1a1f2b),0 0 60px -14px var(--ac),0 40px 90px -20px #000;animation:fmPop .45s cubic-bezier(.2,.9,.25,1.1) both}
+.fmCard:before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 22px,color-mix(in srgb,var(--ac) 7%,transparent) 22px 23px);-webkit-mask-image:linear-gradient(180deg,#000,transparent 60%);mask-image:linear-gradient(180deg,#000,transparent 60%)}
+.fmCard:after{content:"";position:absolute;left:18%;right:18%;top:0;height:2px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,transparent,var(--ac),transparent);box-shadow:0 5px 16px -2px var(--ac)}
+@keyframes fmFade{from{opacity:0}to{opacity:1}}
+@keyframes fmPop{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:none}}
+.fmSparks{position:absolute;inset:0;z-index:-1;border-radius:inherit;overflow:hidden;pointer-events:none}
+.fmSparks i{position:absolute;bottom:-8px;width:4px;height:4px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px 1px var(--ac);opacity:0;animation:oRise 7s linear infinite}
+.fmTag{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:7px;padding:7px 18px;border-radius:999px;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 55%,#fff));color:#0b0e14;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;box-shadow:0 0 0 4px #06080d,0 6px 18px -8px var(--ac)}
+.fmClose{position:absolute;right:14px;top:14px;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;border:1px solid #ffffff1a;background:#ffffff08;color:#aab2c5}
+.fmClose:hover{color:#fff;background:#ffffff14}
+.fmLogo{height:64px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.fmLogo img{max-height:60px;max-width:220px;object-fit:contain;filter:drop-shadow(0 4px 16px #000a)}
+.fmLogo span{font:800 28px "Bricolage Grotesque",sans-serif}
+.fmPill{display:inline-flex;align-items:center;gap:7px;padding:6px 16px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ac) 50%,transparent);background:color-mix(in srgb,var(--ac) 10%,transparent);color:var(--ac);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.fmHero{position:relative;width:100%;padding:12px 0 4px;display:flex;justify-content:center}
+.fmGhost{position:absolute;left:50%;top:-4px;transform:translateX(-50%);font:800 120px/1 "Bricolage Grotesque",sans-serif;color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--ac) 22%,transparent);white-space:nowrap;max-width:100%;overflow:hidden;opacity:.65;pointer-events:none;-webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);mask-image:linear-gradient(180deg,#000 30%,transparent)}
+.fmAmount{position:relative;font:800 56px/1.02 "Bricolage Grotesque",sans-serif;text-transform:uppercase;letter-spacing:-.01em;background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 55%,#fff),var(--ac));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 22px color-mix(in srgb,var(--ac) 35%,transparent))}
+.fmAmount.xl{font-size:88px}.fmAmount.lg{font-size:52px}.fmAmount.md{font-size:34px}
+.fmChips{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:14px}
+.fmChips span{padding:6px 12px;border-radius:999px;background:#ffffff0c;border:1px solid #ffffff14;font-size:12px;font-weight:600;color:#d5dbe8}
+.fmTear{position:relative;width:calc(100% + 52px);margin:22px -26px 0;height:0;border-top:2px dashed color-mix(in srgb,var(--ac) 30%,transparent)}
+.fmTear i{position:absolute;top:-11px;width:20px;height:20px;border-radius:50%;background:#05070b;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ac) 45%,#1a1f2b)}
+.fmTear i:first-child{left:-10px;clip-path:inset(0 0 0 50%)}.fmTear i:last-child{right:-10px;clip-path:inset(0 50% 0 0)}
+.fmCode{display:flex;align-items:stretch;justify-content:space-between;width:100%;margin-top:20px;padding:0;border-radius:14px;border:1px dashed color-mix(in srgb,var(--ac) 50%,transparent);background:#0b0e14aa;overflow:hidden;color:inherit;text-align:left}
+.fmCode span{padding:10px 16px;display:flex;flex-direction:column}
+.fmCode small{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8d96ab}
+.fmCode b{font:800 18px "Bricolage Grotesque",sans-serif;letter-spacing:.08em;color:var(--ac)}
+.fmCode i{display:flex;align-items:center;padding:0 20px;font-style:normal;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ac);border-left:1px dashed color-mix(in srgb,var(--ac) 40%,transparent);background:color-mix(in srgb,var(--ac) 8%,transparent)}
+.fmCode:hover i,.fmCode.done i{background:color-mix(in srgb,var(--ac) 18%,transparent)}
+.fmCta{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;height:54px;margin-top:14px;border:0;border-radius:15px;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 55%,#fff));color:#0b0e14;font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;box-shadow:0 10px 26px -12px var(--ac);transition:transform .15s,filter .15s}
+.fmCta:hover{transform:translateY(-1px);filter:brightness(1.07)}
+.fmCta:after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,#ffffff77,transparent);transform:skewX(-20deg);animation:oShine 3.8s ease-in-out infinite}
+.fmLater{margin-top:12px;background:none;border:0;color:#8d96ab;font-size:12.5px;font-weight:600}
+.fmLater:hover{color:#fff}
+@media (max-width:480px){.fmCard{padding:40px 18px 16px}.fmAmount.xl{font-size:72px}.fmAmount.lg{font-size:44px}.fmGhost{font-size:96px}.fmTear{width:calc(100% + 36px);margin-left:-18px;margin-right:-18px}}
+@media (prefers-reduced-motion:reduce){.fmOverlay,.fmCard{animation:none}.fmSparks,.fmCta:after{display:none}}
+.fmTag{z-index:2}.fmCard:after{z-index:0}
