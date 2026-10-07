@@ -620,3 +620,30 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oLogo span{font-size:18px;font-weight:700;opacity:.85;letter-spacing:.02em}
 .oLogo{height:56px}
 .oHero{overflow:hidden;border-radius:12px}.oGhost{max-width:100%}
+
+/* ===== Offers: no neon, flat premium + travelling line on CTA ===== */
+@property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes oSpin{to{--ang:360deg}}
+.oc2,.fmCard{box-shadow:0 18px 40px -26px #000}
+.oc2{background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 13%,#0c1018),#0a0d14 70%);border:1px solid color-mix(in srgb,var(--ac) 32%,#1c2230)}
+.oc2:first-child{box-shadow:0 18px 40px -26px #000;border-color:color-mix(in srgb,var(--ac) 55%,#1c2230)}
+.oc2:hover{box-shadow:0 22px 44px -26px #000;border-color:color-mix(in srgb,var(--ac) 60%,#1c2230)}
+.oc2:before,.oc2:after,.oSparks,.fmSparks,.fmCard:before,.fmCard:after{display:none}
+.oTag,.fmTag{box-shadow:0 0 0 4px #0a0d14}
+.oBig,.fmAmount{filter:none}
+.oPill{box-shadow:none;backdrop-filter:none}
+.oLogo img,.fmLogo img{filter:none}
+.fmCard{background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 14%,#0c1018),#080b11 75%);box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 45%,#1c2230),0 40px 90px -30px #000}
+
+/* CTA with a line travelling around it */
+.oClaim,.fmCta{position:relative;overflow:visible;isolation:isolate;box-shadow:none;margin-bottom:2px}
+.oClaim:after,.fmCta:after{display:none}
+.oClaim:before,.fmCta:before{content:"";position:absolute;inset:-5px;z-index:-1;border-radius:19px;padding:2px;pointer-events:none;
+  background:conic-gradient(from var(--ang),transparent 0 62%,color-mix(in srgb,var(--ac) 70%,transparent) 80%,#fff 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:oSpin 2.8s linear infinite}
+.oClaim:hover,.fmCta:hover{filter:none;transform:none}
+.oClaim:hover:before,.fmCta:hover:before{animation-duration:1.4s}
+@media (prefers-reduced-motion:reduce){.oClaim:before,.fmCta:before{animation:none;background:linear-gradient(var(--ac),var(--ac));opacity:.5}}
+.oClaim,.fmCta{margin-top:18px !important}
