@@ -1,3 +1,4 @@
+import { pickStats } from './offerStats';
 const PALETTE = [
   ['#2ee6a6', '#04251e', '#0b4a3c'],
   ['#f5c542', '#241a02', '#5e4508'],
@@ -31,6 +32,7 @@ export function casinoToOffer(c, i = 0) {
   const ci = c.casino_info || {};
   const bp = bonusParts(c, f);
   return {
+    stats: pickStats(c),
     big: bp?.big || '',
     rest: bp?.rest || '',
     id: c.id,

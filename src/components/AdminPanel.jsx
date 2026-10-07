@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import OfferRow from './OfferRow'
 import { FeaturedOfferModal } from './HomeModals'
 import { autoFeatured } from '../data/featuredOffer'
+import { STAT_DEFS, selectedStatKeys } from '../data/offerStats'
 import { casinoToOffer } from '../data/casinoToOffer'
 import styles from './AdminPanel.module.css'
 
@@ -228,7 +229,7 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
   const SUM = {
     basic: [form.name, form.promo_code && `code ${form.promo_code}`].filter(Boolean).join(' · ') || 'Name, link and code',
     media: form.logo_url ? (form.banner_url ? 'Logo + banner' : 'Logo set') : 'Logo missing',
-    info: `${filled(ci)} of 6 filled`,
+    info: `${filled(ci) - (Array.isArray(ci.card_stats) ? 1 : 0)} of 6 filled`,
     featured: form.is_featured ? 'On - shown in the entry popup' : 'Off',
     methods: `${selMethods.length} selected`,
     content: `${features.length} features · ${bonus.length} bonus tiers · ${vip.length} VIP · ${howToClaim.length} steps`,
@@ -347,6 +348,35 @@ function CasinoModal({ casino, methods, onSave, onClose }) {
                   <input className={styles.input} value={form.support || ''} onChange={e => set('support', e.target.value)} placeholder="24/7 Live Chat" />
                 </div>
               </div>
+              {(() => {
+                const cur = { ...form, casino_info: ci }
+                const sel = selectedStatKeys(cur)
+                const toggle = (k) => setCi('card_stats', sel.includes(k) ? sel.filter(x => x !== k) : [...sel, k])
+                return (
+                  <div className={styles.statPick}>
+                    <div className={styles.statPickHead}>
+                      <div>
+                        <b>Show on the offer card</b>
+                        <span>Tick what appears in the chips of the card ({sel.length} selected). Empty fields are skipped.</span>
+                      </div>
+                      <button type="button" className={styles.autoReset} onClick={() => setCi('card_stats', undefined)}>Reset</button>
+                    </div>
+                    <div className={styles.statGrid}>
+                      {STAT_DEFS.map(d => {
+                        const v = d.get(cur)
+                        const on = sel.includes(d.key)
+                        return (
+                          <label key={d.key} className={`${styles.statOpt} ${on ? styles.statOptOn : ''} ${!v ? styles.statOptEmpty : ''}`}>
+                            <input type="checkbox" checked={on} onChange={() => toggle(d.key)} />
+                            <span className={styles.statBox}>{on && <IconCheck />}</span>
+                            <span className={styles.statTxt}><b>{d.label}</b><small>{v || 'empty'}</small></span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           )}
           </div>

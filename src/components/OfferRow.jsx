@@ -48,9 +48,11 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
       </div>
       <div className="oTear" aria-hidden="true"><i /><i /></div>
       <div className="oChips">
-        <Chip icon="wallet" label="Min deposit" value={o.deposit} />
-        <Chip icon="clock" label="Withdraw" value={o.withdraw} />
-        <Chip icon="shield" label="License" value={o.license} />
+        {(o.stats || [
+          { key: 'd', icon: 'wallet', label: 'Min deposit', value: o.deposit },
+          { key: 'w', icon: 'clock', label: 'Withdraw', value: o.withdraw },
+          { key: 'l', icon: 'shield', label: 'License', value: o.license },
+        ]).map((st) => <Chip key={st.key} icon={st.icon} label={st.label} value={st.value} />)}
       </div>
       {hasCode && (
         <button type="button" className={`oCode${copied ? ' done' : ''}`} onClick={copy}>
