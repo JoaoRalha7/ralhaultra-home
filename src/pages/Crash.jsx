@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET } from './CasinoShared'
+import { Confetti, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import { workerPost } from '../lib/points'
-import styles from './Casino.module.css'
+import shared from './Casino.module.css'
+import styles from './Crash.module.css'
 
 const multAt = (rate, ms) => Math.floor(Math.exp(rate * Math.max(0, ms)) * 100) / 100
 const WORKER = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
-const tone = (m) => (m >= 10 ? 'gold' : m >= 5 ? 'violet' : m >= 2 ? 'cyan' : 'white')
 
 function niceStep(max) {
+  if (max <= 2.2) return 0.2
   if (max <= 3) return 0.5
   if (max <= 6) return 1
   if (max <= 12) return 2
@@ -17,61 +18,44 @@ function niceStep(max) {
   return 100
 }
 
-function Graph({ rate, ms, mult, crashed, target }) {
-  const W = 640, H = 520, PL = 56, PB = 30, PT = 22, PR = 22
-  const tMax = Math.max(8000, ms * 1.12)
-  const yMax = Math.max(2.5, mult * 1.2)
+function Graph({ rate, ms, mult, crashed, idle }) {
+  const W = 900, H = 520, PL = 62, PB = 34, PT = 22, PR = 28
+  const tMax = Math.max(2000, ms * 1.12)
+  const yMax = Math.max(2, mult * 1.16)
   const X = (t) => PL + (t / tMax) * (W - PL - PR)
   const Y = (m) => H - PB - ((m - 1) / (yMax - 1)) * (H - PB - PT)
-  const steps = 80
+  const steps = 90
   const pts = []
   for (let i = 0; i <= steps; i++) { const t = (Math.max(ms, 0) * i) / steps; pts.push([X(t), Y(Math.exp(rate * t))]) }
   const line = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
   const [lx, ly] = pts[pts.length - 1]
-  const col = crashed ? '#f87171' : '#a78bfa'
+  const col = crashed ? '#ef4444' : '#22ff7a'
   const step = niceStep(yMax)
   const ticks = []
   for (let v = 1; v <= yMax + 1e-9; v += step) ticks.push(Math.round(v * 100) / 100)
-  const secs = Math.floor(tMax / 1000)
+  const secs = tMax / 1000
+  const xStep = secs <= 4 ? 0.5 : secs <= 10 ? 2 : secs <= 20 ? 5 : secs <= 60 ? 10 : 30
   const xs = []
-  const xStep = secs > 40 ? 10 : secs > 20 ? 4 : 2
-  for (let sec = xStep; sec <= secs; sec += xStep) xs.push(sec)
-  const label = `${mult.toFixed(2)}x`
-  const bw = 22 + label.length * 15
-  const bx = Math.min(W - PR - bw / 2, Math.max(PL + bw / 2, lx))
-  const by = Math.max(PT + 22, ly - 34)
+  for (let sec = 0; sec <= secs + 1e-9; sec += xStep) xs.push(sec)
+  const fmtY = (v) => (step < 1 ? `${v.toFixed(1)}x` : `${Math.round(v)}x`)
+  const fmtX = (sec) => (xStep < 1 ? `${sec.toFixed(1)}s` : `${Math.round(sec)}s`)
   return (
     <svg className={styles.graph} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Multiplier curve">
       <defs>
-        <linearGradient id="crArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={col} stopOpacity=".32" /><stop offset="1" stopColor={col} stopOpacity="0" /></linearGradient>
+        <linearGradient id="crA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={col} stopOpacity=".22" /><stop offset="1" stopColor={col} stopOpacity="0" /></linearGradient>
       </defs>
-      {xs.map((sec) => (
-        <g key={`x${sec}`}>
-          <line x1={X(sec * 1000)} x2={X(sec * 1000)} y1={PT} y2={H - PB} stroke="#fff" strokeOpacity=".05" />
-          <text x={X(sec * 1000)} y={H - 8} textAnchor="middle" className={styles.axis}>{sec}s</text>
-        </g>
-      ))}
-      {ticks.map((v) => (
-        <g key={v}>
-          <line x1={PL} x2={W - PR} y1={Y(v)} y2={Y(v)} stroke="#fff" strokeOpacity=".06" />
-          <text x={PL - 8} y={Y(v) + 4} textAnchor="end" className={styles.axis}>{v.toFixed(2)}x</text>
-        </g>
-      ))}
-      {target && target > 1 && target <= yMax && (
+      <line x1={PL} x2={W - PR} y1={H - PB} y2={H - PB} stroke="#fff" strokeOpacity=".08" />
+      <line x1={PL} x2={PL} y1={PT} y2={H - PB} stroke="#fff" strokeOpacity=".08" />
+      {xs.map((sec) => <text key={`x${sec}`} x={X(sec * 1000)} y={H - 10} textAnchor="middle" className={styles.axis}>{fmtX(sec)}</text>)}
+      {ticks.map((v) => <text key={v} x={PL - 12} y={Y(v) + 4} textAnchor="end" className={styles.axis}>{fmtY(v)}</text>)}
+      {!idle && ms > 0 && (
         <g>
-          <line x1={PL} x2={W - PR} y1={Y(target)} y2={Y(target)} stroke="#34d399" strokeOpacity=".7" strokeDasharray="5 5" />
-          <text x={PL + 4} y={Y(target) - 5} className={styles.axis} fill="#34d399">{target.toFixed(2)}x</text>
+          <polygon points={`${PL},${H - PB} ${line} ${lx},${H - PB}`} fill="url(#crA)" />
+          <polyline points={line} fill="none" stroke={col} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" style={{ filter: `drop-shadow(0 0 6px ${col}88)` }} />
+          <circle cx={lx} cy={ly} r="6" fill={col} stroke="#0d1018" strokeWidth="2" />
         </g>
       )}
-      <polygon points={`${PL},${H - PB} ${line} ${lx},${H - PB}`} fill="url(#crArea)" />
-      <polyline points={line} fill="none" stroke={crashed ? '#f87171' : '#fff'} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      {ms > 0 && (
-        <g>
-          <circle cx={lx} cy={ly} r="5" fill={crashed ? '#f87171' : '#fff'} />
-          <rect x={bx - bw / 2} y={by - 22} width={bw} height="44" rx="10" fill="#05060a" fillOpacity=".88" stroke={crashed ? '#f87171' : '#ffffff22'} />
-          <text x={bx} y={by + 10} textAnchor="middle" className={styles.tipTxt} fill={crashed ? '#fca5a5' : '#fff'}>{label}</text>
-        </g>
-      )}
+      {(idle || ms <= 0) && <circle cx={PL} cy={H - PB} r="6" fill={col} />}
     </svg>
   )
 }
@@ -93,8 +77,6 @@ const Av = ({ name, map }) => <UserAv name={name} src={map?.[String(name).toLowe
 export default function Crash() {
   const g = useCasino('crash')
   const [bet, setBet] = useState(100)
-  const [auto, setAuto] = useState('')
-  const [autoOn, setAutoOn] = useState(false)
   const [data, setData] = useState(null) // last public state from the server
   const [offset, setOffset] = useState(0) // server clock minus local clock
   const [now, setNow] = useState(Date.now())
@@ -103,8 +85,16 @@ export default function Crash() {
   const [over, setOver] = useState(null) // crash screen: { seq, crashAt, until, lost }
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const [tab, setTab] = useState('global')
-  const [personal, setPersonal] = useState([])
+  const [tab, setTab] = useState('manual')
+  const [cashAt, setCashAt] = useState('2.00')
+  const [queued, setQueued] = useState(false)
+  const [autoRun, setAutoRun] = useState(false)
+  const [nBets, setNBets] = useState(0)
+  const [adv, setAdv] = useState(false)
+  const [stopWin, setStopWin] = useState('')
+  const [stopLoss, setStopLoss] = useState('')
+  const [showSettings, setShowSettings] = useState(true)
+  const startPts = useRef(null), autoDone = useRef(0)
   const shaking = useFlag(g.shake)
   const raf = useRef(0)
   const R = useRef({})
@@ -125,19 +115,16 @@ export default function Crash() {
 
   // one clock: smooth while flying, coarse otherwise
   useEffect(() => {
-    if (phase === 'flying') {
+    if (phase === 'flying' || phase === 'betting') {
       const tick = () => { setNow(Date.now()); raf.current = requestAnimationFrame(tick) }
       raf.current = requestAnimationFrame(tick)
       return () => cancelAnimationFrame(raf.current)
     }
     const id = setInterval(() => setNow(Date.now()), 250)
     return () => clearInterval(id)
-  }, [phase === 'flying']) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase === 'flying' || phase === 'betting']) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadMine = useCallback(async () => {
-    const { ok, data: d } = await workerPost('/crash/mine')
-    if (ok && d.bets) setPersonal(d.bets)
-  }, [])
+  const loadMine = useCallback(() => {}, []) // personal history lives in the bets feed under the game
 
   const pull = useCallback(async () => {
     const sent = Date.now()
@@ -192,7 +179,7 @@ export default function Crash() {
   const place = async () => {
     if (busy || !round) return
     setBusy(true); setErr('')
-    const a = autoOn && auto !== '' ? Number(auto) : null
+    const a = Number(cashAt) >= 1.01 ? Math.round(Number(cashAt) * 100) / 100 : null
     const { ok, data: d } = await workerPost('/crash/bet', { bet: Number(bet), auto: a })
     setBusy(false)
     if (!ok) { setErr(ERRS[d.error] || 'Something went wrong. Try again.'); return }
@@ -216,118 +203,158 @@ export default function Crash() {
   const crashedView = phase === 'over'
   const shown = crashedView ? over.crashAt : (live ?? 1)
   const potential = active && live ? Math.floor(mine.bet * live) : 0
-  const left = round ? Math.max(0, Math.ceil((round.startAt - serverNow) / 1000)) : 0
+  const leftMs = round ? Math.max(0, round.startAt - serverNow) : 0
   const bettingOpen = !!round && t < 0
-  const closing = bettingOpen && round.startAt - serverNow < 400
+  const closing = bettingOpen && leftMs < 400
   const myCashOver = cashed && over && cashed.seq === over.seq ? cashed.at : null
   const players = data?.bets || []
+  const total = players.reduce((a, b) => a + b.bet, 0)
+  const target = Number(cashAt) >= 1.01 ? Math.round(Number(cashAt) * 100) / 100 : null
+  const profitOnWin = target ? Math.floor(Number(bet) * (target - 1)) : 0
 
+  // queued bet (clicked during a round) and autobet: placed as soon as betting opens
+  useEffect(() => {
+    if (!round || !bettingOpen || mine || busy || closing || !g.user) return
+    if (!(queued || autoRun)) return
+    if (Number(bet) < MIN_BET) { setQueued(false); setAutoRun(false); return }
+    if (autoRun) {
+      const max = Math.floor(Number(nBets)) || 0
+      const net = (g.points ?? 0) - (startPts.current ?? g.points ?? 0)
+      if ((max && autoDone.current >= max) || (Number(stopWin) && net >= Number(stopWin)) || (Number(stopLoss) && -net >= Number(stopLoss))) { setAutoRun(false); return }
+      autoDone.current++
+    }
+    setQueued(false)
+    place()
+  }, [round?.seq, bettingOpen, queued, autoRun, !!mine, closing]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const locked = !!mine || !bettingOpen || autoRun
   let cta
-  if (!g.user) cta = <button type="button" className={styles.cta} disabled>Log in to play</button>
-  else if (phase === 'flying' && active) cta = <button type="button" className={`${styles.cta} ${styles.pulse}`} disabled={busy} onClick={cash}>{`Cash out ${fmt(potential)}`}</button>
-  else if (phase === 'flying' && myCash != null) cta = <button type="button" className={styles.cta} disabled>{`Cashed out ${myCash.toFixed(2)}x`}</button>
-  else if (phase === 'flying') cta = <button type="button" className={styles.cta} disabled>Round in progress</button>
-  else if (bettingOpen && mine) cta = <button type="button" className={styles.cta} disabled>{`Bet placed, starts in ${left}s`}</button>
-  else if (bettingOpen) cta = <button type="button" className={styles.cta} disabled={busy || closing || Number(bet) < MIN_BET} onClick={place}>Place bet</button>
-  else cta = <button type="button" className={styles.cta} disabled>Next round soon</button>
+  if (!g.user) cta = <button type="button" className={styles.go} disabled>Log in to play</button>
+  else if (phase === 'flying' && active) cta = <button type="button" className={styles.go} disabled={busy} onClick={cash}>Cashout <i className={styles.coin} />{fmt(potential)}</button>
+  else if (bettingOpen && mine) cta = <button type="button" className={`${styles.go} ${styles.dim}`} disabled>Bet Placed</button>
+  else if (bettingOpen) cta = <button type="button" className={styles.go} disabled={busy || closing || Number(bet) < MIN_BET} onClick={place}>Place Bet</button>
+  else if (queued) cta = <button type="button" className={`${styles.go} ${styles.dim}`} onClick={() => setQueued(false)}>Bet Placed</button>
+  else cta = <button type="button" className={styles.go} disabled={Number(bet) < MIN_BET} onClick={() => setQueued(true)}>Bet (Next Round)</button>
 
-  const rowsG = data?.feed || []
-  const personalRows = personal.map((b) => {
-    const live_ = round && b.seq >= round.seq && b.cashedAt == null
-    return { seq: b.seq, bet: b.bet, at: b.at, res: b.cashedAt != null ? b.payout - b.bet : live_ ? null : -b.bet, x: b.cashedAt }
-  })
+  const hist = (data?.history || []).slice(0, 16).reverse()
+  const stepCash = (d) => setCashAt(String(Math.max(1.01, Math.round(((Number(cashAt) || 2) + d) * 100) / 100).toFixed(2)))
+
+  const playersView = (
+    <div className={styles.players}>
+      <div className={styles.pHead}>
+        <span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3 20c0-3.500 2.700-6 6-6s6 2.500 6 6M16 5.500a3 3 0 010 5M18 14c2 .7 3 2.600 3 5" /></svg>{players.length}</span>
+        <span><i className={styles.coin} />{fmt(total)}</span>
+      </div>
+      <div className={styles.pList}>
+        {players.map((b) => (
+          <div key={b.u} className={`${styles.pRow} ${b.u === me ? styles.pMe : ''}`}>
+            <span className={styles.pName}><Av name={b.u} map={avs} />{b.u}</span>
+            <span className={styles.pX}>{b.cashedAt != null ? `${b.cashedAt.toFixed(2)}x` : '-'}</span>
+            <span className={`${styles.pAmt} ${b.cashedAt != null ? styles.pWin : ''}`}><i className={styles.coin} />{fmt(b.cashedAt != null ? b.payout : b.bet)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   return (
-    <Page game="crash" title="Crash" sub="A new round every few seconds, shared with everyone. Bet before launch and cash out before it crashes.">
-      <div className={styles.layout}>
-        <BetPanel points={g.points} bet={bet} setBet={setBet} locked={!!mine || !bettingOpen} loggedIn={!!g.user}>
-          <div className={styles.crStatus}>
-            <span>{phase === 'flying' ? 'Round running' : crashedView ? 'Round over' : bettingOpen ? `Betting open - ${left}s` : 'Next round soon'}</span>
-            {(phase === 'flying' || crashedView) && <b className={crashedView ? styles.neg : ''}>{shown.toFixed(2)}x</b>}
+    <Page game="crash" title="Crash" sub="">
+      <div className={shared.layout}>
+        <aside className={`${shared.panel} ${styles.panel}`}>
+          <div className={styles.tabs} role="tablist">
+            <button type="button" role="tab" aria-selected={tab === 'manual'} disabled={autoRun} className={tab === 'manual' ? styles.on : ''} onClick={() => setTab('manual')}>Manual</button>
+            <button type="button" role="tab" aria-selected={tab === 'auto'} disabled={autoRun} className={tab === 'auto' ? styles.on : ''} onClick={() => setTab('auto')}>Auto</button>
           </div>
-          <button type="button" className={`${styles.turbo} ${autoOn ? styles.on : ''}`} aria-pressed={autoOn} disabled={!!mine} onClick={() => setAutoOn((v) => !v)}>
-            <span>Auto cash out<small>Cash out when the multiplier reaches your target</small></span><i />
-          </button>
-          {autoOn && (
+          {!(tab === 'auto' && showSettings === false) && (
             <>
-              <div className={styles.betRow}>
-                <input id="auto" aria-label="Auto cash out target" type="number" step="0.1" min="1.01" placeholder="e.g. 2.00" value={auto} disabled={!!mine} onChange={(e) => setAuto(e.target.value)} />
-                <span>x</span>
+              <div className={styles.fld}>
+                <span className={styles.lab}>Bet Amount</span>
+                <div className={`${styles.money} ${locked ? styles.off : ''}`}>
+                  <i className={styles.coin} />
+                  <input type="number" inputMode="numeric" min={MIN_BET} value={bet} disabled={locked}
+                    onChange={(e) => setBet(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
+                    onBlur={() => setBet(Math.max(MIN_BET, Math.min(MAX_BET, Math.floor(Number(bet)) || MIN_BET)))} />
+                  <button type="button" disabled={locked} onClick={() => setBet(Math.max(MIN_BET, Math.floor((Number(bet) || MIN_BET) / 2)))}>1/2</button>
+                  <button type="button" disabled={locked} onClick={() => setBet(Math.min(MAX_BET, (Number(bet) || MIN_BET) * 2))}>2x</button>
+                </div>
               </div>
-              <div className={styles.quick}>
-                {[1.5, 2, 5, 10].map((v) => <button key={v} type="button" disabled={!!mine} className={Number(auto) === v ? styles.on : ''} onClick={() => setAuto(String(v))}>{v}x</button>)}
+              <div className={styles.fld}>
+                <span className={styles.lab}>Cashout At</span>
+                <div className={`${styles.money} ${!!mine || autoRun ? styles.off : ''}`}>
+                  <input type="number" step="0.1" min="1.01" value={cashAt} disabled={!!mine || autoRun} onChange={(e) => setCashAt(e.target.value)}
+                    onBlur={() => setCashAt(Number(cashAt) >= 1.01 ? Number(cashAt).toFixed(2) : '')} placeholder="Off" />
+                  <button type="button" className={styles.sq} disabled={!!mine || autoRun} aria-label="Lower" onClick={() => stepCash(-0.1)}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.200" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg></button>
+                  <button type="button" className={styles.sq} disabled={!!mine || autoRun} aria-label="Raise" onClick={() => stepCash(0.1)}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.200" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6" /></svg></button>
+                </div>
               </div>
             </>
           )}
-          {cta}
-          {(err || g.err) && <p className={styles.err}>{err || g.err}</p>}
-          <div className={styles.lvHead}><span>This round</span><b>{players.length} {players.length === 1 ? 'player' : 'players'}</b></div>
-          <div className={styles.lvPlayers}>
-            {!players.length && <p className={styles.lvEmpty}>No bets yet this round</p>}
-            {players.map((b) => (
-              <div key={b.u} className={`${styles.lvRow} ${b.u === me ? styles.lvMe : ''}`}>
-                <span className={styles.lvName}><Av name={b.u} map={avs} />{b.u}</span>
-                <span className={styles.lvBet}>{fmt(b.bet)}</span>
-                <span className={b.cashedAt != null ? styles.pos : styles.lvDim}>{b.cashedAt != null ? `${b.cashedAt.toFixed(2)}x` : phase === 'flying' ? 'playing' : '-'}</span>
-              </div>
-            ))}
-          </div>
-          <p className={styles.note}>One bet per round. Bets close at launch. Set an auto cash out to lock in a target while you are away.</p>
-        </BetPanel>
-
-        <section className={`${styles.stage} ${styles.space} ${shaking ? styles.shake : ''}`}>
-          <div className={styles.crHist}>
-            {(data?.history || []).slice(0, 14).map((v, i) => <span key={i} className={`${styles.crPill} ${v >= 2 ? styles.crHi : ''}`} title={`Crashed at ${v.toFixed(2)}x`}>{v.toFixed(2)}x</span>)}
-            {!(data?.history || []).length && <span className={styles.histEmpty}>Finished rounds appear here</span>}
-          </div>
-          <div className={`${styles.crashBox} ${crashedView ? styles.crashed : ''}`}>
-            <div className={styles.stars} aria-hidden="true" />
-            <Graph rate={rate} ms={Math.max(0, crashedView ? Math.log(Math.max(1, shown)) / rate : phase === 'flying' ? t : 0)} mult={shown} crashed={crashedView} target={autoOn && auto !== '' ? Number(auto) : (mine?.auto || placed?.auto || null)} />
-            {phase === 'betting' || phase === 'load' ? (
-              <div className={styles.lvCountBox}>
-                <b>{phase === 'load' ? '...' : `${left}s`}</b>
-                <span>Betting open</span>
-              </div>
-            ) : (
-              crashedView ? (
-                <div className={`${styles.big} ${styles.crOver}`}>
-                  <em>Crashed</em>
-                  {myCashOver != null && <i className={styles.lvNote}>You cashed out at {myCashOver.toFixed(2)}x</i>}
-                </div>
-              ) : phase === 'flying' && active && mine ? <i className={`${styles.lvNote} ${styles.crMine}`}>Your bet {fmt(mine.bet)}</i> : null
-            )}
-          </div>
-
-          <Confetti fire={g.fire} colors={['#60a5fa', '#a78bfa', '#f5c542', '#fff', '#22d3ee']} />
-        </section>
-          <div className={`${styles.lvCard} ${styles.lvDock}`}>
-            <div className={styles.lvTabs} role="tablist">
-              <button type="button" role="tab" aria-selected={tab === 'global'} className={tab === 'global' ? styles.on : ''} onClick={() => setTab('global')}>Global</button>
-              <button type="button" role="tab" aria-selected={tab === 'personal'} className={tab === 'personal' ? styles.on : ''} onClick={() => { setTab('personal'); if (g.user) loadMine() }}>Personal</button>
-            </div>
-            <div className={`${styles.lvRow} ${styles.lvTh}`}><span>Player</span><span>Bet</span><span>Result</span></div>
-            <div className={styles.lvList}>
-              {tab === 'global' ? (
-                rowsG.length ? rowsG.map((b, i) => {
-                  const res = b.cashedAt != null ? b.payout - b.bet : -b.bet
-                  return (
-                    <div key={`${b.seq}-${b.u}-${i}`} className={styles.lvRow}>
-                      <span className={styles.lvName}><Av name={b.u} map={avs} /><em>{b.u}<small>{ago(b.at, now)}</small></em></span>
-                      <span className={styles.lvBet}>{fmt(b.bet)}</span>
-                      <span className={res >= 0 ? styles.pos : styles.neg}>{sign(res)}</span>
+          {tab === 'manual' && (
+            <>
+              <div className={styles.fld}><span className={styles.lab}>Profit On Win</span><div className={styles.ro}><i className={styles.coin} />{fmt(profitOnWin)}</div></div>
+              {cta}
+              {(err || g.err) && <p className={styles.err}>{err || g.err}</p>}
+              {playersView}
+            </>
+          )}
+          {tab === 'auto' && (
+            <>
+              {showSettings && (
+                <>
+                  <div className={styles.fld}>
+                    <span className={styles.lab}>Number of Bets</span>
+                    <div className={`${styles.money} ${autoRun ? styles.off : ''}`}>
+                      <input type="number" inputMode="numeric" min="0" value={nBets} disabled={autoRun} onChange={(e) => setNBets(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))} />
+                      <span className={styles.inf} aria-hidden="true">&infin;</span>
                     </div>
-                  )
-                }) : <p className={styles.lvEmpty}>Finished bets appear here</p>
-              ) : !g.user ? <p className={styles.lvEmpty}>Log in to see your bets</p>
-                : personalRows.length ? personalRows.map((b, i) => (
-                  <div key={`${b.seq}-${i}`} className={styles.lvRow}>
-                    <span className={styles.lvName}><em>Round {b.seq}<small>{ago(b.at, now)}</small></em></span>
-                    <span className={styles.lvBet}>{fmt(b.bet)}</span>
-                    <span className={b.res == null ? styles.lvDim : b.res >= 0 ? styles.pos : styles.neg}>{b.res == null ? 'playing' : `${sign(b.res)}${b.x ? ` (${b.x.toFixed(2)}x)` : ''}`}</span>
                   </div>
-                )) : <p className={styles.lvEmpty}>You have not played yet</p>}
-            </div>
+                </>
+              )}
+              <button type="button" className={styles.ghost} onClick={() => setShowSettings((v) => !v)}>{showSettings ? 'Show Players' : 'Show Settings'}</button>
+              {showSettings ? (
+                <>
+                  <button type="button" className={styles.advRow} onClick={() => setAdv((v) => !v)} aria-pressed={adv}><span>Advanced Settings</span><i className={adv ? styles.swOn : ''} /></button>
+                  {adv && (
+                    <>
+                      <div className={styles.fld}><span className={styles.lab}>Stop on Profit</span><div className={styles.money}><i className={styles.coin} /><input type="number" min="0" value={stopWin} disabled={autoRun} onChange={(e) => setStopWin(e.target.value)} placeholder="0" /></div></div>
+                      <div className={styles.fld}><span className={styles.lab}>Stop on Loss</span><div className={styles.money}><i className={styles.coin} /><input type="number" min="0" value={stopLoss} disabled={autoRun} onChange={(e) => setStopLoss(e.target.value)} placeholder="0" /></div></div>
+                    </>
+                  )}
+                  <div className={styles.grow} />
+                </>
+              ) : playersView}
+              <div className={styles.pow}><span>Profit On Win</span><i className={styles.coin} /><b>{fmt(profitOnWin)}</b></div>
+              {autoRun
+                ? <button type="button" className={styles.go} onClick={() => setAutoRun(false)}>Stop Autobet</button>
+                : <button type="button" className={styles.go} disabled={!g.user || Number(bet) < MIN_BET} onClick={() => { startPts.current = g.points; autoDone.current = 0; setAutoRun(true) }}>{g.user ? 'Start Autobet' : 'Log in to play'}</button>}
+              {(err || g.err) && <p className={styles.err}>{err || g.err}</p>}
+            </>
+          )}
+        </aside>
+
+        <section className={`${styles.stage} ${shaking ? shared.shake : ''}`}>
+          <div className={styles.hist}>
+            {hist.map((v, i) => <span key={i} className={`${styles.pill} ${i === hist.length - 1 ? styles.pillNew : ''}`}>{v.toFixed(2)}x</span>)}
           </div>
+          <Graph rate={rate} ms={Math.max(0, crashedView ? Math.log(Math.max(1, shown)) / rate : phase === 'flying' ? t : 0)} mult={shown} crashed={crashedView} idle={phase === 'betting' || phase === 'load'} />
+          {phase === 'betting' || phase === 'load' ? (
+            <div className={styles.center}>
+              <p className={styles.starts}>Round starts in <b>{phase === 'load' ? '...' : `${(leftMs / 1000).toFixed(2)}s`}</b></p>
+              <span className={styles.sub}>Place your bets</span>
+            </div>
+          ) : crashedView ? (
+            <div className={styles.center}>
+              <b className={`${styles.mult} ${styles.red}`}>{shown.toFixed(2)}x</b>
+              <span className={styles.chip}>Crashed</span>
+            </div>
+          ) : (
+            <div className={styles.center}>
+              <b className={`${styles.mult} ${myCash != null ? styles.green : ''}`}>{shown.toFixed(2)}x</b>
+              {myCash != null ? <span className={styles.sub}>Cashed Out at <em>{myCash.toFixed(2)}x</em></span> : <span className={styles.amt}><i className={styles.coin} />{fmt(potential)}</span>}
+            </div>
+          )}
+          <Confetti fire={g.fire} colors={['#22ff7a', '#6ee7b7', '#22d3ee', '#f5c542', '#fff']} />
+        </section>
       </div>
     </Page>
   )
