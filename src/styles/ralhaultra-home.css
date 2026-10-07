@@ -840,3 +840,7 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .lvLater:hover{color:#fff}
 @media (max-width:480px){.lvCard{padding:26px 18px 16px}.lvCard h2{font-size:24px}}
 @media (prefers-reduced-motion:reduce){.lvCard,.lvOverlay{animation:none}.lvLive i{animation:none}}
+
+/* ===== Top Offers: no dead space above the chips (hover fills the cell) ===== */
+.oc2 .oChips{padding:0;margin-top:14px}
+.oc2 .oChip{padding:11px 4px 10px}
