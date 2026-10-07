@@ -254,7 +254,6 @@ export default function Home() {
       .eq('is_active', true)
       .order('is_hot', { ascending: false })
       .order('sort_order', { ascending: true })
-      .limit(3)
       .then(({ data, error }) => {
         if (!error && data && data.length) setOffers(data.map((c, i) => casinoToOffer(c, i)));
       });
