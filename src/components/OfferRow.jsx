@@ -46,7 +46,7 @@ export default function OfferRow({ o, rank, onClaim, onInfo }) {
         </button>
       )}
       <button type="button" className="oClaim" onClick={() => onClaim?.(o)}>Claim offer<Icon name="right" size={14} /></button>
-      <button type="button" className="oMore" onClick={() => onInfo?.(o)}>More info</button>
+      <button type="button" className="oMore" onClick={() => onInfo?.(o)}>More info<Icon name="right" size={13} /></button>
     </article>
   );
 }

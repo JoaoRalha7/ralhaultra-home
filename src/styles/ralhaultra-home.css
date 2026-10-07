@@ -540,3 +540,18 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oTag{box-shadow:0 8px 24px -6px var(--ac),0 0 0 4px #0b0e14}
 @media (prefers-reduced-motion:reduce){.oClaim:after{animation:none;display:none}}
 .oTag{z-index:2}.oc2:after{z-index:0}
+
+/* ===== Offers: neon refinement + More info button ===== */
+.oc2{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 38%,#1a1f2b),0 18px 40px -28px color-mix(in srgb,var(--ac) 45%,transparent)}
+.oc2:first-child{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 80%,#1a1f2b),0 0 26px -10px var(--ac),0 22px 50px -28px var(--ac)}
+.oc2:hover{box-shadow:0 0 0 1px var(--ac),0 0 28px -10px var(--ac),0 22px 50px -26px var(--ac)}
+.oc2:after{left:18%;right:18%;top:0;height:2px;box-shadow:0 5px 16px -2px var(--ac);opacity:.9;border-radius:0 0 3px 3px}
+.oTag{box-shadow:0 0 0 4px #07090e,0 6px 18px -8px var(--ac)}
+.oPill{box-shadow:inset 0 0 12px -6px var(--ac)}
+.oBig{filter:drop-shadow(0 4px 14px color-mix(in srgb,var(--ac) 28%,transparent))}
+.oClaim{box-shadow:0 8px 20px -12px var(--ac)}
+.oClaim:hover{box-shadow:0 10px 26px -10px var(--ac)}
+.oMore{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;height:42px;margin-top:10px;border-radius:12px;border:1px solid color-mix(in srgb,var(--ac) 35%,#ffffff1a);background:#ffffff06;color:#c9d0e0;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;transition:background .15s,border-color .15s,color .15s}
+.oMore .i{transition:transform .15s}
+.oMore:hover{background:color-mix(in srgb,var(--ac) 12%,transparent);border-color:var(--ac);color:#fff}
+.oMore:hover .i{transform:translateX(3px)}
