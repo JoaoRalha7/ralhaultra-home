@@ -246,14 +246,14 @@ export function useCasino(game) {
     if (fresh && n > prev.n) playSfx(game === 'mines' ? 'gem' : 'card')
     if (r.status === 'done' && !(prev.id === r.id && prev.status === 'done')) {
       const loud = fresh || prev.id === null || INSTANT.includes(game)
-      if (INSTANT.includes(game) && hold.current) pending.current = { r, loud }
+      if ((INSTANT.includes(game) || game === 'blackjack') && hold.current) pending.current = { r, loud }
       else fx(r, loud)
     }
     seen.current = { id: r.id, status: r.status, n }
   }, [round]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const apply = useCallback((data) => {
-    if (data.newPoints != null) { if (hold.current && INSTANT.includes(game)) pendingPts.current = data.newPoints; else setPoints(data.newPoints) }
+    if (data.newPoints != null) { if (hold.current && (INSTANT.includes(game) || game === 'blackjack')) pendingPts.current = data.newPoints; else setPoints(data.newPoints) }
     if (data.state) { setRound(data.state); setOffset((data.state.serverNow || Date.now()) - Date.now()) }
   }, [setPoints, game])
 

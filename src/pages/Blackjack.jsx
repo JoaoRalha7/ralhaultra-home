@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Confetti, Page, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import shared from './Casino.module.css'
 import styles from './Blackjack.module.css'
@@ -39,6 +39,13 @@ const showTotal = (cards, total, live) => {
 }
 const RES = { win: ['WIN', 'win'], blackjack: ['BLACKJACK', 'win'], push: ['PUSH', 'push'], lose: ['LOSE', 'lose'], bust: ['BUST', 'lose'] }
 
+const dTotal = (cards) => {
+  let t = 0, a = 0
+  for (const c of cards) { const r = c % 13; if (r === 0) { a++; t += 11 } else t += Math.min(r + 1, 10) }
+  while (t > 21 && a-- > 0) t -= 10
+  return t
+}
+
 const clamp = (v) => Math.max(0, Math.min(MAX_BET, Math.floor(Number(v)) || 0))
 const IC = {
   hit: <path d="M12 5v14M5 12h14" />,
@@ -76,9 +83,24 @@ export default function Blackjack() {
   const active = r?.status === 'active'
   const done = r?.status === 'done'
   const shaking = useFlag(g.shake)
-  const act = (a) => { playSfx('click'); g.act(a) }
+  // nothing about the outcome shows until the dealer has finished playing: the hole card turns, the extra
+  // cards arrive one by one, and only then the results (and sound, confetti, balance) are released
+  const [fin, setFin] = useState(null) // id of the round whose results are visible
+  const [dCount, setDCount] = useState(1)
+  const rid = r?.id, rdone = r?.status === 'done', dlen = r?.dealer.length || 0
+  useEffect(() => {
+    if (!rdone) { setDCount(1); return }
+    const T = [setTimeout(() => setDCount(2), 650)]
+    for (let i = 2; i < dlen; i++) T.push(setTimeout(() => setDCount(i + 1), 750 + (i - 2) * 600 + 950))
+    const end = (dlen > 2 ? 750 + (dlen - 3) * 600 + 950 : 650) + 450
+    T.push(setTimeout(() => { setFin(rid); g.release() }, end))
+    return () => T.forEach(clearTimeout)
+  }, [rid, rdone, dlen]) // eslint-disable-line react-hooks/exhaustive-deps
+  const shown = done && fin === r.id // results visible
+  const waiting = done && !shown
+  const act = (a) => { playSfx('click'); g.hold.current = true; g.act(a) }
   const ppv = tab === 'side' ? clamp(pp) : 0, t3v = tab === 'side' ? clamp(t3) : 0
-  const place = () => { playSfx('click'); g.start({ bet: Number(bet), pp: ppv >= MIN_BET ? ppv : 0, t3: t3v >= MIN_BET ? t3v : 0, seats }) }
+  const place = () => { playSfx('click'); g.hold.current = true; g.start({ bet: Number(bet), pp: ppv >= MIN_BET ? ppv : 0, t3: t3v >= MIN_BET ? t3v : 0, seats }) }
   const n = r?.hands.length || 0
   const first = (i, ci) => (ci * (n + 1) + i) * 170 // opening deal order: every seat, then the dealer
 
@@ -109,7 +131,7 @@ export default function Blackjack() {
             <button type="button" disabled={!active || g.busy || !r?.canSplit} onClick={() => act('split')}><Ico n="split" />Split</button>
             <button type="button" disabled={!active || g.busy || !r?.canDouble} onClick={() => act('double')}><Ico n="double" />Double</button>
           </div>
-          <button type="button" className={styles.place} disabled={active || g.busy || !g.user || Number(bet) < MIN_BET} onClick={place}>{g.user ? 'Place Bet' : 'Log in to play'}</button>
+          <button type="button" className={styles.place} disabled={active || waiting || g.busy || !g.user || Number(bet) < MIN_BET} onClick={place}>{g.user ? 'Place Bet' : 'Log in to play'}</button>
           {g.err && <p className={styles.err}>{g.err}</p>}
         </aside>
 
@@ -117,7 +139,7 @@ export default function Blackjack() {
           <div className={styles.shoe} aria-hidden="true" />
           {r && (
             <div className={styles.dealer}>
-              <span className={styles.pill}>{r.dealerTotal}</span>
+              <span className={styles.pill}>{done ? dTotal(r.dealer.slice(0, dCount)) : r.dealerTotal}</span>
               <div className={styles.cards}>
                 {r.dealer.map((c, i) => <Card key={`${r.id}-d${i}${i === 1 && done ? 'o' : ''}`} c={c} reveal={i === 1 && done} delay={i === 0 ? first(n, 0) : i === 1 ? 0 : 750 + (i - 2) * 600} />)}
                 {active && <Card key={`${r.id}-dh`} hidden delay={first(n, 1)} />}
@@ -129,21 +151,21 @@ export default function Blackjack() {
             <div className={styles.seats}>
               {r.hands.map((h, hi) => {
                 const on = active && hi === r.active && !h.done
-                const res = done || h.result ? RES[h.result] : null
+                const res = shown ? RES[h.result] : null
                 const tone = res ? res[1] : null
-                const side = h.side && [h.side.pp && h.side.pp.mult ? `PP ${h.side.pp.mult}:1` : null, h.side.t3 && h.side.t3.mult ? `21+3 ${h.side.t3.mult}:1` : null].filter(Boolean)
+                const side = !(shown && h.side) ? [] : [h.side.pp && h.side.pp.mult ? `PP ${h.side.pp.mult}:1` : null, h.side.t3 && h.side.t3.mult ? `21+3 ${h.side.t3.mult}:1` : null].filter(Boolean)
                 return (
-                  <div key={hi} className={styles.seat}>
+                  <div key={hi} className={`${styles.seat} ${on ? styles.seatOn : ''}`}>
                     <div className={styles.tags}>
                       <span className={`${styles.pill} ${on ? styles.pillOn : ''} ${tone ? styles['p_' + tone] : ''}`}>{showTotal(h.cards, h.total, !h.done)}</span>
                       {h.doubled && <small className={styles.tag}>DOUBLE</small>}
                       {res && <small className={`${styles.tag} ${styles['t_' + tone]}`}>{res[0]}</small>}
-                      {side?.map((t) => <small key={t} className={`${styles.tag} ${styles.t_win}`}>{t}</small>)}
+                      {side.map((t) => <small key={t} className={`${styles.tag} ${styles.t_win}`}>{t}</small>)}
                     </div>
                     <div className={styles.hand}>
                       {on && n > 1 && <i className={styles.chev} aria-hidden="true">&rsaquo;</i>}
                       <div className={styles.cards}>
-                        {h.cards.map((c, i) => <Card key={`${r.id}-${hi}-${i}`} c={c} tone={done ? tone : null} delay={i < 2 && h.cards.length <= 2 ? first(hi, i) : 0} />)}
+                        {h.cards.map((c, i) => <Card key={`${r.id}-${hi}-${i}`} c={c} tone={shown ? tone : null} delay={i < 2 && h.cards.length <= 2 ? first(hi, i) : 0} />)}
                       </div>
                       {on && n > 1 && <i className={styles.chev} aria-hidden="true">&lsaquo;</i>}
                     </div>

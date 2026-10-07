@@ -28,11 +28,11 @@
 
 .table { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 22px 20px 30px; background: #0d1018; overflow: hidden; }
 .shoe { position: absolute; top: -8px; right: 28px; width: 58px; height: 46px; border-radius: 0 0 8px 8px; border: 2px solid #e8eaf0; border-top: 0; background: #0b0d12; box-shadow: 0 5px 0 -1px #a9adb8; }
-.dealer { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 150px; }
+.dealer { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 160px; }
 .rules { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .rules b { padding: 8px 14px; border-radius: 7px; background: #141822; color: #9aa1b4; font: 800 10.500px "DM Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase; }
 .rules span { color: #565c6e; font: 800 10px "DM Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
-.seats { display: flex; align-items: flex-end; justify-content: center; gap: clamp(18px, 4vw, 56px); width: 100%; min-height: 170px; }
+.seats { display: flex; align-items: flex-end; justify-content: center; gap: clamp(18px, 4vw, 56px); width: 100%; min-height: 190px; }
 .seat { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
 .tags { display: flex; align-items: center; gap: 6px; min-height: 24px; flex-wrap: wrap; justify-content: center; }
 .pill { min-width: 34px; padding: 4px 11px; border-radius: 999px; background: #1a1d26; color: #e7e9ef; font: 800 12px "DM Sans", sans-serif; text-align: center; transition: background .15s, color .15s; }
@@ -42,10 +42,13 @@
 .t_win { color: #34d399; } .t_push { color: #fbbf24; } .t_lose { color: #f87171; }
 .hand { display: flex; align-items: center; gap: 10px; }
 .chev { font-style: normal; font-size: 26px; line-height: 1; color: color-mix(in srgb, var(--g1) 85%, #fff); font-weight: 800; }
-.cards { display: flex; align-items: flex-start; min-height: 100px; padding-right: 0; }
+.cards { display: flex; align-items: flex-start; min-height: calc(var(--cw) * 1.4); padding-right: 0; }
 
-.card { position: relative; flex: none; width: 70px; height: 100px; perspective: 800px; }
-.card:not(:first-child) { margin-left: -54px; }
+.table { --cw: 96px; }
+.seat { --cw: 96px; transition: --cw .2s; }
+.seatOn { --cw: 116px; }
+.card { position: relative; flex: none; width: var(--cw); height: calc(var(--cw) * 1.4); perspective: 800px; transition: width .2s, height .2s, margin .2s; }
+.card:not(:first-child) { margin-left: calc(var(--cw) * -0.78); }
 .fly { animation: dealIn .5s cubic-bezier(.2,.8,.3,1) both; animation-delay: var(--dl, 0ms); }
 .cardIn { position: absolute; inset: 0; transform-style: preserve-3d; }
 .down { transform: rotateY(180deg); }
@@ -53,9 +56,9 @@
 .revealTurn { animation: turnUp .55s cubic-bezier(.3,.7,.3,1) both; animation-delay: var(--dl, 0ms); }
 .face { position: absolute; inset: 0; border-radius: 8px; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 8px 18px -8px #000; }
 .front { background: #fff; color: #111827; padding: 7px 8px; }
-.front b { display: block; font: 800 20px/1 "Bricolage Grotesque", sans-serif; }
-.pipSm { position: absolute; left: 8px; top: 29px; width: 13px; height: 13px; }
-.pip { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; }
+.front b { display: block; font: 800 calc(var(--cw) * .29)/1 "Bricolage Grotesque", sans-serif; }
+.pipSm { position: absolute; left: calc(var(--cw) * .11); top: calc(var(--cw) * .4); width: calc(var(--cw) * .18); height: calc(var(--cw) * .18); }
+.pip { position: absolute; right: calc(var(--cw) * .1); bottom: calc(var(--cw) * .1); width: calc(var(--cw) * .46); height: calc(var(--cw) * .46); }
 .red { color: #e11d48; }
 .back { transform: rotateY(180deg); background: #0b0d12; border: 2px solid #f1f2f6; display: grid; place-items: center; color: #f1f2f6; font: 800 14px "Bricolage Grotesque", sans-serif; letter-spacing: .1em; }
 .win .front, .win .back { box-shadow: 0 0 0 2px #22c55e, 0 8px 18px -8px #000; }
@@ -67,8 +70,7 @@
 @media (max-width: 1100px) {
   .table { min-height: 460px; }
   .seats { gap: 14px; }
-  .card { width: 58px; height: 84px; } .card:not(:first-child) { margin-left: -44px; } .cards { min-height: 84px; }
-  .pip { width: 28px; height: 28px; } .front b { font-size: 17px; }
+  .table, .seat { --cw: 64px; } .seatOn { --cw: 76px; }
 }
 @media (max-width: 560px) { .seats { gap: 6px; } .seat .tag { display: none; } }
-.dealer .card:not(:first-child) { margin-left: -40px; }
+
