@@ -13,4 +13,21 @@
 .stats { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
 .stats i { font-style: normal; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); color: #c7cde0; font: 700 11px "DM Sans", sans-serif; }
 .play { position: absolute; right: 18px; top: 20px; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; background: var(--g1); color: #06130e; font: 800 12px "DM Sans", sans-serif; }
-@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } .card { min-height: 0; } }
+
+
+/* ── Compact: all 7 games in one row, so the bets table is visible without scrolling ── */
+.page { gap: 16px; }
+.head h1 { font-size: clamp(24px, 3vw, 30px); }
+.head p { margin-top: 4px; font-size: 13px; }
+.grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
+.card { min-height: 0; padding: 14px 10px 12px; gap: 10px; align-items: center; text-align: center; border-radius: 16px; }
+.card::before { background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--g1) 34%, transparent), transparent 70%); }
+.card:hover { transform: translateY(-3px); }
+.art { width: 60px; height: 60px; border-radius: 16px; }
+.body { flex: none; align-items: center; gap: 0; }
+.body b { font-size: 16px; }
+.body small, .stats { display: none; }
+.play { position: static; padding: 5px 12px; font-size: 11px; opacity: .92; }
+@media (max-width: 1280px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } .art { width: 48px; height: 48px; } .body b { font-size: 14px; } .play { display: none; } }
+@media (max-width: 420px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
