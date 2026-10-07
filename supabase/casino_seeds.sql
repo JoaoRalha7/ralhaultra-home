@@ -7,6 +7,8 @@ create table if not exists public.casino_seeds (
   server_seed text not null,
   server_hash text not null,
   client_seed text not null,
+  next_seed   text,
+  next_hash   text,
   nonce       integer not null default 0,
   active      boolean not null default true,
   created_at  timestamptz not null default now(),
@@ -24,3 +26,8 @@ alter table public.crash_rounds   add column if not exists server_seed text;
 alter table public.crash_rounds   add column if not exists server_hash text;
 alter table public.jackpot_rounds add column if not exists server_seed text;
 alter table public.jackpot_rounds add column if not exists server_hash text;
+
+
+-- Next server seed commitment (shown as "Next Server Seed (Hashed)"). Safe to run on an existing table.
+alter table public.casino_seeds add column if not exists next_seed text;
+alter table public.casino_seeds add column if not exists next_hash text;

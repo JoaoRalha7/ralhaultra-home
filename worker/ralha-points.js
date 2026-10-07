@@ -132,6 +132,14 @@ async function fairRng(server, client, nonce, nb = 128) {
   return { float: () => next() / 0x100000000, int, shuffle: (a) => { for (let i = a.length - 1; i > 0; i--) { const j = int(i + 1); [a[i], a[j]] = [a[j], a[i]] } return a } }
 }
 const cleanClient = (v) => String(v ?? '').replace(/[^\w\-]/g, '').slice(0, 64)
+// new active pair. The hash of the NEXT server seed is committed too, so a rotation can be checked later.
+async function fairInsert(env, sbH, who, server, client, next = newSeedHex()) {
+  const q = `${env.SUPABASE_URL}/rest/v1/casino_seeds`
+  const row = { user_id: who.id, username: who.username, server_seed: server, server_hash: await sha256hex(server), client_seed: client }
+  const hdr = { ...sbH, 'Prefer': 'return=minimal' }
+  const r = await fetch(q, { method: 'POST', headers: hdr, body: JSON.stringify({ ...row, next_seed: next, next_hash: await sha256hex(next) }) })
+  if (!r.ok) await fetch(q, { method: 'POST', headers: hdr, body: JSON.stringify(row) }) // next_seed columns not created yet
+}
 // active seed pair of a player (created on first use). Returns the row or null.
 async function fairPair(env, sbH, who) {
   const q = `${env.SUPABASE_URL}/rest/v1/casino_seeds`
@@ -139,8 +147,7 @@ async function fairPair(env, sbH, who) {
     const r = await fetch(`${q}?user_id=eq.${who.id}&active=eq.true&limit=1`, { headers: sbH })
     const row = r.ok ? (await r.json())?.[0] : null
     if (row) return row
-    const server = newSeedHex()
-    await fetch(q, { method: 'POST', headers: { ...sbH, 'Prefer': 'return=minimal' }, body: JSON.stringify({ user_id: who.id, username: who.username, server_seed: server, server_hash: await sha256hex(server), client_seed: newSeedHex().slice(0, 24) }) })
+    await fairInsert(env, sbH, who, newSeedHex(), newSeedHex().slice(0, 24))
   }
   return null
 }
@@ -748,17 +755,17 @@ export default {
           if (pathname === '/fair/rotate') {
             const cur = await fairPair(env, sbHeaders, who)
             if (!cur) return json({ error: 'fair seed unavailable' }, 502)
-            const server = newSeedHex()
+            const server = cur.next_seed || newSeedHex()
             const client = cleanClient(body.clientSeed) || newSeedHex().slice(0, 24)
             const done = await fetch(`${q}?id=eq.${cur.id}&active=eq.true`, { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify({ active: false, revealed_at: new Date().toISOString() }) })
             if (done.ok && (await done.json())?.[0]) {
-              await fetch(q, { method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ user_id: who.id, username: who.username, server_seed: server, server_hash: await sha256hex(server), client_seed: client }) })
+              await fairInsert(env, sbHeaders, who, server, client)
             }
           }
           const pair = await fairPair(env, sbHeaders, who)
           const pr = await fetch(`${q}?user_id=eq.${who.id}&active=eq.false&order=revealed_at.desc&limit=1`, { headers: sbHeaders })
           const prev = pr.ok ? (await pr.json())?.[0] : null
-          return json({ ok: true, hash: pair?.server_hash, client: pair?.client_seed, nonce: pair?.nonce ?? 0,
+          return json({ ok: true, hash: pair?.server_hash, nextHash: pair?.next_hash || null, client: pair?.client_seed, nonce: pair?.nonce ?? 0,
             prev: prev ? { serverSeed: prev.server_seed, hash: prev.server_hash, client: prev.client_seed, nonces: prev.nonce } : null })
         }
         if (pathname === '/fair/rounds') {
