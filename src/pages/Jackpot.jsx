@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, Page, fmt, playSfx, useCasino, MIN_BET } from './CasinoShared'
+import { BetPanel, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET } from './CasinoShared'
 import { holdPointsPulls } from '../hooks/useStreamElementsPoints'
 import { workerPost } from '../lib/points'
 import styles from './Casino.module.css'
@@ -26,16 +26,28 @@ const pctOf = (a, pot) => (pot ? (a / pot) * 100 : 0)
 const fmtPct = (v) => (v >= 10 ? v.toFixed(0) : v.toFixed(1)) + '%'
 const clock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
 
-function Wheel({ players, pot, rot, ms, children }) {
+function Wheel({ players, pot, rot, ms, avatars, children }) {
   let acc = 0
   return (
     <div className={styles.jpWheelWrap}>
       <svg viewBox="0 0 300 300" className={styles.jpWheel} role="img" aria-label="Jackpot wheel">
+        <defs><clipPath id="jpClip"><circle r="13" /></clipPath></defs>
         <circle cx={C} cy={C} r="148" className={styles.jpRim} />
         <g style={{ transformOrigin: `${C}px ${C}px`, transform: `rotate(${rot}deg)`, transition: ms ? `transform ${ms}ms cubic-bezier(.1,.6,.08,1)` : 'none' }}>
           {players.length ? players.map((p, i) => {
             const a0 = (acc / pot) * 360; acc += p.amount; const a1 = (acc / pot) * 360
-            return <path key={p.u} d={arc(a0, a1)} fill={colorOf(i)} className={styles.jpSeg} />
+            const mid = (a0 + a1) / 2, [x, y] = pt(mid, 116), url = avatars?.[p.u.toLowerCase()]
+            return (
+              <g key={p.u}>
+                <path d={arc(a0, a1)} fill={colorOf(i)} className={styles.jpSeg} />
+                {a1 - a0 >= 22 && (
+                  <g transform={`translate(${x} ${y}) rotate(${mid})`}>
+                    <circle r="15" fill="#0b0f16" stroke="#fff" strokeOpacity=".85" strokeWidth="1.5" />
+                    {url ? <image href={url} x="-13" y="-13" width="26" height="26" clipPath="url(#jpClip)" preserveAspectRatio="xMidYMid slice" /> : <text textAnchor="middle" dominantBaseline="central" className={styles.jpInit}>{p.u.slice(0, 1).toUpperCase()}</text>}
+                  </g>
+                )}
+              </g>
+            )
           }) : <circle cx={C} cy={C} r={(RO + RI) / 2} fill="none" stroke="#1d2433" strokeWidth={RO - RI} />}
         </g>
         <circle cx={C} cy={C} r={RI - 2} className={styles.jpHub} />
@@ -161,7 +173,7 @@ export default function Jackpot() {
   else if (phase === 'counting') center = <><small>Drawing in</small><b>{clock(left)}</b><span>Pot {fmt(pot)}</span></>
   else if (phase === 'drawing') center = <><small>Drawing</small><b>...</b></>
   else if (phase === 'spinning') center = <><small>Pot</small><b>{fmt(pot)}</b></>
-  else center = <><small>Winner</small><b className={styles.jpWinName}>{winner.u}</b><span>{fmt(winner.payout)} pts</span></>
+  else center = <><span className={styles.jpWinAv}><UserAv name={winner.u} src={data?.avatars?.[winner.u.toLowerCase()]} size={44} ring="#fde68a" /></span><b className={styles.jpWinName}>{winner.u}</b><span>{fmt(winner.payout)} pts</span></>
 
   return (
     <Page game="jackpot" title="Jackpot" sub="Everyone adds points to one pot. When the timer ends a wheel picks the winner, and the more you add the better your chance.">
@@ -188,7 +200,7 @@ export default function Jackpot() {
             <div className={phase === 'counting' && left < 10000 ? styles.ribGold : ''}><small>Time left</small><b>{phase === 'counting' ? clock(left) : phase === 'waiting' ? '--' : '0:00'}</b></div>
           </div>
 
-          <Wheel players={players} pot={pot} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
+          <Wheel players={players} pot={pot} avatars={data?.avatars} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
 
           {winner && (
             <div className={`${styles.result} ${winner.u === me ? styles.resWin : styles.resPush}`} role="status">
@@ -208,7 +220,7 @@ export default function Jackpot() {
               {!players.length && <p className={styles.lvEmpty}>Nobody has joined yet. Be the first.</p>}
               {players.map((p, i) => (
                 <div key={p.u} className={`${styles.jpRow} ${p.u === me ? styles.lvMe : ''} ${i === winIdx ? styles.jpWon : ''}`}>
-                  <span className={styles.lvName}><i className={styles.jpDot} style={{ background: colorOf(i) }} />{p.u}</span>
+                  <span className={styles.lvName}><UserAv name={p.u} src={data?.avatars?.[p.u.toLowerCase()]} ring={colorOf(i)} />{p.u}</span>
                   <span className={styles.lvBet}>{fmt(p.amount)}</span>
                   <span className={styles.jpPct}><i style={{ width: `${pctOf(p.amount, pot)}%`, background: colorOf(i) }} /><b>{fmtPct(pctOf(p.amount, pot))}</b></span>
                 </div>
@@ -222,7 +234,7 @@ export default function Jackpot() {
               {!(data?.history || []).length && <p className={styles.lvEmpty}>Finished pots appear here</p>}
               {(data?.history || []).map((h) => (
                 <div key={h.seq} className={styles.lvRow}>
-                  <span className={styles.lvName}><em>{h.u}<small>Pot {fmt(h.pot)}</small></em></span>
+                  <span className={styles.lvName}><UserAv name={h.u} src={data?.avatars?.[String(h.u).toLowerCase()]} /><em>{h.u}<small>Pot {fmt(h.pot)}</small></em></span>
                   <span className={styles.lvBet}>{fmt(h.amount)}</span>
                   <span className={styles.pos}>+{fmt(h.payout)}</span>
                 </div>

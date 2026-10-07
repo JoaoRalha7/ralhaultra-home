@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET } from './CasinoShared'
+import { BetPanel, Confetti, HistoryStrip, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET } from './CasinoShared'
 import { workerPost } from '../lib/points'
 import styles from './Casino.module.css'
 
@@ -59,13 +59,12 @@ const ERRS = {
   insufficient: 'Not enough points.',
   'too early': 'The round has not started yet.',
 }
-const hue = (name) => { let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360; return h }
 const ago = (iso, now) => {
   const s = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000))
   return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`
 }
 const sign = (n) => `${n >= 0 ? '+' : '-'}${fmt(Math.abs(n))}`
-const Av = ({ name }) => <i className={styles.lvAv} style={{ background: `hsl(${hue(name)} 55% 42%)` }}>{name.slice(0, 1).toUpperCase()}</i>
+const Av = ({ name, map }) => <UserAv name={name} src={map?.[String(name).toLowerCase()]} />
 
 export default function Crash() {
   const g = useCasino('crash')
@@ -239,7 +238,7 @@ export default function Crash() {
             {!players.length && <p className={styles.lvEmpty}>No bets yet this round</p>}
             {players.map((b) => (
               <div key={b.u} className={`${styles.lvRow} ${b.u === me ? styles.lvMe : ''}`}>
-                <span className={styles.lvName}><Av name={b.u} />{b.u}</span>
+                <span className={styles.lvName}><Av name={b.u} map={data?.avatars} />{b.u}</span>
                 <span className={styles.lvBet}>{fmt(b.bet)}</span>
                 <span className={b.cashedAt != null ? styles.pos : styles.lvDim}>{b.cashedAt != null ? `${b.cashedAt.toFixed(2)}x` : phase === 'flying' ? 'playing' : '-'}</span>
               </div>
@@ -283,7 +282,7 @@ export default function Crash() {
                   const res = b.cashedAt != null ? b.payout - b.bet : -b.bet
                   return (
                     <div key={`${b.seq}-${b.u}-${i}`} className={styles.lvRow}>
-                      <span className={styles.lvName}><Av name={b.u} /><em>{b.u}<small>{ago(b.at, now)}</small></em></span>
+                      <span className={styles.lvName}><Av name={b.u} map={data?.avatars} /><em>{b.u}<small>{ago(b.at, now)}</small></em></span>
                       <span className={styles.lvBet}>{fmt(b.bet)}</span>
                       <span className={res >= 0 ? styles.pos : styles.neg}>{sign(res)}</span>
                     </div>

@@ -128,6 +128,19 @@ export function useCountUp(target, ms = 800) {
   return v
 }
 
+// Player avatar: profile picture when we have one, Twitch picture as a second try, initial on a colour as a fallback
+const nameHue = (name) => { let h = 0; for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) % 360; return h }
+export function UserAv({ name, src, size = 26, ring }) {
+  const url = src || (name ? `https://unavatar.io/twitch/${encodeURIComponent(String(name).toLowerCase())}?fallback=false` : null)
+  const [bad, setBad] = useState(null) // the url that failed
+  return (
+    <i className={styles.lvAv} style={{ background: `hsl(${nameHue(name)} 55% 42%)`, width: size, height: size, fontSize: Math.round(size * 0.46), boxShadow: ring ? `0 0 0 2px ${ring}` : undefined }}>
+      {String(name || '?').slice(0, 1).toUpperCase()}
+      {url && bad !== url && <img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(url)} />}
+    </i>
+  )
+}
+
 export function HistoryStrip({ items }) {
   if (!items.length) return <div className={styles.hist}><span className={styles.histEmpty}>Your recent rounds appear here</span></div>
   return (

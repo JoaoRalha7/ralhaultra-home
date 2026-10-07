@@ -155,6 +155,26 @@ const bjCanSplit = (s) => {
 }
 const bjCanDouble = (s) => { const h = s.hands[s.active]; return !!h && !h.done && h.cards.length === 2 && !h.noDouble }
 
+
+// avatars: profiles.avatar_url by Twitch name, cached for a while (the games show them next to each player)
+const AV_CACHE = new Map()
+async function avatarsFor(env, sbH, names) {
+  const want = [...new Set(names.map((n) => String(n || '').toLowerCase()).filter((n) => /^[a-z0-9_]{1,40}$/.test(n)))]
+  const now = Date.now()
+  const miss = want.filter((n) => { const c = AV_CACHE.get(n); return !c || now - c.at > 600000 })
+  if (miss.length) {
+    try {
+      const r = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?twitch_username=in.(${miss.join(',')})&select=twitch_username,avatar_url`, { headers: sbH })
+      const rows = r.ok ? await r.json() : []
+      const got = new Map((Array.isArray(rows) ? rows : []).map((x) => [String(x.twitch_username).toLowerCase(), x.avatar_url || null]))
+      for (const n of miss) AV_CACHE.set(n, { at: now, url: got.get(n) || null })
+    } catch { /* avatars are optional */ }
+  }
+  const out = {}
+  for (const n of want) { const u = AV_CACHE.get(n)?.url; if (u) out[n] = u }
+  return out
+}
+
 // Crash multiplier helpers
 const crashAtMs = (m) => Math.log(m) / CASINO.crashRate
 const crashMultAt = (ms) => Math.floor(Math.exp(CASINO.crashRate * Math.max(0, ms)) * 100) / 100
@@ -238,8 +258,9 @@ async function clState(env, sbH, now) {
   const feed = fr.ok ? await fr.json() : []
   const status = now < Number(cur.start_ms) ? 'betting' : now < clEnd(cur) ? 'flying' : 'crashed'
   const last = rounds[1] || null
+  const avatars = await avatarsFor(env, sbH, [...bets.map((b) => b.username), ...(Array.isArray(feed) ? feed : []).map((b) => b.username)])
   const data = {
-    ok: true, serverNow: now, rate: CASINO.crashRate, betMs: CL.betMs,
+    ok: true, serverNow: now, rate: CASINO.crashRate, betMs: CL.betMs, avatars,
     round: { seq: Number(cur.seq), startAt: Number(cur.start_ms), status, crashAt: status === 'crashed' ? Number(cur.crash_at) : null },
     last: last ? { seq: Number(last.seq), crashAt: Number(last.crash_at) } : null,
     history: rounds.slice(1).map((r) => Number(r.crash_at)),
@@ -362,8 +383,10 @@ async function jpState(env, sbH, now) {
   const players = await jpPlayers(env, sbH, cur.seq)
   const pot = players.reduce((a, p) => a + p.amount, 0)
   const done = cur.status === 'done'
+  const hist = rounds.filter((r) => r.status === 'done' && r.seq !== cur.seq)
+  const avatars = await avatarsFor(env, sbH, [...players.map((p) => p.u), ...hist.map((r) => r.winner_name), cur.winner_name])
   const data = {
-    ok: true, serverNow: now, cfg: { roundMs: JP.roundMs, spinMs: JP.spinMs, resultMs: JP.resultMs, fee: JP.fee, min: JP.minBet, max: JP.maxDeposit, total: JP.maxTotal },
+    ok: true, serverNow: now, avatars, cfg: { roundMs: JP.roundMs, spinMs: JP.spinMs, resultMs: JP.resultMs, fee: JP.fee, min: JP.minBet, max: JP.maxDeposit, total: JP.maxTotal },
     round: {
       seq: Number(cur.seq), endAt: cur.end_ms == null ? null : Number(cur.end_ms), pot, done,
       players: players.map((p) => ({ u: p.u, amount: p.amount })),
