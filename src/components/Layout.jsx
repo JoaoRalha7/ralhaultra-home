@@ -7,6 +7,7 @@ import AgeVerification from './AgeVerification';
 import DailyRewardsModal from './DailyRewardsModal';
 import Footer from './Footer';
 import LoginModal from './LoginModal';
+import LiveVotePopup from './LiveVotePopup';
 import { useAuth } from '../hooks/useAuth';
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
 import { supabaseDash } from '../lib/supabase';
@@ -62,6 +63,9 @@ export default function Layout() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [live, setLive] = useState([]);
+  const [ageOk, setAgeOk] = useState(false);
+  const [votePop, setVotePop] = useState(false);
+  const voteSeen = () => { try { return sessionStorage.getItem('ru-vote-seen') === '1'; } catch { return false; } };
   const location = useLocation();
   const [open, setOpen] = useState(() => {
     if (window.innerWidth <= 820) return false;
@@ -101,6 +105,29 @@ export default function Layout() {
     };
   }, []);
 
+  // Invite visitors to vote when a bonus hunt minigame is open (once per session, after other popups)
+  useEffect(() => {
+    if (!ageOk || !live.length || voteSeen() || location.pathname.startsWith('/bonus-hunts')) return undefined;
+    const t0 = Date.now();
+    const wait = location.pathname === '/' ? 2600 : 1200;
+    const id = setInterval(() => {
+      if (Date.now() - t0 < wait) return;
+      if (document.querySelector('.fmOverlay')) return;
+      clearInterval(id);
+      setVotePop(true);
+    }, 300);
+    return () => clearInterval(id);
+  }, [ageOk, live, location.pathname]);
+
+  const closeVote = () => {
+    setVotePop(false);
+    try { sessionStorage.setItem('ru-vote-seen', '1'); } catch { /* storage unavailable */ }
+  };
+  const goVote = (g) => {
+    closeVote();
+    navigate('/bonus-hunts', { state: { huntId: g.huntId, view: g.view } });
+  };
+
   const onSearch = (e) => {
     if (e.key === 'Enter' && e.currentTarget.value.trim()) {
       navigate(`/slots?q=${encodeURIComponent(e.currentTarget.value.trim())}`);
@@ -110,7 +137,7 @@ export default function Layout() {
   return (
     <>
       <IconSprite />
-      <AgeVerification onVerified={() => {}} />
+      <AgeVerification onVerified={() => setAgeOk(true)} />
       <div className={`app${open ? '' : ' collapsed'}`}>
         <header className="top">
           <button className="menu-btn" aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
@@ -191,6 +218,7 @@ export default function Layout() {
         </main>
       </div>
 
+      {votePop && live.length > 0 && <LiveVotePopup games={live} onGo={goVote} onClose={closeVote} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       {dailyOpen && <DailyRewardsModal onClose={() => setDailyOpen(false)} onPointsUpdate={() => refresh?.()} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
