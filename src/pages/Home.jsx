@@ -166,6 +166,36 @@ function Round() {
   );
 }
 
+function OfferCarousel({ children }) {
+  const ref = useRef(null);
+  const [edge, setEdge] = useState({ l: true, r: false });
+  const n = Array.isArray(children) ? children.length : 1;
+  const sync = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    setEdge({ l: el.scrollLeft <= 4, r: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 });
+  }, []);
+  useEffect(() => {
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  }, [sync, n]);
+  const go = (dir) => {
+    const el = ref.current;
+    const card = el?.firstElementChild;
+    if (!el || !card) return;
+    el.scrollBy({ left: dir * (card.getBoundingClientRect().width + 16), behavior: 'smooth' });
+  };
+  const slide = n > 3;
+  return (
+    <div className={`ocWrap${slide ? ' slide' : ''}`}>
+      {slide && !edge.l && <button type="button" className="ocArrow l" aria-label="Previous offers" onClick={() => go(-1)}><Icon name="left" /></button>}
+      <div className="ocards" data-n={Math.min(n, 4)} ref={ref} onScroll={slide ? sync : undefined}>{children}</div>
+      {slide && !edge.r && <button type="button" className="ocArrow r" aria-label="Next offers" onClick={() => go(1)}><Icon name="right" /></button>}
+    </div>
+  );
+}
+
 function SectionHead({ icon, title, tag, count, showAll }) {
   return (
     <div className="sh">
@@ -403,9 +433,9 @@ export default function Home() {
 
       <section>
         <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
-        <div className="ocards" data-n={Math.min(offers.length, 4)}>
+        <OfferCarousel>
           {offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} />)}
-        </div>
+        </OfferCarousel>
       </section>
 
       <section>

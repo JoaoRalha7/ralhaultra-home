@@ -753,3 +753,16 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oBig{margin-top:6px}
 .oTear{margin-top:10px}
 .oChips{padding-top:10px}
+
+/* ===== Top Offers: carousel when more than 3 ===== */
+.ocWrap{position:relative}
+.ocWrap.slide .ocards{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-top:18px;margin-top:-6px;padding-bottom:2px;overscroll-behavior-x:contain}
+.ocWrap.slide .ocards::-webkit-scrollbar{display:none}
+.ocWrap.slide .oc2{flex:0 0 calc((100% - 32px) / 3);scroll-snap-align:start}
+@media (max-width:1100px){.ocWrap.slide .oc2{flex-basis:calc((100% - 16px) / 2)}}
+@media (max-width:700px){.ocWrap.slide .oc2{flex-basis:86%}}
+.ocArrow{position:absolute;top:50%;z-index:5;width:40px;height:40px;margin-top:-20px;border-radius:50%;display:grid;place-items:center;background:#0d1119;color:#fff;border:1px solid #2a3142;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45);transition:background .15s,border-color .15s,transform .15s}
+.ocArrow:hover{background:#171d2a;border-color:#4a5470;transform:scale(1.06)}
+.ocArrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ocArrow.l{left:-14px}.ocArrow.r{right:-14px}
+@media (max-width:700px){.ocArrow{display:none}}
