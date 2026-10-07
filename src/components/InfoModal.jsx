@@ -1,5 +1,26 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './InfoModal.module.css'
+import { Icon } from './Icon'
+import { pickStats } from '../data/offerStats'
+import { PALETTE } from '../data/casinoToOffer'
+
+const P = {
+  copy: <><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></>,
+  check: <path d="M20 6L9 17l-5-5" />,
+  x: <path d="M18 6L6 18M6 6l12 12" />,
+  crown: <path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z" />,
+  list: <path d="M9 6h12M9 12h12M9 18h12M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" />,
+  card: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></>,
+  swap: <path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />,
+  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>,
+  badge: <><path d="M12 3l2.5 2 3.2-.2.9 3.1 2.6 1.9-1 3 1 3-2.6 1.9-.9 3.1-3.2-.2L12 21l-2.5-2-3.2.2-.9-3.1L2.8 14.2l1-3-1-3 2.6-1.9.9-3.1 3.2.2z" /><path d="M8.5 12l2.5 2.5 4.5-5" /></>,
+  headset: <><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="2" y="14" width="5" height="6" rx="2" /><rect x="17" y="14" width="5" height="6" rx="2" /></>,
+  refresh: <path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4" />,
+  tag: <><path d="M3 12V4h8l10 10-8 8z" /><circle cx="7.5" cy="8.5" r="1.2" /></>,
+}
+function Ix({ n, size = 14 }) {
+  return <svg className={styles.ix} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{P[n]}</svg>
+}
 
 function safeText(x) { return (x ?? '').toString() }
 
@@ -31,8 +52,9 @@ function CopyBtn({ text }) {
     }
   }
   return (
-    <button className={styles.promoCopy} onClick={copy} title="Copiar">
-      <i className={`bx ${copied ? 'bx-check' : 'bx-copy'}`} />
+    <button className={styles.promoCopy} onClick={copy} title="Copy code">
+      <Ix n={copied ? 'check' : 'copy'} size={15} />
+      <span>{copied ? 'Copied' : 'Copy'}</span>
     </button>
   )
 }
@@ -114,7 +136,7 @@ function PayCarousel({ payments, methodsBySlug, paymentMins, minDeposit }) {
             <div key={pi} className={styles.payPage}>
               {pageItems.map((slug, i) => {
                 const m      = methodsBySlug?.[slug]
-                const name   = m?.name || slug
+                const name   = m?.name || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : '')
                 const minDep = safeText(paymentMins?.[slug] || minDeposit).trim()
                 return (
                   <div key={i} className={styles.payCard}>
@@ -184,12 +206,8 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
   const payments = Array.isArray(c.payments)       ? c.payments       : []
   const promo    = safeText(c.promo_code).trim()
 
-  const heroStats = [
-    { label: 'GAMES',        val: ci.games,        accent: null,     icon: 'bx-joystick' },
-    { label: 'MIN. DEPOSIT', val: ci.min_deposit,   accent: 'green',  icon: 'bx-coin-stack' },
-    { label: 'CASHBACK',     val: ci.cashback,      accent: 'yellow', icon: 'bx-refresh' },
-    { label: 'WITHDRAWAL',   val: ci.withdraw,      accent: 'green',  icon: 'bx-wallet' },
-  ].filter(s => safeText(s.val).trim())
+  const accent = c._accent || PALETTE[ci.card_color]?.[0] || '#facc15'
+  const heroStats = pickStats(c).slice(0, 4)
 
   return (
     <div
@@ -197,7 +215,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
       ref={overlayRef}
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className={styles.modal} role="dialog" aria-modal="true">
+      <div className={styles.modal} role="dialog" aria-modal="true" style={{ '--ac': accent }}>
 
         {/* HERO */}
         <div className={styles.hero}>
@@ -226,18 +244,18 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
                 )}
               </div>
             </div>
-            <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+            <button className={styles.closeBtn} onClick={onClose} aria-label="Close"><Ix n="x" size={16} /></button>
           </div>
 
           {heroStats.length > 0 && (
-            <div className={styles.heroStats}>
-              {heroStats.map(({ label, val, accent, icon }) => (
-                <div key={label} className={styles.hStat}>
+            <div className={styles.heroStats} style={{ gridTemplateColumns: `repeat(${heroStats.length}, minmax(0, 1fr))` }}>
+              {heroStats.map(({ key, label, value, icon }) => (
+                <div key={key} className={styles.hStat}>
                   <div className={styles.hStatLabel}>
-                    <i className={`bx ${icon}`} />
+                    <Icon name={icon} />
                     {label}
                   </div>
-                  <div className={`${styles.hStatVal} ${accent ? styles[accent] : ''}`}>{val}</div>
+                  <div className={styles.hStatVal}>{value}</div>
                 </div>
               ))}
             </div>
@@ -252,7 +270,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
           {/* COLUNA ESQUERDA */}
           <div className={styles.colLeft}>
 
-            <div className={styles.secLabel}><i className="bx bx-gift" />WELCOME BONUS</div>
+            <div className={styles.secLabel}><Icon name="gift" />WELCOME BONUS</div>
             <div className={styles.bonusGrid}>
               {bonus.length > 0
                 ? bonus.slice(0, 6).map((s, i) => {
@@ -282,7 +300,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
                 <div className={styles.flipFront}>
                   <div className={styles.flipHeader}>
                     <div className={styles.flipHeaderLabel}>
-                      <i className="bx bx-list-check" />
+                      <Ix n="list" />
                       HOW TO CLAIM
                     </div>
                     <button
@@ -290,7 +308,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
                       onClick={() => setFlipped(true)}
                       title="VIP Benefits"
                     >
-                      <i className="bx bx-transfer" />
+                      <Ix n="swap" />
                     </button>
                   </div>
                   <div className={styles.howList}>
@@ -313,7 +331,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
                 <div className={styles.flipBack}>
                   <div className={styles.flipHeader}>
                     <div className={styles.flipHeaderLabel}>
-                      <i className="bx bx-crown" />
+                      <Ix n="crown" />
                       VIP BENEFITS
                     </div>
                     <button
@@ -321,14 +339,14 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
                       onClick={() => setFlipped(false)}
                       title="How to Claim"
                     >
-                      <i className="bx bx-transfer" />
+                      <Ix n="swap" />
                     </button>
                   </div>
                   <div className={styles.vipList}>
                     {vip.length > 0
                       ? vip.map((x, i) => (
                           <div key={i} className={styles.vipItem}>
-                            <i className="bx bx-crown" />
+                            <Ix n="crown" size={13} />
                             <span>{x}</span>
                           </div>
                         ))
@@ -345,7 +363,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
           {/* COLUNA DIREITA */}
           <div className={styles.colRight}>
 
-            <div className={styles.secLabel}><i className="bx bx-credit-card" />PAYMENT METHODS</div>
+            <div className={styles.secLabel}><Ix n="card" />PAYMENT METHODS</div>
             <PayCarousel
               payments={payments}
               methodsBySlug={methodsBySlug}
@@ -353,16 +371,16 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
               minDeposit={ci.min_deposit}
             />
 
-            <div className={styles.secLabel}><i className="bx bx-user" />PLAYER INFO</div>
+            <div className={styles.secLabel}><Ix n="user" />PLAYER INFO</div>
             <div className={styles.playerGrid}>
               {[
-                ['KYC',     c.kyc_required ? 'Required' : 'Not required', 'bx-badge-check'],
-                ['VPN',     c.vpn_allowed  ? 'Allowed'  : 'Not allowed',  'bx-shield'],
-                ['SUPPORT', safeText(c.support).trim() || '—',            'bx-headphone'],
+                ['KYC',     c.kyc_required ? 'Required' : 'Not required', 'badge'],
+                ['VPN',     c.vpn_allowed  ? 'Allowed'  : 'Not allowed',  'shield'],
+                ['SUPPORT', safeText(c.support).trim() || '—',            'headset'],
               ].map(([k, v, ico]) => (
                 <div key={k} className={styles.playerItem}>
                   <div className={styles.playerKey}>
-                    <i className={`bx ${ico}`} />
+                    {ico === 'shield' ? <Icon name="shield" /> : <Ix n={ico} />}
                     {k}
                   </div>
                   <div className={styles.playerVal}>{v}</div>
@@ -370,18 +388,12 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
               ))}
             </div>
 
-            <div className={styles.secLabel}><i className="bx bx-purchase-tag" />PROMO CODE</div>
+            <div className={styles.secLabel}><Ix n="tag" />PROMO CODE</div>
             {promo ? (
               <div className={styles.promo}>
-                <div className={styles.promoHead}>
-                  <div className={styles.promoTitle}>
-                    <i className="bx bx-purchase-tag" />
-                    <span>PROMO CODE</span>
-                  </div>
-                  {c.promo_required && (
-                    <span className={styles.promoBadge}>REQUIRED</span>
-                  )}
-                </div>
+                {c.promo_required && (
+                  <div className={styles.promoHead}><span className={styles.promoBadge}>REQUIRED</span></div>
+                )}
                 <div className={styles.promoBox}>
                   <span className={styles.promoCode}>{promo}</span>
                   <CopyBtn text={promo} />
@@ -404,7 +416,7 @@ export default function InfoModal({ casino: c, methodsBySlug, onClose, onRedirec
             className={styles.ctaBtn}
             onClick={() => onRedirect?.(c.claim_url, c.promo_code)}
           >
-            <i className="bx bx-gift" />
+            <Icon name="gift" />
             CLAIM BONUS NOW
           </button>
         </div>

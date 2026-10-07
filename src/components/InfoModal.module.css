@@ -663,3 +663,34 @@
   :global(html.modal-open),
   :global(body.modal-open) { overflow: hidden; }
 }
+/* ── v2: follows the card color, SVG icons, calmer hierarchy ── */
+.ix { flex-shrink: 0; }
+.hStatLabel svg, .secLabel svg, .playerKey svg { width: 13px; height: 13px; opacity: .7; flex-shrink: 0; }
+.hStatVal, .hStatVal.green, .hStatVal.yellow { color: var(--ac, #facc15); }
+.heroAccent { background: radial-gradient(circle, color-mix(in srgb, var(--ac, #facc15) 22%, transparent), transparent 65%) !important; }
+.closeBtn { display: grid; place-items: center; padding: 0; }
+.bonusBadge { background: var(--ac, #facc15) !important; color: #0b0f16 !important; }
+.bonusSub { color: var(--ac, #facc15); }
+.bonusCard:first-child { border-color: color-mix(in srgb, var(--ac, #facc15) 55%, transparent); background: color-mix(in srgb, var(--ac, #facc15) 10%, transparent); }
+.bonusCard:first-child .bonusMain { font-size: 1.12em; }
+.bonusCard:hover { border-color: color-mix(in srgb, var(--ac, #facc15) 45%, transparent); }
+.howStep { color: var(--ac, #facc15); border-color: color-mix(in srgb, var(--ac, #facc15) 45%, transparent); }
+.playerGrid { opacity: .92; }
+.promo { border-color: color-mix(in srgb, var(--ac, #facc15) 35%, transparent); background: color-mix(in srgb, var(--ac, #facc15) 6%, transparent); }
+.promoHead { justify-content: flex-end; margin-bottom: 8px; }
+.promoBox { display: flex; align-items: stretch; justify-content: space-between; padding: 0; overflow: hidden; border-style: dashed; border-color: color-mix(in srgb, var(--ac, #facc15) 50%, transparent); }
+.promoBox .promoCode { color: var(--ac, #facc15); padding: 12px 16px; display: flex; align-items: center; }
+.promoCopy { display: flex; align-items: center; gap: 7px; height: auto; width: auto; padding: 0 18px; border-radius: 0; border: 0; border-left: 1px dashed color-mix(in srgb, var(--ac, #facc15) 40%, transparent); background: color-mix(in srgb, var(--ac, #facc15) 10%, transparent); color: var(--ac, #facc15); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+.promoCopy:hover { background: color-mix(in srgb, var(--ac, #facc15) 20%, transparent); }
+
+/* CTA: card color + white snake */
+@property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.ctaBtn { position: relative; isolation: isolate; background: var(--ac, #facc15); box-shadow: none; }
+.ctaBtn:hover { filter: brightness(1.06); transform: none; }
+.ctaBtn::before { content: ""; position: absolute; inset: -5px; z-index: -1; border-radius: 20px; padding: 2px; pointer-events: none;
+  background: conic-gradient(from var(--ang), transparent 0 58%, rgba(255,255,255,.18) 74%, #fff 99%, transparent 100%), linear-gradient(color-mix(in srgb, var(--ac, #facc15) 30%, transparent), color-mix(in srgb, var(--ac, #facc15) 30%, transparent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: oSpin 2.4s linear infinite; }
+.ctaBtn svg { width: 18px; height: 18px; }
+@media (prefers-reduced-motion: reduce) { .ctaBtn::before { animation: none; } }

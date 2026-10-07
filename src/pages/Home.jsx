@@ -346,7 +346,7 @@ export default function Home() {
     if (!url) return;
     setRedirect({ url, promo: (c?.promo_code ?? '').toString().trim() });
   };
-  const info = (o) => { if (o.raw) setSelectedCasino(o.raw); };
+  const info = (o) => { if (o.raw) setSelectedCasino({ ...o.raw, _accent: o.accent }); };
   const handleRedirect = (url, promo) => setRedirect({ url, promo: (promo ?? '').toString().trim() });
   const play = (s) => setPlayer({ type: 'vod', id: s.id, title: s.title, meta: `${(s.view_count ?? 0).toLocaleString('en-GB')} views` });
 
