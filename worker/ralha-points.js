@@ -1999,7 +1999,7 @@ export default {
         } catch { /* follow date is optional */ }
         const data = {
           ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt, followWhy,
-          joined: prof[0]?.created_at || bal[0]?.created_at || null, avatar: prof[0]?.avatar_url || null,
+          joined: prof[0]?.created_at || null, registered: !!prof[0], avatar: prof[0]?.avatar_url || null,
           stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
         }

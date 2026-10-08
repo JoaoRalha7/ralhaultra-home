@@ -61,10 +61,12 @@ function PlayerModal({ name, onClose }) {
             <TwitchAvatar name={name} map={d?.avatar ? { [name]: d.avatar } : { [name]: `https://unavatar.io/twitch/${encodeURIComponent(name)}?fallback=false` }} size={54} />
             <b>{name}</b>
           </div>
-          <div className={s.meta}>
-            <span className={s.rank}><Medal level={lvl} size={22} /> {RANK_NAMES[lvl] || 'Member'}</span>
-            {joined && <span className={s.joined}>Joined {joined}</span>}
-          </div>
+          {d?.registered && (
+            <div className={s.meta}>
+              <span className={s.rank}><Medal level={lvl} size={22} /> {RANK_NAMES[lvl] || 'Member'}</span>
+              {joined && <span className={s.joined}>Joined {joined}</span>}
+            </div>
+          )}
           {d && (
             <div className={s.extra}>
               <span><small>Watchtime</small><b>{watch}</b></span>
