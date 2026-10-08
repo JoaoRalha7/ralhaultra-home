@@ -1,4 +1,4 @@
-.back{position:fixed;inset:0;z-index:1200;background:rgba(4,6,10,.72);backdrop-filter:blur(5px);display:flex;align-items:flex-start;justify-content:center;padding:28px 14px;overflow-y:auto}
+.back{position:fixed;inset:0;z-index:1200;background:rgba(4,6,10,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:28px 14px;overflow-y:auto}
 .modal{width:100%;max-width:560px;background:#13161d;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:0 20px 20px;color:#e8eefc;font-family:"DM Sans",sans-serif}
 .head{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:20px}
 .hTitle{font-weight:700;font-size:15px}
@@ -90,3 +90,4 @@
 .plkRows div{background:#0f1218;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:13px 14px;font-weight:700}
 .roul{width:100%}
 .rtable{width:100%}
+.modal{margin:auto}

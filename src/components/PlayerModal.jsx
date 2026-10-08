@@ -45,6 +45,9 @@ function PlayerModal({ name, onClose }) {
   }, [onClose])
   const st = d?.stats
   const lvl = d?.level || 0
+  const hrs = Math.floor((d?.watchMinutes || 0) / 60), mins = (d?.watchMinutes || 0) % 60
+  const watch = d ? (hrs ? `${fmt(hrs)}h ${mins}m` : `${mins}m`) : ''
+  const since = d?.followedAt ? new Date(d.followedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
   const joined = d?.joined ? new Date(d.joined).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
   return createPortal(
     <div className={s.back} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }} role="dialog" aria-modal="true" aria-label="Player profile">
@@ -62,6 +65,12 @@ function PlayerModal({ name, onClose }) {
             <span className={s.rank}><Medal level={lvl} size={22} /> {RANK_NAMES[lvl] || 'Member'}</span>
             {joined && <span className={s.joined}>Joined {joined}</span>}
           </div>
+          {d && (
+            <div className={s.extra}>
+              <span><small>Watchtime</small><b>{watch}</b></span>
+              <span><small>Following since</small><b>{since || '-'}</b></span>
+            </div>
+          )}
         </div>
         {err && <p className={s.err}>{err}</p>}
         {!d && !err && <p className={s.load}>Loading...</p>}

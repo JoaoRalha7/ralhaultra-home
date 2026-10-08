@@ -1,4 +1,5 @@
-import { PlayerModalHost, openPlayer } from './PlayerModal';
+import { PlayerModalHost } from './PlayerModal';
+import SearchBox from './SearchBox';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Icon, IconSprite } from './Icon';
@@ -204,14 +205,6 @@ export default function Layout() {
     navigate('/bonus-hunts', { state: { huntId: g.huntId, view: g.view } });
   };
 
-  const onSearch = (e) => {
-    const v = e.currentTarget.value.trim();
-    if (e.key === 'Enter' && v) {
-      if (v.startsWith('@')) { openPlayer(v); e.currentTarget.value = ''; return; }   // @name opens the player profile
-      navigate(`/slots?q=${encodeURIComponent(v)}`);
-    }
-  };
-
   const notifCount = live.length + claimable.length + (user && dailyReady ? 1 : 0);
 
   return (
@@ -225,10 +218,7 @@ export default function Layout() {
             <Icon name="menu" />
           </button>
           <Link className="logo" to="/">Ralha<b>Ultra</b><span className="beta">BETA</span></Link>
-          <label className="search">
-            <Icon name="search" />
-            <input placeholder="Search slots or @player..." aria-label="Search slots or players (type @ before a username)" onKeyDown={onSearch} />
-          </label>
+          <SearchBox />
           <div className="sp" />
           {points !== null && <div className="pts"><span className="coin" />{points.toLocaleString('pt-PT')}</div>}
           {user && (

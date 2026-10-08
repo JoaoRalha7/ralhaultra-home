@@ -1,3 +1,4 @@
+import { openPlayer } from '../components/PlayerModal'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
@@ -549,7 +550,7 @@ export default function Home() {
             return (
               <div key={rowKey(r)} className={`ar${fresh.has(rowKey(r)) ? ' fresh' : ''}`}>
                 <span className="rd"><i />{cleanAction(r)}</span>
-                <b><RankName name={r.username || '-'} level={r.username ? rankOf(r.username) : undefined} /></b>
+                <b style={r.username ? { cursor: 'pointer' } : undefined} onClick={r.username ? () => openPlayer(r.username) : undefined}><RankName name={r.username || '-'} level={r.username ? rankOf(r.username) : undefined} /></b>
                 <span className="dt">{new Date(r.created_at).toLocaleString('pt-PT')}</span>
                 <span className={`val${pts > 0 ? ' pos' : ''}`}>{pts > 0 ? '+' : pts < 0 ? '-' : ''} {Math.abs(pts).toLocaleString('pt-PT')} PTS <span className="coin" /></span>
                 <span className={`stt ${st}`}>{st}</span>

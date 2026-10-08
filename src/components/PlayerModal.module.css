@@ -1,4 +1,4 @@
-.back{position:fixed;inset:0;z-index:1250;background:rgba(4,6,10,.72);backdrop-filter:blur(5px);display:flex;align-items:flex-start;justify-content:center;padding:40px 14px;overflow-y:auto}
+.back{position:fixed;inset:0;z-index:1250;background:rgba(4,6,10,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px 14px;overflow-y:auto}
 .modal{width:100%;max-width:640px;background:#13161d;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:0 20px 22px;color:#e8eefc;font-family:"DM Sans",sans-serif}
 .head{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:18px}
 .hTitle{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
@@ -26,3 +26,6 @@
 .gRow>span:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .err,.load{text-align:center;color:#9aa3b2;padding:22px 0;margin:0}
 @media (max-width:520px){.gRow{grid-template-columns:1.2fr 1fr 1fr}.gBets{display:none}}
+.extra{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
+.extra span{display:flex;flex-direction:column;gap:5px}.extra small{color:#9aa3b2;font-size:12px}.extra b{font:800 15px "DM Sans",sans-serif}
+.modal{margin:auto}
