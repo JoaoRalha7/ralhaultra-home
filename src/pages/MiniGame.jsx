@@ -150,7 +150,7 @@ function HistoryList({ games, onSelect, twitchUser }) {
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
-export default function MiniGame({ huntId = null }) {
+export default function MiniGame({ huntId = null, embedded = false }) {
   const { user, profile } = useAuth()
 
   // All games list (active + finished), newest first = index 0
@@ -364,13 +364,13 @@ export default function MiniGame({ huntId = null }) {
   const gameNumber      = games.length - idx  // #1 = oldest, newest = highest
 
   if (loading) return (
-    <div className={styles.page}>
+    <div className={`${styles.page}${embedded ? ` ${styles.embedded}` : ''}`}>
       <div className={styles.loadWrap}><Spinner size={28} /></div>
     </div>
   )
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page}${embedded ? ` ${styles.embedded}` : ''}`}>
 
       {/* ── STATUS BAR ── */}
       <div className={styles.statusBar}>

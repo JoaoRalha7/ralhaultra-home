@@ -660,7 +660,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
             <button className={x.modalX} onClick={() => setPickOpen(false)} aria-label="Close">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
-            <MiniGame huntId={hunt.id} />
+            <MiniGame huntId={hunt.id} embedded />
           </div>
         </div>
       )}
