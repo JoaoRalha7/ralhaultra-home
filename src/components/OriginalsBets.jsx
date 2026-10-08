@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { useAuth } from '../hooks/useAuth'
 import { WORKER, workerPost } from '../lib/points'
+import RankName from './RankName'
+import { useRanks } from '../lib/ranks'
 import styles from './OriginalsBets.module.css'
 
 const TABS = [
@@ -53,6 +55,7 @@ export default function OriginalsBets() {
     return () => { alive.current = false; clearInterval(id) }
   }, [load, tab])
 
+  const rankOf = useRanks((rows || []).map((b) => b.username))
   const empty = tab === 'mine' && !user ? 'Log in to see your bets.' : tab === 'mine' ? 'You have no finished bets yet.' : 'No bets yet.'
 
   return (
@@ -74,7 +77,7 @@ export default function OriginalsBets() {
           return (
             <div key={`${b.game}-${b.updated_at}-${i}`} className={styles.row} role="row">
               <span className={styles.game}><Icon name={g[1]} size={16} />{g[0]}</span>
-              <span className={styles.user}>{b.username}</span>
+              <RankName className={styles.user} name={b.username} level={rankOf(b.username)} />
               <span className={`${styles.date} ${styles.mute}`}>{when(b.updated_at)}</span>
               <span className={styles.r}>{fmt(b.bet)} <i className="coin" /></span>
               <span className={`${styles.r} ${styles.mul} ${styles.mute}`}>{mult(b.bet, b.payout)}</span>

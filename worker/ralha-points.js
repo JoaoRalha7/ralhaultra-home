@@ -1823,6 +1823,16 @@ export default {
         return json({ stats: { bets: games.length + crash.length, wins, losses }, counts, total: list.length, page, items: list.slice((page - 1) * 8, page * 8) })
       }
 
+      // ── GET /ranks?u=a,b,c — VIP level of up to 60 usernames (public, for the feeds) ──
+      if (pathname === '/ranks' && request.method === 'GET') {
+        const names = [...new Set((searchParams.get('u') || '').toLowerCase().split(',').map((x) => x.trim()).filter((x) => /^[a-z0-9_]{1,30}$/.test(x)))].slice(0, 60)
+        if (!names.length) return json({ ranks: {} })
+        const r = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=in.(${names.join(',')})&select=username,level`, { headers: sbHeaders })
+        const ranks = {}
+        if (r.ok) for (const x of await r.json()) ranks[x.username] = Number(x.level) || 0
+        return json({ ranks })
+      }
+
       // ── GET /leaderboard ─────────────────────────────────────────────────────
       if (pathname === '/leaderboard') {
         const limit  = Math.min(parseInt(searchParams.get('limit')  || '100'), 100)

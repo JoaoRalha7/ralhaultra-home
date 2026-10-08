@@ -8,6 +8,8 @@ import { casinoToOffer } from '../data/casinoToOffer';
 import { BRAND_PATHS } from '../data/brandPaths';
 import { useAuth } from '../hooks/useAuth';
 import { useTwitchStatus } from '../hooks/useTwitchStatus';
+import RankName from '../components/RankName';
+import { useRanks } from '../lib/ranks';
 import { supabase, supabaseDash } from '../lib/supabase';
 import '../styles/ralhaultra-home.css';
 
@@ -413,6 +415,7 @@ export default function Home() {
   const play = (s) => setPlayer({ type: 'vod', id: s.id, title: s.title, meta: `${(s.view_count ?? 0).toLocaleString('en-GB')} views` });
 
   const feedRows = activity ? activity[tab] : [];
+  const rankOf = useRanks(feedRows.map((r) => r.username));
   const vids = streams.length ? streams : null;
   
   
@@ -547,7 +550,7 @@ export default function Home() {
             return (
               <div key={rowKey(r)} className={`ar${fresh.has(rowKey(r)) ? ' fresh' : ''}`}>
                 <span className="rd"><i />{cleanAction(r)}</span>
-                <b>{r.username || '-'}</b>
+                <b><RankName name={r.username || '-'} level={r.username ? rankOf(r.username) : undefined} /></b>
                 <span className="dt">{new Date(r.created_at).toLocaleString('pt-PT')}</span>
                 <span className={`val${pts > 0 ? ' pos' : ''}`}>{pts > 0 ? '+' : pts < 0 ? '-' : ''} {Math.abs(pts).toLocaleString('pt-PT')} PTS <span className="coin" /></span>
                 <span className={`stt ${st}`}>{st}</span>
