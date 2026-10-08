@@ -1926,13 +1926,11 @@ export default {
         const ck = PLAYER_CACHE.get(name)
         if (ck && Date.now() - ck.at < 20000) return json(ck.data)
         const get = async (q) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${q}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
-        const [bal, prof, games, crash, se] = await Promise.all([
+        const [bal, prof, games, crash] = await Promise.all([
           get(`point_balances?username=eq.${name}&select=level,created_at,wagered_total,watch_minutes,twitch_id&limit=1`),
           get(`profiles?twitch_username=ilike.${name}&select=avatar_url,created_at&limit=1`),
           get(`casino_games?username=eq.${name}&status=eq.done&select=game,bet,payout&limit=10000`),
           get(`crash_bets?username=eq.${name}&select=bet,cashed_at&limit=5000`),
-          // StreamElements keeps the real watchtime (minutes) of every viewer
-          fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${name}`, { headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
         ])
         if (!bal[0] && !prof[0] && !games.length && !crash.length) return json({ error: 'not found' }, 404)
         let wins = 0, losses = 0, wagered = 0, bestWin = 0, bestMult = 0
@@ -1968,7 +1966,7 @@ export default {
           } else if (th && !followWhy) followWhy = 'twitch id not found'
         } catch { /* follow date is optional */ }
         const data = {
-          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Math.max(Number(bal[0]?.watch_minutes) || 0, Number(se?.watchtime) || 0), followedAt, followWhy,
+          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt, followWhy,
           joined: prof[0]?.created_at || bal[0]?.created_at || null, avatar: prof[0]?.avatar_url || null,
           stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),

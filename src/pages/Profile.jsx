@@ -88,13 +88,12 @@ export default function Profile() {
   const [vip, setVip] = useState(null)
   const [stats, setStats] = useState(null)
   const [followed, setFollowed] = useState(null)
-  const [seMin, setSeMin] = useState(0)
   const uname = profile?.twitch_username
 
   useEffect(() => {
     if (!uname) return
     let off = false
-    fetch(`${WORKER}/player?u=${encodeURIComponent(uname.toLowerCase())}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (off || !d) return; if (d.followedAt) setFollowed(d.followedAt); setSeMin(Number(d.watchMinutes) || 0) }).catch(() => {})
+    fetch(`${WORKER}/player?u=${encodeURIComponent(uname.toLowerCase())}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!off && d?.followedAt) setFollowed(d.followedAt) }).catch(() => {})
     return () => { off = true }
   }, [uname])
 
@@ -169,7 +168,7 @@ export default function Profile() {
             </div>
 
             <div className={styles.stats}>
-              <div><small>Watchtime</small><b>{me ? (() => { const m = Math.max(me.minutes || 0, seMin); return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m` })() : '-'}</b></div>
+              <div><small>Watchtime</small><b>{me ? `${Math.floor(me.minutes / 60)}h ${String(me.minutes % 60).padStart(2, '0')}m` : '-'}</b></div>
               <div><small>Total bets</small><b>{stats ? fmt(stats.bets) : '-'}</b></div>
               <div><small>Wins / Losses</small><b>{stats ? <><span className={styles.win}>{fmt(stats.wins)}</span> <span className={styles.dim}>/</span> <span className={styles.loss}>{fmt(stats.losses)}</span></> : '-'}</b></div>
               <div><small>Points</small><b>{me ? fmt(me.balance) : '-'}</b></div>
