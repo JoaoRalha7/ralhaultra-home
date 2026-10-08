@@ -173,3 +173,78 @@
 .lock { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(11,14,20,.8); border: 1px solid #2a3040; color: #9aa3b8; }
 .lock { top: auto; bottom: 10px; }
 @media (max-width: 560px) { .stock { top: auto; bottom: 8px; right: auto; left: 8px; } .lock { right: 8px; bottom: 8px; } }
+
+
+/* ── Minimal look: flat dark surfaces, thin lines, one accent (white). Overrides the rules above. ── */
+.page { --panel: #11141b; --line: #1d222d; --mute: #7d869a; --text: #eceff5; --acc: #eceff5; --acc2: #7d869a; width: 100%; max-width: 1180px; margin: 0 auto; padding: 40px 0 96px; }
+.page > * + * { margin-top: 0; }
+.head { align-items: flex-end; margin-bottom: 40px; }
+.title { font: 700 clamp(30px, 4vw, 40px)/1 "DM Sans", sans-serif; letter-spacing: -.03em; }
+.sub { margin-top: 8px; font-size: 15px; }
+.coin { width: 10px !important; height: 10px !important; background: var(--gold); }
+.wallet { flex-direction: row-reverse; gap: 10px; padding: 0; border: 0; border-radius: 0; background: none; text-align: right; }
+.wallet b { font: 700 32px/1 "DM Sans", sans-serif; letter-spacing: -.02em; }
+.wallet small { margin-top: 6px; font-size: 12px; }
+
+.bar { margin-bottom: 28px; padding-bottom: 0; border-bottom: 1px solid var(--line); gap: 16px; }
+.seg { gap: 28px; padding: 0; background: none; border: 0; border-radius: 0; }
+.segBtn { min-height: 44px; padding: 0 0 14px; margin-bottom: -1px; border-radius: 0; border-bottom: 2px solid transparent; font-size: 14px; font-weight: 600; background: none; }
+.segBtn span { display: none; }
+.segOn { background: none; color: var(--text); border-bottom-color: var(--text); }
+.barRight { padding-bottom: 8px; gap: 12px; }
+.chip, .select { height: 40px; border-radius: 10px; font-size: 13px; font-weight: 500; background: transparent; border-color: var(--line); }
+.chip:hover, .select:hover { border-color: #3a4256; }
+.chipOn { background: transparent; border-color: var(--text); color: var(--text); }
+
+.grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.card { border-radius: 14px; background: var(--panel); border: 1px solid var(--line); transition: border-color .15s; }
+.cardReady:hover { transform: none; border-color: #3a4256; box-shadow: none; }
+.media { margin: 24px 24px 0; border-radius: 10px; aspect-ratio: auto; height: 120px; background: #161a23; }
+.photo { padding: 10px; filter: none; }
+.cardReady:hover .photo { transform: none; }
+.initial { font: 700 44px "DM Sans", sans-serif; color: #3a4256; }
+.body { gap: 6px; padding: 20px 24px 24px; }
+.name { font: 600 16px/1.2 "DM Sans", sans-serif; letter-spacing: 0; }
+.desc { font-size: 13px; line-height: 1.5; }
+.foot { padding-top: 14px; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.price b { font: 700 15px "DM Sans", sans-serif; letter-spacing: 0; }
+.price span { display: none; }
+.price .coin, .price :global(.coin) { width: 8px !important; height: 8px !important; }
+.need { order: -1; flex-basis: 100%; gap: 6px; }
+.needBar { height: 3px; background: var(--line); }
+.needBar i { background: var(--text); }
+.btn { height: 44px; padding: 0 20px; border-radius: 10px; font: 600 13px "DM Sans", sans-serif; background: transparent; color: var(--text); border: 1px solid var(--text); }
+.btn:hover:not(:disabled) { filter: none; background: var(--text); color: #0b0d12; }
+.btn:disabled { background: transparent; border-color: var(--line); color: #4b5366; }
+.cardReady .btn { background: transparent; color: var(--text); }
+.cardReady .btn:hover:not(:disabled) { background: var(--text); color: #0b0d12; }
+.stock { position: static; padding: 0; margin-top: 2px; align-self: flex-start; border: 0; background: none; font-size: 12px; font-weight: 500; }
+.media .stock { position: absolute; left: 10px; bottom: 8px; top: auto; right: auto; }
+.stockLow { color: var(--mute); }
+.stockOut { color: var(--mute); }
+.cardLocked { background: var(--panel); border-color: var(--line); }
+.cardLocked .media { filter: none; opacity: .7; }
+.cardLocked .name, .cardLocked .price b { color: var(--text); }
+.cardLocked .desc, .cardLocked .price span { color: var(--mute); }
+.cardLocked .btn:disabled { background: transparent; color: #4b5366; }
+.cardOut.cardLocked { opacity: .5; }
+.lock { display: none; }
+.skel { border-radius: 14px; aspect-ratio: 4 / 4.4; }
+
+/* leaderboard + recent redeems: two quiet lists at the bottom */
+.info { margin: 56px 0 0; padding-top: 40px; border-top: 1px solid var(--line); gap: 48px; }
+.panel { padding: 0; border: 0; background: none; gap: 4px; }
+.rHead { padding-bottom: 12px; font: 500 12px "DM Sans", sans-serif; color: var(--mute); letter-spacing: .06em; text-transform: uppercase; }
+.all { color: var(--mute); }
+.live { color: var(--mute); }
+.live i { background: var(--mute); animation: none; }
+.rows { gap: 0; }
+.bRow { min-height: 44px; padding: 0; border-radius: 0; background: none; border: 0; border-bottom: 1px solid #161a23; }
+.bRow b { font-size: 14px; font-weight: 500; }
+.bPts { color: var(--mute); font-weight: 500; }
+.rank, .rank1, .rank2, .rank3 { width: 18px; height: auto; background: none; color: var(--mute); font: 500 13px "DM Sans", sans-serif; }
+.rank1, .rank2, .rank3 { color: var(--text); }
+.bMe { background: none; border-bottom-color: #161a23; }
+.bMe b { color: var(--text); }
+.rThumb { display: none; }
+@media (max-width: 600px) { .page { padding: 24px 0 72px; } .media { margin: 12px 12px 0; height: 90px; } .body { padding: 14px 14px 16px; } .info { gap: 32px; } }
