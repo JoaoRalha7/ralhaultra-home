@@ -529,7 +529,7 @@ async function jpState(env, sbH, now) {
   const hist = rounds.filter((r) => r.status === 'done' && r.seq !== cur.seq)
   const avatars = await avatarsFor(env, sbH, [...players.map((p) => p.u), ...hist.map((r) => r.winner_name), cur.winner_name])
   const data = {
-    ok: true, serverNow: now, avatars, cfg: { roundMs: JP.roundMs, spinMs: JP.spinMs, resultMs: JP.resultMs, fee: JP.fee, min: JP.minBet, max: JP.maxDeposit, total: JP.maxTotal },
+    ok: true, serverNow: now, avatars, cfg: { roundMs: JP.roundMs, spinMs: JP.spinMs, resultMs: JP.resultMs, fee: JP.fee, min: JP.minBet, max: jpMax(), total: jpTotal() },
     round: {
       seq: Number(cur.seq), endAt: cur.end_ms == null ? null : Number(cur.end_ms), pot, done,
       players: players.map((p) => ({ u: p.u, amount: p.amount })),
@@ -548,6 +548,8 @@ async function jpState(env, sbH, now) {
 const ECON_RISK_CAP = 100000
 const ECON_MAX_MULT = 1000
 const econOn = () => !!ECON && ECON.ECONOMY_SOURCE === 'supabase'
+const jpMax = () => (econOn() ? 500 : JP.maxDeposit)    // jackpot deposit limit (new economy: same as the other games)
+const jpTotal = () => (econOn() ? 2500 : JP.maxTotal)
 const payCap = (bet) => (econOn() ? Math.floor(bet * ECON_MAX_MULT) : CASINO.maxPayout)
 function econMaxBet(game, body) {
   if (!econOn()) return CASINO.maxBet
@@ -774,7 +776,7 @@ export default {
         if (!who) return json({ error: 'unauthorized' }, 401)
         const body = await request.json().catch(() => ({}))
         const amount = parseInt(body.amount, 10)
-        if (!Number.isInteger(amount) || amount < JP.minBet || amount > JP.maxDeposit) return json({ error: 'invalid bet', min: JP.minBet, max: JP.maxDeposit }, 400)
+        if (!Number.isInteger(amount) || amount < JP.minBet || amount > jpMax()) return json({ error: 'invalid bet', min: JP.minBet, max: jpMax() }, 400)
 
         const rounds = await jpEnsure(env, sbHeaders, now)
         const cur = rounds[0]
@@ -782,7 +784,7 @@ export default {
         const players = await jpPlayers(env, sbHeaders, cur.seq)
         const mine = players.find((p) => p.id === who.id)
         if (!mine && players.length >= JP.maxPlayers) return json({ error: 'pot full' }, 409)
-        if ((mine?.amount || 0) + amount > JP.maxTotal) return json({ error: 'stake limit' }, 400)
+        if ((mine?.amount || 0) + amount > jpTotal()) return json({ error: 'stake limit' }, 400)
 
         const seUrl = `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${who.username}`
         const seH = { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' }
@@ -1836,6 +1838,7 @@ export default {
       // ── GET /casino/limits?game=&rows=&risk=&picks=&mines= — exact min/max bet for the chosen settings ──
       if (pathname === '/casino/limits' && request.method === 'GET') {
         const game = searchParams.get('game') || ''
+        if (game === 'jackpot') return json({ min: JP.minBet, max: jpMax() })
         if (!CASINO_GAMES.includes(game)) return json({ error: 'unknown game' }, 400)
         const n = Math.max(1, Math.min(10, parseInt(searchParams.get('picks') || '10', 10) || 10))
         const body = { rows: searchParams.get('rows'), risk: searchParams.get('risk') || undefined, mines: searchParams.get('mines'), picks: new Array(n).fill(0) }

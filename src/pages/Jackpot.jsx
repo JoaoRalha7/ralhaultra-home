@@ -14,7 +14,6 @@ const ERRS = {
   'pot full': 'This pot is full, wait for the next one.',
   'stake limit': 'You reached the stake limit for this pot.',
   insufficient: 'Not enough points.',
-  'invalid bet': `Add between ${MIN_BET} and 10,000 points at a time.`,
 }
 const COLORS = ['#f97316', '#38bdf8', '#a78bfa', '#34d399', '#f472b6', '#facc15', '#fb7185', '#2dd4bf', '#818cf8', '#a3e635', '#e879f9', '#60a5fa']
 const colorOf = (i) => COLORS[i % COLORS.length]
@@ -91,6 +90,7 @@ function Wheel({ players, pot, rot, ms, avatars, progress, mode, winIdx, childre
 export default function Jackpot() {
   const g = useCasino('jackpot')
   const [amount, setAmount] = useState(100)
+  useMaxBet('jackpot', {}, amount, setAmount)
   const [data, setData] = useState(null)
   const [offset, setOffset] = useState(0)
   const [now, setNow] = useState(Date.now())
@@ -188,7 +188,7 @@ export default function Jackpot() {
     setBusy(true); setErr('')
     const { ok, data: d } = await workerPost('/jackpot/deposit', { amount: Number(amount) })
     setBusy(false)
-    if (!ok) { setErr(ERRS[d.error] || 'Something went wrong. Try again.'); pull(); return }
+    if (!ok) { setErr(d.error === 'invalid bet' ? `Add between ${MIN_BET} and ${fmt(d.max ?? MAX_BET)} points at a time.` : ERRS[d.error] || 'Something went wrong. Try again.'); pull(); return }
     playSfx('click')
     if (d.newPoints != null) g.setPoints(d.newPoints)
     pull()

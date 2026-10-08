@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom'
 import styles from './Casino.module.css'
 
 export const MIN_BET = 10
-export const DEFAULT_MAX_BET = 10000
+export const DEFAULT_MAX_BET = 500 // shown until the server answers
 // Live binding: the real max bet for the current game settings (set by useMaxBet), read by every bet field.
 export let MAX_BET = DEFAULT_MAX_BET
 
