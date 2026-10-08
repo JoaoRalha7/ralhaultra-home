@@ -490,46 +490,6 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
               </div>
 
               {/* SIDEBAR — only the final results; the live guess list is gone */}
-              {entries.length > 0 && isFinished && (
-                <aside className={styles.sidebar}>
-                  <div className={styles.sidebarHead}>
-                    {isFinished
-                      ? <><Medal pos={1} size={11} /><span>Final Results</span></>
-                      : <><span className={styles.sidebarHeadIcon}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><span>Guesses</span></>
-                    }
-                    <span className={styles.sidebarCount}>{entries.length}</span>
-                  </div>
-                  <div className={styles.sidebarRows}>
-                    {rankedEntries.map(e => {
-                      const isMe = e.twitch_username?.toLowerCase() === twitchUser?.toLowerCase()
-                      const bucket = AVG_BUCKETS.find(b => b.id === e.bucket)
-                      return (
-                        <div key={e.id} className={[styles.sidebarRow, e.rank ? styles.sidebarRowRanked : '', isMe ? styles.sidebarRowMe : ''].filter(Boolean).join(' ')}>
-                          <div className={styles.sidebarRowL}>
-                            <span className={styles.sidebarMedal}>
-                              {e.rank ? <Medal pos={e.rank} size={13} /> : <span className={styles.sidebarDot}/>}
-                            </span>
-                            <div className={styles.sidebarInfo}>
-                              <div className={`${styles.sidebarUser} ${isMe ? styles.sidebarUserMe : ''}`}><TwitchAvatar name={e.twitch_username} map={av} size={20} /> {e.twitch_username}</div>
-                              <div className={styles.sidebarSlot}>
-                                {bucket ? `${bucket.id}: ${bucket.label}` : `${parseBet(e.guess).toFixed(1)}x`}
-                              </div>
-                            </div>
-                          </div>
-                          <div className={styles.sidebarRowR}>
-                            {e.gap != null ? (
-                              <div className={styles.sidebarResult}>
-                                <span className={styles.sidebarMulti}>±{parseBet(e.gap).toFixed(1)}x</span>
-                                {e.points_awarded > 0 && <span className={styles.sidebarPrize}>+{e.points_awarded} pts</span>}
-                              </div>
-                            ) : <span className={styles.sidebarWait}>—</span>}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </aside>
-              )}
             </div>
           )}
         </>

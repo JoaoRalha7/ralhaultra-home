@@ -154,7 +154,6 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
   const [submitting,  setSubmitting]  = useState(false)
   const [confirm,     setConfirm]     = useState(null)
   const [showHistory, setShowHistory] = useState(false)
-  const [lbAll,       setLbAll]       = useState(false)
   const [toast,       setToast]       = useState(null)
   const [guessInput,  setGuessInput]  = useState('')
   const toastRef = useRef(null)
@@ -577,7 +576,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                     <span className={styles.lbCount}>{entries.length}</span>
                     <span className={styles.lbBy}>{isFinished ? 'by gap' : 'latest'}</span>
                   </div>
-                  <div className={`${styles.lbList} ${lbAll ? styles.lbListAll : ''}`}>
+                  <div className={styles.lbList}>
                     {rankedEntries.map((e, i) => {
                       const isMe = e.twitch_username?.toLowerCase() === twitchUser?.toLowerCase()
                       const pos = e.rank || (isFinished ? i + 1 : null)
@@ -594,11 +593,6 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                       )
                     })}
                   </div>
-                  {entries.length > 6 && (
-                    <button type="button" className={styles.lbMore} onClick={() => setLbAll(v => !v)}>
-                      {lbAll ? 'Show less' : `Show all ${entries.length} predictions`}
-                    </button>
-                  )}
                 </aside>
               )}
             </div>

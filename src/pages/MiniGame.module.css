@@ -1394,3 +1394,15 @@
 .compact .lbList{max-height:260px}
 .compact .lbGap{display:none}
 .lbAvImg{flex:none;width:30px;height:30px;border-radius:50%;object-fit:cover;background:#1b2130}
+
+/* finished Pick & Win: compact results strip */
+.podium{gap:8px}
+.podiumCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex-wrap:nowrap}
+.podiumCard{display:grid;grid-template-columns:auto 38px 1fr auto;grid-template-areas:"m i s p" "m i u r";align-items:center;column-gap:10px;row-gap:1px;padding:8px 12px;border-radius:14px;text-align:left}
+.podiumMedal{grid-area:m}
+.podiumImg{grid-area:i;width:38px;height:50px;border-radius:7px}
+.podiumSlot{grid-area:s;font:800 13px var(--head);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.podiumUser{grid-area:u;font-size:11px;display:flex;align-items:center;gap:5px;min-width:0}
+.podiumPts{grid-area:p;font:800 15px var(--head)}
+.podiumReason{grid-area:r;font-size:10px;text-align:right}
+@media (max-width:900px){.podiumCards{grid-template-columns:1fr}}

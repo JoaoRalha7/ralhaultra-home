@@ -559,7 +559,7 @@ export default function MiniGame({ huntId = null, embedded = false }) {
               )}
 
               {/* MY PICK BANNER */}
-              {isActive && myPick && myEntry && (
+              {isActive && !isFinished && myPick && myEntry && (
                 <div className={styles.myPickBanner}>
                   <div className={styles.myPickImgWrap}>
                     {myEntry.slot?.image_url
@@ -586,19 +586,16 @@ export default function MiniGame({ huntId = null, embedded = false }) {
               )}
 
               {/* PROGRESS */}
-              <div className={styles.progressRow}>
+              {!isFinished && <div className={styles.progressRow}>
                 <div className={styles.progressTrack}>
                   <div className={styles.progressFill} style={{ width: `${pct}%` }} />
                 </div>
                 <span className={styles.progressLabel}>{picked} / {total} picked</span>
-              </div>
+              </div>}
 
               {/* PODIUM */}
               {(isFinished || !isActive) && top3.length > 0 && (
                 <div className={styles.podium}>
-                  <div className={styles.podiumHeading}>
-                    <Medal pos={1} size={13} /> Final Results
-                  </div>
                   <div className={styles.podiumCards}>
                     {top3.map((p, i) => {
                       const entry = entries.find(e => e.id === p.entry_id)
