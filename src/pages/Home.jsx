@@ -29,7 +29,7 @@ const VIDEO_FALLBACK = [
 const DAILY_LABELS = { wheel: 'Daily Wheel', 'daily wheel': 'Daily Wheel', claim: 'Daily Claim', 'daily claim': 'Daily Claim' };
 
 // Test: the Top points box next to Latest Streams / Clips (set to true to bring it back).
-const SHOW_TOP_POINTS = false;
+const SHOW_TOP_POINTS = true;
 
 const TABS = [
   { key: 'shop', label: 'Shop', icon: 'bag' },
