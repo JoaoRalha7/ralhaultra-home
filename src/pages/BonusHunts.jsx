@@ -153,10 +153,11 @@ function huntStats(hunt, entries) {
   const best     = ranked[0] || null
   const worst    = ranked.length > 1 ? ranked[ranked.length - 1] : null
   const totalBet = entries.reduce((a, e) => a + parseBet(e.bet), 0)
-  const be       = totalBet > 0 ? balStart / totalBet : 0
+  const target   = balEnd > 0 ? Math.max(0, balStart - balEnd) : balStart   // money actually invested in the bonuses
+  const be       = totalBet > 0 ? target / totalBet : 0
   const finished = entries.length > 0 && entries.every(e => e.opened)
   return {
-    opened, totalPay, balStart, profit, avg, best, worst, be, finished, live: !!hunt.active && !finished,
+    opened, totalPay, balStart, target, profit, avg, best, worst, be, finished, live: !!hunt.active && !finished,
     total: entries.length,
     supers: entries.filter(e => e.is_super).length,
     hasResult: opened.length > 0,
@@ -217,7 +218,7 @@ function FeaturedHunt({ hunt, entries, onClick }) {
       </div>
       <div className={x.fChipsCell}><FeaturedGameChips huntId={hunt.id} /></div>
       <div className={x.fTiles}>
-        <div className={x.fTile}><span>Start</span><b>{st.balStart > 0 ? '€' + st.balStart.toFixed(0) : '—'}</b></div>
+        <div className={x.fTile}><span>Start</span><b>{st.target > 0 ? '€' + st.target.toFixed(0) : '—'}</b></div>
         <div className={x.fTile}><span>Pay</span><b>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</b></div>
         <div className={x.fTile}><span>Avg</span><b>{st.avg > 0 ? st.avg.toFixed(2) + 'x' : '—'}</b></div>
         <div className={x.fTile}><span>BE</span><b>{st.be > 0 ? st.be.toFixed(1) + 'x' : '—'}</b></div>
@@ -437,10 +438,11 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const totalPay  = opened.reduce((a, e) => a + parseBet(e.payment), 0)
   const totalBet  = entries.reduce((a, e) => a + parseBet(e.bet), 0)
   const profit    = balEnd > 0 ? balEnd + totalPay - balStart : totalPay - balStart
-  const beInit    = totalBet > 0 ? balStart / totalBet : 0
+  const target    = balEnd > 0 ? Math.max(0, balStart - balEnd) : balStart   // money actually invested in the bonuses
+  const beInit    = totalBet > 0 ? target / totalBet : 0
   const unopened  = entries.filter(e => !e.opened && parseBet(e.bet) > 0)
   const sumUnop   = unopened.reduce((a, e) => a + parseBet(e.bet), 0)
-  const beCurr    = sumUnop > 0 ? (balStart - totalPay) / sumUnop : 0
+  const beCurr    = sumUnop > 0 ? (target - totalPay) / sumUnop : 0
   const avg       = opened.length > 0
     ? opened.reduce((a, e) => a + parseBet(e.payment) / parseBet(e.bet), 0) / opened.length : 0
   const withMulti = opened.map(e => ({ ...e, multi: parseBet(e.payment) / parseBet(e.bet) }))
@@ -474,7 +476,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const worst = [...withMulti].sort((a, b) => a.multi - b.multi)[0] || null
   const ribRef = useRef(null)
   const stats = [
-    { lbl: 'Start', val: balStart > 0 ? '€' + balStart.toFixed(2) : '—' },
+    { lbl: 'Start', val: target > 0 ? '€' + target.toFixed(2) : '—' },
     { lbl: 'Pay', val: totalPay > 0 ? '€' + totalPay.toFixed(2) : '—', cls: x.pos },
     { lbl: 'BE start', val: beInit > 0 ? beInit.toFixed(2) + 'x' : '—' },
     { lbl: 'BE now', val: beCurr > 0 ? beCurr.toFixed(2) + 'x' : '0x', cls: x.neg },
