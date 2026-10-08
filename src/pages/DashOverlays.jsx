@@ -79,6 +79,66 @@ const OVERLAYS = [
       </svg>
     ),
   },
+  {
+    key:     'slotstatsH',
+    label:   'Slot Stats Horizontal',
+    sub:     'Estatísticas do slot atual em barra horizontal',
+    url:     `${BASE_URL}/overlay/slotstatsH`,
+    accent:  'red',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="18" x2="14" y2="18"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="10" y2="6"/>
+      </svg>
+    ),
+  },
+  {
+    key:     'pick',
+    label:   'Pick & Win',
+    sub:     'Mini-game Pick & Win em direto',
+    url:     `${BASE_URL}/overlay/pick`,
+    accent:  'purple',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    ),
+  },
+  {
+    key:     'minigame',
+    label:   'Minigame',
+    sub:     'Mini-game a decorrer com participantes',
+    url:     `${BASE_URL}/overlay/minigame`,
+    accent:  'green',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/>
+      </svg>
+    ),
+  },
+  {
+    key:     'torneio',
+    label:   'Torneio',
+    sub:     'Ranking e estado do torneio',
+    url:     `${BASE_URL}/overlay/torneio`,
+    accent:  'amber',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4M6 9a6 6 0 0 0 12 0V3H6v6ZM12 17v4M8 21h8"/>
+      </svg>
+    ),
+  },
+  {
+    key:     'bracket',
+    label:   'Bracket',
+    sub:     'Bracket do torneio com os jogos',
+    url:     `${BASE_URL}/overlay/bracket`,
+    accent:  'blue',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 5h5v4H3zM3 15h5v4H3zM16 10h5v4h-5z"/><path d="M8 7h3v10H8M11 12h5"/>
+      </svg>
+    ),
+  },
 ]
 
 function CopyIcon() {
