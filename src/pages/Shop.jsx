@@ -102,7 +102,7 @@ function InfoModal({ product, onClose }) {
           <div className={styles.infoPrice}><IconCoin size={18} /><b>{fmt(product.cost)}</b><span>pts</span></div>
         </div>
         <div className={styles.actions}>
-          <button className={styles.ghost} onClick={onClose} style={{ gridColumn: '1 / -1' }}>Close</button>
+          <button className={styles.ghost} onClick={onClose} style={{ flex: 1 }}>Close</button>
         </div>
       </div>
     </div>,
