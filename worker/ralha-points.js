@@ -1948,11 +1948,16 @@ export default {
         // follow date from Twitch (optional: needs TWITCH_CLIENT_ID, TWITCH_BROADCASTER_ID and TWITCH_BROADCASTER_TOKEN with the moderator:read:followers scope)
         let followedAt = null
         try {
-          const tid = bal[0]?.twitch_id
+          let tid = bal[0]?.twitch_id
           const bid = env.TWITCH_BROADCASTER_ID || '216681327'
-          const tok = tid && env.TWITCH_CLIENT_ID ? await twitchUserToken(env) : null
-          if (tok) {
-            const fr = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${encodeURIComponent(bid)}&user_id=${encodeURIComponent(tid)}`, { headers: { 'Client-Id': env.TWITCH_CLIENT_ID, Authorization: `Bearer ${tok}` } })
+          const tok = env.TWITCH_CLIENT_ID ? await twitchUserToken(env) : null
+          const th = tok ? { 'Client-Id': env.TWITCH_CLIENT_ID, Authorization: `Bearer ${tok}` } : null
+          if (th && !tid) { // not seen in chat yet: look the id up by login
+            const ur = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(name)}`, { headers: th })
+            if (ur.ok) tid = (await ur.json())?.data?.[0]?.id || null
+          }
+          if (th && tid) {
+            const fr = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${encodeURIComponent(bid)}&user_id=${encodeURIComponent(tid)}`, { headers: th })
             if (fr.ok) followedAt = (await fr.json())?.data?.[0]?.followed_at || null
           }
         } catch { /* follow date is optional */ }
