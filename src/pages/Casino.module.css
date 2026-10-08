@@ -4,7 +4,7 @@
 .page[data-game="blackjack"] { --g1: #f5c542; --g2: #fde68a; }
 .page[data-game="crash"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="keno"] { --g1: #22e07a; --g2: #86efac; }
-.page[data-game="plinko"] { --g1: #06b6d4; --g2: #67e8f9; }
+.page[data-game="plinko"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="roulette"] { --g1: #e11d48; --g2: #fda4af; }
 .page[data-game="jackpot"] { --g1: #f97316; --g2: #fdba74; }
 

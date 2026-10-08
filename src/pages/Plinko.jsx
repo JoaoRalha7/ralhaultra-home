@@ -1,233 +1,253 @@
 import { useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import { PLINKO, plinkoTable } from '../lib/plinko'
-import styles from './Casino.module.css'
+import shared from './Casino.module.css'
+import styles from './Plinko.module.css'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const num = (v) => Math.max(0, Number(v) || 0)
-const W = 640, PAD_T = 34, BIN_H = 34
-const tone = (m) => (m >= 100 ? 'hot' : m >= 10 ? 'warm' : m >= 2 ? 'amber' : m >= 1 ? 'mild' : 'cold')
+const clampBet = (v) => Math.max(MIN_BET, Math.min(MAX_BET, Math.floor(Number(v)) || MIN_BET))
+const cap = (s) => s[0].toUpperCase() + s.slice(1)
+const W = 720, PAD_T = 26, BIN_H = 30
+const label = (m) => (m >= 1000 ? `${Math.round(m / 100) / 10}K`.replace('.0', '') : m >= 100 ? String(Math.round(m)) : String(+m.toFixed(1)))
+// red at the edges, yellow in the middle
+const binColor = (k, rows) => { const d = Math.abs(k - rows / 2) / (rows / 2); return `hsl(${Math.round(50 - 62 * d)} 94% ${Math.round(53 - 8 * d)}%)` }
+const Chev = ({ up }) => <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{up ? <path d="M6 15l6-6 6 6" /> : <path d="M6 9l6 6 6-6" />}</svg>
+
+function Money({ label: lb, value, setValue, disabled }) {
+  return (
+    <div className={styles.fld}>
+      <span className={styles.lab}>{lb}</span>
+      <div className={`${styles.money} ${disabled ? styles.off : ''}`}>
+        <i className={styles.coin} aria-hidden="true" />
+        <input type="number" inputMode="numeric" min={MIN_BET} value={value} disabled={disabled}
+          onChange={(e) => setValue(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
+          onBlur={() => setValue(clampBet(value))} />
+        <button type="button" disabled={disabled} onClick={() => setValue(clampBet((Number(value) || MIN_BET) / 2))}>1/2</button>
+        <button type="button" disabled={disabled} onClick={() => setValue(clampBet((Number(value) || MIN_BET) * 2))}>2x</button>
+      </div>
+    </div>
+  )
+}
+
+function RiskSelect({ value, setValue, disabled }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const off = (e) => { if (!box.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', off)
+    return () => document.removeEventListener('mousedown', off)
+  }, [open])
+  return (
+    <div className={styles.fld} ref={box}>
+      <span className={styles.lab}>Risk</span>
+      <button type="button" className={`${styles.sel} ${disabled ? styles.off : ''}`} disabled={disabled} onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}>
+        <b>{cap(value)}</b><Chev up={open} />
+      </button>
+      {open && (
+        <ul className={styles.list} role="listbox">
+          {PLINKO.risks.map((k) => (
+            <li key={k} role="option" aria-selected={k === value} className={k === value ? styles.cur : ''} onClick={() => { setValue(k); setOpen(false) }}>{cap(k)}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 export default function Plinko() {
   const g = useCasino('plinko')
   const [bet, setBet] = useState(100)
-  const [rows, setRows] = useState(12)
+  const [rows, setRows] = useState(16)
   const [risk, setRisk] = useState('medium')
-  const [mode, setMode] = useState('manual')
-  const [turbo, setTurbo] = useState(false)
-  const [cfg, setCfg] = useState({ rounds: '10', stopProfit: '', stopLoss: '', onWin: '', onLoss: '' })
+  const [tab, setTab] = useState('manual')
+  const [nBets, setNBets] = useState(0)
+  const [adv, setAdv] = useState(false)
+  const [cfg, setCfg] = useState({ stopProfit: '', stopLoss: '', onWin: '', onLoss: '' })
   const [auto, setAuto] = useState(false)
-  const [stat, setStat] = useState({ n: 0, net: 0 })
-  const [playing, setPlaying] = useState(false)
-  const [balls, setBalls] = useState([]) // in flight: { k, x, y } in board units
-  const [hits, setHits] = useState({}) // slot -> balls landed in the current drop
-  const [count, setCount] = useState(1)
-  const [last, setLast] = useState(null)
+  const [sending, setSending] = useState(false)
+  const [view, setView] = useState({ balls: [], rips: [] })
+  const [hits, setHits] = useState({}) // slot -> landing counter (restarts the bin animation)
+  const [recent, setRecent] = useState([]) // newest first
+  const shaking = useFlag(g.shake)
 
   const R = useRef({})
-  R.current = { rows, risk, turbo, cfg, count }
-  const stop = useRef(false)
-  const alive = useRef(true)
-  const raf = useRef(0)
-  useEffect(() => { alive.current = true; return () => { alive.current = false; stop.current = true; cancelAnimationFrame(raf.current) } }, [])
+  R.current = { bet, rows, risk, cfg, nBets }
+  const stop = useRef(false), alive = useRef(true)
+  const B = useRef({ balls: [], rips: [], raf: 0, id: 0, net: 0, last: null })
+  useEffect(() => { alive.current = true; return () => { alive.current = false; stop.current = true; cancelAnimationFrame(B.current.raf) } }, [])
 
-  const locked = playing || auto
+  const flying = view.balls.length > 0
+  const lockBoard = flying || auto
   const table = plinkoTable(rows, risk)
   const dx = (W - 56) / (rows + 2)
-  const dy = Math.min(30, 420 / (rows + 1))
-  const H = PAD_T + (rows + 1) * dy + BIN_H + 18
+  const dy = Math.min(dx * 0.9, 470 / (rows + 1))
+  const H = PAD_T + (rows + 1) * dy + BIN_H + 14
   const cx = W / 2
   const pegY = (i) => PAD_T + i * dy
   const binY = PAD_T + (rows + 1) * dy
   const binX = (k) => cx + ((2 * k - rows) * dx) / 2
 
-  // drops several balls at once (staggered); every ball follows its server path peg by peg
-  const fall = (items, nrows, speed, onLand) => new Promise((resolve) => {
-    const dxx = (W - 56) / (nrows + 2), dyy = Math.min(30, 420 / (nrows + 1))
-    const total = speed * nrows
-    const xs = items.map((it) => { const a = [0]; it.path.forEach((p) => a.push(a[a.length - 1] + (p ? 1 : -1))); return a })
-    const landed = items.map(() => false)
-    let done = 0, lastTick = 0
-    const t0 = performance.now()
-    const tick = (now) => {
-      if (!alive.current) return resolve()
-      const out = []
-      items.forEach((it, i) => {
-        if (landed[i]) return
-        const el = now - t0 - it.delay
-        if (el < 0) return
-        if (el >= total) { landed[i] = true; done++; onLand(i); return }
-        const row = Math.min(nrows - 1, Math.floor(el / speed)), t = (el - row * speed) / speed, e = t * t * (3 - 2 * t)
-        const x = cx + ((xs[i][row] + (xs[i][row + 1] - xs[i][row]) * e) * dxx) / 2
-        const y = PAD_T + row * dyy + dyy * t * t - Math.sin(Math.PI * t) * 7
-        out.push({ k: i, x, y })
-        if (items.length === 1 && t > 0.02 && t < 0.12) playSfx('click')
-      })
-      if (items.length > 1 && now - lastTick > 90 && out.length && !g.quiet.current) { lastTick = now; playSfx('click') }
-      setBalls(out)
-      if (done < items.length) raf.current = requestAnimationFrame(tick); else { setBalls([]); resolve() }
-    }
-    raf.current = requestAnimationFrame(tick)
-  })
-
-  const playRound = async (stake, count = 1) => {
-    const { rows: rw, risk: rk, turbo: tb } = R.current
-    setPlaying(true); setHits({})
-    g.quiet.current = tb
-    if (count > 1) {
-      const data = await g.batch({ bet: stake, rows: rw, risk: rk, count })
-      const list = data?.balls
-      if (!Array.isArray(list) || !list.length) { setPlaying(false); return null }
-      const speed = Math.max(95, 190 - rw * 6), gap = list.length > 12 ? 70 : 115
-      const acc = { n: 0, pay: 0 } // only what has landed so far: later balls must not leak into the totals
-      const land = (i) => {
-        const r = list[i]; g.settle(r)
-        acc.n++; acc.pay += r.payout
-        setHits((h) => ({ ...h, [r.slot]: (h[r.slot] || 0) + 1 }))
-        setLast({ ...r, bet: stake * acc.n, payout: acc.pay, mult: acc.pay / (stake * acc.n) })
+  // one loop moves every ball in flight; each ball follows its server path peg by peg
+  const tick = (now) => {
+    const S = B.current
+    const out = []
+    S.balls = S.balls.filter((b) => {
+      const el = now - b.t0
+      if (el >= b.total) { b.land(); return false }
+      const row = Math.min(b.rows - 1, Math.floor(el / b.speed)), t = (el - row * b.speed) / b.speed, e = t * t * (3 - 2 * t)
+      if (row !== b.row) {
+        b.row = row
+        S.rips.push({ id: ++S.id, x: b.cx + (b.xs[row] * b.dx) / 2, y: PAD_T + row * b.dy, until: now + 430 })
       }
-      if (!tb) await fall(list.map((r, i) => ({ path: r.path, delay: i * gap })), rw, speed, land)
-      else list.forEach((_, i) => land(i))
-      if (!alive.current) return null
-      const tot = list.reduce((a, x) => a + x.payout, 0), cost = stake * list.length
-      if (data.newPoints != null) g.setPoints(data.newPoints)
-      g.cheer(tot - cost)
-      setPlaying(false)
-      return { bet: cost, payout: tot, count: list.length }
-    }
-    g.hold.current = true
-    const data = await g.start({ bet: stake, rows: rw, risk: rk })
-    if (!data?.state || data.state.game !== 'plinko') { g.release(); setPlaying(false); return null }
-    const s = data.state
-    if (!tb) await fall([{ path: s.path, delay: 0 }], s.rows, Math.max(95, 190 - s.rows * 6), () => {})
-    if (!alive.current) return s
-    setHits({ [s.slot]: 1 }); setLast(s)
-    if (tb) await sleep(60)
-    g.release()
-    setPlaying(false)
-    return { ...s, count: 1 }
+      out.push({ id: b.id, x: b.cx + ((b.xs[row] + (b.xs[row + 1] - b.xs[row]) * e) * b.dx) / 2, y: PAD_T + row * b.dy + b.dy * t * t - Math.sin(Math.PI * t) * 6 })
+      return true
+    })
+    S.rips = S.rips.filter((r) => r.until > now)
+    setView({ balls: out, rips: [...S.rips] })
+    S.raf = S.balls.length || S.rips.length ? requestAnimationFrame(tick) : 0
   }
 
-  const playOnce = async () => {
-    if (locked || Number(bet) < MIN_BET) return
-    await playRound(Number(bet), count)
+  const addBall = (s, stake, newPoints, onLanded) => {
+    const S = B.current
+    const nrows = s.rows, ddx = (W - 56) / (nrows + 2), ddy = Math.min(ddx * 0.9, 470 / (nrows + 1))
+    const xs = [0]; s.path.forEach((p) => xs.push(xs[xs.length - 1] + (p ? 1 : -1)))
+    const speed = Math.max(95, 190 - nrows * 6)
+    S.balls.push({
+      id: ++S.id, path: s.path, rows: nrows, speed, total: speed * nrows, t0: performance.now(), row: -1, xs, cx, dx: ddx, dy: ddy,
+      land: () => {
+        playSfx('click')
+        setHits((h) => ({ ...h, [s.slot]: (h[s.slot] || 0) + 1 }))
+        setRecent((r) => [{ id: s.id || S.id, m: s.mult, c: binColor(s.slot, nrows) }, ...r].slice(0, 12))
+        g.settle(s)
+        if (newPoints != null) g.setPoints(newPoints)
+        onLanded?.(s)
+      },
+    })
+    if (!S.raf) S.raf = requestAnimationFrame(tick)
+  }
+
+  // sends one ball; resolves when the server has accepted it (the ball keeps falling on its own)
+  const drop = async (stake, onLanded) => {
+    const { rows: rw, risk: rk } = R.current
+    setSending(true)
+    const data = await g.batch({ bet: stake, rows: rw, risk: rk, count: 1 })
+    setSending(false)
+    const s = data?.state
+    if (!s || s.game !== 'plinko') return null
+    addBall(s, stake, data.newPoints, onLanded)
+    return s
+  }
+
+  const place = async () => {
+    if (sending || !g.user || Number(bet) < MIN_BET) return
+    playSfx('click')
+    await drop(clampBet(bet), (s) => { const net = s.payout - s.bet; if (net > 0) g.cheer(net) })
   }
 
   const runAuto = async () => {
-    if (locked || Number(bet) < MIN_BET) return
-    stop.current = false; setAuto(true); setStat({ n: 0, net: 0 })
-    const base = Number(bet)
-    let cur = base, n = 0, net = 0
+    if (auto || !g.user || Number(bet) < MIN_BET) return
+    stop.current = false; setAuto(true)
+    const base = clampBet(bet)
+    let cur = base, n = 0
+    B.current.net = 0; B.current.last = null
     while (!stop.current && alive.current) {
-      const c = R.current.cfg
-      const max = Math.floor(num(c.rounds))
+      const c = R.current.cfg, max = Math.floor(num(R.current.nBets))
       if (max && n >= max) break
-      const s = await playRound(cur, R.current.count)
-      if (!s) break
-      n += s.count; const profit = s.payout - s.bet; net += profit
-      setStat({ n, net })
+      const net = B.current.net
       if (num(c.stopProfit) && net >= num(c.stopProfit)) break
       if (num(c.stopLoss) && -net >= num(c.stopLoss)) break
-      const pct = profit > 0 ? num(c.onWin) : num(c.onLoss)
-      cur = pct ? Math.min(MAX_BET, Math.max(MIN_BET, Math.round(cur * (1 + pct / 100)))) : base
-      await sleep(R.current.turbo ? 80 : 450)
+      const l = B.current.last
+      if (l) { const pct = l > 0 ? num(c.onWin) : num(c.onLoss); cur = pct ? Math.min(MAX_BET, Math.max(MIN_BET, Math.round(cur * (1 + pct / 100)))) : base; B.current.last = null }
+      const s = await drop(cur, (r) => { const p = r.payout - r.bet; B.current.net += p; B.current.last = p || -1 })
+      if (!s) break
+      n++
+      await sleep(380)
     }
-    g.quiet.current = false
-    if (alive.current) { setAuto(false); setPlaying(false) }
+    while (B.current.balls.length && alive.current) await sleep(120)
+    if (alive.current) setAuto(false)
   }
 
   const setC = (k) => (e) => setCfg((c) => ({ ...c, [k]: e.target.value }))
-  const disabledStart = g.busy || !g.user || Number(bet) < MIN_BET || playing
-  const profit = last ? last.payout - last.bet : 0
+  const canGo = g.user && !sending && Number(bet) >= MIN_BET
 
   return (
-    <Page game="plinko" title="Plinko" sub="Drop the ball through the pegs. The further from the middle it lands, the more it pays.">
-      <div className={styles.layout}>
-        <BetPanel points={g.points} bet={bet} setBet={setBet} locked={locked} loggedIn={!!g.user}>
-          <div className={styles.seg} role="tablist">
-            <button type="button" role="tab" aria-selected={mode === 'manual'} className={mode === 'manual' ? styles.on : ''} disabled={auto} onClick={() => setMode('manual')}>Manual</button>
-            <button type="button" role="tab" aria-selected={mode === 'auto'} className={mode === 'auto' ? styles.on : ''} disabled={auto} onClick={() => setMode('auto')}>Auto</button>
+    <Page game="plinko" title="Plinko" sub="">
+      <div className={shared.layout}>
+        <aside className={`${shared.panel} ${styles.panel}`}>
+          <div className={styles.tabs} role="tablist">
+            <button type="button" role="tab" aria-selected={tab === 'manual'} disabled={auto} className={tab === 'manual' ? styles.on : ''} onClick={() => setTab('manual')}>Manual</button>
+            <button type="button" role="tab" aria-selected={tab === 'auto'} disabled={auto} className={tab === 'auto' ? styles.on : ''} onClick={() => setTab('auto')}>Auto</button>
           </div>
-
-          <span className={styles.lbl}>Risk</span>
-          <div className={`${styles.quick} ${styles.riskRow}`}>
-            {PLINKO.risks.map((k) => (
-              <button key={k} type="button" disabled={locked} className={risk === k ? styles.on : ''} onClick={() => setRisk(k)}>{k[0].toUpperCase() + k.slice(1)}</button>
-            ))}
+          <Money label="Bet Amount" value={bet} setValue={setBet} disabled={auto} />
+          <div className={styles.fld}>
+            <span className={styles.lab}>Rows</span>
+            <div className={styles.rowsRow}>
+            <b>{rows}</b>
+            <input type="range" min={PLINKO.minRows} max={PLINKO.maxRows} step="1" value={rows} disabled={lockBoard} aria-label="Number of rows"
+              className={styles.range} style={{ '--p': `${((rows - PLINKO.minRows) / (PLINKO.maxRows - PLINKO.minRows)) * 100}%` }}
+              onChange={(e) => { setRows(Number(e.target.value)); setHits({}) }} />
+            </div>
           </div>
+          <RiskSelect value={risk} setValue={setRisk} disabled={lockBoard} />
 
-          <span className={styles.lbl}>Rows <b className={styles.mcount}>{rows}</b></span>
-          <input type="range" min={PLINKO.minRows} max={PLINKO.maxRows} step="1" value={rows} disabled={locked} aria-label="Number of rows"
-            className={styles.range} style={{ '--p': `${((rows - PLINKO.minRows) / (PLINKO.maxRows - PLINKO.minRows)) * 100}%` }}
-            onChange={(e) => { setRows(Number(e.target.value)); setHits({}) }} />
-
-          <span className={styles.lbl}>Balls per drop</span>
-          <div className={`${styles.quick} ${styles.ballRow}`}>
-            {[1, 5, 10, 25].map((n) => <button key={n} type="button" disabled={locked} className={count === n ? styles.on : ''} onClick={() => setCount(n)}>{n}</button>)}
-          </div>
-
-          {mode === 'auto' && (
+          {tab === 'auto' && (
             <>
-              <div className={styles.kRow}>
-                <label>Bets (0 = endless)<input type="number" min="0" inputMode="numeric" value={cfg.rounds} disabled={auto} onChange={setC('rounds')} /></label>
-                <label>Stop on profit<input type="number" min="0" inputMode="numeric" placeholder="off" value={cfg.stopProfit} disabled={auto} onChange={setC('stopProfit')} /></label>
-                <label>On win, bet +%<input type="number" min="0" inputMode="numeric" placeholder="reset" value={cfg.onWin} disabled={auto} onChange={setC('onWin')} /></label>
-                <label>On loss, bet +%<input type="number" min="0" inputMode="numeric" placeholder="reset" value={cfg.onLoss} disabled={auto} onChange={setC('onLoss')} /></label>
+              <div className={styles.fld}>
+                <span className={styles.lab}>Number of Bets</span>
+                <div className={`${styles.money} ${auto ? styles.off : ''}`}>
+                  <input type="number" inputMode="numeric" min="0" value={nBets} disabled={auto} onChange={(e) => setNBets(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))} />
+                  <span className={styles.inf} aria-hidden="true">&infin;</span>
+                </div>
               </div>
-              <div className={styles.kRow} style={{ gridTemplateColumns: '1fr' }}>
-                <label>Stop on loss<input type="number" min="0" inputMode="numeric" placeholder="off" value={cfg.stopLoss} disabled={auto} onChange={setC('stopLoss')} /></label>
-              </div>
+              <button type="button" className={styles.advRow} onClick={() => setAdv((v) => !v)} aria-pressed={adv}>
+                <span>Advanced Settings</span><i className={adv ? styles.swOn : ''} />
+              </button>
+              {adv && (
+                <>
+                  {[['Stop on Profit', 'stopProfit'], ['Stop on Loss', 'stopLoss']].map(([l, k]) => (
+                    <div key={k} className={styles.fld}><span className={styles.lab}>{l}</span><div className={styles.money}><i className={styles.coin} /><input type="number" min="0" value={cfg[k]} disabled={auto} onChange={setC(k)} /></div></div>
+                  ))}
+                  {[['On Win, Increase Bet by %', 'onWin'], ['On Loss, Increase Bet by %', 'onLoss']].map(([l, k]) => (
+                    <div key={k} className={styles.fld}><span className={styles.lab}>{l}</span><div className={styles.money}><input type="number" min="0" placeholder="Reset" value={cfg[k]} disabled={auto} onChange={setC(k)} /><span className={styles.inf}>%</span></div></div>
+                  ))}
+                </>
+              )}
             </>
           )}
-
-          <button type="button" className={`${styles.turbo} ${turbo ? styles.on : ''}`} aria-pressed={turbo} onClick={() => setTurbo((t) => !t)}>
-            <span>Turbo<small>No ball animation or sound</small></span><i />
-          </button>
-
-          {auto && (
-            <div className={styles.autoStat}>
-              <span>Balls {stat.n}</span>
-              <span className={stat.net >= 0 ? styles.pos : styles.neg}>{stat.net >= 0 ? '+' : '-'}{fmt(Math.abs(stat.net))} pts</span>
-            </div>
-          )}
-
+          <div className={styles.grow} />
           {auto ? (
-            <button type="button" className={styles.ctaAlt} onClick={() => { stop.current = true }}>Stop auto</button>
-          ) : mode === 'auto' ? (
-            <button type="button" className={styles.cta} disabled={disabledStart} onClick={runAuto}>{g.user ? 'Start auto bet' : 'Log in to play'}</button>
+            <button type="button" className={styles.go} onClick={() => { stop.current = true }}>Stop Autobet</button>
+          ) : tab === 'auto' ? (
+            <button type="button" className={styles.go} disabled={!canGo} onClick={runAuto}>{g.user ? 'Start Autobet' : 'Log in to play'}</button>
           ) : (
-            <button type="button" className={styles.cta} disabled={disabledStart} onClick={playOnce}>{!g.user ? 'Log in to play' : count > 1 ? `Drop ${count} balls (${fmt(Number(bet) * count)})` : 'Drop ball'}</button>
+            <button type="button" className={styles.go} disabled={!canGo} onClick={place}>{g.user ? 'Place Bet' : 'Log in to play'}</button>
           )}
           {g.err && <p className={styles.err}>{g.err}</p>}
-          <p className={styles.note}>Each ball falls through random bounces decided by the server. Return is about 98.5% to 99%. More rows and higher risk mean rarer but bigger edge payouts.</p>
-        </BetPanel>
+        </aside>
 
-        <section className={styles.stage}>
-          <HistoryStrip items={g.history} />
-          <div className={styles.ribbon}>
-            <div><small>Rows</small><b>{rows}</b></div>
-            <div><small>Risk</small><b style={{ textTransform: 'capitalize' }}>{risk}</b></div>
-            <div><small>{count > 1 ? 'Drop multiplier' : 'Last multiplier'}</small><b>{last ? `${last.mult.toFixed(2)}x` : '-'}</b></div>
-            <div className={last && profit > 0 ? styles.ribGold : ''}><small>Profit</small><b>{last ? `${profit >= 0 ? '+' : '-'}${fmt(Math.abs(profit))}` : '-'}</b></div>
-          </div>
-
-          <svg className={styles.plinko} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Plinko board">
+        <section className={`${styles.stage} ${shaking ? shared.shake : ''}`}>
+          <svg className={styles.board} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Plinko board">
             {Array.from({ length: rows }, (_, i) => Array.from({ length: i + 3 }, (_, k) => (
-              <circle key={`${i}-${k}`} cx={cx + ((2 * k - (i + 2)) * dx) / 2} cy={pegY(i)} r="3.4" className={styles.peg} />
+              <circle key={`${i}-${k}`} cx={cx + ((2 * k - (i + 2)) * dx) / 2} cy={pegY(i)} r={Math.max(3.4, dx * 0.1)} className={styles.peg} />
             )))}
+            {view.rips.map((r) => <circle key={r.id} cx={r.x} cy={r.y} r={Math.max(9, dx * 0.3)} className={styles.rip} />)}
             {table.map((m, k) => {
-              const bw = dx * 0.9
+              const bw = dx * 0.86
               return (
-                <g key={`${k}-${hits[k] || 0}`} className={`${styles.pbin} ${styles['pb_' + tone(m)]} ${hits[k] ? styles.pbHit : ''}`}>
-                  <rect x={binX(k) - bw / 2} y={binY} width={bw} height={BIN_H} rx="6" />
-                  {hits[k] > 1 && <text x={binX(k)} y={binY - 5} textAnchor="middle" className={styles.pbCount}>x{hits[k]}</text>}
-                  <text x={binX(k)} y={binY + BIN_H / 2 + 4} textAnchor="middle" fontSize={rows > 13 ? 10.5 : rows > 10 ? 12 : 14}>{m >= 1000 ? '1k' : m >= 100 ? Math.round(m) : m}</text>
+                <g key={`${k}-${hits[k] || 0}`} className={`${styles.bin} ${hits[k] ? styles.binHit : ''}`}>
+                  <rect x={binX(k) - bw / 2} y={binY} width={bw} height={BIN_H} rx="5" fill={binColor(k, rows)} />
+                  <text x={binX(k)} y={binY + BIN_H / 2 + 4.500} textAnchor="middle" fontSize={rows > 14 ? 11 : rows > 11 ? 13 : 15}>{label(m)}</text>
                 </g>
               )
             })}
-            {balls.map((b) => <circle key={b.k} cx={b.x} cy={b.y} r={balls.length > 4 ? 5.500 : 7} className={styles.pball} />)}
+            {view.balls.map((b) => <circle key={b.id} cx={b.x} cy={b.y} r={Math.max(5, dx * 0.15)} className={styles.ball} />)}
           </svg>
-          <Confetti fire={g.fire} colors={['#22d3ee', '#67e8f9', '#f5c542', '#f472b6', '#fff']} />
+          <div className={styles.recent} aria-label="Recent results">
+            {recent.map((x) => <span key={x.id} style={{ background: x.c }}>{label(x.m)}</span>)}
+          </div>
+          <Confetti fire={g.fire} colors={['#34d399', '#6ee7b7', '#22d3ee', '#f5c542', '#fff']} />
         </section>
       </div>
     </Page>
