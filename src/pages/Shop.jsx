@@ -40,6 +40,20 @@ const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 const IconCoin = ({ size = 14 }) => <span className={styles.coin} style={{ width: size, height: size }} aria-hidden="true" />
 
 // ── Product card ─────────────────────────────────────────────────────────────
+// The product picture turns around its vertical axis like the VIP badges: a thin stack of layers gives it thickness.
+const SPIN_Z = [-5, -4, -3, -2, -1]
+function ProductSpin({ src, seed }) {
+  const delay = ([...String(seed || '')].reduce((a, c) => a + c.charCodeAt(0), 0) % 40) / 10
+  return (
+    <div className={styles.spinStage}>
+      <div className={styles.spin} style={{ animationDelay: `${delay}s` }}>
+        {SPIN_Z.map((z) => <img key={z} src={src} alt="" className={styles.layer} loading="lazy" style={{ transform: `translateZ(${z * 1.4}px)`, filter: `brightness(${0.55 + (z + 5) * 0.06})` }} />)}
+        <img src={src} alt="" className={`${styles.layer} ${styles.layerFront}`} loading="lazy" style={{ transform: 'translateZ(1px)' }} />
+      </div>
+    </div>
+  )
+}
+
 function ShopCard({ product, userPoints, onRedeem }) {
   const unlimited  = product.stock == null
   const outOfStock = product.stock === 0
@@ -59,7 +73,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
     >
       <div className={styles.media}>
         {product.image_url
-          ? <img src={product.image_url} alt="" className={styles.photo} loading="lazy" />
+          ? <ProductSpin src={product.image_url} seed={product.id} />
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
         <span className={styles.tags}>
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
