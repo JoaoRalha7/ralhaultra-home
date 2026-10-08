@@ -1332,7 +1332,6 @@ function GtbPanel({ hunt }) {
               />
             </div>
 
-            {previewWinId && previewRanked.length === 0 && <div className={styles.awardModalReason}>No one picked the {AVG_BUCKETS.find(b => b.id === previewWinId)?.label} range.</div>}
             {previewRanked.length > 0 && (
               <div className={styles.awardModalRows}>
                 {previewRanked.slice(0, 3).map((e, i) => {
@@ -1734,6 +1733,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
               )}
             </div>
 
+            {previewWinId && previewRanked.length === 0 && <div className={styles.awardModalReason}>No one picked the {AVG_BUCKETS.find(b => b.id === previewWinId)?.label} range.</div>}
             {previewRanked.length > 0 && (
               <div className={styles.awardModalRows}>
                 {previewRanked.map((e,i) => {
