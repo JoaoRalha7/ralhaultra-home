@@ -5,7 +5,7 @@
 .page[data-game="crash"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="keno"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="plinko"] { --g1: #22e07a; --g2: #86efac; }
-.page[data-game="roulette"] { --g1: #e11d48; --g2: #fda4af; }
+.page[data-game="roulette"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="jackpot"] { --g1: #f97316; --g2: #fdba74; }
 
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
@@ -591,7 +591,7 @@
 .rOut:hover:not(:disabled) { border-color: #fff; filter: none; }
 .rOut.rRed { background: #c41e3a; border-color: transparent; color: transparent; }
 .rOut.rBlack { background: #3d3b4d; border-color: transparent; color: transparent; }
-.page[data-game="roulette"] .wheelWrap { width: min(100%, 270px); }
+.page[data-game="roulette"] .wheelWrap { width: min(100%, 300px); }
 .page[data-game="roulette"] .rTable { grid-template-rows: repeat(3, 40px) 36px 36px; gap: 4px; }
 .page[data-game="roulette"] .stage { gap: 8px; }
 
@@ -604,3 +604,5 @@
 .lvTabs { border: 0; border-radius: 999px; background: #0a0c11; }
 .lvTabs button { border-radius: 999px; color: #8b92a5; font-weight: 700; }
 .lvTabs .on { background: #232733; color: #fff; }
+
+.page[data-game="roulette"] .wResult { display: none; }

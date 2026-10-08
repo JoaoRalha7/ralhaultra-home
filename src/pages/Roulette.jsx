@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Coin, Confetti, HistoryStrip, Page, SoundToggle, fmt, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, Page, fmt, useFlag, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
 import { WHEEL, rColor, ROULETTE } from '../lib/roulette'
-import styles from './Casino.module.css'
+import shared from './Casino.module.css'
+import styles from './Roulette.module.css'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const num = (v) => Math.max(0, Number(v) || 0)
-const CHIPS = [10, 50, 100, 500, 1000]
+const CHIPS = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
 const SLICE = 360 / WHEEL.length
 const short = (n) => (n >= 1000 ? `${+(n / 1000).toFixed(1)}k` : String(n))
 const key = (t, v) => `${t}:${v ?? ''}`
@@ -24,8 +25,8 @@ const DEFLECT = [22, 67, 112, 157, 202, 247, 292, 337]
 
 function Wheel({ wRef, bRef, cRef, spinning, hit, number }) {
   return (
-    <div className={`${styles.wheelWrap} ${spinning ? styles.wSpin : ''}`}>
-      <svg viewBox="0 0 360 360" className={styles.wheel} role="img" aria-label="Roulette wheel">
+    <div className={`${shared.wheelWrap} ${spinning ? shared.wSpin : ''}`}>
+      <svg viewBox="0 0 360 360" className={shared.wheel} role="img" aria-label="Roulette wheel">
         <defs>
           <radialGradient id="rwWood" cx="50%" cy="50%" r="50%"><stop offset="86%" stopColor="#2a1a0c" /><stop offset="100%" stopColor="#0f0a05" /></radialGradient>
           <radialGradient id="rwTrack" cx="50%" cy="50%" r="50%"><stop offset="78%" stopColor="#0a0d14" /><stop offset="90%" stopColor="#1b2230" /><stop offset="100%" stopColor="#0a0d14" /></radialGradient>
@@ -44,8 +45,8 @@ function Wheel({ wRef, bRef, cRef, spinning, hit, number }) {
             const [tx, ty] = pt(i * SLICE, 126)
             return (
               <g key={n}>
-                <path d={slicePath(i)} className={styles['w_' + rColor(n)]} />
-                <text x={tx} y={ty} className={styles.wNum} transform={`rotate(${i * SLICE} ${tx} ${ty})`} textAnchor="middle" dominantBaseline="central">{n}</text>
+                <path d={slicePath(i)} className={shared['w_' + rColor(n)]} />
+                <text x={tx} y={ty} className={shared.wNum} transform={`rotate(${i * SLICE} ${tx} ${ty})`} textAnchor="middle" dominantBaseline="central">{n}</text>
               </g>
             )
           })}
@@ -55,14 +56,14 @@ function Wheel({ wRef, bRef, cRef, spinning, hit, number }) {
             return <g key={d}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#f2cf66" strokeWidth="5" strokeLinecap="round" /><circle cx={kx} cy={ky} r="5" fill="#f2cf66" /></g>
           })}
           <circle cx={C} cy={C} r="7" fill="#fff" />
-          {hit != null && <path d={slicePath(hit)} className={styles.wHit} />}
+          {hit != null && <path d={slicePath(hit)} className={shared.wHit} />}
         </g>
 
-        <g ref={bRef} className={styles.wBallG} transform={`rotate(0 ${C} ${C})`} style={{ opacity: 0 }}>
-          <circle ref={cRef} cx={C} cy={C - R_TRACK} r="6" fill="url(#rwBall)" className={styles.wBall} />
+        <g ref={bRef} className={shared.wBallG} transform={`rotate(0 ${C} ${C})`} style={{ opacity: 0 }}>
+          <circle ref={cRef} cx={C} cy={C - R_TRACK} r="6" fill="url(#rwBall)" className={shared.wBall} />
         </g>
       </svg>
-      <div key={number ?? 'none'} className={`${styles.wResult} ${number != null ? styles['wr_' + rColor(number)] : ''}`}>{number != null ? number : ''}</div>
+      <div key={number ?? 'none'} className={`${shared.wResult} ${number != null ? shared['wr_' + rColor(number)] : ''}`}>{number != null ? number : ''}</div>
     </div>
   )
 }
@@ -71,9 +72,9 @@ function Spot({ c, t, v = null, cls = '', style, children }) {
   const a = c.amountAt(t, v)
   const win = c.res && c.res.bets?.some((b) => b.type === t && (b.value ?? null) === v) && c.res.payout > 0
   return (
-    <button type="button" className={`${styles.rSpot} ${cls} ${a ? styles.rOn : ''}`} style={style} disabled={c.locked} onClick={() => c.add(t, v)} aria-label={`${t} ${v ?? ''}`}>
+    <button type="button" className={`${styles.spot} ${cls}`} style={style} disabled={c.locked} onClick={() => c.add(t, v)} aria-label={`${t} ${v ?? ''}`}>
       {children}
-      {a > 0 && <i className={`${styles.rChip} ${win ? styles.rChipWin : ''}`}>{short(a)}</i>}
+      {a > 0 && <i className={`${styles.chip} ${win ? styles.won : ''}`}>{short(a)}</i>}
     </button>
   )
 }
@@ -83,8 +84,11 @@ export default function Roulette() {
   const [chip, setChip] = useState(100)
   const [bets, setBets] = useState([]) // { type, value, amount }
   const [mode, setMode] = useState('manual')
-  const [turbo, setTurbo] = useState(false)
-  const [cfg, setCfg] = useState({ rounds: '10', stopProfit: '', stopLoss: '' })
+  const turbo = false
+  const [adv, setAdv] = useState(false)
+  const [off, setOff] = useState(2) // first chip shown in the chip carousel
+  const shaking = useFlag(g.shake)
+  const [cfg, setCfg] = useState({ rounds: '0', stopProfit: '', stopLoss: '' })
   const [auto, setAuto] = useState(false)
   const [stat, setStat] = useState({ n: 0, net: 0 })
   const [spinning, setSpinning] = useState(false)
@@ -218,93 +222,116 @@ export default function Roulette() {
 
   const setC = (k) => (e) => setCfg((c) => ({ ...c, [k]: e.target.value }))
   const canSpin = !!g.user && !!bets.length && !locked && !g.busy && total >= MIN_BET && total <= MAX_BET * 5
-  const profit = res ? res.payout - res.bet : 0
   const ctx = { amountAt, res, locked, add }
-  const numCls = (n) => `${styles['rn_' + rColor(n)]} ${shownNum === n ? styles.rHit : ''}`
+  const hitCls = (n) => (shownNum === n ? styles.hit : '')
+  const half = () => { if (!locked) setBets((b) => b.map((x) => ({ ...x, amount: Math.max(1, Math.floor(x.amount / 2)) }))) }
+  const recent = g.history.slice(0, 8).map((h) => ({ n: Number(h.label), k: rColor(Number(h.label)) }))
+  const shownChips = CHIPS.slice(off, off + 5)
+  const won = res && res.payout > res.bet
 
   return (
-    <Page game="roulette" title="Roulette" sub="European roulette with a single zero. Place chips, spin, and the server picks the number.">
-      <div className={styles.layout}>
-        <aside className={styles.panel}>
-          <div className={styles.balance}>
-            <Coin s={22} />
-            <div><b>{g.points != null ? fmt(g.points) : g.user ? '...' : 'Log in'}</b><small>{g.points != null ? 'your points' : 'to play with your points'}</small></div>
+    <Page game="roulette" title="Roulette" sub="">
+      <div className={shared.layout}>
+        <aside className={`${shared.panel} ${styles.panel}`}>
+          <div className={styles.tabs} role="tablist">
+            <button type="button" role="tab" aria-selected={mode === 'manual'} disabled={locked} className={mode === 'manual' ? styles.on : ''} onClick={() => setMode('manual')}>Manual</button>
+            <button type="button" role="tab" aria-selected={mode === 'auto'} disabled={locked} className={mode === 'auto' ? styles.on : ''} onClick={() => setMode('auto')}>Auto</button>
           </div>
 
-          <div className={styles.seg} role="tablist">
-            <button type="button" role="tab" aria-selected={mode === 'manual'} className={mode === 'manual' ? styles.on : ''} disabled={auto} onClick={() => setMode('manual')}>Manual</button>
-            <button type="button" role="tab" aria-selected={mode === 'auto'} className={mode === 'auto' ? styles.on : ''} disabled={auto} onClick={() => setMode('auto')}>Auto</button>
+          <div className={styles.fld}>
+            <span className={styles.lab}>Chip Value</span>
+            <div className={styles.chips}>
+              <button type="button" className={`${styles.arrow}`} aria-label="Previous chips" disabled={off === 0} onClick={() => setOff((o) => Math.max(0, o - 1))}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg></button>
+              <div className={styles.chipRow}>
+                {shownChips.map((c) => (
+                  <button key={c} type="button" aria-label={`Chip ${c}`} aria-pressed={chip === c} className={`${styles.disc} ${styles['c' + Math.min(4, CHIPS.indexOf(c) % 5)]} ${chip === c ? styles.sel : ''}`} onClick={() => setChip(c)}>{short(c)}</button>
+                ))}
+              </div>
+              <button type="button" className={`${styles.arrow}`} aria-label="Next chips" disabled={off + 5 >= CHIPS.length} onClick={() => setOff((o) => Math.min(CHIPS.length - 5, o + 1))}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+            </div>
           </div>
 
-          <span className={styles.lbl}>Chip value</span>
-          <div className={styles.chipBox}>
-            {CHIPS.map((c) => <button key={c} type="button" aria-label={`Chip ${c}`} aria-pressed={chip === c} className={`${styles.chipDisc} ${styles['cd_' + (c >= 1000 ? 'g' : c >= 100 ? 'o' : 'y')]} ${chip === c ? styles.cdOn : ''}`} onClick={() => setChip(c)}><b>{short(c)}</b></button>)}
+          <div className={styles.fld}>
+            <span className={styles.lab}>Total Bet</span>
+            <div className={`${styles.total} ${locked ? styles.off : ''}`}>
+              <i className={styles.coin} aria-hidden="true" />
+              <b>{fmt(total)}</b>
+              <button type="button" disabled={locked || !bets.length} onClick={half}>1/2</button>
+              <button type="button" disabled={locked || !bets.length} onClick={double}>2x</button>
+            </div>
           </div>
 
           {mode === 'auto' && (
-            <div className={styles.kRow}>
-              <label>Spins (0 = endless)<input type="number" min="0" inputMode="numeric" value={cfg.rounds} disabled={auto} onChange={setC('rounds')} /></label>
-              <label>Stop on profit<input type="number" min="0" inputMode="numeric" placeholder="off" value={cfg.stopProfit} disabled={auto} onChange={setC('stopProfit')} /></label>
-              <label style={{ gridColumn: '1 / -1' }}>Stop on loss<input type="number" min="0" inputMode="numeric" placeholder="off" value={cfg.stopLoss} disabled={auto} onChange={setC('stopLoss')} /></label>
-            </div>
+            <>
+              <div className={styles.fld}>
+                <span className={styles.lab}>Number of Bets</span>
+                <div className={`${styles.money} ${auto ? styles.off : ''}`}>
+                  <input type="number" inputMode="numeric" min="0" value={cfg.rounds} disabled={auto} onChange={setC('rounds')} />
+                  <span className={styles.inf} aria-hidden="true">&infin;</span>
+                </div>
+              </div>
+              <button type="button" className={styles.advRow} onClick={() => setAdv((v) => !v)} aria-pressed={adv}>
+                <span>Advanced Settings</span><i className={adv ? styles.swOn : ''} />
+              </button>
+              {adv && [['Stop on Profit', 'stopProfit'], ['Stop on Loss', 'stopLoss']].map(([l, k]) => (
+                <div key={k} className={styles.fld}><span className={styles.lab}>{l}</span><div className={styles.money}><i className={styles.coin} /><input type="number" min="0" value={cfg[k]} disabled={auto} onChange={setC(k)} /></div></div>
+              ))}
+            </>
           )}
-
-          <button type="button" className={`${styles.turbo} ${turbo ? styles.on : ''}`} aria-pressed={turbo} onClick={() => setTurbo((t) => !t)}>
-            <span>Turbo<small>Skip the wheel animation</small></span><i />
-          </button>
-
-          <div className={styles.autoStat}><span>Total bet</span><span>{fmt(total)} pts</span></div>
-          {auto && (
-            <div className={styles.autoStat}>
-              <span>Spin {stat.n}</span>
-              <span className={stat.net >= 0 ? styles.pos : styles.neg}>{stat.net >= 0 ? '+' : '-'}{fmt(Math.abs(stat.net))} pts</span>
-            </div>
-          )}
-
+          <div className={styles.grow} />
           {auto ? (
-            <button type="button" className={styles.ctaAlt} onClick={() => { stop.current = true }}>Stop auto</button>
+            <button type="button" className={styles.go} onClick={() => { stop.current = true }}>Stop Autobet</button>
           ) : mode === 'auto' ? (
-            <button type="button" className={styles.cta} disabled={!canSpin} onClick={runAuto}>{g.user ? 'Start auto spin' : 'Log in to play'}</button>
+            <button type="button" className={styles.go} disabled={!canSpin} onClick={runAuto}>{g.user ? 'Start Autobet' : 'Log in to play'}</button>
           ) : (
-            <button type="button" className={styles.cta} disabled={!canSpin} onClick={spin}>{!g.user ? 'Log in to play' : !bets.length ? 'Place a bet' : `Spin (${fmt(total)})`}</button>
+            <button type="button" className={styles.go} disabled={!canSpin} onClick={spin}>{g.user ? 'Place Bet' : 'Log in to play'}</button>
           )}
           {g.err && <p className={styles.err}>{g.err}</p>}
-          <p className={styles.note}>Single zero: straight 35:1, dozens and columns 2:1, red/black, odd/even and 1-18 / 19-36 pay 1:1. Return is 97.3%. Bets stay on the table so you can spin again.</p>
         </aside>
 
-        <section className={styles.stage}>
-          <HistoryStrip items={g.history} />
-          <div className={styles.ribbon}>
-            <div><small>Number</small><b>{shownNum ?? '-'}</b></div>
-            <div><small>Total bet</small><b>{fmt(res ? res.bet : total)}</b></div>
-            <div><small>Payout</small><b>{res ? fmt(res.payout) : '-'}</b></div>
-            <div className={res && profit > 0 ? styles.ribGold : ''}><small>Profit</small><b>{res ? `${profit >= 0 ? '+' : '-'}${fmt(Math.abs(profit))}` : '-'}</b></div>
+        <section className={`${styles.stage} ${shaking ? shared.shake : ''}`}>
+          <div className={styles.top}>
+            {shownNum != null && <div className={`${styles.numBox} ${styles[rColor(shownNum)]}`} key={res?.id}>{shownNum}</div>}
+            <div className={styles.wheelBox}>
+              <Wheel wRef={wRef} bRef={bRef} cRef={cRef} spinning={spinning} hit={shownNum != null ? WHEEL.indexOf(shownNum) : null} number={shownNum} />
+            </div>
+            <div className={styles.recent} aria-label="Recent numbers">
+              {recent.map((x, i) => <span key={`${i}-${x.n}`} className={styles[x.k]}>{x.n}</span>)}
+            </div>
           </div>
 
-          <Wheel wRef={wRef} bRef={bRef} cRef={cRef} spinning={spinning} hit={shownNum != null ? WHEEL.indexOf(shownNum) : null} number={shownNum} />
-
-          <div className={styles.rTools}>
-            <button type="button" disabled={locked || !bets.length} onClick={undo}>Undo</button>
-            <span />
-            <button type="button" disabled={locked || !bets.length} onClick={double}>Double</button>
-            <button type="button" disabled={locked || !bets.length} onClick={clear}>Clear</button>
+          <div className={styles.tools}>
+            <button type="button" disabled={locked || !bets.length} onClick={undo}>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5" /><path d="M4 9h10a6 6 0 010 12h-3" /></svg>Undo
+            </button>
+            <button type="button" disabled={locked || !bets.length} onClick={clear}>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 19l6-6" /><path d="M13 5l6 6-5 5-6-6z" /></svg>Clear
+            </button>
           </div>
-          <div className={styles.rTableWrap}>
-            <div className={styles.rTable}>
-              <Spot c={ctx} t="straight" v={0} cls={`${styles.rn_green} ${shownNum === 0 ? styles.rHit : ''}`} style={{ gridColumn: 1, gridRow: '1 / 4' }}>0</Spot>
+
+          <div className={styles.tableBox}>
+          {won && (
+            <div className={styles.pop} role="status" key={res.id}>
+              <b>{(res.payout / res.bet).toFixed(2)}&times;</b>
+              <hr />
+              <span><i className={styles.coin} />{fmt(res.payout)}</span>
+            </div>
+          )}
+            <div className={styles.tbl}>
+              <Spot c={ctx} t="straight" v={0} cls={`${styles.green} ${hitCls(0)}`} style={{ gridColumn: 1, gridRow: '1 / 4' }}>0</Spot>
               {Array.from({ length: 36 }, (_, i) => {
                 const col = Math.floor(i / 3), row = i % 3 // row 0 is the top line: 3, 6, 9 ...
                 const n = col * 3 + (3 - row)
-                return <Spot c={ctx} key={n} t="straight" v={n} cls={numCls(n)} style={{ gridColumn: col + 2, gridRow: row + 1 }}>{n}</Spot>
+                return <Spot c={ctx} key={n} t="straight" v={n} cls={`${styles[rColor(n)]} ${hitCls(n)}`} style={{ gridColumn: col + 2, gridRow: row + 1 }}>{n}</Spot>
               })}
-              {[3, 2, 1].map((c, r) => <Spot c={ctx} key={c} t="column" v={c} cls={styles.rOut} style={{ gridColumn: 14, gridRow: r + 1 }}>2:1</Spot>)}
-              {[1, 2, 3].map((d) => <Spot c={ctx} key={d} t="dozen" v={d} cls={styles.rOut} style={{ gridColumn: `${2 + (d - 1) * 4} / span 4`, gridRow: 4 }}>{d === 1 ? '1st 12' : d === 2 ? '2nd 12' : '3rd 12'}</Spot>)}
-              <Spot c={ctx} t="low" cls={styles.rOut} style={{ gridColumn: '2 / span 2', gridRow: 5 }}>1-18</Spot>
-              <Spot c={ctx} t="even" cls={styles.rOut} style={{ gridColumn: '4 / span 2', gridRow: 5 }}>Even</Spot>
-              <Spot c={ctx} t="red" cls={`${styles.rOut} ${styles.rRed}`} style={{ gridColumn: '6 / span 2', gridRow: 5 }}>Red</Spot>
-              <Spot c={ctx} t="black" cls={`${styles.rOut} ${styles.rBlack}`} style={{ gridColumn: '8 / span 2', gridRow: 5 }}>Black</Spot>
-              <Spot c={ctx} t="odd" cls={styles.rOut} style={{ gridColumn: '10 / span 2', gridRow: 5 }}>Odd</Spot>
-              <Spot c={ctx} t="high" cls={styles.rOut} style={{ gridColumn: '12 / span 2', gridRow: 5 }}>19-36</Spot>
+              {[3, 2, 1].map((c, r) => <Spot c={ctx} key={c} t="column" v={c} cls={styles.out} style={{ gridColumn: 14, gridRow: r + 1 }}>2:1</Spot>)}
+              {[1, 2, 3].map((d) => <Spot c={ctx} key={d} t="dozen" v={d} cls={styles.out} style={{ gridColumn: `${2 + (d - 1) * 4} / span 4`, gridRow: 4 }}>{d === 1 ? '1 to 12' : d === 2 ? '13 to 24' : '25 to 36'}</Spot>)}
+              <Spot c={ctx} t="low" cls={styles.out} style={{ gridColumn: '2 / span 2', gridRow: 5 }}>1 to 18</Spot>
+              <Spot c={ctx} t="even" cls={styles.out} style={{ gridColumn: '4 / span 2', gridRow: 5 }}>Even</Spot>
+              <Spot c={ctx} t="red" cls={`${styles.out} ${styles.red}`} style={{ gridColumn: '6 / span 2', gridRow: 5 }}>Red</Spot>
+              <Spot c={ctx} t="black" cls={`${styles.out} ${styles.black}`} style={{ gridColumn: '8 / span 2', gridRow: 5 }}>Black</Spot>
+              <Spot c={ctx} t="odd" cls={styles.out} style={{ gridColumn: '10 / span 2', gridRow: 5 }}>Odd</Spot>
+              <Spot c={ctx} t="high" cls={styles.out} style={{ gridColumn: '12 / span 2', gridRow: 5 }}>19 to 36</Spot>
             </div>
           </div>
           <Confetti fire={g.fire} colors={['#e11d48', '#fda4af', '#f5c542', '#34d399', '#fff']} />
