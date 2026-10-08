@@ -1022,7 +1022,7 @@ export default {
           if (game === 'blackjack') {
             const pp = body.pp == null || body.pp === '' ? 0 : parseInt(body.pp, 10)
             const t3 = body.t3 == null || body.t3 === '' ? 0 : parseInt(body.t3, 10)
-            const okSide = (v) => Number.isInteger(v) && v >= 0 && v <= (econOn() ? Math.floor(ECON_RISK_CAP / (100 * Math.max(1, parseInt(body.seats, 10) || 1))) : CASINO.maxBet) && (v === 0 || v >= CASINO.minBet)
+            const okSide = (v) => Number.isInteger(v) && v >= 0 && v <= econMaxBet('blackjack', body) && (v === 0 || v >= CASINO.minBet)
             if (!okSide(pp) || !okSide(t3)) return json({ error: 'invalid side bet' }, 400)
             const seats = body.seats == null || body.seats === '' ? 1 : parseInt(body.seats, 10)
             if (!Number.isInteger(seats) || seats < 1 || seats > 3) return json({ error: 'invalid seats' }, 400)

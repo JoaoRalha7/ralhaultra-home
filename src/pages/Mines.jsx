@@ -88,29 +88,37 @@ export default function Mines() {
   }
   const togglePick = (i) => { if (done) g.setRound(null); setPicks((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length < 25 - mines ? [...p, i] : p)) }
 
+  const [run, setRun] = useState({ n: 0, net: 0, why: '' })
   const runAuto = async () => {
     if (auto || !picks.length) return
-    stop.current = false; setAuto(true)
+    stop.current = false; setAuto(true); g.setErr('')
+    setRun({ n: 0, net: 0, why: '' })
     const max = Math.floor(Number(nBets)) || 0, sw = Number(stopWin) || 0, sl = Number(stopLoss) || 0
-    let n = 0, net = 0
-    while (!stop.current && alive.current && (!max || n < max)) {
-      const d = await g.start({ bet: Number(bet), mines })
-      if (!d?.state) break
-      let s = d.state
-      for (const i of picks) {
-        if (stop.current || !alive.current || s.status !== 'active') break
-        await sleep(380)
-        const a = await g.act('reveal', { index: i })
-        if (!a?.state) { s = null; break }
-        s = a.state
+    let n = 0, net = 0, why = ''
+    try {
+      while (!stop.current && alive.current && (!max || n < max)) {
+        const d = await g.start({ bet: Number(bet), mines })
+        if (!d?.state) { why = 'Could not start a round'; break }
+        let s = d.state
+        for (const i of picks) {
+          if (stop.current || !alive.current || s.status !== 'active') break
+          await sleep(300)
+          const a = await g.act('reveal', { index: i })
+          if (!a?.state) { s = null; break }
+          s = a.state
+        }
+        if (!s) { why = 'Round interrupted'; break }
+        if (s.status === 'active') { await sleep(300); const c = await g.act('cashout'); if (!c?.state) { why = 'Cash out failed'; break } s = c.state }
+        n++; net += s.payout - s.bet
+        if (alive.current) setRun({ n, net, why: '' })
+        if (sw && net >= sw) { why = 'Stop on profit reached'; break }
+        if (sl && -net >= sl) { why = 'Stop on loss reached'; break }
+        await sleep(700)
       }
-      if (!s) break
-      if (s.status === 'active') { await sleep(380); const c = await g.act('cashout'); if (!c?.state) break; s = c.state }
-      n++; net += s.payout - s.bet
-      if ((sw && net >= sw) || (sl && -net >= sl)) break
-      await sleep(900)
-    }
-    if (alive.current) setAuto(false)
+    } catch { why = 'Connection error' }
+    if (!why && stop.current) why = 'Stopped'
+    if (!why && max && n >= max) why = 'All bets done'
+    if (alive.current) { setRun({ n, net, why }); setAuto(false) }
   }
 
   const profit = active ? Math.floor(r.bet * r.mult) - r.bet : 0
@@ -169,6 +177,13 @@ export default function Mines() {
                 ? <button type="button" className={styles.go} onClick={() => { stop.current = true }}>Stop Autobet</button>
                 : <button type="button" className={styles.go} disabled={!g.user || !picks.length || Number(bet) < MIN_BET} onClick={runAuto}>{g.user ? 'Start Autobet' : 'Log in to play'}</button>}
             </>
+          )}
+          {tab === 'auto' && (run.n > 0 || run.why) && (
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: '#9aa3b2', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <span>Bets <b style={{ color: '#fff' }}>{run.n}</b></span>
+              <span>Net <b style={{ color: run.net >= 0 ? '#34d399' : '#f87171' }}>{run.net >= 0 ? '+' : ''}{fmt(run.net)}</b></span>
+              {run.why && !auto && <span>{run.why}</span>}
+            </p>
           )}
           {g.err && <p className={styles.err}>{g.err}</p>}
         </aside>
