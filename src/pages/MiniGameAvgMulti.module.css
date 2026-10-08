@@ -175,3 +175,9 @@
 .bucketBtnId{font:800 18px var(--head,inherit)}
 .bucketBtnRange{font-size:15px}
 .bucketPct{margin-left:auto;font-size:13px;color:var(--mute,#8d96ab);font-weight:700}
+.compact .bucketLabel{font-size:12px}
+.compact .bucketBtn{padding:8px 10px 8px;border-radius:11px;border-width:1px}
+.compact .bucketBtnId{font-size:16px}
+.compact .bucketBtnRange{font-size:12px}
+.compact .bucketPct{font-size:11px;top:7px;right:8px}
+.compact .distSection{padding:10px 0 0;background:none;border:0}

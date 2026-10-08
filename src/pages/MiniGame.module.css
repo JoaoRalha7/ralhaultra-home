@@ -1347,3 +1347,26 @@
 .embedded .cardBet,.embedded .cardWin{font-size:11px}
 .embedded .cardNum{font-size:9px;padding:1px 7px;top:5px;left:5px}
 @media (max-width:760px){.embedded .grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* ══ GTB / AVG inside the hunt (compact) v4: tighter and flatter ══ */
+.compact{gap:10px}
+.compact .gtbLeft{gap:10px}
+.compact .gtbInputRow{height:54px;border-radius:14px}
+.compact .gtbInput{font-size:24px}
+.compact .gtbInputPrefix{font-size:20px;padding-left:12px}
+.compact .gtbChip{height:34px;font-size:13px;border-radius:10px}
+.compact .gtbSubmitBtn{height:44px;font-size:15px;border-radius:12px}
+.compact .gtbHint{font-size:12px;justify-content:flex-start}
+.compact .myPickBanner{padding:12px;border-radius:14px;gap:2px}
+.compact .myPickName{font-size:28px}
+.compact .myPickMeta{margin-top:2px;gap:12px}
+.compact .gtbClosed{height:40px;font-size:13px}
+.compact .costBanner{font-size:13px}
+.compact .costBalance{padding:3px 10px}
+.compact .sidebar{margin-top:2px}
+.compact .sidebarHead{padding:2px 2px 8px;font-size:13px}
+.compact .sidebarRows{max-height:150px;gap:5px}
+.compact .sidebarRow{padding:7px 10px;border-radius:10px}
+.compact .sidebarUser{font-size:13px}
+.compact .sidebarSlot{font-size:11px}
+.compact .barTimer{font-size:18px}
