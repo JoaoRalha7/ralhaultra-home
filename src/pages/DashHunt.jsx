@@ -132,6 +132,29 @@ function AddSlotModal({ slot, onClose, onAdd }) {
 }
 
 // ── Detail Modal ───────────────────────────────────────────
+function huntStats(h, entries) {
+  const open = entries.filter(e => e.payment != null && parseBet(e.bet) > 0 && (e.opened || parseBet(e.payment) > 0))
+  const totalBet = entries.reduce((a, e) => a + parseBet(e.bet), 0)
+  const totalPay = open.reduce((a, e) => a + parseBet(e.payment), 0)
+  const balStart = parseBet(h.balance_start)
+  const hasEnd   = h.balance_end != null && h.balance_end !== ''
+  const profit   = hasEnd ? parseFloat(h.balance_end) + totalPay - balStart : totalPay - balStart
+  const multis   = open.map(e => parseBet(e.payment) / parseBet(e.bet))
+  return {
+    n: entries.length, opened: open.length, totalBet, totalPay, profit, hasProfit: balStart > 0 && open.length > 0,
+    avg: multis.length ? multis.reduce((a, b) => a + b, 0) / multis.length : 0,
+    best: multis.length ? Math.max(...multis) : 0,
+  }
+}
+
+const HI = {
+  back:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
+  x:     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>,
+  trash: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>,
+  crown: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>,
+}
+const signed = (n) => (n >= 0 ? '+' : '') + fmt(n) + '€'
+
 function DetailModal({ hunt, onClose }) {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -140,46 +163,49 @@ function DetailModal({ hunt, onClose }) {
       .eq('hunt_id', hunt.id).order('created_at', { ascending: true })
       .then(({ data }) => { setEntries(data || []); setLoading(false) })
   }, [hunt.id])
+  const st = huntStats(hunt, entries)
 
   return (
-    <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className={styles.modal} style={{ maxWidth: 640, width: '95vw' }}>
-        <button className={styles.modalClose} onClick={onClose}><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round'><line x1='18' y1='6' x2='6' y2='18'/><line x1='6' y1='6' x2='18' y2='18'/></svg></button>
-        <div className={styles.modalTitle}>{hunt.title || `Bonus Hunt #${hunt.id}`}</div>
-        <div className={styles.detailMeta}>
-          Data: {fmtDate(hunt.date)} · Saldo: {hunt.balance_start ? fmt(hunt.balance_start) + '€' : '—'}
+    <div className={styles.hxOverlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className={styles.hxModal}>
+        <div className={styles.hxModalHead}>
+          <div>
+            <h2>{hunt.title || `Bonus Hunt #${hunt.id}`}</h2>
+            <p>{fmtDate(hunt.date)} · Saldo inicial {hunt.balance_start ? fmt(hunt.balance_start) + '€' : '—'}</p>
+          </div>
+          <button className={styles.hxX} onClick={onClose} aria-label="Fechar">{HI.x}</button>
         </div>
+        {!loading && (
+          <div className={styles.hxModalStats}>
+            <div><span>Profit</span><b className={!st.hasProfit ? '' : st.profit >= 0 ? styles.green : styles.red}>{st.hasProfit ? signed(st.profit) : '—'}</b></div>
+            <div><span>Total pago</span><b>{fmt(st.totalPay)}€</b></div>
+            <div><span>AVG multi</span><b>{st.avg ? st.avg.toFixed(2) + 'x' : '—'}</b></div>
+            <div><span>Melhor</span><b className={styles.amber}>{st.best ? st.best.toFixed(1) + 'x' : '—'}</b></div>
+          </div>
+        )}
         {loading ? (
           <div className={styles.loading}><div className={styles.spinner} /> A carregar...</div>
         ) : (
-          <div style={{ overflowX: 'auto', marginTop: 12 }}>
-            <table className={styles.detailTable}>
-              <thead><tr><th>Slot</th><th>Bet</th><th>Payment</th><th>Tipo</th><th>Multi</th></tr></thead>
-              <tbody>
-                {entries.map(e => {
-                  const multi = e.bet && e.payment ? (parseBet(e.payment) / parseBet(e.bet)) : null
-                  return (
-                    <tr key={e.id}>
-                      <td>
-                        <div style={{ display:'flex', alignItems:'center', gap: 8 }}>
-                          <img src={e.slot?.image_url||''} alt=""
-                            style={{ width:24,height:24,borderRadius:5,objectFit:'cover' }}
-                            onError={ev=>ev.target.style.display='none'} />
-                          {e.slot?.name||'—'}
-                          {e.is_super && <span className={styles.superBadge}><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></span>}
-                        </div>
-                      </td>
-                      <td>{e.bet ? fmt(parseBet(e.bet))+'€' : '—'}</td>
-                      <td>{e.payment!=null ? fmt(parseBet(e.payment))+'€' : '—'}</td>
-                      <td>{e.is_super ? 'Super' : 'Normal'}</td>
-                      <td className={multiClass(multi, styles)}>
-                        {multi !== null ? multi.toFixed(2)+'x' : '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div className={styles.hxModalList}>
+            {entries.map((e, i) => {
+              const bet = parseBet(e.bet)
+              const multi = bet > 0 && e.payment != null ? parseBet(e.payment) / bet : null
+              const mc = multi === null ? '' : multi >= 100 ? styles.hxMGold : multi >= 1 ? styles.hxMGreen : styles.hxMRed
+              return (
+                <div key={e.id} className={`${styles.hxDRow} ${multi !== null && multi >= 1 ? styles.hxDRowWin : ''}`}>
+                  <span className={styles.hxIdx}>#{i + 1}</span>
+                  <img src={e.slot?.image_url || ''} alt="" onError={ev => ev.target.style.opacity = '.2'} />
+                  <div className={styles.hxDName}>
+                    <b>{e.slot?.name || '—'}</b>
+                    <small>{e.slot?.provider || ''}</small>
+                  </div>
+                  {e.is_super && <span className={styles.hxDSuper}>{HI.crown}</span>}
+                  <span className={styles.hxDNum}>{bet ? fmt(bet) + '€' : '—'}</span>
+                  <span className={styles.hxDNum}>{e.payment != null ? fmt(parseBet(e.payment)) + '€' : '—'}</span>
+                  <span className={`${styles.hxMulti} ${mc}`}>{multi !== null ? multi.toFixed(1) + 'x' : '—'}</span>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -190,12 +216,31 @@ function DetailModal({ hunt, onClose }) {
 // ── History ────────────────────────────────────────────────
 function HistoryView({ onBack, onReopen }) {
   const [hunts,   setHunts]   = useState([])
+  const [stats,   setStats]   = useState({})
   const [loading, setLoading] = useState(true)
   const [detail,  setDetail]  = useState(null)
 
   useEffect(() => {
-    supabaseDash.from('bonus_hunts').select('*').order('id', { ascending: false })
-      .then(({ data }) => { setHunts(data || []); setLoading(false) })
+    (async () => {
+      const { data } = await supabaseDash.from('bonus_hunts').select('*').order('id', { ascending: false })
+      const list = data || []
+      setHunts(list)
+      // all entries, paged (supabase caps a response at 1000 rows)
+      let rows = [], from = 0
+      while (true) {
+        const { data: es } = await supabaseDash.from('bonus_entries').select('hunt_id,bet,payment,opened').range(from, from + 999)
+        if (!es?.length) break
+        rows = rows.concat(es)
+        if (es.length < 1000) break
+        from += 1000
+      }
+      const by = {}
+      rows.forEach(r => { (by[r.hunt_id] = by[r.hunt_id] || []).push(r) })
+      const out = {}
+      list.forEach(h => { out[h.id] = huntStats(h, by[h.id] || []) })
+      setStats(out)
+      setLoading(false)
+    })()
   }, [])
 
   const handleDelete = async (hunt) => {
@@ -205,35 +250,66 @@ function HistoryView({ onBack, onReopen }) {
     setHunts(hs => hs.filter(h => h.id !== hunt.id))
   }
 
+  const all = hunts.map(h => stats[h.id]).filter(Boolean)
+  const withP = all.filter(x => x.hasProfit)
+  const sumProfit = withP.reduce((a, x) => a + x.profit, 0)
+  const bestMulti = all.reduce((m, x) => Math.max(m, x.best), 0)
+  const wins = withP.filter(x => x.profit >= 0).length
+
   return (
-    <div className={styles.historyWrap}>
-      <div className={styles.historyTop}>
-        <h3 className={styles.historyTitle}>Histórico de Bonus Hunts</h3>
-        <button className={styles.ghostBtn} onClick={onBack}>← Voltar</button>
+    <div className={`${styles.page} ${styles.hxPage}`}>
+      <div className={styles.hxHead}>
+        <div>
+          <div className={styles.hxTitleRow}><h1>Histórico</h1></div>
+          <p>Todos os bonus hunts. Reabre um para continuar ou vê o detalhe.</p>
+        </div>
+        <button className={styles.hxGhost} onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{HI.back}Voltar</button>
       </div>
+
       {loading ? (
         <div className={styles.loading}><div className={styles.spinner} /> A carregar...</div>
       ) : hunts.length === 0 ? (
-        <div className={styles.emptyState}><div className={styles.emptyIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><p>Sem hunts.</p></div>
+        <div className={styles.emptyState}><p>Sem hunts.</p></div>
       ) : (
-        <div className={styles.historyList}>
-          {hunts.map(h => (
-            <div key={h.id} className={styles.historyItem}>
-              <div>
-                <div className={styles.historyItemTitle}>{h.title||`Bonus Hunt #${h.id}`}</div>
-                <div className={styles.historyItemDate}>{fmtDate(h.date)}</div>
-                <div className={styles.historyItemBalance}>
-                  Saldo: {h.balance_start ? fmt(h.balance_start)+'€' : '—'}
+        <>
+          <div className={styles.hxHStats}>
+            <div className={styles.hxStat}><span>Hunts</span><b>{hunts.length}</b></div>
+            <div className={styles.hxStat}><span>Profit total</span><b className={withP.length ? (sumProfit >= 0 ? styles.green : styles.red) : ''}>{withP.length ? signed(sumProfit) : '—'}</b></div>
+            <div className={styles.hxStat}><span>Em positivo</span><b>{withP.length ? `${wins} / ${withP.length}` : '—'}</b></div>
+            <div className={styles.hxStat}><span>Melhor multi</span><b className={styles.amber}>{bestMulti ? bestMulti.toFixed(1) + 'x' : '—'}</b></div>
+          </div>
+
+          <div className={styles.hxHGrid}>
+            {hunts.map(h => {
+              const x = stats[h.id]
+              return (
+                <div key={h.id} className={`${styles.hxHCard} ${h.active ? styles.hxHCardOn : ''}`}>
+                  <div className={styles.hxHTop}>
+                    <div style={{ minWidth: 0 }}>
+                      <div className={styles.hxHTitle}>{h.title || `Bonus Hunt #${h.id}`}{h.active && <em><i />Ativo</em>}</div>
+                      <div className={styles.hxHDate}>{fmtDate(h.date)}</div>
+                    </div>
+                    <div className={styles.hxHProfit}>
+                      <b className={x?.hasProfit ? (x.profit >= 0 ? styles.green : styles.red) : ''}>{x?.hasProfit ? signed(x.profit) : '—'}</b>
+                      <small>profit</small>
+                    </div>
+                  </div>
+                  <div className={styles.hxHFigs}>
+                    <div><span>Saldo</span><b>{h.balance_start ? fmt(h.balance_start) + '€' : '—'}</b></div>
+                    <div><span>Slots</span><b>{x ? `${x.opened}/${x.n}` : '—'}</b></div>
+                    <div><span>AVG</span><b>{x?.avg ? x.avg.toFixed(1) + 'x' : '—'}</b></div>
+                    <div><span>Melhor</span><b className={styles.amber}>{x?.best ? x.best.toFixed(1) + 'x' : '—'}</b></div>
+                  </div>
+                  <div className={styles.hxHActs}>
+                    <button className={styles.hxHMain} onClick={() => onReopen(h)}>Reabrir</button>
+                    <button className={styles.hxGhost} onClick={() => setDetail(h)}>Detalhes</button>
+                    <button className={styles.hxHDel} aria-label="Eliminar" onClick={() => handleDelete(h)}>{HI.trash}</button>
+                  </div>
                 </div>
-              </div>
-              <div className={styles.historyActions}>
-                <button className={styles.hBtn} onClick={() => setDetail(h)}>Detalhes</button>
-                <button className={`${styles.hBtn} ${styles.hBtnReopen}`} onClick={() => onReopen(h)}>Reabrir</button>
-                <button className={`${styles.hBtn} ${styles.hBtnDanger}`} onClick={() => handleDelete(h)}>Eliminar</button>
-              </div>
-            </div>
-          ))}
-        </div>
+              )
+            })}
+          </div>
+        </>
       )}
       {detail && <DetailModal hunt={detail} onClose={() => setDetail(null)} />}
     </div>
