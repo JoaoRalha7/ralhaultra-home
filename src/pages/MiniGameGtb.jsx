@@ -104,7 +104,7 @@ function ConfirmDialog({ guess, cost, points, onConfirm, onCancel, loading, cash
         {cashPrize > 0 && (
           <div className={styles.confirmCostRow} style={{borderColor:'rgba(34,197,94,.25)'}}>
             <span className={styles.confirmCostLabel}>1st place prize</span>
-            <span className={styles.confirmCostVal} style={{color:'#4ade80'}}>€{cashPrize} cash</span>
+            <span className={styles.confirmCostVal} style={{color:'#4ade80'}}>€{cashPrize}</span>
           </div>
         )}
 
@@ -456,7 +456,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round">
                       <path d="M17.5 6.5A7 7 0 0 0 7 12a7 7 0 0 0 10.5 5.5M4 10h10M4 14h10"/>
                     </svg>
-                    <span>1st place wins <strong>€{game.prize_cash_1st} cash</strong></span>
+                    <span>1st place wins <strong>€{game.prize_cash_1st}</strong></span>
                   </div>
                 )}
 
