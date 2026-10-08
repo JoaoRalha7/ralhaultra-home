@@ -456,8 +456,8 @@ async function getUser(request, env, sbHeaders) {
   const prof = (await p.json())?.[0]
   // The name comes from the Twitch identity Supabase verified at login (identity_data), never from profiles.twitch_username
   // or user_metadata, because the user can edit both of those and would otherwise be able to act as someone else.
-  const idt = (u.identities || []).find((i) => i.provider === 'twitch')?.identity_data || {}
-  const username = String(idt.name || idt.preferred_username || idt.user_name || '').toLowerCase()
+  const idt = ((u.identities || []).find((i) => /twitch/i.test(i.provider || '')) || (u.identities || [])[0])?.identity_data || {}
+  const username = String(idt.name || idt.preferred_username || idt.user_name || idt.full_name || '').toLowerCase()
   const pic = idt.avatar_url || idt.picture || u.user_metadata?.avatar_url || u.user_metadata?.picture || null
   return username ? { id: u.id, username, avatar: prof?.avatar_url || pic, savedAvatar: !!prof?.avatar_url } : null
 }

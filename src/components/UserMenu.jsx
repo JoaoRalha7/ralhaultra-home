@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Medal, RANK_NAMES, RANK_COLORS } from './Medal'
 import { workerGet } from '../lib/vip'
+import RewardsPanel from './RewardsModal'
 import styles from './UserMenu.module.css'
 
 function Face({ src, name, size }) {
@@ -13,6 +14,7 @@ function Face({ src, name, size }) {
 export default function UserMenu({ src, name, userId, onLogout }) {
   const [open, setOpen] = useState(false)
   const [level, setLevel] = useState(0)
+  const [rewards, setRewards] = useState(false)
   const ref = useRef(null)
 
   useEffect(() => {
@@ -52,9 +54,9 @@ export default function UserMenu({ src, name, userId, onLogout }) {
             <Link to="/profile" role="menuitem" onClick={() => setOpen(false)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6" /></svg>My Profile
             </Link>
-            <Link to="/vip" role="menuitem" onClick={() => setOpen(false)}>
+            <button role="menuitem" onClick={() => { setOpen(false); setRewards(true) }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></svg>VIP
-            </Link>
+            </button>
             <i className={styles.sep} />
             <button role="menuitem" onClick={() => { setOpen(false); onLogout() }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4M16 8l4 4-4 4M20 12H9" /></svg>Logout
@@ -62,6 +64,7 @@ export default function UserMenu({ src, name, userId, onLogout }) {
           </div>
         </div>
       )}
+      <RewardsPanel open={rewards} onClose={() => setRewards(false)} />
     </div>
   )
 }

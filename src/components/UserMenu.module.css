@@ -13,6 +13,5 @@
 .head small{display:block;font-size:13px;font-weight:600;margin-top:2px}
 .items{padding:8px;display:flex;flex-direction:column;gap:2px}
 .items a,.items button{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:12px;border:0;background:transparent;color:#c9d0e0;font:600 14px "DM Sans",sans-serif;text-decoration:none;cursor:pointer;text-align:left}
-.items a:hover,.items button:hover{background:rgba(59,130,246,.12);color:#fff}
-.items button:hover{background:rgba(248,113,113,.12);color:#fca5a5}
+.items a:hover,.items button:hover{background:rgba(248,113,113,.12);color:#fca5a5}
 .sep{height:1px;background:#252b3a;margin:6px 4px}
