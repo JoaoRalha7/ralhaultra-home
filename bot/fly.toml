@@ -1,0 +1,12 @@
+app = "ralha-bot"
+primary_region = "lhr"
+
+[build]
+
+# No [http_service]: the bot only makes outbound connections.
+[processes]
+  app = "node dist/index.js"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
