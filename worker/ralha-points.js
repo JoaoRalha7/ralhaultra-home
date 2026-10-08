@@ -1885,6 +1885,21 @@ export default {
         return json({ stats: { bets: games.length + crash.length, wins, losses }, counts, total: list.length, page, items: list.slice((page - 1) * 8, page * 8) })
       }
 
+      // ── GET /players?q=ab — usernames that start with q (people who logged in), for the @ search ──
+      if (pathname === '/players' && request.method === 'GET') {
+        const q = (searchParams.get('q') || '').toLowerCase().trim().replace(/^@/, '')
+        if (!/^[a-z0-9_]{1,30}$/.test(q)) return json({ players: [] })
+        const r = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?twitch_username=ilike.${q}*&select=twitch_username,avatar_url&order=twitch_username.asc&limit=8`, { headers: sbHeaders })
+        const rows = r.ok ? await r.json() : []
+        const names = rows.map((x) => String(x.twitch_username || '').toLowerCase()).filter((n) => /^[a-z0-9_]{1,30}$/.test(n))
+        const lv = {}
+        if (names.length) {
+          const b = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=in.(${names.join(',')})&select=username,level`, { headers: sbHeaders })
+          if (b.ok) for (const x of await b.json()) lv[x.username] = Number(x.level) || 0
+        }
+        return json({ players: rows.filter((x) => x.twitch_username).map((x) => ({ username: String(x.twitch_username).toLowerCase(), avatar: x.avatar_url || null, level: lv[String(x.twitch_username).toLowerCase()] ?? 0 })) })
+      }
+
       // ── GET /player?u=name — public player card (originals stats only; never balance or private data) ──
       if (pathname === '/player' && request.method === 'GET') {
         const name = (searchParams.get('u') || '').toLowerCase().trim().replace(/^@/, '')

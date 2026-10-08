@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { Icon } from './Icon'
 import { supabase, supabaseDash } from '../lib/supabase'
 import { openPlayer } from './PlayerModal'
+import { Medal } from './Medal'
+import { WORKER } from '../lib/points'
 import s from './SearchBox.module.css'
 
-export const NAV_PAGES = [
-  ['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard'],
-  ['crown', 'VIP', '/vip'], ['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop'],
-  ['originals', 'Originals', '/originals'], ['slots', 'Slots', '/slots'], ['spark', 'Bonus Hunts', '/bonus-hunts'],
-  ['ball', 'Tournaments', '/torneios'], ['pulse', 'Stats', '/stats'], ['play', 'Stream', '/stream'], ['users', 'Community', '/community'],
-  ['mines', 'Mines', '/mines'], ['cards', 'Blackjack', '/blackjack'], ['crash', 'Crash', '/crash'], ['keno', 'Keno', '/keno'],
-  ['plinko', 'Plinko', '/plinko'], ['roulette', 'Roulette', '/roulette'], ['jackpot', 'Jackpot', '/jackpot'],
+// same sections as the sidebar
+export const NAV_SECTIONS = [
+  ['Discover', [['home', 'Home', '/'], ['tag', 'Casinos & Offers', '/offers'], ['trophy', 'Leaderboard', '/leaderboard']]],
+  ['Rewards', [['crown', 'VIP', '/vip'], ['gift', 'Giveaways & Raffles', '/giveaways'], ['bag', 'Shop', '/shop']]],
+  ['Casino', [['originals', 'Originals', '/originals'], ['mines', 'Mines', '/mines'], ['cards', 'Blackjack', '/blackjack'], ['crash', 'Crash', '/crash'], ['keno', 'Keno', '/keno'], ['plinko', 'Plinko', '/plinko'], ['roulette', 'Roulette', '/roulette'], ['jackpot', 'Jackpot', '/jackpot']]],
+  ['Stream', [['slots', 'Slots', '/slots'], ['spark', 'Bonus Hunts', '/bonus-hunts'], ['ball', 'Tournaments', '/torneios'], ['pulse', 'Stats', '/stats'], ['play', 'Stream', '/stream'], ['users', 'Community', '/community']]],
 ]
 
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -27,6 +28,7 @@ export default function SearchBox() {
   const [open, setOpen] = useState(false)
   const [data, setData] = useState({ shop: [], casinos: [], giveaways: [] })
   const [slots, setSlots] = useState([])
+  const [people, setPeople] = useState([])
   const [cur, setCur] = useState(0)
   const loaded = useRef(false)
   const box = useRef(null)
@@ -46,6 +48,16 @@ export default function SearchBox() {
   const term = q.trim().replace(/^@/, '')
   const isPlayer = q.trim().startsWith('@')
 
+  // @ + letters: members who logged in to the site
+  useEffect(() => {
+    if (!isPlayer || !term) { setPeople([]); return }
+    let off = false
+    const t = setTimeout(() => {
+      fetch(`${WORKER}/players?q=${encodeURIComponent(term)}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!off) setPeople(d?.players || []) }).catch(() => {})
+    }, 180)
+    return () => { off = true; clearTimeout(t) }
+  }, [term, isPlayer])
+
   useEffect(() => {
     if (isPlayer || term.length < 2) { setSlots([]); return }
     let off = false
@@ -61,11 +73,16 @@ export default function SearchBox() {
     const has = (n) => !t || String(n || '').toLowerCase().includes(t)
     const out = []
     if (isPlayer) {
-      if (term) out.push({ label: 'Players', items: [{ key: 'p', icon: 'users', name: `Open @${term.toLowerCase()}`, run: () => openPlayer(term) }] })
+      if (term) {
+        const list = people.map((x) => ({ key: 'pl' + x.username, img: x.avatar || `https://unavatar.io/twitch/${encodeURIComponent(x.username)}?fallback=false`, level: x.level, icon: 'users', name: x.username, run: () => openPlayer(x.username) }))
+        out.push({ label: 'Members', items: list.length ? list : [{ key: 'p', icon: 'users', name: `Open @${term.toLowerCase()}`, run: () => openPlayer(term) }] })
+      }
       return out
     }
-    const pages = NAV_PAGES.filter(([, n]) => has(n)).map(([ic, n, to]) => ({ key: 'pg' + to, icon: ic, name: n, run: () => navigate(to) }))
-    if (pages.length) out.push({ label: 'Pages', items: pages })
+    NAV_SECTIONS.forEach(([label, list]) => {
+      const items = list.filter(([, n]) => has(n)).map(([ic, n, to]) => ({ key: 'pg' + to, icon: ic, name: n, run: () => navigate(to) }))
+      if (items.length) out.push({ label, items })
+    })
     if (t) {
       const slotItems = slots.map((x) => ({ key: 'sl' + x.id, img: x.image_url, icon: 'slots', name: x.name, run: () => navigate('/slots', { state: { slotId: x.id } }) }))
       if (slotItems.length) out.push({ label: 'Slots', items: slotItems })
@@ -77,7 +94,7 @@ export default function SearchBox() {
       if (cs.length) out.push({ label: 'Casinos', items: cs })
     }
     return out
-  }, [term, isPlayer, slots, data, navigate])
+  }, [term, isPlayer, slots, people, data, navigate])
 
   const flat = groups.flatMap((g) => g.items)
   useEffect(() => { setCur(0) }, [term])
@@ -121,7 +138,8 @@ export default function SearchBox() {
                   <button type="button" key={it.key} role="option" aria-selected={cur === mine} className={`${s.item}${cur === mine ? ` ${s.on}` : ''}`}
                     onMouseEnter={() => setCur(mine)} onMouseDown={(e) => e.preventDefault()} onClick={() => go(it)}>
                     {it.img ? <img src={it.img} alt="" loading="lazy" /> : <span className={s.ic}><Icon name={it.icon} size={16} /></span>}
-                    <span className={s.nm}><Hl text={it.name} q={isPlayer ? '' : term} /></span>
+                    <span className={s.nm}><Hl text={it.name} q={term} /></span>
+                    {it.level !== undefined && <span className={s.lv}><Medal level={it.level} size={16} /></span>}
                   </button>
                 )
               })}
