@@ -519,7 +519,7 @@ function PickPanel({ hunt, entries }) {
       <div className={styles.pickStatusRow}>
         <div className={`${styles.pickBadge} ${isOpen ? styles.pickBadgeOpen : isFinished ? styles.pickBadgeDone : styles.pickBadgeClosed}`}>
           <div className={styles.pickBadgeDot} />
-          {isOpen ? 'OPEN' : isFinished ? 'FINISHED' : isClosed ? 'CLOSED' : 'RUNNING'}
+          {isOpen ? 'OPEN' : isFinished ? 'FINISHED' : isClosed ? 'CLOSED' : 'IDLE'}
         </div>
         <span className={styles.pickCounter}>{picked}/{total}</span>
       </div>
@@ -853,6 +853,7 @@ function StatsPanel({ hunt, entries, mode, balanceEnd, onBalanceEndChange, onSav
         <Stat label="Total pago" val={fmt(totalPay) + '€'} cls={styles.green} />
         <Stat label="AVG multi" val={avg > 0 ? avg.toFixed(2) + 'x' : '—'} />
         <Stat label="Saldo final" val={hasBalEnd ? fmt(balEndN) + '€' : '—'} />
+        <Stat label="BE inicial" val={beInit > 0 ? beInit.toFixed(2) + 'x' : '—'} cls={styles.amber} />
         <Stat label="BE atual" val={beAtual > 0 ? beAtual.toFixed(2) + 'x' : '—'} cls={styles.amber} strong />
       </div>
       {(best || worst) && (
@@ -1095,7 +1096,7 @@ function GtbPanel({ hunt }) {
       <div className={styles.pickStatusRow}>
         <div className={`${styles.pickBadge} ${isOpen ? styles.pickBadgeOpen : isFinished ? styles.pickBadgeDone : styles.pickBadgeClosed}`}>
           <div className={styles.pickBadgeDot} />
-          {isOpen ? 'OPEN' : isFinished ? 'FINISHED' : isClosed ? 'CLOSED' : 'RUNNING'}
+          {isOpen ? 'OPEN' : isFinished ? 'FINISHED' : isClosed ? 'CLOSED' : 'IDLE'}
         </div>
         <span className={styles.pickCounter}>{entries.length} entries</span>
       </div>
@@ -1486,7 +1487,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
       <div className={styles.pickStatusRow}>
         <div className={`${styles.pickBadge} ${isOpen ? styles.pickBadgeOpen : isFinished ? styles.pickBadgeDone : styles.pickBadgeClosed}`}>
           <div className={styles.pickBadgeDot} />
-          {isOpen ? 'OPEN' : isFinished ? 'FINISHED' : isClosed ? 'CLOSED' : 'RUNNING'}
+          {isOpen ? 'OPEN' : isFinished ? 'FINISHED' : isClosed ? 'CLOSED' : 'IDLE'}
         </div>
         <span className={styles.pickCounter}>{entries.length} entries</span>
         {calcedAvg && isOpen && (
