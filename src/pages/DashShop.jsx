@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { adminPoints } from '../lib/points'
+import ProductMedia from '../components/ProductMedia'
 import styles from './DashShop.module.css'
 
 const CATS = [['digital', 'Digital'], ['interact', 'Interact'], ['merch', 'Merch']]
@@ -30,7 +31,7 @@ const I = {
 function Thumb({ url, name, cls }) {
   return (
     <div className={cls}>
-      {url ? <img src={url} alt="" /> : <span>{name?.[0]?.toUpperCase() || '?'}</span>}
+      {url ? <ProductMedia src={url} /> : <span>{name?.[0]?.toUpperCase() || '?'}</span>}
     </div>
   )
 }
@@ -109,7 +110,7 @@ function ProductForm({ product, onSaved, onCancel }) {
           <div className={styles.imgRow}>
             <input value={f.image_url} onChange={e => set('image_url', e.target.value)} placeholder="URL" />
             <button type="button" className={styles.upBtn} onClick={() => fileRef.current?.click()} disabled={upl} aria-label="Fazer upload">{I.up}</button>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={upload} />
+            <input ref={fileRef} type="file" accept="image/*,video/webm,video/mp4" hidden onChange={upload} />
           </div>
         </div>
       </div>

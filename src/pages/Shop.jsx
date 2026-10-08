@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import ProductMedia, { isVideoUrl } from '../components/ProductMedia'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { supabase } from '../lib/supabase'
@@ -96,7 +97,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
     >
       <div className={styles.media}>
         {product.image_url
-          ? <ProductSpin src={product.image_url} seed={product.id} />
+          ? (isVideoUrl(product.image_url) ? <ProductMedia src={product.image_url} className={styles.photo} /> : <ProductSpin src={product.image_url} seed={product.id} />)
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
         <span className={styles.tags}>
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
@@ -140,7 +141,7 @@ function ConfirmModal({ product, balance, loading, onConfirm, onCancel }) {
       <div className={styles.modal} style={{ '--c': product.color || '#3b82f6' }} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className={styles.mMedia}>
           {product.image_url
-            ? <img src={product.image_url} alt="" />
+            ? <ProductMedia src={product.image_url} />
             : <span className={styles.initial}>{product.name?.[0]?.toUpperCase()}</span>}
         </div>
         <div className={styles.mBody}>
@@ -262,7 +263,7 @@ export default function Shop() {
       {featured && (
         <article className={styles.top} style={{ '--c': featured.color || '#f5c542' }}>
           <div className={styles.topArt}>
-            {featured.image_url ? <img src={featured.image_url} alt="" /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
+            {featured.image_url ? <ProductMedia src={featured.image_url} /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
           </div>
           <div className={styles.topText}>
             <div className={styles.topTags}>
@@ -354,7 +355,7 @@ export default function Shop() {
             <ul className={styles.rows}>
               {recent.slice(0, 5).map(r => (
                 <li key={r.id} className={styles.bRow}>
-                  <span className={styles.rThumb}>{r.shop_products?.image_url ? <img src={r.shop_products.image_url} alt="" /> : (r.shop_products?.name?.[0] || '?')}</span>
+                  <span className={styles.rThumb}>{r.shop_products?.image_url ? <ProductMedia src={r.shop_products.image_url} /> : (r.shop_products?.name?.[0] || '?')}</span>
                   <b>{r.shop_products?.name || 'Prize'}</b>
                   <span className={styles.rWho}>{r.twitch_username} · {ago(r.created_at)}</span>
                 </li>

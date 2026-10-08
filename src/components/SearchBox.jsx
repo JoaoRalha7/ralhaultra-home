@@ -5,6 +5,7 @@ import { supabase, supabaseDash } from '../lib/supabase'
 import { openPlayer } from './PlayerModal'
 import { Medal } from './Medal'
 import { WORKER } from '../lib/points'
+import { isVideoUrl } from './ProductMedia'
 import s from './SearchBox.module.css'
 
 // same sections as the sidebar
@@ -88,7 +89,7 @@ export default function SearchBox() {
       if (slotItems.length) out.push({ label: 'Slots', items: slotItems })
       const gv = data.giveaways.filter((x) => has(x.title)).slice(0, 5).map((x) => ({ key: 'gv' + x.id, img: x.image_url, icon: 'gift', name: x.title, run: () => navigate('/giveaways') }))
       if (gv.length) out.push({ label: 'Giveaways', items: gv })
-      const sh = data.shop.filter((x) => has(x.name)).slice(0, 8).map((x) => ({ key: 'sh' + x.id, img: x.image_url, icon: 'bag', name: x.name, run: () => navigate('/shop') }))
+      const sh = data.shop.filter((x) => has(x.name)).slice(0, 8).map((x) => ({ key: 'sh' + x.id, img: isVideoUrl(x.image_url) ? null : x.image_url, icon: 'bag', name: x.name, run: () => navigate('/shop') }))
       if (sh.length) out.push({ label: 'Shop', items: sh })
       const cs = data.casinos.filter((x) => has(x.name)).slice(0, 8).map((x) => ({ key: 'cs' + x.id, img: x.logo_url, icon: 'tag', name: x.name, run: () => navigate('/offers') }))
       if (cs.length) out.push({ label: 'Casinos', items: cs })
