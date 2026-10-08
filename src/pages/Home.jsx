@@ -240,7 +240,7 @@ function SectionHead({ icon, title, tag, count, showAll }) {
 export default function Home() {
   const live = useTwitchStatus();
   const [tab, setTab] = useState('shop');
-  const [offers, setOffers] = useState(OFFERS.slice(0, 3));
+  const [offers, setOffers] = useState(null);
   const [methodsBySlug, setMethodsBySlug] = useState({});
   const [selectedCasino, setSelectedCasino] = useState(null);
   const [redirect, setRedirect] = useState(null);
@@ -283,8 +283,8 @@ export default function Home() {
       .order('is_hot', { ascending: false })
       .order('sort_order', { ascending: true })
       .then(({ data, error }) => {
-        if (!error && data && data.length) setOffers(data.map((c, i) => casinoToOffer(c, i)));
-      });
+        setOffers(!error && data && data.length ? data.map((c, i) => casinoToOffer(c, i)) : OFFERS.slice(0, 3));
+      }, () => setOffers(OFFERS.slice(0, 3)));
     supabase
       .from('deposit_methods')
       .select('slug,name,icon_url')
@@ -461,7 +461,7 @@ export default function Home() {
       <section>
         <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
         <OfferCarousel>
-          {offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} methodsBySlug={methodsBySlug} />)}
+          {!offers ? [0, 1, 2].map((i) => <div key={i} className="oc2 oSkel" aria-hidden="true" />) : offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} methodsBySlug={methodsBySlug} />)}
         </OfferCarousel>
       </section>
 
