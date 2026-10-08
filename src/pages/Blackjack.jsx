@@ -37,6 +37,8 @@ const showTotal = (cards, total, live) => {
   const hard = cards.reduce((a, c) => a + Math.min((c % 13) + 1, 10), 0)
   return cards.some((c) => c % 13 === 0) && hard + 10 <= 21 ? `${hard} / ${hard + 10}` : String(total)
 }
+const PPN = { perfect: 'Perfect Pair', colored: 'Colored Pair', mixed: 'Mixed Pair' }
+const T3N = { suitedTrips: 'Suited Trips', straightFlush: 'Straight Flush', trips: 'Trips', straight: 'Straight', flush: 'Flush' }
 const RES = { win: ['WIN', 'win'], blackjack: ['BLACKJACK', 'win'], push: ['PUSH', 'push'], lose: ['LOSE', 'lose'], bust: ['BUST', 'lose'] }
 
 const dTotal = (cards) => {
@@ -166,9 +168,14 @@ export default function Blackjack() {
                 const on = active && hi === r.active && !h.done
                 const res = shown ? RES[h.result] : null
                 const tone = res ? res[1] : null
-                const side = !(shown && h.side) ? [] : [h.side.pp && h.side.pp.mult ? `PP ${h.side.pp.mult}:1` : null, h.side.t3 && h.side.t3.mult ? `21+3 ${h.side.t3.mult}:1` : null].filter(Boolean)
+                const side = [h.side?.pp?.mult ? [PPN[h.side.pp.kind] || 'Pair', h.side.pp.mult] : null, h.side?.t3?.mult ? [T3N[h.side.t3.kind] || '21+3', h.side.t3.mult] : null].filter(Boolean)
                 return (
                   <div key={hi} className={`${styles.seat} ${on ? styles.seatOn : ''}`}>
+                    {side.length > 0 && (
+                      <div className={styles.sides}>
+                        {side.map(([nm, m]) => <span key={nm} className={styles.sbet} style={{ '--d': `${first(hi, 1) + 450}ms` }}><em>{nm}</em><i>{m}:1</i></span>)}
+                      </div>
+                    )}
                     <div className={styles.tags}>
                       {res ? (
                         <span className={`${styles.fpill} ${styles['f_' + tone]}`}><i>{showTotal(h.cards, h.total, !h.done)}</i><em>{res[0]}</em></span>
@@ -176,7 +183,6 @@ export default function Blackjack() {
                         <span className={`${styles.pill} ${on ? styles.pillOn : ''}`}>{showTotal(h.cards, h.total, !h.done)}</span>
                       )}
                       {h.doubled && <small className={styles.tag}>DOUBLE</small>}
-                      {side.map((t) => <small key={t} className={`${styles.tag} ${styles.t_win}`}>{t}</small>)}
                     </div>
                     <div className={styles.hand}>
                       {on && n > 1 && <i className={styles.chev} aria-hidden="true">&rsaquo;</i>}

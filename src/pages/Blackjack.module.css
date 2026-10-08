@@ -101,3 +101,12 @@
 .ins button { flex: 1; height: 38px; border-radius: 8px; border: 0; cursor: pointer; background: #2a2e3b; color: #e7e9ef; font: 800 13px "DM Sans", sans-serif; }
 .ins button:disabled { opacity: .5; cursor: default; }
 .ins .insYes { background: #22ff7a; color: #04140d; }
+
+.sides { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 4px; }
+.sbet { display: inline-flex; align-items: stretch; height: 28px; border-radius: 999px; border: 2px solid #22ff7a; background: #0d1018; overflow: hidden; animation: sbIn .3s var(--d, 0ms) cubic-bezier(.3,1.5,.5,1) both; }
+.sbet em { display: grid; place-items: center; padding: 0 10px; color: #fff; font: 800 11px "DM Sans", sans-serif; font-style: normal; white-space: nowrap; }
+.sbet i { display: grid; place-items: center; padding: 0 9px; background: #22ff7a; color: #04140d; font: 800 12px "DM Sans", sans-serif; font-style: normal; }
+.fpill { gap: 0; padding: 0; overflow: hidden; height: 30px; }
+.fpill i { align-self: stretch; min-width: 32px; height: auto; padding: 0 9px; border-radius: 0; }
+.fpill em { padding: 0 14px 0 11px; }
+@keyframes sbIn { from { opacity: 0; transform: scale(.7); } }
