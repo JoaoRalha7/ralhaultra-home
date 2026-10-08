@@ -165,6 +165,28 @@ function SlotThumb({ slot, size = 40 }) {
   return <img className={x.thumb} style={{ width: size, height: size }} src={slot?.image_url || ''} alt="" onError={ev => { ev.target.style.opacity = '.1' }} />
 }
 
+
+function BestWorst({ best, worst, compact }) {
+  if (!best) return null
+  const row = (e, bad) => (
+    <div className={`${x.fBest} ${bad ? x.fWorst : ''} ${compact ? x.fCompact : ''}`}>
+      {bad
+        ? <svg className={x.fSkull} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 7 6-7" /></svg>
+        : <svg className={x.fCrown} width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></svg>}
+      <SlotThumb slot={e.slot} size={compact ? 44 : 52} />
+      <b>{e.slot?.name || '—'}</b>
+      <strong>{e.multi.toFixed(bad ? 1 : 0)}x</strong>
+      <span className={bad ? x.fWorstWin : x.fBestWin}>{bad ? '' : '+'}€{parseBet(e.payment).toFixed(0)}</span>
+    </div>
+  )
+  return (
+    <div className={x.fBW}>
+      {row(best, false)}
+      {worst && worst.id !== best.id && row(worst, true)}
+    </div>
+  )
+}
+
 function FeaturedHunt({ hunt, entries, onClick }) {
   const st = huntStats(hunt, entries)
   return (
@@ -193,24 +215,7 @@ function FeaturedHunt({ hunt, entries, onClick }) {
         <div className={x.fTile}><span>Avg</span><b>{st.avg > 0 ? st.avg.toFixed(2) + 'x' : '—'}</b></div>
         <div className={x.fTile}><span>BE</span><b>{st.be > 0 ? st.be.toFixed(1) + 'x' : '—'}</b></div>
       </div>
-      {st.best && (
-        <div className={x.fBest}>
-          <svg className={x.fCrown} width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></svg>
-          <SlotThumb slot={st.best.slot} size={60} />
-          <b>{st.best.slot?.name || '—'}</b>
-          <strong>{st.best.multi.toFixed(0)}x</strong>
-          <span className={x.fBestWin}>+€{parseBet(st.best.payment).toFixed(0)}</span>
-        </div>
-      )}
-      {st.worst && (
-        <div className={`${x.fBest} ${x.fWorst}`}>
-          <svg className={x.fSkull} width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 7 6-7" /></svg>
-          <SlotThumb slot={st.worst.slot} size={60} />
-          <b>{st.worst.slot?.name || '—'}</b>
-          <strong>{st.worst.multi.toFixed(1)}x</strong>
-          <span className={x.fWorstWin}>€{parseBet(st.worst.payment).toFixed(0)}</span>
-        </div>
-      )}
+      <BestWorst best={st.best} worst={st.worst} />
     </button>
   )
 }
@@ -515,19 +520,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         <div className={x.dProfit}>
           <span className={x.lbl}>Profit</span>
           <b className={hasResult ? (profit >= 0 ? x.pos : x.neg) : ''}>{hasResult ? money(profit) : '—'}</b>
-          {best && (
-            <div className={x.bw}>
-              {[['Best slot', best, false], worst && worst.id !== best.id ? ['Worst slot', worst, true] : null].filter(Boolean).map(([lbl, e, bad]) => (
-                <div key={lbl} className={`${x.bwCard} ${bad ? x.bwBad : x.bwGood}`}>
-                  <div className={x.bwRow}>
-                    <img src={e.slot?.image_url || ''} alt="" onError={ev => { ev.target.style.opacity = '.1' }} />
-                    <div className={x.bwName}><span className={x.bwLbl}>                     {bad                       ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="M12.5 17l-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>                       : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M12 17v4"/><path d="M8 21h8"/><path d="M6 9a6 6 0 0 0 12 0V3H6v6z"/></svg>}                     {bad ? 'Worst Bonus' : 'Best Bonus'}                   </span><b>{e.slot?.name || '—'}</b></div>
-                    <div className={x.bwWin}><b>€{parseBet(e.payment).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>{e.multi.toFixed(e.multi < 10 ? 1 : 0)}x</small></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <BestWorst best={best} worst={worst} compact />
         </div>
       </header>
 
