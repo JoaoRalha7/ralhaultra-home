@@ -47,3 +47,18 @@
 .navCard:not(.navCardWide) { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px 14px 14px; position: relative; }
 .navCard:not(.navCardWide) .navArrow { position: absolute; right: 14px; bottom: 14px; }
 .navCardWide .navArrow { margin-left: auto; }
+
+/* accent colours (as before) */
+.nav_blue:hover   { background: rgba(59,130,246,.08);  border-color: rgba(59,130,246,.25); }
+.nav_green:hover  { background: rgba(34,197,94,.07);   border-color: rgba(34,197,94,.25); }
+.nav_amber:hover  { background: rgba(245,158,11,.07);  border-color: rgba(245,158,11,.25); }
+.nav_slate:hover  { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); }
+.nav_purple:hover { background: rgba(139,92,246,.08);  border-color: rgba(139,92,246,.25); }
+.nav_pink:hover   { background: rgba(236,72,153,.07);  border-color: rgba(236,72,153,.25); }
+.navIcon_blue   { background: rgba(59,130,246,.15);  color: #60a5fa; }
+.navIcon_green  { background: rgba(34,197,94,.12);   color: #4ade80; }
+.navIcon_amber  { background: rgba(245,158,11,.12);  color: #fbbf24; }
+.navIcon_slate  { background: rgba(255,255,255,.08); color: rgba(255,255,255,.55); }
+.navIcon_purple { background: rgba(139,92,246,.12);  color: #a78bfa; }
+.navIcon_pink   { background: rgba(236,72,153,.12);  color: #f9a8d4; }
+.navCard:hover .navIcon[class*="navIcon_"] { color: inherit; }

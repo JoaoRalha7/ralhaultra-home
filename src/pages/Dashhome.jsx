@@ -2,12 +2,12 @@ import { useNavigate } from 'react-router-dom'
 import styles from './Dashhome.module.css'
 
 const CARDS = [
-  { to: '/dashboard/hunt', label: 'Bonus Hunt', sub: 'Gerir slots e bónus', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>) },
-  { to: '/dashboard/slots', label: 'Slots', sub: 'Biblioteca de slots', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>) },
-  { to: '/dashboard/torneios', label: 'Torneios', sub: 'Rankings e resultados', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4M6 9a6 6 0 0 0 12 0V3H6v6ZM12 17v4M8 21h8"/></svg>) },
-  { to: '/dashboard/chill', label: 'Chill', sub: 'Modo relaxado', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4ZM6 2v2M10 2v2M14 2v2"/></svg>) },
-  { to: '/dashboard/barra', label: 'Barra OBS', wide: true, sub: 'Casino, modo e activity', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2H8M12 2v5"/></svg>) },
-  { to: '/dashboard/overlays', label: 'Overlays', wide: true, sub: 'URLs para o OBS', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>) },
+  { to: '/dashboard/hunt', accent: 'blue', label: 'Bonus Hunt', sub: 'Gerir slots e bónus', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>) },
+  { to: '/dashboard/slots', accent: 'green', label: 'Slots', sub: 'Biblioteca de slots', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>) },
+  { to: '/dashboard/torneios', accent: 'amber', label: 'Torneios', sub: 'Rankings e resultados', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4M6 9a6 6 0 0 0 12 0V3H6v6ZM12 17v4M8 21h8"/></svg>) },
+  { to: '/dashboard/chill', accent: 'slate', label: 'Chill', sub: 'Modo relaxado', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4ZM6 2v2M10 2v2M14 2v2"/></svg>) },
+  { to: '/dashboard/barra', accent: 'purple', label: 'Barra OBS', wide: true, sub: 'Casino, modo e activity', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2H8M12 2v5"/></svg>) },
+  { to: '/dashboard/overlays', accent: 'pink', label: 'Overlays', wide: true, sub: 'URLs para o OBS', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>) },
 ]
 
 const ChevronRight = () => (
@@ -97,8 +97,8 @@ export default function DashHome({ state }) {
         {/* Quick nav */}
         <div className={styles.navGrid}>
           {CARDS.map(c => (
-            <button key={c.to} className={`${styles.navCard} ${c.wide ? styles.navCardWide : ''}`} onClick={() => navigate(c.to)}>
-              <div className={styles.navIcon}>{c.icon}</div>
+            <button key={c.to} className={`${styles.navCard} ${styles['nav_' + c.accent]} ${c.wide ? styles.navCardWide : ''}`} onClick={() => navigate(c.to)}>
+              <div className={`${styles.navIcon} ${styles['navIcon_' + c.accent]}`}>{c.icon}</div>
               <div className={styles.navText}>
                 <div className={styles.navLabel}>{c.label}</div>
                 <div className={styles.navSub}>{c.sub}</div>
