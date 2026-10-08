@@ -1,79 +1,23 @@
 import { useNavigate } from 'react-router-dom'
 import styles from './Dashhome.module.css'
 
-const CARDS = [
-  {
-    to:     '/dashboard/hunt',
-    label:  'Bonus Hunt',
-    sub:    'Gerir slots e bónus',
-    accent: 'blue',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-      </svg>
-    ),
-  },
-  {
-    to:     '/dashboard/slots',
-    label:  'Slots',
-    sub:    'Biblioteca de slots',
-    accent: 'green',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>
-      </svg>
-    ),
-  },
-  {
-    to:     '/dashboard/torneios',
-    label:  'Torneios',
-    sub:    'Rankings e resultados',
-    accent: 'amber',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
-        <path d="M12 17v4"/><path d="M8 21h8"/>
-        <path d="M6 9a6 6 0 0 0 12 0V3H6v6z"/>
-      </svg>
-    ),
-  },
-  {
-    to:     '/dashboard/chill',
-    label:  'Chill',
-    sub:    'Modo relaxado',
-    accent: 'slate',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
-        <line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>
-      </svg>
-    ),
-  },
-  {
-    to:     '/dashboard/barra',
-    label:  'Barra OBS',
-    sub:    'Casino, modo e activity',
-    accent: 'purple',
-    wide:   true,
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2H8"/><path d="M12 2v5"/>
-      </svg>
-    ),
-  },
-  {
-    to:     '/dashboard/overlays',
-    label:  'Overlays',
-    sub:    'URLs para o OBS',
-    accent: 'pink',
-    wide:   true,
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>
-        <path d="M17 8l-5 5-5-5"/>
-      </svg>
-    ),
-  },
+const GROUPS = [
+  { title: 'Stream', items: [
+    { to: '/dashboard/hunt', label: 'Bonus Hunt', sub: 'Gerir slots e bónus', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>) },
+    { to: '/dashboard/slots', label: 'Slots', sub: 'Biblioteca de slots', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>) },
+    { to: '/dashboard/torneios', label: 'Torneios', sub: 'Rankings e resultados', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4M6 9a6 6 0 0 0 12 0V3H6v6ZM12 17v4M8 21h8"/></svg>) },
+    { to: '/dashboard/chill', label: 'Chill', sub: 'Modo relaxado', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4ZM6 2v2M10 2v2M14 2v2"/></svg>) },
+    { to: '/dashboard/minigame', label: 'Minigame', sub: 'Jogos dos viewers', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9Z"/></svg>) },
+  ] },
+  { title: 'Comunidade', items: [
+    { to: '/dashboard/giveaways', label: 'Giveaways', sub: 'Sorteios e prémios', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8Zm0 0c2-4 6-4 6-1.5S14 8 12 8Z"/></svg>) },
+    { to: '/dashboard/giveaway', label: 'Sorteio chat', sub: 'Escolher do chat', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>) },
+    { to: '/dashboard/shop', label: 'Loja', sub: 'Produtos e resgates', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14l-1 13H6L5 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>) },
+  ] },
+  { title: 'OBS', items: [
+    { to: '/dashboard/barra', label: 'Barra OBS', sub: 'Casino, modo e activity', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2H8M12 2v5"/></svg>) },
+    { to: '/dashboard/overlays', label: 'Overlays', sub: 'URLs para o OBS', icon: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>) },
+  ] },
 ]
 
 const ChevronRight = () => (
@@ -160,27 +104,24 @@ export default function DashHome({ state }) {
           </div>
         )}
 
-        {/* Nav grid */}
-        <div className={styles.sectionLabel}>Modules</div>
-        <div className={styles.navGrid}>
-          {CARDS.map(c => (
-            <button
-              key={c.to}
-              className={`${styles.navCard} ${styles['nav_' + c.accent]} ${c.wide ? styles.navCardWide : ''}`}
-              onClick={() => navigate(c.to)}
-            >
-              <div className={`${styles.navIcon} ${styles['navIcon_' + c.accent]}`}>
-                {c.icon}
-              </div>
-              <div className={styles.navText}>
-                <div className={styles.navLabel}>{c.label}</div>
-                <div className={styles.navSub}>{c.sub}</div>
-              </div>
-              <span className={styles.navArrow}><ChevronRight /></span>
-            </button>
-          ))}
-        </div>
-
+        {/* Modules */}
+        {GROUPS.map(g => (
+          <div key={g.title} className={styles.group}>
+            <div className={styles.sectionLabel}>{g.title}</div>
+            <div className={styles.navGrid}>
+              {g.items.map(c => (
+                <button key={c.to} className={styles.navCard} onClick={() => navigate(c.to)}>
+                  <div className={styles.navIcon}>{c.icon}</div>
+                  <div className={styles.navText}>
+                    <div className={styles.navLabel}>{c.label}</div>
+                    <div className={styles.navSub}>{c.sub}</div>
+                  </div>
+                  <span className={styles.navArrow}><ChevronRight /></span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
