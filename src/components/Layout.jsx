@@ -72,7 +72,8 @@ export default function Layout() {
   const [claimable, setClaimable] = useState([]);
   const [ageOk, setAgeOk] = useState(false);
   const [votePop, setVotePop] = useState(false);
-  const voteSeen = () => { try { return sessionStorage.getItem('ru-vote-seen') === '1'; } catch { return false; } };
+  const liveSig = (l) => l.map((g) => `${g.view}:${g.huntId}`).join('|');
+  const voteSeen = (l) => { try { return sessionStorage.getItem('ru-vote-seen') === liveSig(l); } catch { return false; } };
   const location = useLocation();
   const [open, setOpen] = useState(() => {
     if (window.innerWidth <= 820) return false;
@@ -120,14 +121,18 @@ export default function Layout() {
     return () => { alive = false; clearInterval(t); };
   }, [user?.id, dailyOpen]);
 
+  // Open mini-games: realtime + light polling, so no F5 is needed when the streamer starts one
   useEffect(() => {
     let alive = true;
-    Promise.all(GAMES.map(([table]) => supabaseDash.from(table).select('id, hunt_id').eq('status', 'open').limit(1))).then((res) => {
+    const load = () => Promise.all(GAMES.map(([table]) => supabaseDash.from(table).select('id, hunt_id').eq('status', 'open').limit(1))).then((res) => {
       if (alive) setLive(GAMES.map(([, name, view], i) => ({ name, view, huntId: res[i].data?.[0]?.hunt_id })).filter((_, i) => res[i].data && res[i].data.length));
-    });
-    return () => {
-      alive = false;
-    };
+    }, () => {});
+    load();
+    const ch = supabaseDash.channel('layout-open-games');
+    GAMES.forEach(([table]) => ch.on('postgres_changes', { event: '*', schema: 'public', table }, load));
+    ch.subscribe();
+    const iv = setInterval(() => { if (!document.hidden) load(); }, 10000);
+    return () => { alive = false; clearInterval(iv); supabaseDash.removeChannel(ch); };
   }, []);
 
   // Level-up rewards waiting to be claimed (shown in the bell)
@@ -163,7 +168,7 @@ export default function Layout() {
 
   // Invite visitors to vote when a bonus hunt minigame is open (once per session, after other popups)
   useEffect(() => {
-    if (!ageOk || !live.length || voteSeen() || location.pathname.startsWith('/bonus-hunts')) return undefined;
+    if (!ageOk || !live.length || voteSeen(live) || location.pathname.startsWith('/bonus-hunts')) return undefined;
     const t0 = Date.now();
     const wait = location.pathname === '/' ? 2600 : 1200;
     const id = setInterval(() => {
@@ -177,7 +182,7 @@ export default function Layout() {
 
   const closeVote = () => {
     setVotePop(false);
-    try { sessionStorage.setItem('ru-vote-seen', '1'); } catch { /* storage unavailable */ }
+    try { sessionStorage.setItem('ru-vote-seen', liveSig(live)); } catch { /* storage unavailable */ }
   };
   const goVote = (g) => {
     closeVote();
