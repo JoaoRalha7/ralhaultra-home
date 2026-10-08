@@ -35,7 +35,7 @@ export function Bar({ label, value, max, suffix = '', gold }) {
 export function progressOf(levels, me) {
   const cur = levels.find((l) => l.level === me.level) || levels[0]
   const next = levels.find((l) => l.level === me.level + 1) || null
-  const hours = me.minutes / 60
+  const hours = (me.vipMinutes ?? me.minutes) / 60
   const pct = next ? Math.round(((Math.min(1, me.wagered / next.min_wagered) + Math.min(1, hours / next.min_watch_hours)) / 2) * 100) : 100
   return { cur, next, hours: Math.floor(hours), pct }
 }

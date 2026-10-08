@@ -63,13 +63,13 @@ async function main() {
     } else if (cmd === 'level' || cmd === 'nivel') {
       await sb.rpc('refresh_vip_user', { p_user: name })
       const [{ data: me }, { data: lv }] = await Promise.all([
-        sb.from('point_balances').select('level,wagered_total,watch_minutes').eq('username', name).maybeSingle(),
+        sb.from('point_balances').select('level,wagered_total,watch_minutes,vip_watch_base').eq('username', name).maybeSingle(),
         sb.from('vip_levels').select('*').order('level'),
       ])
       const levels = lv ?? []
       const cur = levels.find((l) => l.level === (me?.level ?? 0))
       const next = levels.find((l) => l.level === (me?.level ?? 0) + 1)
-      const hrs = Math.floor(Number(me?.watch_minutes ?? 0) / 60)
+      const hrs = Math.floor(Math.max(0, Number(me?.watch_minutes ?? 0) - Number(me?.vip_watch_base ?? 0)) / 60)
       let msg = `@${user} nível ${cur?.name ?? 'Member'} | ${fmt(Number(me?.wagered_total ?? 0))} apostados | ${hrs}h de stream`
       if (next) msg += ` | próximo: ${next.name} (${fmt(Number(next.min_wagered))} apostados e ${next.min_watch_hours}h)`
       await chat.say(channel, msg)

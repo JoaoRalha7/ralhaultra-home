@@ -1859,7 +1859,7 @@ export default {
         if (who?.username) {
           const u = who.username
           await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: u }) }).catch(() => {})
-          const br = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(u)}&select=balance,watch_minutes,wagered_total,level`, { headers: sbHeaders })
+          const br = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(u)}&select=balance,watch_minutes,vip_watch_base,wagered_total,level`, { headers: sbHeaders })
           const row = (await br.json())?.[0] || {}
           const now = new Date()
           const wk = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
@@ -1878,7 +1878,7 @@ export default {
           const loss = Math.max(0, wagered - paid)
           me = {
             username: u, level: lvl, balance: Number(row.balance) || 0,
-            wagered: Number(row.wagered_total) || 0, minutes: Number(row.watch_minutes) || 0,
+            wagered: Number(row.wagered_total) || 0, minutes: Number(row.watch_minutes) || 0, vipMinutes: Math.max(0, (Number(row.watch_minutes) || 0) - (Number(row.vip_watch_base) || 0)),
             weekLoss: loss, cashbackPct: pct, cashbackCap: cap,
             cashbackEst: Math.min(Math.floor(loss * pct / 100), cap),
             nextPayoutMs: next.getTime() - now.getTime(),

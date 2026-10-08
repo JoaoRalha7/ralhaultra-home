@@ -121,7 +121,7 @@ export default function Profile() {
   const levels = vip?.levels || []
   const lvl = me?.level || 0
   const next = levels.find((l) => l.level === lvl + 1)
-  const hours = me ? me.minutes / 60 : 0
+  const hours = me ? (me.vipMinutes ?? me.minutes) / 60 : 0
   const pct = next ? Math.round(((Math.min(1, me.wagered / next.min_wagered) + Math.min(1, hours / next.min_watch_hours)) / 2) * 100) : 100
   const since = user.created_at ? new Date(user.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
 
