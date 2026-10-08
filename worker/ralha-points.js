@@ -564,6 +564,17 @@ function econMaxBet(game, body) {
   return Math.max(CASINO.minBet, Math.min(500, Math.floor(ECON_RISK_CAP / top)))
 }
 
+// Hourly VIP refresh and Monday weekly cashback (only with the new economy). Both SQL functions are idempotent.
+async function econCron(env, sb, d) {
+  const rpc = (fn, body) => _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: sb, body: JSON.stringify(body) })
+  if (d.getUTCMinutes() === 10) await rpc('refresh_vip', {})
+  if (d.getUTCDay() === 1 && d.getUTCHours() === 3 && d.getUTCMinutes() === 30) { // Monday 03:30 UTC, covers the previous 7 days
+    const to = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+    const from = new Date(to.getTime() - 7 * 86400000)
+    await rpc('run_cashback', { p_key: 'week:' + to.toISOString().slice(0, 10), p_from: from.toISOString(), p_to: to.toISOString() })
+  }
+}
+
 export default {
   // Cron Trigger (every minute): keeps Crash rounds running with nobody on the page, and settles jackpots
   async scheduled(event, env, ctx) {
@@ -572,6 +583,7 @@ export default {
     ctx.waitUntil((async () => {
       try { const now = Date.now(); const rounds = await clEnsure(env, sbHeaders, now); if (rounds[0]) await clSettle(env, sbHeaders, rounds[0], now) } catch (e) { console.error('cron crash', e.message) }
       try { await jpEnsure(env, sbHeaders, Date.now()) } catch (e) { console.error('cron jackpot', e.message) }
+      try { if (econOn()) await econCron(env, sbHeaders, new Date(event.scheduledTime)) } catch (e) { console.error('cron economy', e.message) }
     })())
   },
   async fetch(request, env) {
@@ -1421,7 +1433,7 @@ export default {
 
         // 5. Pontos baseados no streak (índice 0-6)
         const streakIndex  = newStreak - 1
-        const DAILY_POINTS = STREAK_POINTS[streakIndex] ?? 50
+        const DAILY_POINTS = econOn() ? 10000 + 1000 * Math.min(Math.max(streakIndex, 0), 6) : (STREAK_POINTS[streakIndex] ?? 50)
 
         // 6. Adicionar pontos no StreamElements
         const seRes = await fetch(
