@@ -53,3 +53,26 @@
 .fair summary{cursor:pointer;font-weight:700}
 .fair dl{margin:10px 0 0;display:grid;gap:4px}.fair dt{color:#9aa3b2;font-size:11px;margin-top:6px}.fair dd{margin:0;font-family:monospace;font-size:11px;word-break:break-all}
 @media (max-width:480px){.hero{flex-direction:column;align-items:flex-start}.art{width:100%;height:90px}.cards>div+div{margin-left:-14px}}
+
+/* keno like Degen: emerald gems on hits, red misses, risk tabs */
+.keno{width:100%;display:flex;flex-direction:column;align-items:center;gap:18px}
+.kcell{aspect-ratio:1;border-radius:8px;background:#1d212b;display:grid;place-items:center;font-weight:800;font-size:15px;color:#7b8394;position:relative}
+.kHit{background:#0f5a35;box-shadow:inset 0 0 0 1px rgba(52,211,153,.5)}
+.emerald{width:84%;height:84%;filter:drop-shadow(0 0 7px rgba(34,197,94,.65))}
+.kDraw{color:#b8323f}
+.kPick{color:#e8eefc;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.risks{display:grid;grid-template-columns:repeat(4,1fr);width:100%;background:#0f1218;border-radius:10px;padding:4px;gap:2px}
+.risks span{text-align:center;padding:10px 0;font-weight:700;font-size:13px;color:#7b8394;border-radius:8px}
+.risks .riskOn{background:#262b37;color:#fff}
+/* roulette table */
+.rtable{display:flex;gap:4px;width:100%;max-width:520px}
+.rzero{flex:none;width:9%;min-width:30px;border-radius:7px;background:#15803d;display:grid;place-items:center;font-weight:800;position:relative}
+.rnums{flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.rc{aspect-ratio:1;border-radius:7px;display:grid;place-items:center;font-weight:800;font-size:12px;position:relative}
+.rc_red{background:#9f1d2c;color:#fff}.rc_black{background:#1c212b;color:#cbd5e1}.rc_green{background:#15803d;color:#fff}
+.rcWin{box-shadow:0 0 0 2px #fbbf24,0 0 14px rgba(251,191,36,.6);z-index:1;transform:scale(1.12)}
+.rchip{position:absolute;bottom:-6px;right:-4px;font-style:normal;font-size:9px;font-weight:800;background:#f5c542;color:#1a1200;border-radius:999px;padding:1px 5px;line-height:1.3}
+.rres{display:flex;align-items:center;gap:10px;margin-top:6px;color:#9aa3b2;font-size:13px;text-transform:capitalize}
+.rbig{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font:800 20px "Bricolage Grotesque",sans-serif;color:#fff}
+.rbWin{background:rgba(52,211,153,.14)!important;color:#6ee7b7}
+.rbets em{font-style:normal;color:#34d399;font-weight:800;margin-left:6px}

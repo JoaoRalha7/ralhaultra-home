@@ -32,14 +32,26 @@ function MinesBoard({ r }) {
   )
 }
 
+const RISKS = [['classic', 'Classic'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]
+const Emerald = ({ n }) => (
+  <svg viewBox="0 0 40 40" className={s.emerald} aria-hidden="true">
+    <path d="M12 3h16l9 9v16l-9 9H12l-9-9V12z" fill="#22c55e" stroke="#86efac" strokeWidth="1.5" />
+    <path d="M14 8h12l6 6v12l-6 6H14l-6-6V14z" fill="#16a34a" opacity=".85" />
+    <text x="20" y="25.5" textAnchor="middle" fontSize="15" fontWeight="800" fill="#04210f">{n}</text>
+  </svg>
+)
 function KenoBoard({ r }) {
   const picks = r.picks || [], draw = r.draw || []
   return (
-    <div className={s.grid8}>
-      {Array.from({ length: 40 }, (_, i) => {
-        const n = i + 1, p = picks.includes(n), d = draw.includes(n)
-        return <div key={n} className={`${s.kcell} ${p && d ? s.kHit : p ? s.kPick : d ? s.kDraw : ''}`}>{n}</div>
-      })}
+    <div className={s.keno}>
+      <div className={s.grid8}>
+        {Array.from({ length: 40 }, (_, i) => {
+          const n = i + 1, p = picks.includes(n), d = draw.includes(n)
+          if (p && d) return <div key={n} className={`${s.kcell} ${s.kHit}`}><Emerald n={n} /></div>
+          return <div key={n} className={`${s.kcell} ${d ? s.kDraw : p ? s.kPick : ''}`}>{n}</div>
+        })}
+      </div>
+      <div className={s.risks}>{RISKS.map(([k, l]) => <span key={k} className={(r.risk || 'classic') === k ? s.riskOn : ''}>{l}</span>)}</div>
     </div>
   )
 }
@@ -84,11 +96,51 @@ function PlinkoBoard({ r }) {
   )
 }
 
+const REDS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
+const PAY = { straight: 36, red: 2, black: 2, odd: 2, even: 2, low: 2, high: 2, dozen: 3, column: 3 }
+const BET_LABEL = { red: 'Red', black: 'Black', odd: 'Odd', even: 'Even', low: '1-18', high: '19-36' }
+const colorOf = (n) => (n === 0 ? 'green' : REDS.includes(n) ? 'red' : 'black')
+function betMult(b, n) {
+  const { type, value } = b
+  if (type === 'multi') { const nums = String(value).split('-').map(Number); return nums.includes(n) ? 36 / nums.length : 0 }
+  let win = false
+  if (type === 'straight') win = n === Number(value)
+  else if (n === 0) win = false
+  else if (type === 'red') win = colorOf(n) === 'red'
+  else if (type === 'black') win = colorOf(n) === 'black'
+  else if (type === 'odd') win = n % 2 === 1
+  else if (type === 'even') win = n % 2 === 0
+  else if (type === 'low') win = n <= 18
+  else if (type === 'high') win = n >= 19
+  else if (type === 'dozen') win = Math.ceil(n / 12) === Number(value)
+  else if (type === 'column') win = (n % 3 === 0 ? 3 : n % 3) === Number(value)
+  return win ? PAY[type] || 0 : 0
+}
+const betName = (b) => (b.type === 'straight' ? `Number ${b.value}` : b.type === 'dozen' ? `Dozen ${b.value}` : b.type === 'column' ? `Column ${b.value}` : b.type === 'multi' ? `Split ${String(b.value).replace(/-/g, '/')}` : BET_LABEL[b.type] || b.type)
 function RouletteBoard({ r }) {
+  const bets = r.bets || []
+  const straight = {}
+  bets.forEach((b) => { if (b.type === 'straight') straight[b.value] = (straight[b.value] || 0) + b.amount })
+  const cell = (n) => (
+    <div key={n} className={`${s.rc} ${s['rc_' + colorOf(n)]} ${n === r.number ? s.rcWin : ''}`}>
+      {n}
+      {straight[n] ? <i className={s.rchip}>{fmt(straight[n])}</i> : null}
+    </div>
+  )
+  const rows = [0, 1, 2].map((row) => Array.from({ length: 12 }, (_, c) => c * 3 + (3 - row)))
   return (
     <div className={s.roul}>
-      <div className={`${s.rnum} ${s['r_' + r.color]}`}>{r.number}</div>
-      <div className={s.rbets}>{(r.bets || []).map((b, i) => <span key={i}>{b.type}{b.value != null ? ' ' + b.value : ''} <b>{fmt(b.amount)}</b></span>)}</div>
+      <div className={s.rtable}>
+        <div className={`${s.rzero} ${r.number === 0 ? s.rcWin : ''}`}>0{straight[0] ? <i className={s.rchip}>{fmt(straight[0])}</i> : null}</div>
+        <div className={s.rnums}>{rows.map((row) => row.map(cell))}</div>
+      </div>
+      <div className={s.rres}><span className={`${s.rbig} ${s['rc_' + colorOf(r.number)]}`}>{r.number}</span><span>{colorOf(r.number)}</span></div>
+      <div className={s.rbets}>
+        {bets.map((b, i) => {
+          const m = betMult(b, r.number)
+          return <span key={i} className={m > 0 ? s.rbWin : ''}>{betName(b)} <b>{fmt(b.amount)}</b>{m > 0 ? <em>+{fmt(Math.floor(b.amount * m) - b.amount)}</em> : null}</span>
+        })}
+      </div>
     </div>
   )
 }
