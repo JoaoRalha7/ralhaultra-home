@@ -6,7 +6,6 @@ import InfoModal from '../components/InfoModal';
 import { RedirectModal, TwitchPlayerModal, FeaturedOfferModal } from '../components/HomeModals';
 import { casinoToOffer } from '../data/casinoToOffer';
 import { BRAND_PATHS } from '../data/brandPaths';
-import { OFFERS } from '../data/fallback';
 import { useAuth } from '../hooks/useAuth';
 import { useTwitchStatus } from '../hooks/useTwitchStatus';
 import { supabase, supabaseDash } from '../lib/supabase';
@@ -283,8 +282,8 @@ export default function Home() {
       .order('is_hot', { ascending: false })
       .order('sort_order', { ascending: true })
       .then(({ data, error }) => {
-        setOffers(!error && data && data.length ? data.map((c, i) => casinoToOffer(c, i)) : OFFERS.slice(0, 3));
-      }, () => setOffers(OFFERS.slice(0, 3)));
+        setOffers(!error && data ? data.map((c, i) => casinoToOffer(c, i)) : []);
+      }, () => setOffers([]));
     supabase
       .from('deposit_methods')
       .select('slug,name,icon_url')
@@ -460,9 +459,11 @@ export default function Home() {
 
       <section>
         <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
-        <OfferCarousel>
-          {!offers ? [0, 1, 2].map((i) => <div key={i} className="oc2 oSkel" aria-hidden="true" />) : offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} methodsBySlug={methodsBySlug} />)}
-        </OfferCarousel>
+        {!offers ? <div className="oHold" aria-hidden="true" /> : (
+          <OfferCarousel>
+            {offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} methodsBySlug={methodsBySlug} />)}
+          </OfferCarousel>
+        )}
       </section>
 
       <section>
