@@ -673,6 +673,7 @@ export default function MiniGame({ huntId = null }) {
                               </div>
                             </div>
                           )}
+                          {isPickable && <div className={styles.cardCta}><span>Pick this slot</span><b>{PICK_COST} pts</b></div>}
                           {isLoading && (
                             <div className={styles.cardOverlay} style={{ background: 'rgba(0,0,0,.6)' }}>
                               <Spinner size={18} />

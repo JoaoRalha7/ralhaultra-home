@@ -478,3 +478,8 @@
 .gv2 .pickBtn{margin-top:6px}
 .fChip{padding:5px 14px 5px 6px}
 
+
+/* pick & win modal shell */
+.modalBack{background:rgba(5,7,12,.85);backdrop-filter:blur(10px);align-items:center}
+.modal{border-radius:26px;padding:22px 26px 26px;box-shadow:0 40px 100px rgba(0,0,0,.6);background:radial-gradient(90% 40% at 50% 0,rgba(59,130,246,.1),transparent 70%),var(--bg,#0b0e14)}
+.modalX{top:18px;right:18px}
