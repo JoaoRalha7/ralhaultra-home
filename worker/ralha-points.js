@@ -553,6 +553,7 @@ const jpTotal = () => (econOn() ? 2500 : JP.maxTotal)
 const payCap = (bet) => (econOn() ? Math.floor(bet * ECON_MAX_MULT) : CASINO.maxPayout)
 function econMaxBet(game, body) {
   if (!econOn()) return CASINO.maxBet
+  if (game === 'crash') return 500 // crash: fixed 500 (the 1000x cap still applies)
   let top = 2
   try {
     if (game === 'crash') top = CASINO.crashCap
