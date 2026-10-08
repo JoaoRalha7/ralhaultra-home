@@ -304,7 +304,7 @@ function FeaturedGameChips({ huntId }) {
       {active.map(g => (
         <span key={g.key} className={`${x.fChip} ${g.game.status === 'open' ? x.fChipLive : ''}`}>
           <span className={x.fChipIco}><GameIcon k={g.key} /></span>
-          <span className={x.fChipName}>{g.label}</span>
+          <span className={x.fChipName}>{{ pick: 'PICK & WIN', gtb: 'GTB', avg: 'AVG' }[g.key] || g.label}</span>
           {g.game.status === 'open' ? <em className={x.fChipLiveTag}><i />Live</em> : <i className={x.fChipOff} title="Closed" />}
         </span>
       ))}
@@ -689,7 +689,7 @@ export default function BonusHunts() {
     const ids = huntsData.map(h => h.id)
     const { data: allEntries } = await supabaseDash
       .from('bonus_entries')
-      .select('hunt_id, bet, payment, opened, is_super, slot:slots(name, image_url)')
+      .select('id, hunt_id, bet, payment, opened, is_super, slot:slots(name, image_url)')
       .in('hunt_id', ids)
     const map = {}
     ;(allEntries || []).forEach(e => {
