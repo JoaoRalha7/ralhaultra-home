@@ -346,7 +346,7 @@ async function clSettle(env, sbH, round, now, bets) {
     if (b.cashed_at != null || b.auto == null) return
     const a = Number(b.auto)
     if (!(a <= crashAt && elapsed >= crashAtMs(a))) return
-    const payout = Math.min(Math.floor(b.bet * a), CASINO.maxPayout)
+    const payout = Math.min(Math.floor(b.bet * a), payCap(b.bet))
     const c = await clSb(env, sbH, `crash_bets?id=eq.${b.id}&cashed_at=is.null`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ cashed_at: a, payout }) })
     const row = c.ok ? (await c.json())?.[0] : null
     if (!row) { const cur = (await (await clSb(env, sbH, `crash_bets?id=eq.${b.id}`)).json())?.[0]; if (cur) Object.assign(b, cur); return }
@@ -540,6 +540,28 @@ async function jpState(env, sbH, now) {
   }
   JP_CACHE = { at: now, data }
   return data
+}
+
+// ── New economy casino rules (only when ECONOMY_SOURCE=supabase) ──────────────────
+// No payout ceiling per round: every game is capped at 1000x the bet instead, and the max bet of each
+// game is risk_cap / its top multiplier (at most 500), so one round can never reach the cheapest shop prize.
+const ECON_RISK_CAP = 100000
+const ECON_MAX_MULT = 1000
+const econOn = () => !!ECON && ECON.ECONOMY_SOURCE === 'supabase'
+const payCap = (bet) => (econOn() ? Math.floor(bet * ECON_MAX_MULT) : CASINO.maxPayout)
+function econMaxBet(game, body) {
+  if (!econOn()) return CASINO.maxBet
+  let top = 2
+  try {
+    if (game === 'crash') top = CASINO.crashCap
+    else if (game === 'plinko') top = Math.max(...plinkoTable(parseInt(body.rows, 10), body.risk))
+    else if (game === 'keno') top = Math.max(...kenoTable(Array.isArray(body.picks) ? body.picks.length : 10, KENO_RISK[body.risk] ? body.risk : 'classic'))
+    else if (game === 'mines') { const m = Math.min(24, Math.max(1, parseInt(body.mines, 10) || 3)); top = minesMult(CASINO.grid - m, m) }
+    else if (game === 'roulette') top = 36
+    else if (game === 'blackjack') top = 4
+  } catch { top = ECON_MAX_MULT }
+  top = Math.min(ECON_MAX_MULT, Math.max(2, top))
+  return Math.max(CASINO.minBet, Math.min(500, Math.floor(ECON_RISK_CAP / top)))
 }
 
 export default {
@@ -783,7 +805,7 @@ export default {
 
         if (pathname === '/crash/bet') {
           const bet = parseInt(body.bet, 10)
-          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > CASINO.maxBet) return json({ error: 'invalid bet', min: CASINO.minBet, max: CASINO.maxBet }, 400)
+          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > econMaxBet('crash', body)) return json({ error: 'invalid bet', min: CASINO.minBet, max: econMaxBet('crash', body) }, 400)
           let auto = null
           if (body.auto != null && body.auto !== '') {
             auto = Math.round(Number(body.auto) * 100) / 100
@@ -817,7 +839,7 @@ export default {
           if (mine.cashed_at != null) return json({ ok: true, already: true, cashedAt: Number(mine.cashed_at), payout: mine.payout })
           const m = crashMultAt(now - Number(cur.start_ms))
           if (!(m >= 1)) return json({ error: 'too early' }, 400)
-          const payout = Math.min(Math.floor(mine.bet * m), CASINO.maxPayout)
+          const payout = Math.min(Math.floor(mine.bet * m), payCap(mine.bet))
           const c = await clSb(env, sbHeaders, `crash_bets?id=eq.${mine.id}&cashed_at=is.null`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ cashed_at: m, payout }) })
           const row = c.ok ? (await c.json())?.[0] : null
           if (!row) return json({ error: 'conflict' }, 409)
@@ -950,7 +972,7 @@ export default {
         }
         // finish a round: store result, then pay out
         const finish = async (row, state, payout) => {
-          payout = Math.max(0, Math.min(Math.floor(payout), CASINO.maxPayout))
+          payout = Math.max(0, Math.min(Math.floor(payout), payCap(row.bet)))
           const saved = await save(row, { state, status: 'done', payout })
           if (!saved) return { conflict: true }
           let newPoints = null
@@ -986,12 +1008,12 @@ export default {
           let rBets = null
           if (game === 'roulette') {
             rBets = Array.isArray(body.bets) ? body.bets.map((b) => ({ type: b?.type, value: b?.value == null ? null : b?.type === 'multi' ? String(b.value) : Number(b.value), amount: Number(b?.amount) })) : []
-            if (!rBets.length || rBets.length > ROULETTE.maxBets || !rBets.every((b) => validBet(b) && b.amount >= CASINO.minBet && b.amount <= CASINO.maxBet)) return json({ error: 'invalid bets' }, 400)
+            if (!rBets.length || rBets.length > ROULETTE.maxBets || !rBets.every((b) => validBet(b) && b.amount >= CASINO.minBet && b.amount <= econMaxBet('roulette', body))) return json({ error: 'invalid bets' }, 400)
             if (rBets.some((b) => ROULETTE.opposite[b.type] && rBets.some((o) => o.type === ROULETTE.opposite[b.type])) || new Set(rBets.map((b) => b.type + ':' + b.value)).size !== rBets.length) return json({ error: 'invalid bets' }, 400) // no red+black / odd+even / low+high, no duplicate spots
             body.bet = rBets.reduce((a, b) => a + b.amount, 0)
           }
           const bet = parseInt(body.bet, 10)
-          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > (game === 'roulette' ? CASINO.maxBet * 5 : CASINO.maxBet)) return json({ error: 'invalid bet', min: CASINO.minBet, max: CASINO.maxBet }, 400)
+          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > (game === 'roulette' ? econMaxBet(game, body) * 5 : econMaxBet(game, body))) return json({ error: 'invalid bet', min: CASINO.minBet, max: econMaxBet(game, body) }, 400)
 
           let existing = await loadActive()
           if (existing) {
@@ -1010,7 +1032,7 @@ export default {
           if (game === 'blackjack') {
             const pp = body.pp == null || body.pp === '' ? 0 : parseInt(body.pp, 10)
             const t3 = body.t3 == null || body.t3 === '' ? 0 : parseInt(body.t3, 10)
-            const okSide = (v) => Number.isInteger(v) && v >= 0 && v <= CASINO.maxBet && (v === 0 || v >= CASINO.minBet)
+            const okSide = (v) => Number.isInteger(v) && v >= 0 && v <= (econOn() ? Math.floor(ECON_RISK_CAP / (100 * Math.max(1, parseInt(body.seats, 10) || 1))) : CASINO.maxBet) && (v === 0 || v >= CASINO.minBet)
             if (!okSide(pp) || !okSide(t3)) return json({ error: 'invalid side bet' }, 400)
             const seats = body.seats == null || body.seats === '' ? 1 : parseInt(body.seats, 10)
             if (!Number.isInteger(seats) || seats < 1 || seats > 3) return json({ error: 'invalid seats' }, 400)
@@ -1056,7 +1078,7 @@ export default {
               const path = Array.from({ length: params.rows }, () => rg.int(2))
               const slot = path.reduce((a, b) => a + b, 0)
               const mult = tab[slot]
-              return { user_id: who.id, username: who.username, game, bet, state: { rows: params.rows, risk: params.risk, path, slot, mult, fair: { ...fx.fair, ball: bi, balls: count } }, status: 'done', payout: Math.min(Math.floor(bet * mult), CASINO.maxPayout), updated_at: feedAt }
+              return { user_id: who.id, username: who.username, game, bet, state: { rows: params.rows, risk: params.risk, path, slot, mult, fair: { ...fx.fair, ball: bi, balls: count } }, status: 'done', payout: Math.min(Math.floor(bet * mult), payCap(bet)), updated_at: feedAt }
             })
             const insB = await fetch(rest, { method: 'POST', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify(rowsOut) })
             const made = insB.ok ? await insB.json() : null
@@ -1083,17 +1105,17 @@ export default {
             const hits = params.picks.filter((p) => draw.includes(p)).length
             const mult = kenoTable(params.picks.length, params.risk)[hits]
             state = { picks: params.picks, risk: params.risk, draw, hits, mult, fair: fx.fair }
-            kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
+            kenoPayout = Math.min(Math.floor(bet * mult), payCap(bet))
           } else if (game === 'plinko') {
             const path = Array.from({ length: params.rows }, () => rg.int(2))
             const slot = path.reduce((a, b) => a + b, 0)
             const mult = plinkoTable(params.rows, params.risk)[slot]
             state = { rows: params.rows, risk: params.risk, path, slot, mult, fair: { ...fx.fair, ball: 0, balls: 1 } }
-            kenoPayout = Math.min(Math.floor(bet * mult), CASINO.maxPayout)
+            kenoPayout = Math.min(Math.floor(bet * mult), payCap(bet))
           } else if (game === 'roulette') {
             const number = rg.int(37)
             state = { bets: rBets, number, fair: fx.fair }
-            kenoPayout = Math.min(Math.floor(rBets.reduce((a, b) => a + b.amount * rouletteMult(b, number), 0)), CASINO.maxPayout)
+            kenoPayout = Math.min(Math.floor(rBets.reduce((a, b) => a + b.amount * rouletteMult(b, number), 0)), payCap(bet))
           } else if (game === 'blackjack') {
             const deck = rg.shuffle(Array.from({ length: 52 * BJ_DECKS }, (_, i) => i % 52))
             // deal order: one card to each seat, dealer up card, second card to each seat, dealer hole card
