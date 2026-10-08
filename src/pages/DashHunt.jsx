@@ -867,6 +867,24 @@ function StatsPanel({ hunt, entries, mode, balanceEnd, onBalanceEndChange, onSav
 }
 
 // ── Slot Row ───────────────────────────────────────────────
+function CopyBtn({ text }) {
+  const [ok, setOk] = useState(false)
+  const copy = async (e) => {
+    e.stopPropagation()
+    try { await navigator.clipboard.writeText(text || '') } catch {
+      const t = document.createElement('textarea'); t.value = text || ''; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove()
+    }
+    setOk(true); setTimeout(() => setOk(false), 1200)
+  }
+  return (
+    <button type="button" className={`${styles.hxCopy} ${ok ? styles.hxCopyOk : ''}`} onClick={copy} aria-label="Copiar nome" title={ok ? 'Copiado' : 'Copiar nome'}>
+      {ok
+        ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>
+        : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>}
+    </button>
+  )
+}
+
 function SlotRow({ entry, index, mode, current, allSlots, usedIds, onChangeSlot, onUpdateBet, onUpdatePayment, onToggleSuper, onDelete }) {
   const [swap, setSwap] = useState(false)
   const [q, setQ] = useState('')
@@ -915,7 +933,10 @@ function SlotRow({ entry, index, mode, current, allSlots, usedIds, onChangeSlot,
         ) : (
           <>
             <div className={styles.hxNameWrap}>
-              <div className={styles.hxName}>{entry.slot?.name || '—'}</div>
+              <div className={styles.hxNameLine}>
+                <div className={styles.hxName}>{entry.slot?.name || '—'}</div>
+                {entry.slot?.name && <CopyBtn text={entry.slot.name} />}
+              </div>
               <div className={styles.hxProv}>{entry.slot?.provider || ''}</div>
             </div>
             {mode === 'hunting' && (
@@ -1902,7 +1923,10 @@ function RedeemModal({ hunt, entries, balanceEnd, onSavePayment, onClose }) {
                 <span>ATUAL</span>
               </div>
               <div>
-                <div className={styles.rxName}>{cur.slot?.name || '—'}</div>
+                <div className={styles.rxNameLine}>
+                  <div className={styles.rxName}>{cur.slot?.name || '—'}</div>
+                  {cur.slot?.name && <CopyBtn text={cur.slot.name} />}
+                </div>
                 <div className={styles.rxProv}>{cur.slot?.provider || '—'}</div>
               </div>
             </div>

@@ -1322,3 +1322,12 @@
 @media (max-width: 860px) { .rxBody { flex-direction: column; } .rxSide { flex-basis: auto; border-left: 0; border-top: 1px solid var(--c-line); } .rxThree { grid-template-columns: 1fr; } }
 .rxOverlay input[type=number]::-webkit-outer-spin-button, .rxOverlay input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .rxOverlay input[type=number] { -moz-appearance: textfield; }
+
+/* copy slot name */
+.hxNameLine, .rxNameLine { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hxNameLine .hxName { min-width: 0; }
+.hxCopy { width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--c-line, #1c1f27); background: var(--c-panel, #0d0f14); color: #7b8190; display: grid; place-items: center; flex: none; padding: 0; cursor: pointer; transition: .12s; }
+.hxCopy:hover { color: #fff; border-color: #3a3f4c; }
+.hxCopyOk, .hxCopyOk:hover { color: #22e07a; border-color: rgba(34,224,122,.4); }
+.rxNameLine .hxCopy { width: 30px; height: 30px; border-radius: 9px; }
+.rxNameLine .hxCopy svg { width: 15px; height: 15px; }
