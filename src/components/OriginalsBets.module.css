@@ -23,3 +23,9 @@
   .date, .mul { display: none; }
 }
 .row :global(.coin) { display: inline-block; vertical-align: -2px; margin-left: 4px; width: 12px; height: 12px; }
+
+/* new bet slides in from the top and flashes once */
+.fresh{animation:rowIn .55s cubic-bezier(.2,.8,.2,1),rowGlow 1.4s ease-out}
+@keyframes rowIn{from{opacity:0;transform:translateY(-14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes rowGlow{0%{background:rgba(52,211,153,.22)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.fresh{animation:none}}

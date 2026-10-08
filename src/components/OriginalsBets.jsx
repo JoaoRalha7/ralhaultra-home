@@ -23,6 +23,7 @@ const when = (iso) => {
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
+const rowKey = (b) => b.id || `${b.game}|${b.username}|${b.updated_at}|${b.bet}`
 const mult = (bet, payout) => (bet > 0 ? `${+(payout / bet).toFixed(2)}x` : '-')
 
 export default function OriginalsBets() {
@@ -31,6 +32,8 @@ export default function OriginalsBets() {
   const [rows, setRows] = useState(null)
   const alive = useRef(true)
   const [detail, setDetail] = useState(null)
+  const [fresh, setFresh] = useState(() => new Set())   // rows that just arrived (slide-in animation)
+  const seen = useRef(null)
   const openRound = async (b) => {
     if (!b.id) return
     try {
@@ -51,7 +54,16 @@ export default function OriginalsBets() {
         const r = await fetch(`${WORKER}/casino-feed?limit=10${tab === 'top' ? '&sort=top' : ''}`)
         list = r.ok ? (await r.json()).rounds || [] : []
       }
-      if (alive.current) setRows(list.slice(0, 10))
+      if (alive.current) {
+        const next = list.slice(0, 10)
+        const keys = next.map(rowKey)
+        if (seen.current) {
+          const add = keys.filter((k) => !seen.current.has(k))
+          if (add.length) { setFresh(new Set(add)); setTimeout(() => { if (alive.current) setFresh(new Set()) }, 1400) }
+        }
+        seen.current = new Set(keys)
+        setRows(next)
+      }
     } catch {
       if (alive.current) setRows([])
     }
@@ -59,9 +71,9 @@ export default function OriginalsBets() {
 
   useEffect(() => {
     alive.current = true
-    setRows(null)
+    setRows(null); seen.current = null
     load()
-    const id = setInterval(load, tab === 'top' ? 30000 : 8000)
+    const id = setInterval(load, tab === 'top' ? 20000 : 4000)
     return () => { alive.current = false; clearInterval(id) }
   }, [load, tab])
 
@@ -85,7 +97,7 @@ export default function OriginalsBets() {
           const g = GAMES[b.game] || [b.game, 'originals']
           const profit = (b.payout || 0) - (b.bet || 0)
           return (
-            <div key={`${b.game}-${b.updated_at}-${i}`} className={styles.row} role="row" onClick={b.id ? () => openRound(b) : undefined} style={b.id ? { cursor: 'pointer' } : undefined}>
+            <div key={rowKey(b)} className={`${styles.row}${fresh.has(rowKey(b)) ? ` ${styles.fresh}` : ''}`} role="row" onClick={b.id ? () => openRound(b) : undefined} style={b.id ? { cursor: 'pointer' } : undefined}>
               <span className={styles.game}><Icon name={g[1]} size={16} />{g[0]}</span>
               <RankName className={styles.user} name={b.username} level={rankOf(b.username)} />
               <span className={`${styles.date} ${styles.mute}`}>{when(b.updated_at)}</span>
