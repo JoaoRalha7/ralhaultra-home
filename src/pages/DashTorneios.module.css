@@ -409,3 +409,77 @@
 .loadingWrap  { display: flex; align-items: center; gap: 10px; padding: 40px; color: rgba(255,255,255,.4); font-size: 13px; height: 100%; }
 .spinner      { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.1); border-top-color: #3b82f6; animation: spin .7s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* ══ REDESIGN: neutral dark + gold winners + green live ══ */
+.page { background: #07080b; }
+.header { border-bottom: 1px solid #1c1f27; padding: 14px 20px; }
+.tournamentTitle { letter-spacing: -.01em; }
+.statusBadgeActive { background: rgba(34,224,122,.1); color: #22e07a; border-color: rgba(34,224,122,.25); }
+.ghostBtn, .editTitleBtn { background: #0d0f14; border: 1px solid #1c1f27; }
+.ghostBtn:hover, .editTitleBtn:hover { background: #14171d; border-color: #2a2e39; }
+
+.statsBar {
+  display: flex; gap: 10px; padding: 14px 20px; overflow-x: auto;
+  background: transparent; border-bottom: 1px solid #1c1f27;
+}
+.statDivider { display: none; }
+.statBox {
+  flex: 1 1 0; min-width: 140px; padding: 12px 14px; gap: 5px;
+  background: #0d0f14; border: 1px solid #1c1f27; border-radius: 14px;
+}
+.statLabel { color: #7b8190; }
+.statVal { font-variant-numeric: tabular-nums; }
+.statAmber { color: #f5c542; }
+.statGreen { color: #22e07a; }
+
+.bracketScroll { background: #07080b; }
+.roundLabel { color: #7b8190; }
+
+.matchCard {
+  position: relative; background: #0d0f14; border: 1px solid #1c1f27; border-radius: 10px;
+}
+.matchCard:hover { border-color: #343845; box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+.matchCardSelected {
+  border-color: #eef1f7 !important;
+  box-shadow: 0 0 0 2px rgba(238,241,247,.12), 0 6px 20px rgba(0,0,0,.45) !important;
+}
+.matchLive { border-color: rgba(34,224,122,.7); box-shadow: 0 0 0 1px rgba(34,224,122,.2), 0 0 22px rgba(34,224,122,.14); }
+.liveTag {
+  position: absolute; left: 0; top: -17px; display: flex; align-items: center; gap: 5px;
+  font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #22e07a;
+  pointer-events: none;
+}
+.liveTag i { width: 5px; height: 5px; border-radius: 50%; background: #22e07a; box-shadow: 0 0 8px #22e07a; animation: tnPulse 1.6s ease-in-out infinite; }
+@keyframes tnPulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .liveTag i { animation: none; } }
+
+.compRowWinner { background: linear-gradient(90deg, rgba(245,197,66,.14), rgba(245,197,66,.02)) !important; }
+.compRowLoser { opacity: .35; }
+.winnerBar { background: #f5c542; }
+.compResultWin { color: #f5c542; }
+.matchDivider { background: #1c1f27; }
+.compPlayer { color: #7b8190; }
+
+.champCard {
+  background: linear-gradient(160deg, rgba(245,197,66,.16), rgba(245,197,66,.03));
+  border: 1px solid rgba(245,197,66,.4); box-shadow: 0 0 36px rgba(245,197,66,.12);
+}
+.champLabel { color: rgba(245,197,66,.75); }
+.champName { color: #f5c542; }
+.champMulti { color: #f5c542; font-variant-numeric: tabular-nums; }
+
+.sidePanel { background: #0d0f14; border-left: 1px solid #1c1f27; }
+.sidePanelHeader { border-bottom: 1px solid #1c1f27; }
+.compEditor { background: #08090c; border: 1px solid #1c1f27; border-radius: 14px; padding: 12px; gap: 9px; }
+.compEditorWinner { border-color: rgba(245,197,66,.45); background: rgba(245,197,66,.04); }
+.multiWin { color: #f5c542; }
+.changeSlotBtn {
+  border: 1px solid #1c1f27; background: #0d0f14; color: #c9ced9;
+}
+.changeSlotBtn:hover { background: #14171d; border-color: #2a2e39; }
+.slotPicker { border-color: #1c1f27; background: #08090c; }
+.slotPickerItemActive { background: rgba(238,241,247,.08); }
+.fieldInput, .betInput { background: #08090c; border: 1px solid #1c1f27; border-radius: 9px; padding: 8px 10px; }
+.fieldInput { color: #fff; }
+.fieldInput:focus { border-color: #5b6070; }
+.betInput { color: #f5c542; }
+.betInput:focus { border-color: rgba(245,197,66,.5); }

@@ -606,14 +606,17 @@ function HistoryView({ onBack, onOpen }) {
 }
 
 // ── Bracket connectors ─────────────────────────────────────
-function ConnLR({ fromN, toN, outerH }) {
+const GOLD = 'rgba(245,197,66,.65)'
+const GREY = 'rgba(255,255,255,.13)'
+
+function ConnLR({ fromN, toN, outerH, fromMatches }) {
   const padFrom = (outerH - colH(fromN)) / 2
   const padTo   = (outerH - colH(toN))   / 2
-  const S = 'rgba(255,255,255,.2)'
   const els = []
   for (let i = 0; i < toN; i++) {
     const yA = padFrom + cardCY(i * 2), yB = padFrom + cardCY(i * 2 + 1)
     const yMid = (yA + yB) / 2, yOut = padTo + cardCY(i)
+    const S = fromMatches?.[i * 2]?.winner && fromMatches?.[i * 2 + 1]?.winner ? GOLD : GREY
     els.push(<g key={i}>
       <line x1={0}        y1={yA}   x2={CONN_W/2} y2={yA}   stroke={S} strokeWidth="1.5" strokeLinecap="round"/>
       <line x1={0}        y1={yB}   x2={CONN_W/2} y2={yB}   stroke={S} strokeWidth="1.5" strokeLinecap="round"/>
@@ -628,14 +631,14 @@ function ConnLR({ fromN, toN, outerH }) {
   )
 }
 
-function ConnRL({ fromN, toN, outerH }) {
+function ConnRL({ fromN, toN, outerH, toMatches }) {
   const padFrom = (outerH - colH(fromN)) / 2
   const padTo   = (outerH - colH(toN))   / 2
-  const S = 'rgba(255,255,255,.2)'
   const els = []
   for (let i = 0; i < fromN; i++) {
     const yIn = padFrom + cardCY(i), yA = padTo + cardCY(i * 2), yB = padTo + cardCY(i * 2 + 1)
     const yMid = (yA + yB) / 2
+    const S = toMatches?.[i * 2]?.winner && toMatches?.[i * 2 + 1]?.winner ? GOLD : GREY
     els.push(<g key={i}>
       <line x1={0}        y1={yIn}  x2={CONN_W/2} y2={yMid} stroke={S} strokeWidth="1.5" strokeLinecap="round"/>
       <line x1={CONN_W/2} y1={yA}   x2={CONN_W/2} y2={yB}   stroke={S} strokeWidth="1.5" strokeLinecap="round"/>
@@ -650,12 +653,12 @@ function ConnRL({ fromN, toN, outerH }) {
   )
 }
 
-function ConnH({ outerH }) {
+function ConnH({ outerH, done }) {
   const y = outerH / 2
   return (
     <div style={{ flexShrink:0, marginTop: LBL_H }}>
       <svg width={CONN_W} height={outerH} style={{ display:'block', overflow:'visible' }}>
-        <line x1={0} y1={y} x2={CONN_W} y2={y} stroke="rgba(255,255,255,.2)" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1={0} y1={y} x2={CONN_W} y2={y} stroke={done ? GOLD : GREY} strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     </div>
   )
@@ -677,12 +680,13 @@ function RCol({ matches, ri, totalRounds, outerH, seedOffset = 0, label, selecti
           const mi    = idx + seedOffset
           const isSel = selection?.ri === ri && selection?.mi === mi
           const top   = topPad + idx * (MATCH_H + GAP)
+          const live  = !!(a?.slot && b?.slot && !winner)
           const sA    = ri === 0 ? String.fromCharCode(65 + mi * 2)     : null
           const sB    = ri === 0 ? String.fromCharCode(65 + mi * 2 + 1) : null
           return (
             <div key={idx}
               style={{ position:'absolute', top, left:0, width: CARD_W, height: MATCH_H }}
-              className={`${styles.matchCard} ${isSel ? styles.matchCardSelected : ''}`}
+              className={`${styles.matchCard} ${isSel ? styles.matchCardSelected : ''} ${live ? styles.matchLive : ''}`}
               onClick={() => onSelect(isSel ? null : { ri, mi })}>
               <div style={{ height: ROW_H, display:'flex', alignItems:'center', position:'relative', overflow:'hidden' }}
                 className={`${styles.compRow} ${winner==='a' ? styles.compRowWinner : ''} ${winner==='b' && a ? styles.compRowLoser : ''}`}>
@@ -696,6 +700,7 @@ function RCol({ matches, ri, totalRounds, outerH, seedOffset = 0, label, selecti
                 </div>
                 {getMulti(a) !== null && <div className={`${styles.compResult} ${winner==='a' ? styles.compResultWin:''}`}>{getMulti(a).toFixed(2)}x</div>}
               </div>
+              {live && <div className={styles.liveTag}><i />Ao vivo</div>}
               <div style={{ height:1, background:'rgba(255,255,255,.07)' }}/>
               <div style={{ height: ROW_H, display:'flex', alignItems:'center', position:'relative', overflow:'hidden' }}
                 className={`${styles.compRow} ${winner==='b' ? styles.compRowWinner : ''} ${winner==='a' && b ? styles.compRowLoser : ''}`}>
@@ -744,8 +749,8 @@ function MirrorBracket({ bracket, selection, onSelect }) {
           <RCol matches={matches} ri={ri} totalRounds={totalRounds} outerH={outerH}
             seedOffset={0} label={roundLabel(ri, totalRounds)} selection={selection} onSelect={onSelect} />
           {colIdx < leftCols.length - 1
-            ? <ConnLR fromN={matches.length} toN={leftCols[colIdx + 1].matches.length} outerH={outerH} />
-            : <ConnH outerH={outerH} />
+            ? <ConnLR fromN={matches.length} toN={leftCols[colIdx + 1].matches.length} outerH={outerH} fromMatches={matches} />
+            : <ConnH outerH={outerH} done={!!matches[0]?.winner} />
           }
         </div>
       ))}
@@ -777,8 +782,8 @@ function MirrorBracket({ bracket, selection, onSelect }) {
       {rightCols.map(({ ri, matches, seedOffset }, colIdx) => (
         <div key={`R${ri}`} style={{ display:'contents' }}>
           {colIdx === 0
-            ? <ConnH outerH={outerH} />
-            : <ConnRL fromN={rightCols[colIdx - 1].matches.length} toN={matches.length} outerH={outerH} />
+            ? <ConnH outerH={outerH} done={!!rightCols[0]?.matches[0]?.winner} />
+            : <ConnRL fromN={rightCols[colIdx - 1].matches.length} toN={matches.length} outerH={outerH} toMatches={matches} />
           }
           <RCol matches={matches} ri={ri} totalRounds={totalRounds} outerH={outerH}
             seedOffset={seedOffset} label={roundLabel(ri, totalRounds)} selection={selection} onSelect={onSelect} />
