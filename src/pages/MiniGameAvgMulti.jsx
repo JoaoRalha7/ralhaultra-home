@@ -280,7 +280,7 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
   const av = useAvatars(entries.map(e => e.twitch_username))
   const myEntry         = entries.find(e => e.twitch_username?.toLowerCase() === twitchUser?.toLowerCase())
   const gameNum         = games.length - idx
-  const totalPtsAwarded = (game?.points_1st || 0) + (game?.points_2nd || 0) + (game?.points_3rd || 0)
+  const totalPtsAwarded = entries.length * AVG_COST + (game?.points_1st || 0)
   const canAfford       = points != null && points >= AVG_COST
   const rankedEntries   = isFinished
     ? [...entries].filter(e => e.rank).sort((a, b) => a.rank - b.rank)

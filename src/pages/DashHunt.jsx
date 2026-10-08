@@ -1392,7 +1392,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
   const [panelReady,  setPanelReady]  = useState(false)
   const [dbError,     setDbError]     = useState(null)
   const [duration,    setDuration]    = useState(180)
-  const [pts1,        setPts1]        = useState(1000)   // AVG: single prize pool, split between everyone in the winning range
+  const [pts1,        setPts1]        = useState(0)   // AVG: optional bonus added on top of the pool (pool = all entry fees)
   const [pts2,        setPts2]        = useState(0)
   const [pts3,        setPts3]        = useState(0)
   const [actualAvg,   setActualAvg]   = useState('')
@@ -1493,10 +1493,10 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
     setAwarding(true); setAwardMsg(null)
 
     // Only the correct range wins: everyone who picked the bucket containing the real average
-    // shares the whole prize pool (1st + 2nd + 3rd) equally.
+    // shares the pool (all entry fees + optional bonus) equally.
     const winId   = getBucket(avg)?.id
     const winners = entries.filter(e => (e.bucket || getBucket(parseBet(e.guess))?.id) === winId)
-    const pool    = (game.points_1st || 0) + (game.points_2nd || 0) + (game.points_3rd || 0)
+    const pool    = entries.reduce((a, e) => a + (parseInt(e.cost_paid) || 100), 0) + (game.points_1st || 0)
     const share   = winners.length ? Math.floor(pool / winners.length) : 0
     const winSet  = new Set(winners.map(w => w.id))
 
@@ -1531,7 +1531,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
   const previewRanked = previewWinId
     ? entries.filter(e => (e.bucket || getBucket(parseBet(e.guess))?.id) === previewWinId).map(e => ({ ...e, gap: Math.abs(parseBet(e.guess) - previewAvg) }))
     : []
-  const previewPool   = (game?.points_1st || 0) + (game?.points_2nd || 0) + (game?.points_3rd || 0)
+  const previewPool   = entries.reduce((a, e) => a + (parseInt(e.cost_paid) || 100), 0) + (game?.points_1st || 0)
   const previewShare  = previewRanked.length ? Math.floor(previewPool / previewRanked.length) : 0
 
   const calcedAvg = calcAvgFromEntries()
@@ -1566,14 +1566,14 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
       </div>
 
       {(() => {
-        const pool = (game?.points_1st || 0) + (game?.points_2nd || 0) + (game?.points_3rd || 0)
+        const pool = entries.reduce((a, e) => a + (parseInt(e.cost_paid) || 100), 0) + (game?.points_1st || 0)
         const ref  = isFinished ? Number(game?.result_avg) : Number(calcedAvg)
         const wb   = ref ? getBucket(ref) : null
         if (!game || !pool) return null
         const inWin = wb ? entries.filter(e => (e.bucket || getBucket(parseBet(e.guess))?.id) === wb.id) : []
         return (
           <div className={styles.pickCollected} style={{flexWrap:'wrap'}}>
-            <span>Pool <strong>{pool} pts</strong></span>
+            <span>Pool <strong>{pool} pts</strong>{game?.points_1st > 0 && <> (incl. {game.points_1st} bonus)</>}</span>
             {wb && <span> · {isFinished ? 'winning' : 'leading'} range <strong>{wb.label}</strong> · {inWin.length} {inWin.length === 1 ? 'player' : 'players'}{inWin.length ? <> · <strong>{Math.floor(pool / inWin.length)} pts each</strong></> : ' · nobody yet'}</span>}
           </div>
         )
@@ -1589,10 +1589,10 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
               </button>
             ))}
           </div>
-          <div className={styles.pickConfigLabel} style={{marginTop:6}}>Prize pool (split equally by everyone in the winning range)</div>
+          <div className={styles.pickConfigLabel} style={{marginTop:6}}>Bonus added to the pool (pool = all entry fees, split equally by the winning range)</div>
           <div className={styles.pickPtsRow}>
             <div className={styles.pickPtsField}>
-              <span className={styles.pickPtsLabel}>Pool</span>
+              <span className={styles.pickPtsLabel}>Bonus</span>
               <input className={styles.pickPtsInput} type='number' min='0' step='100' value={pts1} onChange={e => setPts1(Number(e.target.value))} />
             </div>
           </div>
