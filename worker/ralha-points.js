@@ -1919,7 +1919,7 @@ export default {
           if (pay > bet) wins++; else losses++
           if (acts.length < 400) acts.push({ kind: 'games', title: 'Crash session', at: c.created_at, value: pay - bet, status: pay > bet ? 'WIN' : 'LOSS' })
         }
-        for (const r of redeems) acts.push({ kind: 'shop', title: `Shop: ${r.shop_products?.name || 'Reward'}`, at: r.created_at, value: -(Number(r.cost_at_redeem) || 0), status: String(r.status || 'pending').toUpperCase() })
+        for (const r of redeems) acts.push({ kind: 'shop', title: r.shop_products?.name || 'Reward', at: r.created_at, value: -(Number(r.cost_at_redeem) || 0), status: String(r.status || 'pending').toUpperCase() })
         for (const t of tx) {
           const rs = String(t.reason)
           const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : rs.startsWith('vip_levelup') ? 'Level-up reward' : 'Daily reward'
