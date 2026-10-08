@@ -7,6 +7,7 @@ import AgeVerification from './AgeVerification';
 import DailyRewardsModal from './DailyRewardsModal';
 import Footer from './Footer';
 import LoginModal from './LoginModal';
+import UserMenu from './UserMenu';
 import LiveVotePopup from './LiveVotePopup';
 import { useAuth } from '../hooks/useAuth';
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
@@ -192,8 +193,12 @@ export default function Layout() {
           {isAdmin() && <button className="pill adminBtn" onClick={() => setAdminOpen(true)}>Admin</button>}
           {user ? (
             <>
-              <Avatar src={profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture} />
-              <button className="logout" onClick={signOut}>Logout</button>
+              <UserMenu
+                src={profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
+                name={profile?.twitch_username || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Account'}
+                userId={user.id}
+                onLogout={signOut}
+              />
             </>
           ) : (
             <button className="logout login" onClick={() => setLoginOpen(true)}>Login</button>

@@ -1769,6 +1769,60 @@ export default {
         return json({ levels, me })
       }
 
+      // ── GET /profile — stats + activity for the logged-in user ──
+      if (pathname === '/profile' && request.method === 'GET') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who?.username) return json({ error: 'unauthorized' }, 401)
+        const u = encodeURIComponent(who.username)
+        const kind = searchParams.get('kind') || 'all'
+        const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1)
+        const get = async (q) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${q}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
+        const [games, crash, redeems, tx] = await Promise.all([
+          get(`casino_games?username=ilike.${u}&status=eq.done&select=game,bet,payout,updated_at&order=updated_at.desc&limit=5000`),
+          get(`crash_bets?username=ilike.${u}&select=bet,cashed_at,created_at&order=created_at.desc&limit=5000`),
+          get(`shop_redeems?twitch_username=ilike.${u}&select=cost_at_redeem,created_at,status,shop_products(name)&order=created_at.desc&limit=100`),
+          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.daily*)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
+        ])
+        let wins = 0, losses = 0
+        const acts = []
+        for (const g of games) {
+          const bet = Number(g.bet) || 0, pay = Number(g.payout) || 0
+          if (pay > bet) wins++; else losses++
+          if (acts.length < 400) acts.push({ kind: 'games', title: `${g.game[0].toUpperCase()}${g.game.slice(1)} session`, at: g.updated_at, value: pay - bet, status: pay > bet ? 'WIN' : 'LOSS' })
+        }
+        for (const c of crash) {
+          const bet = Number(c.bet) || 0, pay = c.cashed_at ? Math.floor(bet * Number(c.cashed_at)) : 0
+          if (pay > bet) wins++; else losses++
+          if (acts.length < 400) acts.push({ kind: 'games', title: 'Crash session', at: c.created_at, value: pay - bet, status: pay > bet ? 'WIN' : 'LOSS' })
+        }
+        for (const r of redeems) acts.push({ kind: 'shop', title: `Shop: ${r.shop_products?.name || 'Reward'}`, at: r.created_at, value: -(Number(r.cost_at_redeem) || 0), status: String(r.status || 'pending').toUpperCase() })
+        for (const t of tx) {
+          const rs = String(t.reason)
+          const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : 'Daily reward'
+          acts.push({ kind: 'rewards', title, at: t.created_at, value: Number(t.delta) || 0, status: 'AWARDED' })
+        }
+        const counts = { all: acts.length, games: 0, shop: 0, rewards: 0 }
+        for (const a of acts) counts[a.kind]++
+        const list = acts.filter((a) => kind === 'all' || a.kind === kind).sort((a, b) => (a.at < b.at ? 1 : -1))
+        return json({ stats: { bets: games.length + crash.length, wins, losses }, counts, total: list.length, page, items: list.slice((page - 1) * 8, page * 8) })
+      }
+
+      // ── POST /voucher/redeem ──
+      if (pathname === '/voucher/redeem' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who?.username) return json({ error: 'unauthorized' }, 401)
+        const body = await request.json().catch(() => ({}))
+        const code = String(body.code || '').trim().slice(0, 40)
+        if (!code) return json({ error: 'invalid_code' }, 400)
+        const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/redeem_voucher`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: who.username, p_code: code }) })
+        if (!r.ok) {
+          const t = await r.text()
+          const e = ['invalid_code', 'expired', 'used_up', 'already_redeemed'].find((k) => t.includes(k))
+          return json({ error: e || 'failed' }, e ? 400 : 502)
+        }
+        return json({ ok: true, points: Number(await r.json()) })
+      }
+
       // ── GET /leaderboard ─────────────────────────────────────────────────────
       if (pathname === '/leaderboard') {
         const limit  = Math.min(parseInt(searchParams.get('limit')  || '100'), 100)

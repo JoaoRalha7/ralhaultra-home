@@ -1,0 +1,18 @@
+.wrap{position:relative}
+.trigger{display:flex;align-items:center;gap:8px;height:44px;padding:0 10px 0 5px;border-radius:14px;border:1px solid #252b3a;background:#131720;color:#8d96ab;cursor:pointer;transition:.2s}
+.trigger:hover,.triggerOn{border-color:#3b82f6;background:rgba(59,130,246,.1);color:#93c5fd}
+.avWrap{position:relative;display:inline-block;line-height:0}
+.face{border-radius:50%;object-fit:cover;background:#1d2a4a;color:#93c5fd;display:grid;place-items:center;font-family:"Bricolage Grotesque",sans-serif;font-weight:800}
+.badge{position:absolute;right:-7px;bottom:-7px;display:grid;border-radius:50%;background:#0b0e15;padding:1px}
+.badgeBig{position:absolute;right:-7px;bottom:-7px;display:grid;border-radius:50%;background:#0f141e;padding:1px}
+.chev{transition:transform .2s}
+.triggerOn .chev{transform:rotate(180deg)}
+.menu{position:absolute;right:0;top:calc(100% + 8px);width:260px;z-index:60;border-radius:18px;border:1px solid #2a3350;background:#0f141e;box-shadow:0 24px 60px rgba(0,0,0,.6);overflow:hidden}
+.head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid #252b3a}
+.head b{display:block;font:800 16px "Bricolage Grotesque",sans-serif;color:#eef1f7}
+.head small{display:block;font-size:13px;font-weight:600;margin-top:2px}
+.items{padding:8px;display:flex;flex-direction:column;gap:2px}
+.items a,.items button{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:12px;border:0;background:transparent;color:#c9d0e0;font:600 14px "DM Sans",sans-serif;text-decoration:none;cursor:pointer;text-align:left}
+.items a:hover,.items button:hover{background:rgba(59,130,246,.12);color:#fff}
+.items button:hover{background:rgba(248,113,113,.12);color:#fca5a5}
+.sep{height:1px;background:#252b3a;margin:6px 4px}
