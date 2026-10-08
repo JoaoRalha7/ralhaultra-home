@@ -758,6 +758,37 @@ export default {
         return json({ ok: true, dry, users: rows.length, written, totalPointsOld: total, mult, from: offset, next: done ? null : next, top5: offset === 0 ? rows.slice(0, 5) : undefined })
       }
 
+      // ── POST /admin/import-se-watch ───────────────────────────────────────────
+      // Streamer only. Copies StreamElements watchtime (minutes) into point_balances.watch_minutes, in slices.
+      // Call repeatedly with ?offset=<next> until "next" is null. ?dry=1 only reads (shows status + first rows). Idempotent (applies the difference).
+      if (pathname === '/admin/import-se-watch' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who || !ADMIN_IDS.includes(who.id)) return json({ error: 'unauthorized' }, 401)
+        const dry = searchParams.get('dry') === '1'
+        let offset = Math.max(parseInt(searchParams.get('offset') || '0', 10) || 0, 0)
+        const rows = []
+        let next = offset, done = false, sample = null
+        for (let i = 0; i < 20; i++) {
+          const r = await _fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/watchtime?limit=1000&offset=${next}`, { headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } })
+          if (!r.ok) return json({ error: `SE API erro ${r.status}`, detail: (await r.text()).slice(0, 300), next }, 502)
+          const body = await r.json()
+          const users = body.users ?? []
+          if (!sample) sample = { keys: Object.keys(body), first: users[0] || null }
+          if (!users.length) { done = true; break }
+          for (const u of users) rows.push({ username: String(u.username).toLowerCase(), minutes: Number(u.minutes ?? u.watchtime) || 0 })
+          next += users.length
+        }
+        let written = 0
+        if (!dry) {
+          for (let i = 0; i < rows.length; i += 1000) {
+            const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/import_se_watchtime`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_rows: rows.slice(i, i + 1000) }) })
+            if (!r.ok) return json({ error: 'import failed', detail: await r.text(), written, next: offset }, 502)
+            written += Number(await r.json())
+          }
+        }
+        return json({ ok: true, dry, users: rows.length, written, from: offset, next: done ? null : next, sample, top3: rows.slice(0, 3) })
+      }
+
       // ── POST /jackpot/state | /jackpot/deposit ────────────────────────────────────
       if (pathname.startsWith('/jackpot/') && request.method === 'POST') {
         const now = Date.now()
