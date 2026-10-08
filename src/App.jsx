@@ -23,6 +23,7 @@ import MiniGameAvgMulti from './pages/MiniGameAvgMulti';
 import MiniGameGtb from './pages/MiniGameGtb';
 import MiniGamesLanding from './pages/MiniGamesLanding';
 import Offers from './pages/Offers';
+import Community from './pages/Community';
 import Placeholder from './pages/Placeholder';
 import Shop from './pages/Shop';
 import Giveaways from './pages/Giveaways';
@@ -72,9 +73,7 @@ function StatsPage() {
   return <Stats navigate={navigate} />;
 }
 
-const SOON = [
-  ['community', 'Community'],
-];
+const SOON = [];
 
 export default function App() {
   return (
@@ -125,6 +124,7 @@ export default function App() {
         <Route path="privacy" element={<Legal />} />
         <Route path="cookies" element={<Legal />} />
         <Route path="rules" element={<Legal />} />
+        <Route path="community" element={<Community />} />
         {SOON.map(([path, title]) => (
           <Route key={path} path={path} element={<Placeholder title={title} />} />
         ))}

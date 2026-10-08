@@ -1,0 +1,23 @@
+.page{width:100%;box-sizing:border-box;padding:28px 28px 60px;max-width:1280px;margin:0 auto}
+.head h1{font:800 32px "Bricolage Grotesque",sans-serif;margin:0 0 6px}
+.head p{margin:0 0 26px;color:var(--muted,#8b93a7);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media (max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}}
+.card{position:relative;display:flex;flex-direction:column;justify-content:flex-end;aspect-ratio:1/1;padding:22px;border-radius:22px;overflow:hidden;border:1px solid #ffffff14;color:#fff;text-decoration:none;
+  background:linear-gradient(145deg,var(--g1),var(--g2));transition:transform .25s,border-color .25s,filter .25s}
+.card:hover{transform:translateY(-6px);border-color:#ffffff40;filter:brightness(1.15)}
+.card:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.mark{position:absolute;right:-12%;top:-10%;width:78%;height:78%;opacity:.07;transform:rotate(-12deg);pointer-events:none;transition:transform .4s,opacity .3s}
+.card:hover .mark{transform:rotate(-4deg) scale(1.06);opacity:.11}
+.logo{position:absolute;left:22px;top:22px;width:64px;height:64px;padding:14px;box-sizing:border-box;border-radius:18px;background:#ffffff14;border:1px solid #ffffff1c}
+.info b{display:block;font:800 26px "Bricolage Grotesque",sans-serif;line-height:1.1;margin-bottom:4px}
+.info small{display:block;font-size:14px;color:#ffffffb0}
+.cta{display:inline-flex;align-items:center;gap:6px;margin-top:16px;align-self:flex-start;padding:8px 14px;border-radius:999px;background:#ffffff1a;font:700 13px "Bricolage Grotesque",sans-serif}
+.card:hover .cta{background:#ffffff2e}
+.twitch{--g1:#3a2470;--g2:#1b1535}
+.kick{--g1:#10200c;--g2:#2a6a1a}
+.instagram{--g1:#6a3a1a;--g2:#6a2440}
+.clips{--g1:#55244f;--g2:#6a2424}
+.discord{--g1:#2a3270;--g2:#151a38}
+.telegram{--g1:#13507a;--g2:#0e2a3a}
+@media (max-width:640px){.page{padding:20px 16px 50px}.grid{grid-template-columns:repeat(2,1fr);gap:12px}.card{padding:16px;border-radius:18px}.info b{font-size:20px}.logo{width:52px;height:52px;padding:11px;left:16px;top:16px}.cta{display:none}}
