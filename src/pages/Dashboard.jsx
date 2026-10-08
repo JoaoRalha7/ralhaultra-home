@@ -75,7 +75,7 @@ const NAV = [
 ]
 
 export default function Dashboard() {
-  const { user, isAdmin, loading } = useAuth()
+  const { user, isOwner: isAdmin, loading } = useAuth()
   const navigate = useNavigate()
   const loc = useLocation()
   const [navOpen, setNavOpen] = useState(false)

@@ -287,7 +287,6 @@ export default function Home() {
       .from('casinos')
       .select('*')
       .eq('is_active', true)
-      .order('is_hot', { ascending: false })
       .order('sort_order', { ascending: true })
       .then(({ data, error }) => {
         setOffers(!error && data ? data.map((c, i) => casinoToOffer(c, i)) : []);

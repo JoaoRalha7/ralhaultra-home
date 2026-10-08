@@ -61,9 +61,15 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
-  const isAdmin = () => {
-    return user?.id === '13878854-d588-4c49-ad36-1428920902bd'
-  }
+  const OWNER = '13878854-d588-4c49-ad36-1428920902bd'
+  const [extraAdmin, setExtraAdmin] = useState(false)
+  useEffect(() => {
+    if (!user || user.id === OWNER) { setExtraAdmin(false); return }
+    supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setExtraAdmin(!!data), () => setExtraAdmin(false))
+  }, [user?.id])
+  const isOwner = () => user?.id === OWNER
+  const isAdmin = () => user?.id === OWNER || extraAdmin
 
   return (
     <AuthContext.Provider value={{
@@ -75,6 +81,7 @@ export function AuthProvider({ children }) {
       signInWithTwitch,
       signOut,
       isAdmin,
+      isOwner,
     }}>
       {children}
     </AuthContext.Provider>

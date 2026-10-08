@@ -183,7 +183,6 @@ export default function Offers() {
         .from('casinos')
         .select('*')
         .eq('is_active', true)
-        .order('is_hot', { ascending: false })
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 

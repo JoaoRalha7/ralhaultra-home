@@ -181,7 +181,7 @@ function Card({ n, title, hint, children, right }) {
 
 function CasinoModal({ casino, methods, all = [], onSave, onClose, onRefresh }) {
   const isEdit = !!casino?.id
-  const blank = { is_active: true, vpn_allowed: true, sort_order: 0 }
+  const blank = { is_active: true, vpn_allowed: true, sort_order: all.length ? Math.max(...all.map(c => c.sort_order ?? 0)) + 1 : 0 }
   const [form,       setForm]       = useState(blank)
   const [offer,      setOffer]      = useState({ big: '', label: '', sub: '' })
   const [more,       setMore]       = useState([])
@@ -647,7 +647,10 @@ function MethodRow({ method, onEdit, onDelete, onToggle }) {
 
 // ── Main ───────────────────────────────────────────────────
 export default function AdminPanel({ onClose }) {
-  const { signOut } = useAuth()
+  const { signOut, isOwner, user } = useAuth()
+  const [admins, setAdmins] = useState([])
+  const [adminName, setAdminName] = useState('')
+  const [adminMsg, setAdminMsg] = useState('')
   const [section,    setSection]    = useState('casinos')
   const [casinos,    setCasinos]    = useState([])
   const [methods,    setMethods]    = useState([])
@@ -671,6 +674,26 @@ export default function AdminPanel({ onClose }) {
   }, [])
 
   useEffect(() => { loadAll() }, [loadAll])
+
+  const loadAdmins = useCallback(async () => {
+    const { data } = await supabase.from('admins').select('*').order('added_at')
+    setAdmins(data || [])
+  }, [])
+  useEffect(() => { loadAdmins() }, [loadAdmins])
+  const addAdmin = async () => {
+    const name = adminName.trim().toLowerCase().replace(/^@/, '')
+    if (!name) return
+    setAdminMsg('')
+    const { data: p } = await supabase.from('profiles').select('id,twitch_username').ilike('twitch_username', name).maybeSingle()
+    if (!p) { setAdminMsg('User not found. They must log in to the site once first.'); return }
+    const { error } = await supabase.from('admins').upsert({ user_id: p.id, username: p.twitch_username })
+    if (error) { setAdminMsg(error.message); return }
+    setAdminName(''); loadAdmins()
+  }
+  const removeAdmin = async (id) => {
+    if (!confirm('Remove this admin?')) return
+    await supabase.from('admins').delete().eq('user_id', id); loadAdmins()
+  }
 
   const deleteCasino = async (id) => {
     if (!confirm('Delete this casino?')) return
@@ -737,6 +760,7 @@ export default function AdminPanel({ onClose }) {
               {[
                 { id: 'casinos', label: 'Casinos', count: casinos.length, icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg> },
                 { id: 'methods', label: 'Methods',  count: methods.length,  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M2 10h20" stroke="currentColor" strokeWidth="1.8"/></svg> },
+                ...(isOwner() ? [{ id: 'admins', label: 'Admins', count: admins.length + 1, icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg> }] : []),
               ].map(({ id, label, count, icon }) => (
                 <button key={id} className={`${styles.navItem} ${section === id ? styles.navItemActive : ''}`}
                   onClick={() => { setSection(id); setSearch('') }}>
@@ -757,7 +781,7 @@ export default function AdminPanel({ onClose }) {
           <div className={styles.main}>
             <div className={styles.mainHead}>
               <div>
-                <h2 className={styles.mainTitle}>{section === 'casinos' ? 'Casinos' : 'Deposit Methods'}</h2>
+                <h2 className={styles.mainTitle}>{section === 'casinos' ? 'Casinos' : section === 'admins' ? 'Admins' : 'Deposit Methods'}</h2>
                 {section === 'casinos' && (
                   <div className={styles.mainStats}>
                     <span style={{ color: '#4ade80' }}>{casinos.filter(c => c.is_active).length} active</span>
@@ -772,9 +796,9 @@ export default function AdminPanel({ onClose }) {
                   <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className={styles.searchInput} />
                   {search && <button className={styles.clearSearch} onClick={() => setSearch('')}><IconClose /></button>}
                 </div>
-                <button className={styles.btnPrimary} onClick={() => section === 'casinos' ? setNewCasino(true) : setNewMethod(true)}>
+                {section !== 'admins' && <button className={styles.btnPrimary} onClick={() => section === 'casinos' ? setNewCasino(true) : setNewMethod(true)}>
                   <IconPlus />{section === 'casinos' ? 'New Casino' : 'New Method'}
-                </button>
+                </button>}
                 <button className={styles.iconBtnSm} onClick={onClose}><IconClose /></button>
               </div>
             </div>
@@ -792,6 +816,22 @@ export default function AdminPanel({ onClose }) {
             <div className={styles.mainBody}>
               {loading ? (
                 <div className={styles.loadingState}><div className={styles.spinner} /><span>Loading...</span></div>
+              ) : section === 'admins' ? (
+                <div className={styles.list}>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <input className={styles.input} value={adminName} onChange={e => setAdminName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addAdmin()} placeholder="Twitch username" />
+                    <button className={styles.btnPrimary} onClick={addAdmin}><IconPlus />Add admin</button>
+                  </div>
+                  {adminMsg && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 10 }}>{adminMsg}</div>}
+                  <div className={styles.emptyState} style={{ textAlign: 'left', padding: '4px 0 12px', fontSize: 13 }}>Extra admins can edit casinos and deposit methods. Dashboard, points and admins stay owner-only.</div>
+                  <div className={styles.metaChip} style={{ marginBottom: 8, display: 'inline-block' }}>Owner (you) - cannot be removed</div>
+                  {admins.map(a => (
+                    <div key={a.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, marginBottom: 6 }}>
+                      <b style={{ flex: 1 }}>{a.username || a.user_id}</b>
+                      <button className={`${styles.iconBtnSm} ${styles.iconBtnDanger}`} onClick={() => removeAdmin(a.user_id)}><IconTrash /></button>
+                    </div>
+                  ))}
+                </div>
               ) : section === 'casinos' ? (
                 filteredCasinos.length === 0
                   ? <div className={styles.emptyState}>{search ? 'No casinos match your search.' : 'No casinos yet.'}</div>
