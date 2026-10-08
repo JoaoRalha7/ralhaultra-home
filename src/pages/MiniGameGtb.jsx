@@ -526,13 +526,6 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                         onChange={e => setGuessInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && requestSubmit()}
                       />
-                      <button
-                        className={styles.gtbSubmitBtn}
-                        onClick={requestSubmit}
-                        disabled={submitting || !guessInput}
-                      >
-                        {submitting ? <Spinner size={14} /> : 'Submit'}
-                      </button>
                     </div>
                     <div className={styles.gtbChips}>
                       {[-500, -100, 100, 500].map(d => (
@@ -541,6 +534,13 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                         </button>
                       ))}
                     </div>
+                    <button
+                      className={styles.gtbSubmitBtn}
+                      onClick={requestSubmit}
+                      disabled={submitting || !guessInput}
+                    >
+                      {submitting ? <Spinner size={16} /> : 'Lock in my guess'}
+                    </button>
                     {game.target_balance > 0 && (
                       <div className={styles.gtbHint}>
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

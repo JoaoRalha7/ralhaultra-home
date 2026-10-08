@@ -166,3 +166,12 @@
 .compact .bucketBtnRange { font-size: 12px; }
 .compact .distSection { display: none; }
 .compact .bucketLabel { font-size: 15px; }
+
+/* v3: bigger range tiles */
+.bucketSection{padding:0;background:none;border:0;gap:10px}
+.bucketLabel{font-size:14px;font-weight:600;color:var(--mute,#8d96ab);letter-spacing:0;text-transform:none}
+.bucketGrid{grid-template-columns:repeat(2,1fr);gap:10px}
+.bucketBtn{padding:14px 14px;border-radius:14px;border:1.5px solid color-mix(in srgb,var(--bcolor) 40%,transparent);background:color-mix(in srgb,var(--bcolor) 12%,#10141c)}
+.bucketBtnId{font:800 18px var(--head,inherit)}
+.bucketBtnRange{font-size:15px}
+.bucketPct{margin-left:auto;font-size:13px;color:var(--mute,#8d96ab);font-weight:700}
