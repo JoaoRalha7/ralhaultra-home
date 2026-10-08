@@ -502,9 +502,3 @@
 .pbNone{color:var(--mute)}
 @media(max-width:700px){.pbCell,.tbl th:nth-child(3){display:none}}
 .gv2Count span{order:2;font:700 14px "DM Sans",sans-serif;color:var(--mute);margin-right:2px}
-
-/* bonus box follows the rail: same top and bottom (ends with Pick & Win), list scrolls inside */
-@media (min-width:1101px){
-  .split{align-items:stretch;min-height:560px}
-  .dBody{position:relative;top:auto;align-self:stretch;height:0;min-height:100%;max-height:none}
-}
