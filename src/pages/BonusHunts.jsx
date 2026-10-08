@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import TwitchAvatar from '../components/TwitchAvatar'
+import { useAvatars } from '../lib/avatars'
 import { useLocation } from 'react-router-dom'
 import MiniGame from './MiniGame'
 import MiniGameGtb from './MiniGameGtb'
@@ -333,22 +335,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const pickRows = (gameList || []).find(g => g.key === 'pick')?.rows || []
   const pickBy = {}
   pickRows.forEach(r => { if (r.entry_id) pickBy[r.entry_id] = r.twitch_username })
-  const pickNames = [...new Set(pickRows.map(r => (r.twitch_username || '').toLowerCase()).filter(Boolean))].sort().join(',')
-  const [pickAv, setPickAv] = useState({})
-  useEffect(() => {
-    const names = pickNames.split(',').filter(n => n && pickAv[n] === undefined)
-    if (!names.length) return
-    let off = false
-    ;(async () => {
-      const { data } = await supabase.from('profiles').select('twitch_username, avatar_url').in('twitch_username', names.slice(0, 150))
-      if (off) return
-      const got = {}
-      names.forEach(n => { got[n] = null })
-      ;(data || []).forEach(r => { if (r.twitch_username) got[r.twitch_username.toLowerCase()] = r.avatar_url || null })
-      setPickAv(prev => ({ ...prev, ...got }))
-    })()
-    return () => { off = true }
-  }, [pickNames]) // eslint-disable-line react-hooks/exhaustive-deps
+  const pickAv = useAvatars(pickRows.map(r => r.twitch_username))
   const [pickOpen, setPickOpen] = useState(false)
   useEffect(() => {
     if (!pickOpen) return
@@ -639,9 +626,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
                         <td className={x.pbCell}>
                           {pickBy[e.id]
                             ? <span className={x.pb}>
-                                {pickAv[pickBy[e.id].toLowerCase()]
-                                  ? <img src={pickAv[pickBy[e.id].toLowerCase()]} alt="" referrerPolicy="no-referrer" />
-                                  : <i>{pickBy[e.id][0].toUpperCase()}</i>}
+                                <TwitchAvatar name={pickBy[e.id]} map={pickAv} size={16} />
                                 {pickBy[e.id]}
                               </span>
                             : <span className={x.pbNone}>—</span>}
@@ -669,7 +654,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
             <div className={x.pickSum}>
               <div className={x.pickStats}>
                 <span><b>{g?.count ?? 0}</b> picks so far</span>
-                {st === 'finished' && g?.winner && <span style={{display:'inline-flex',alignItems:'center',gap:5}}>Winner {pickAv[(g.winner.twitch_username||'').toLowerCase()] ? <img src={pickAv[(g.winner.twitch_username||'').toLowerCase()]} alt="" referrerPolicy="no-referrer" style={{width:16,height:16,borderRadius:'50%',objectFit:'cover'}} /> : null}<b>{g.winner.twitch_username}</b></span>}
+                {st === 'finished' && g?.winner && <span style={{display:'inline-flex',alignItems:'center',gap:5}}>Winner <TwitchAvatar name={g.winner.twitch_username} map={pickAv} size={16} /><b>{g.winner.twitch_username}</b></span>}
               </div>
               <button className={x.pickBtn} onClick={() => setPickOpen(true)}>
                 {st === 'open' ? 'Pick your slot' : st === 'closed' ? 'See picks' : 'See results'}

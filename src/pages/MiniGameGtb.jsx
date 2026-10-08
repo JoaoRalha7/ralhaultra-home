@@ -155,7 +155,6 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
   const [confirm,     setConfirm]     = useState(null)
   const [showHistory, setShowHistory] = useState(false)
   const [lbAll,       setLbAll]       = useState(false)
-  const [avatars,     setAvatars]     = useState({})
   const [toast,       setToast]       = useState(null)
   const [guessInput,  setGuessInput]  = useState('')
   const toastRef = useRef(null)
@@ -304,22 +303,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
     ? [...entries].sort((a, b) => (a.gap == null ? Infinity : parseBet(a.gap)) - (b.gap == null ? Infinity : parseBet(b.gap)))
     : [...entries].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
 
-  // Twitch avatars for the leaderboard (profiles.avatar_url by lowercase username)
-  const avKey = entries.map(e => (e.twitch_username || '').toLowerCase()).filter(Boolean).sort().join(',')
-  useEffect(() => {
-    const names = [...new Set(avKey.split(',').filter(n => n && avatars[n] === undefined))]
-    if (!names.length) return
-    let off = false
-    ;(async () => {
-      const { data } = await supabase.from('profiles').select('twitch_username, avatar_url').in('twitch_username', names.slice(0, 150))
-      if (off) return
-      const got = {}
-      names.forEach(n => { got[n] = null })
-      ;(data || []).forEach(r => { if (r.twitch_username) got[r.twitch_username.toLowerCase()] = r.avatar_url || null })
-      setAvatars(prev => ({ ...prev, ...got }))
-    })()
-    return () => { off = true }
-  }, [avKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const avatars = useAvatars(entries.map(e => e.twitch_username))
 
   if (loading) return (
     <div className={`${styles.page}${compact ? ` ${styles.compact}` : ''}`}><div className={styles.loadWrap}><Spinner size={28} /></div></div>
@@ -601,9 +585,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
                       return (
                         <div key={e.id} className={`${styles.lbRow} ${isMe ? styles.lbRowMe : ''} ${pos === 1 ? styles.lbRow1 : ''}`}>
                           <span className={`${styles.lbPos} ${pos === 1 ? styles.lbPos1 : pos === 2 ? styles.lbPos2 : pos === 3 ? styles.lbPos3 : ''}`}>{pos ?? '·'}</span>
-                          {avatars[(e.twitch_username || '').toLowerCase()]
-                            ? <img className={styles.lbAvImg} src={avatars[(e.twitch_username || '').toLowerCase()]} alt="" referrerPolicy="no-referrer" />
-                            : <span className={styles.lbAv} style={{ background: `hsl(${hue} 55% 45%)` }}>{(e.twitch_username || '?')[0].toUpperCase()}</span>}
+                          <TwitchAvatar name={e.twitch_username} map={avatars} size={30} />
                           <span className={styles.lbUser}>{e.twitch_username}</span>
                           <span className={styles.lbGuess}>€{parseBet(e.guess).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           {e.gap != null && <span className={styles.lbGap}>· gap €{parseBet(e.gap).toFixed(2)}</span>}

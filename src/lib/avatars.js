@@ -11,10 +11,14 @@ async function fetchMissing(names) {
   if (!want.length) return
   want.forEach(n => pending.add(n))
   try {
-    const { data } = await supabase.from('profiles').select('twitch_username, avatar_url').in('twitch_username', want)
-    want.forEach(n => cache.set(n, null))
-    ;(data || []).forEach(r => { if (r.twitch_username) cache.set(r.twitch_username.toLowerCase(), r.avatar_url || null) })
-  } catch { want.forEach(n => cache.set(n, null)) }
+    // profiles is RLS-protected for other users -> security-definer RPC (supabase/avatars.sql); table select as fallback
+    let data = null
+    try { const r = await supabase.rpc('get_avatars', { p_names: want }); if (!r.error) data = r.data } catch { /* fallback */ }
+    if (!data) { try { data = (await supabase.from('profiles').select('twitch_username, avatar_url').in('twitch_username', want)).data } catch { /* none */ } }
+    // default: Twitch picture via unavatar (works for any Twitch name), then saved avatar overrides it
+    want.forEach(n => cache.set(n, `https://unavatar.io/twitch/${encodeURIComponent(n)}?fallback=false`))
+    ;(data || []).forEach(r => { if (r.twitch_username && r.avatar_url) cache.set(r.twitch_username.toLowerCase(), r.avatar_url) })
+  } catch { want.forEach(n => cache.set(n, `https://unavatar.io/twitch/${encodeURIComponent(n)}?fallback=false`)) }
   want.forEach(n => pending.delete(n))
   listeners.forEach(fn => fn())
 }
