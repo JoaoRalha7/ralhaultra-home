@@ -13,6 +13,6 @@ export const COMMUNITY = [
   { id: 2, brand: 'kick', name: 'Kick', meta: 'jralha_', url: LINKS.kick },
   { id: 3, brand: 'instagram', name: 'Instagram', meta: '@jotaralha7', url: LINKS.instagram },
   { id: 4, brand: 'instagram', name: 'Clips', meta: '@clipsdoralha', url: LINKS.clips },
-  { id: 5, brand: 'discord', name: 'Discord', meta: '4,000+ users', url: LINKS.discord },
-  { id: 6, brand: 'telegram', name: 'Telegram', meta: 'Updates', url: LINKS.telegram },
+  { id: 5, brand: 'discord', name: 'Discord', meta: 'Offers & Tickets', url: LINKS.discord },
+  { id: 6, brand: 'telegram', name: 'Telegram', meta: 'Community', url: LINKS.telegram },
 ];
