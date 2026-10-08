@@ -487,3 +487,10 @@
 .modal{max-width:760px;padding:14px 16px 16px}
 .modal{max-width:1040px}
 .modal{max-width:1000px}
+
+/* bonus list: clean internal scroll instead of pages */
+.tbl{overflow:hidden}
+.tbl > div:first-child{max-height:min(68vh,640px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+.tbl > div:first-child::-webkit-scrollbar{width:8px}
+.tbl > div:first-child::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px}
+.tbl thead th{position:sticky;top:0;z-index:2;background:var(--panel);box-shadow:0 1px 0 var(--line)}

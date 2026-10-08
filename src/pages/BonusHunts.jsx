@@ -444,7 +444,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const toggleSort = (key) => { setPage(1); setSort(sv => sv.key === key ? (sv.dir === -1 ? { key, dir: 1 } : { key: 'order', dir: 1 }) : { key, dir: -1 }) }
   const arrow = (key) => sort.key === key ? (sort.dir === -1 ? ' ↓' : ' ↑') : ''
   const totalPages  = Math.ceil(view.length / PER_PAGE)
-  const pageEntries = view.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const pageEntries = view // all rows; the list scrolls instead of paginating
 
   const podium = [...opened].map(e => ({ ...e, multi: parseBet(e.payment) / parseBet(e.bet) }))
     .filter(e => e.multi > 0).sort((a, b) => b.multi - a.multi).slice(0, 3)
@@ -506,7 +506,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
           <div className={x.gv2Name}><b>{d.label}</b><small>{d.blurb}</small></div>
           <span className={`${x.gv2St} ${live ? x.gv2Live : ''}`}><i />{GAME_STATUS[st].label.toUpperCase()}</span>
         </header>
-        <div className={x.gv2Count}><b>{g.count}</b><span>{unit}</span></div>
+        <div className={x.gv2Count}><b>{g.count}</b>{key !== 'avg' && <span>{unit}</span>}</div>
         {key === 'gtb' && st === 'closed'
           ? <div className={x.gv2Off}>Results coming soon</div>
           : <div className={x.gboxBody}>{node}</div>}
@@ -629,7 +629,6 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
                 </tbody>
               </table>
               </div>
-              {renderPagination(totalPages, page, setPage)}
             </>
           )}
         </div>
