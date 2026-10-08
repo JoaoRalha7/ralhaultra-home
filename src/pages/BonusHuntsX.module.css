@@ -454,3 +454,25 @@
 .featured .fTiles .fTile b{font-size:22px}
 .featured .fStats{align-content:end}
 @media(max-width:900px){.fTiles{grid-column:1/-1}}
+
+/* mini-game cards v2 */
+.gv2{padding:16px;border-radius:18px}
+.gv2.gboxLive{border-color:rgba(239,68,68,.5);background:radial-gradient(120% 140% at 0% 0%,rgba(239,68,68,.14),transparent 60%),var(--panel)}
+.gv2Head{display:flex;align-items:center;gap:12px;padding:0;border:0;background:none}
+.gv2Ico{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.06);color:var(--acc2);font:800 14px "Bricolage Grotesque",sans-serif}
+.gv2.gboxLive .gv2Ico{background:rgba(239,68,68,.16);color:#fca5a5}
+.gv2Name{flex:1;min-width:0}
+.gv2Name b{display:block;font:800 17px "Bricolage Grotesque",sans-serif}
+.gv2Name small{display:block;color:var(--mute);font-size:13px;margin-top:2px}
+.gv2St{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.05em;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.06);color:var(--mute)}
+.gv2St i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.gv2Live{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.4)}
+.gv2Live i{animation:fBlink 1.4s ease-in-out infinite}
+.gv2Count{display:flex;align-items:baseline;gap:8px;margin:14px 0 4px}
+.gv2Count b{font:800 30px "Bricolage Grotesque",sans-serif}
+.gv2Count span{color:var(--mute);font-size:14px}
+.gv2Off{margin-top:10px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.06);color:var(--mute);font-weight:700;font-size:14px}
+.gv2 .gboxBody{padding:10px 0 0}
+.gv2 .pickStats span:first-child{display:none}
+.gv2 .gboxBody>div{padding:4px 0 0 !important}
+.gv2 .pickBtn{margin-top:6px}

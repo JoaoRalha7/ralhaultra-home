@@ -496,15 +496,21 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
         <em>No game yet</em>
       </section>
     )
-    const live = g.game.status === 'open'
+    const st = g.game.status
+    const live = st === 'open'
+    const SIG = { pick: 'P&W', gtb: 'GTB', avg: 'AVG' }
+    const unit = key === 'pick' ? (g.count === 1 ? 'pick' : 'picks') : (g.count === 1 ? 'guess' : 'guesses')
     return (
-      <section id={'game-' + key} className={`${x.gbox} ${live ? x.gboxLive : ''}`} aria-label={d.label}>
-        <header className={x.gboxHead}>
-          <span className={x.gameIcon}><GameIcon k={key} /></span>
-          <div><b>{d.label}</b><small>{d.blurb}</small></div>
-          <span className={`${x.gChip} ${x[GAME_STATUS[g.game.status].cls]}`}>{live && <i />}{GAME_STATUS[g.game.status].label}</span>
+      <section id={'game-' + key} className={`${x.gbox} ${x.gv2} ${live ? x.gboxLive : ''}`} aria-label={d.label}>
+        <header className={x.gv2Head}>
+          <span className={x.gv2Ico}>{SIG[key]}</span>
+          <div className={x.gv2Name}><b>{d.label}</b><small>{d.blurb}</small></div>
+          <span className={`${x.gv2St} ${live ? x.gv2Live : ''}`}><i />{GAME_STATUS[st].label.toUpperCase()}</span>
         </header>
-        <div className={x.gboxBody}>{node}</div>
+        <div className={x.gv2Count}><b>{g.count}</b><span>{unit}</span></div>
+        {key !== 'pick' && st === 'closed'
+          ? <div className={x.gv2Off}>Results coming soon</div>
+          : <div className={x.gboxBody}>{node}</div>}
       </section>
     )
   }
