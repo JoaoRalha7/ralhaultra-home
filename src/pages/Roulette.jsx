@@ -111,6 +111,8 @@ export default function Roulette() {
   const add = (type, value = null) => {
     if (locked) return
     if (!g.user) return
+    const opp = ROULETTE.opposite[type]
+    if (opp && bets.some((b) => b.type === opp)) { g.setErr(`You can't bet on both ${type} and ${opp}`); return }
     setBets((prev) => {
       const i = prev.findIndex((b) => b.type === type && (b.value ?? null) === value)
       const next = prev.map((b) => ({ ...b }))
@@ -118,7 +120,7 @@ export default function Roulette() {
       else if (next.length < ROULETTE.maxBets) next.push({ type, value, amount: chip })
       return next
     })
-    setRes(null); setShownNum(null)
+    g.setErr(''); setRes(null); setShownNum(null)
     playSfx('click')
   }
   const undo = () => { if (!locked) setBets((b) => b.slice(0, -1)) }

@@ -74,7 +74,7 @@ function plinkoTable(rows, risk = 'medium') {
 // European roulette (single zero). Payouts are total multiples of the stake (stake included).
 const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
 const REDS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
-const ROULETTE = { maxBets: 24, payouts: { straight: 36, red: 2, black: 2, odd: 2, even: 2, low: 2, high: 2, dozen: 3, column: 3 } }
+const ROULETTE = { maxBets: 49, opposite: { red: 'black', black: 'red', odd: 'even', even: 'odd', low: 'high', high: 'low' }, payouts: { straight: 36, red: 2, black: 2, odd: 2, even: 2, low: 2, high: 2, dozen: 3, column: 3 } }
 const rColor = (n) => (n === 0 ? 'green' : REDS.includes(n) ? 'red' : 'black')
 function rouletteMult(bet, n) {
   const { type, value } = bet
@@ -884,6 +884,7 @@ export default {
           if (game === 'roulette') {
             rBets = Array.isArray(body.bets) ? body.bets.map((b) => ({ type: b?.type, value: b?.value == null ? null : Number(b.value), amount: Number(b?.amount) })) : []
             if (!rBets.length || rBets.length > ROULETTE.maxBets || !rBets.every((b) => validBet(b) && b.amount >= CASINO.minBet && b.amount <= CASINO.maxBet)) return json({ error: 'invalid bets' }, 400)
+            if (rBets.some((b) => ROULETTE.opposite[b.type] && rBets.some((o) => o.type === ROULETTE.opposite[b.type])) || new Set(rBets.map((b) => b.type + ':' + b.value)).size !== rBets.length) return json({ error: 'invalid bets' }, 400) // no red+black / odd+even / low+high, no duplicate spots
             body.bet = rBets.reduce((a, b) => a + b.amount, 0)
           }
           const bet = parseInt(body.bet, 10)
