@@ -99,7 +99,7 @@ export default function Plinko() {
     const S = B.current
     const out = []
     S.balls = S.balls.filter((b) => {
-      const el = now - b.t0
+      const el = Math.max(0, now - b.t0) // the first frame can be timestamped just before the ball was created
       if (el >= b.total) { b.land(); return false }
       const row = Math.min(b.rows - 1, Math.floor(el / b.speed)), t = (el - row * b.speed) / b.speed, e = t * t * (3 - 2 * t)
       if (row !== b.row) {
