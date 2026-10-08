@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import MiniGame from './MiniGame'
 import MiniGameGtb from './MiniGameGtb'
 import MiniGameAvgMulti from './MiniGameAvgMulti'
-import { supabaseDash } from '../lib/supabase'
+import { supabaseDash, supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import styles from './BonusHunts.module.css'
 import x from './BonusHuntsX.module.css'
@@ -279,10 +279,10 @@ function useHuntGames(huntId) {
         const game = !error && gs?.[0] ? gs[0] : null
         if (!game) return { ...d, game: null, count: 0, winner: null }
         const { data: ents } = await supabaseDash.from(d.entries)
-          .select('twitch_username, rank, points_awarded').eq('game_id', game.id)
+          .select(d.key === 'pick' ? 'entry_id, twitch_username, rank, points_awarded' : 'twitch_username, rank, points_awarded').eq('game_id', game.id)
         const rows = ents || []
         const winner = rows.find(e => e.rank === 1) || null
-        return { ...d, game, count: rows.length, winner }
+        return { ...d, game, count: rows.length, winner, rows }
       }))
       if (!off) setList(out)
     }
@@ -330,6 +330,25 @@ function FeaturedGameChips({ huntId }) {
 function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const location = useLocation()
   const gameList = useHuntGames(hunt.id)
+  const pickRows = (gameList || []).find(g => g.key === 'pick')?.rows || []
+  const pickBy = {}
+  pickRows.forEach(r => { if (r.entry_id) pickBy[r.entry_id] = r.twitch_username })
+  const pickNames = [...new Set(pickRows.map(r => (r.twitch_username || '').toLowerCase()).filter(Boolean))].sort().join(',')
+  const [pickAv, setPickAv] = useState({})
+  useEffect(() => {
+    const names = pickNames.split(',').filter(n => n && pickAv[n] === undefined)
+    if (!names.length) return
+    let off = false
+    ;(async () => {
+      const { data } = await supabase.from('profiles').select('twitch_username, avatar_url').in('twitch_username', names.slice(0, 150))
+      if (off) return
+      const got = {}
+      names.forEach(n => { got[n] = null })
+      ;(data || []).forEach(r => { if (r.twitch_username) got[r.twitch_username.toLowerCase()] = r.avatar_url || null })
+      setPickAv(prev => ({ ...prev, ...got }))
+    })()
+    return () => { off = true }
+  }, [pickNames]) // eslint-disable-line react-hooks/exhaustive-deps
   const [pickOpen, setPickOpen] = useState(false)
   useEffect(() => {
     if (!pickOpen) return
@@ -506,9 +525,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
           <span className={`${x.gv2St} ${live ? x.gv2Live : ''}`}><i />{GAME_STATUS[st].label.toUpperCase()}</span>
         </header>
         <div className={x.gv2Count}><b>{g.count}</b></div>
-        {key === 'gtb' && st === 'closed'
-          ? <div className={x.gv2Off}>Results coming soon</div>
-          : <div className={x.gboxBody}>{node}</div>}
+        <div className={x.gboxBody}>{node}</div>
       </section>
     )
   }
@@ -570,7 +587,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>#</th><th>SLOT</th>
+                    <th>#</th><th>SLOT</th><th>PICKED BY</th>
                     <th className={x.sortTh} onClick={() => toggleSort('bet')}>BET{arrow('bet')}</th>
                     <th className={x.sortTh} onClick={() => toggleSort('multi')}>MULTI{arrow('multi')}</th>
                     <th className={x.sortTh} onClick={() => toggleSort('win')}>WIN{arrow('win')}</th>
@@ -618,6 +635,16 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
                               />
                             )}
                           </div>
+                        </td>
+                        <td className={x.pbCell}>
+                          {pickBy[e.id]
+                            ? <span className={x.pb}>
+                                {pickAv[pickBy[e.id].toLowerCase()]
+                                  ? <img src={pickAv[pickBy[e.id].toLowerCase()]} alt="" referrerPolicy="no-referrer" />
+                                  : <i>{pickBy[e.id][0].toUpperCase()}</i>}
+                                {pickBy[e.id]}
+                              </span>
+                            : <span className={x.pbNone}>—</span>}
                         </td>
                         <td className={styles.tdBet}>{e.bet ? parseBet(e.bet).toFixed(2) + ' €' : '—'}</td>
                         <td className={`${styles.tdMulti} ${mc}`}>{multi !== null ? <>×{multi.toFixed(2)}<span className={x.mBar}><i style={{ width: Math.min(100, (multi / Math.max(bestMulti, 1)) * 100) + '%' }} /></span></> : '—'}</td>
