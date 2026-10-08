@@ -454,8 +454,11 @@ async function getUser(request, env, sbHeaders) {
   if (!u?.id) return null
   const p = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${u.id}&select=twitch_username,avatar_url`, { headers: sbHeaders })
   const prof = (await p.json())?.[0]
-  const username = (prof?.twitch_username || u.user_metadata?.name || '').toLowerCase()
-  const pic = u.user_metadata?.avatar_url || u.user_metadata?.picture || null
+  // The name comes from the Twitch identity Supabase verified at login (identity_data), never from profiles.twitch_username
+  // or user_metadata, because the user can edit both of those and would otherwise be able to act as someone else.
+  const idt = (u.identities || []).find((i) => i.provider === 'twitch')?.identity_data || {}
+  const username = String(idt.name || idt.preferred_username || idt.user_name || '').toLowerCase()
+  const pic = idt.avatar_url || idt.picture || u.user_metadata?.avatar_url || u.user_metadata?.picture || null
   return username ? { id: u.id, username, avatar: prof?.avatar_url || pic, savedAvatar: !!prof?.avatar_url } : null
 }
 
@@ -591,7 +594,7 @@ export default {
   },
   async fetch(request, env) {
     const origin    = request.headers.get('Origin') || ''
-    const isAllowed = ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')
+    const isAllowed = ALLOWED_ORIGINS.includes(origin)
 
     const corsHeaders = {
       'Access-Control-Allow-Origin': isAllowed ? origin : 'https://jralha.com',
@@ -619,23 +622,6 @@ export default {
 
     try {
 
-      // ── DEBUG ─────────────────────────────────────────────────────────────────
-      if (pathname === '/debug' && request.method === 'GET') {
-        const testRes = await fetch(
-          `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/jralha_/-1`,
-          { method: 'PUT', headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } }
-        )
-        return json({
-          secrets: {
-            SE_JWT_existe:       !!env.SE_JWT,
-            SE_JWT_inicio:       env.SE_JWT?.substring(0, 20) ?? 'VAZIO',
-            SE_CHANNEL_ID:       env.SE_CHANNEL_ID ?? 'VAZIO',
-            SUPABASE_URL_existe: !!env.SUPABASE_URL,
-            SUPABASE_KEY_existe: !!env.SUPABASE_SERVICE_KEY,
-          },
-          se_test: { status: testRes.status, ok: testRes.ok, body: await testRes.text() },
-        })
-      }
 
       // ── PUT /points/update ────────────────────────────────────────────────────
       if (pathname === '/points/update' && request.method === 'PUT') {
@@ -1406,7 +1392,7 @@ export default {
         const profiles = await profileRes.json()
         const profile  = profiles?.[0] || {}
 
-        // 3. Verificar cooldown 24h
+        // 3. Verificar cooldown 24h (check rápido; o claim atómico mais abaixo é que impede duplos)
         if (profile.last_daily_claim) {
           const diff = Date.now() - new Date(profile.last_daily_claim).getTime()
           if (diff < 86400000)
@@ -1438,27 +1424,35 @@ export default {
         const streakIndex  = newStreak - 1
         const DAILY_POINTS = econOn() ? 10000 + 1000 * Math.min(Math.max(streakIndex, 0), 6) : (STREAK_POINTS[streakIndex] ?? 50)
 
-        // 6. Adicionar pontos no StreamElements
+        // 6. Claim atómico ANTES de pagar: só um pedido consegue mudar last_daily_claim (impede duplo claim em paralelo)
+        const cutoff = new Date(Date.now() - 86400000).toISOString()
+        const claimRes = await fetch(
+          `${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&or=(last_daily_claim.is.null,last_daily_claim.lt.${cutoff})`,
+          {
+            method: 'PATCH',
+            headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify({ last_daily_claim: new Date().toISOString(), streak_count: newStreak, streak_last_day: today }),
+          }
+        )
+        if (!claimRes.ok || !(await claimRes.json())?.length)
+          return json({ error: 'already_claimed', nextClaimMs: 86400000 }, 400)
+        const undoClaim = () => fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+          method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ last_daily_claim: profile.last_daily_claim || null, streak_count: currentStreak, streak_last_day: lastDay }),
+        })
+
+        // 7. Adicionar pontos
         const seRes = await fetch(
           `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${username.toLowerCase()}/${DAILY_POINTS}`,
           { method: 'PUT', headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } }
         )
-        if (!seRes.ok)
+        if (!seRes.ok) {
+          await undoClaim()
           return json({ error: `SE API erro ${seRes.status}` }, 502)
+        }
 
         const seData    = await seRes.json()
         const newPoints = seData.newAmount ?? seData.points ?? null
-
-        // 7. Atualizar perfil — last_daily_claim, streak_count, streak_last_day
-        await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
-          method: 'PATCH',
-          headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
-          body: JSON.stringify({
-            last_daily_claim: new Date().toISOString(),
-            streak_count:     newStreak,
-            streak_last_day:  today,
-          }),
-        })
 
         // 8. Registar em daily_redeems
         await fetch(`${env.SUPABASE_URL}/rest/v1/daily_redeems`, {
@@ -1519,23 +1513,27 @@ export default {
         let prize = PRIZES[0]
         for (const p of PRIZES) { rand -= p.weight; if (rand <= 0) { prize = p; break } }
 
-        // 4. Adicionar pontos no StreamElements
+        // 4. Claim atómico ANTES de pagar (impede girar várias vezes em paralelo)
+        const wCutoff = new Date(Date.now() - 86400000).toISOString()
+        const wClaim = await fetch(
+          `${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&or=(last_wheel_spin.is.null,last_wheel_spin.lt.${wCutoff})`,
+          { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify({ last_wheel_spin: new Date().toISOString() }) }
+        )
+        if (!wClaim.ok || !(await wClaim.json())?.length)
+          return json({ error: 'already_spun', nextSpinMs: 86400000 }, 400)
+
+        // 5. Adicionar pontos
         const seRes = await fetch(
           `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${username.toLowerCase()}/${prize.points}`,
           { method: 'PUT', headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } }
         )
-        if (!seRes.ok)
+        if (!seRes.ok) {
+          await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ last_wheel_spin: profile?.last_wheel_spin || null }) })
           return json({ error: `SE API erro ${seRes.status}` }, 502)
+        }
 
         const seData    = await seRes.json()
         const newPoints = seData.newAmount ?? seData.points ?? null
-
-        // 5. Atualizar last_wheel_spin
-        await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
-          method: 'PATCH',
-          headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ last_wheel_spin: new Date().toISOString() }),
-        })
 
         // 6. Registar em daily_redeems
         await fetch(`${env.SUPABASE_URL}/rest/v1/daily_redeems`, {
@@ -1589,21 +1587,41 @@ export default {
         if (currentPoints < cost)
           return json({ error: 'Pontos insuficientes.', currentPoints }, 400)
 
+        // Reserva o stock de forma atómica ANTES de cobrar (compare-and-swap: só avança se o stock ainda for o que lemos).
+        // Impede vender mais unidades do que as que existem quando vários pedidos chegam ao mesmo tempo.
+        let seen = Number(product.stock), reserved = false
+        for (let i = 0; i < 8 && seen > 0; i++) {
+          const cas = await fetch(
+            `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&stock=eq.${seen}`,
+            { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify({ stock: seen - 1 }) }
+          )
+          if (cas.ok && (await cas.json())?.length) { reserved = true; break }
+          const again = await fetch(`${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&select=stock`, { headers: sbHeaders })
+          seen = Number((await again.json())?.[0]?.stock ?? 0)
+        }
+        if (!reserved) return json({ error: 'Produto sem stock.' }, 400)
+        const giveBackStock = async () => {
+          const cur = await fetch(`${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&select=stock`, { headers: sbHeaders })
+          let st = Number((await cur.json())?.[0]?.stock ?? 0)
+          for (let i = 0; i < 8; i++) {
+            const r = await fetch(`${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&stock=eq.${st}`, { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify({ stock: st + 1 }) })
+            if (r.ok && (await r.json())?.length) return
+            const a = await fetch(`${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&select=stock`, { headers: sbHeaders })
+            st = Number((await a.json())?.[0]?.stock ?? 0)
+          }
+        }
+
         const deductRes = await fetch(
           `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${username.toLowerCase()}/${-cost}`,
           { method: 'PUT', headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } }
         )
-        if (!deductRes.ok)
-          return json({ error: `Erro ao descontar pontos: ${deductRes.status}`, detail: await deductRes.text() }, 502)
+        if (!deductRes.ok) {
+          await giveBackStock()
+          return json({ error: `Erro ao descontar pontos: ${deductRes.status}`, detail: await deductRes.text() }, deductRes.status === 400 ? 400 : 502)
+        }
 
         const deductData = await deductRes.json()
         const newPoints  = deductData.newAmount ?? deductData.points ?? null
-
-        const stockRes = await fetch(
-          `${env.SUPABASE_URL}/rest/v1/rpc/decrement_stock`,
-          { method: 'POST', headers: sbHeaders, body: JSON.stringify({ product_id: productId }) }
-        )
-        if (!stockRes.ok) console.error('Stock decrement falhou:', await stockRes.text())
 
         const sbRes = await fetch(`${env.SUPABASE_URL}/rest/v1/shop_redeems`, {
           method: 'POST',
