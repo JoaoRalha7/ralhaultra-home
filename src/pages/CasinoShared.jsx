@@ -1,4 +1,6 @@
 import ProvablyFair from '../components/ProvablyFair'
+import LiveStats from '../components/LiveStats'
+import { recordStat } from '../lib/liveStats'
 import OriginalsBelow from '../components/OriginalsBelow'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
@@ -59,6 +61,19 @@ export function FairButton() {
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.500-3 8-7 10-4-2-7-5.500-7-10V6z" /><path d="M9 12l2 2 4-4" /></svg>
       </button>
       {open && <ProvablyFair onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+export function StatsButton() {
+  const [open, setOpen] = useState(() => { try { return localStorage.getItem('casino-ls-open') === '1' } catch { return false } })
+  const set = (v) => { setOpen(v); try { localStorage.setItem('casino-ls-open', v ? '1' : '0') } catch { /* ignore */ } }
+  return (
+    <>
+      <button type="button" className={styles.snd} onClick={() => set(!open)} aria-label="Live stats" title="Live stats" aria-pressed={open}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 15l4-4 3 3 5-6" /></svg>
+      </button>
+      {open && <LiveStats onClose={() => set(false)} />}
     </>
   )
 }
@@ -209,6 +224,7 @@ export function useCasino(game) {
   const pendingPts = useRef(null)
   const fx = useCallback((r, loud) => {
     const win = r.payout > r.bet, push = r.payout === r.bet && r.payout > 0
+    recordStat(game, r.id, r.bet, r.payout)
     if (loud && !quiet.current) {
       playSfx(win ? 'win' : push ? 'cash' : game === 'mines' ? 'boom' : 'lose')
       if (win) setFire((f) => f + 1); else if (!push) setShake((x) => x + 1)
@@ -310,6 +326,7 @@ export function Page({ title, sub, game, children }) {
           <p className={styles.sub}>{sub}</p>
         </div>
         <div className={styles.headBtns}>
+          <StatsButton />
           <FairButton />
           <SoundToggle />
         </div>

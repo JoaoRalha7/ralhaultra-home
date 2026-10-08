@@ -1,0 +1,24 @@
+.box { position: fixed; z-index: 1200; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; border: 1px solid #23262f; background: #14161d; box-shadow: 0 20px 60px rgba(0,0,0,.65); font-family: "DM Sans", sans-serif; user-select: none; }
+.head { display: flex; align-items: center; gap: 4px; padding: 6px 4px 6px 6px; cursor: grab; touch-action: none; }
+.head:active { cursor: grabbing; }
+.title { flex: 1; display: flex; align-items: center; gap: 9px; color: #e7e9ef; font: 800 14px "DM Sans", sans-serif; }
+.head button { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #8b92a5; cursor: pointer; }
+.head button:hover { background: #1e222c; color: #fff; }
+.pickWrap { position: relative; }
+.pick { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 42px; padding: 0 14px; border-radius: 10px; border: 0; background: #1c1f28; color: #fff; font: 700 14px "DM Sans", sans-serif; cursor: pointer; }
+.list { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; margin: 4px 0 0; padding: 4px; list-style: none; border-radius: 10px; background: #07080c; border: 1px solid #23262f; box-shadow: 0 16px 40px rgba(0,0,0,.6); }
+.list li { padding: 8px 10px; border-radius: 6px; color: #aeb3c2; font: 700 13px "DM Sans", sans-serif; cursor: pointer; }
+.list li:hover { background: #1a1d26; color: #fff; }
+.list li.cur { background: #232733; color: #fff; }
+.nums { padding: 4px 14px; border-radius: 10px; background: #1c1f28; }
+.nums p { display: flex; align-items: center; justify-content: space-between; margin: 0; padding: 13px 0; color: #8b92a5; font: 600 14px "DM Sans", sans-serif; }
+.nums p b { display: flex; align-items: center; gap: 8px; color: #fff; font: 800 15px "DM Sans", sans-serif; }
+.nums hr { margin: 0; border: 0; height: 1px; background: #2a2e3b; }
+.coin { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fde68a, #f5c542 55%, #b8860b); }
+.pos { color: #22ff7a !important; } .neg { color: #f87171 !important; }
+.plot { height: 170px; padding: 10px; border-radius: 10px 10px 0 0; background: #1c1f28; }
+.chart { display: block; width: 100%; height: 100%; }
+.wl { display: grid; grid-template-columns: 1fr 1fr; margin-top: -8px; border-top: 1px solid #2a2e3b; border-radius: 0 0 10px 10px; background: #1c1f28; overflow: hidden; }
+.wl span { padding: 13px 0; text-align: center; color: #8b92a5; font: 600 14px "DM Sans", sans-serif; }
+.wl span + span { border-left: 1px solid #2a2e3b; }
+.wl b { margin-left: 4px; font-weight: 800; }

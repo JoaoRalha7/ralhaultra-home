@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { recordStat } from '../lib/liveStats'
 import { Confetti, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import { workerPost } from '../lib/points'
 import shared from './Casino.module.css'
@@ -146,7 +147,7 @@ export default function Crash() {
         const was = R.current.active
         if (crashAt && d.round.seq === prev.seq + 1) {
           setOver({ seq: prev.seq, crashAt, until: Date.now() + 3200, lost: was })
-          if (was) { g.cheer(-1); setCashed(null) }
+          if (was) { g.cheer(-1); recordStat('crash', prev.seq, R.current.mine?.bet, 0); setCashed(null) }
         }
         setPlaced(null)
         if (R.current.me) loadMine()
@@ -201,6 +202,7 @@ export default function Crash() {
     if (!ok) { setErr(ERRS[d.error] || 'Something went wrong. Try again.'); pull(); return }
     setCashed({ seq: round.seq, at: d.cashedAt, payout: d.payout })
     if (d.newPoints != null) g.setPoints(d.newPoints)
+    recordStat('crash', round.seq, mine?.bet, d.payout)
     g.cheer(d.payout - (mine?.bet || 0))
     pull(); loadMine()
   }

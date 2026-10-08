@@ -1,3 +1,4 @@
+import { recordStat } from '../lib/liveStats'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BetPanel, Coin, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET } from './CasinoShared'
 import { holdPointsPulls } from '../hooks/useStreamElementsPoints'
@@ -173,6 +174,7 @@ export default function Jackpot() {
     const m = R.current.mine
     if (m) {
       const won = r.winner.u === me
+      recordStat('jackpot', r.seq, m.amount, won ? r.winner.payout : 0)
       g.cheer(won ? r.winner.payout - m.amount : -1)
       g.refresh()
     }
