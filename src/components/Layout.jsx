@@ -132,14 +132,14 @@ export default function Layout() {
     const check = async () => {
       const nowIso = new Date().toISOString();
       const [h, g, t] = await Promise.all([
-        supabase.from('bonus_hunts').select('id').eq('active', true).limit(1),
+        supabaseDash.from('bonus_hunts').select('id').eq('active', true).limit(1),
         supabase.from('giveaways').select('id').eq('status', 'active').gt('ends_at', nowIso).limit(1),
         supabaseDash.from('tournaments').select('id').eq('status', 'active').limit(1),
       ].map((p) => p.then((r) => !!r.data?.length, () => false)));
       if (alive) setNavLive({ '/bonus-hunts': h, '/giveaways': g, '/torneios': t });
     };
     check();
-    const iv = setInterval(() => { if (!document.hidden) check(); }, 30000);
+    const iv = setInterval(() => { if (!document.hidden) check(); }, 15000);
     return () => { alive = false; clearInterval(iv); };
   }, []);
 

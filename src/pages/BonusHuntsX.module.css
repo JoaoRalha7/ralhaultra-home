@@ -366,3 +366,10 @@
 .fBestWin{font-size:18px}
 .fCrown{color:var(--gold);flex:none}
 @media(max-width:700px){.fProfit b{font-size:44px}.fStats{grid-template-columns:repeat(3,minmax(0,1fr))}.fTile b{font-size:20px}.fBest strong{font-size:28px}}
+
+.fStats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.fWorst{background:linear-gradient(90deg,rgba(248,113,113,.14),rgba(248,113,113,.03));border-color:rgba(248,113,113,.4)}
+.fWorst strong{color:var(--neg)}
+.fSkull{color:var(--neg);flex:none}
+.fWorstWin{font-size:18px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
+@media(max-width:700px){.fStats{grid-template-columns:repeat(2,minmax(0,1fr))}}

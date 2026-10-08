@@ -150,8 +150,10 @@ function huntStats(hunt, entries) {
     .sort((a, b) => b.multi - a.multi)
   const best     = ranked[0] || null
   const worst    = ranked.length > 1 ? ranked[ranked.length - 1] : null
+  const totalBet = entries.reduce((a, e) => a + parseBet(e.bet), 0)
+  const be       = totalBet > 0 ? balStart / totalBet : 0
   return {
-    opened, totalPay, balStart, profit, avg, best, worst,
+    opened, totalPay, balStart, profit, avg, best, worst, be,
     total: entries.length,
     supers: entries.filter(e => e.is_super).length,
     hasResult: opened.length > 0,
@@ -189,6 +191,7 @@ function FeaturedHunt({ hunt, entries, onClick }) {
         <div className={x.fTile}><span>Start</span><b>{st.balStart > 0 ? '€' + st.balStart.toFixed(0) : '—'}</b></div>
         <div className={x.fTile}><span>Pay</span><b>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</b></div>
         <div className={x.fTile}><span>Avg</span><b>{st.avg > 0 ? st.avg.toFixed(2) + 'x' : '—'}</b></div>
+        <div className={x.fTile}><span>BE</span><b>{st.be > 0 ? st.be.toFixed(1) + 'x' : '—'}</b></div>
       </div>
       {st.best && (
         <div className={x.fBest}>
@@ -197,6 +200,15 @@ function FeaturedHunt({ hunt, entries, onClick }) {
           <b>{st.best.slot?.name || '—'}</b>
           <strong>{st.best.multi.toFixed(0)}x</strong>
           <span className={x.fBestWin}>+€{parseBet(st.best.payment).toFixed(0)}</span>
+        </div>
+      )}
+      {st.worst && (
+        <div className={`${x.fBest} ${x.fWorst}`}>
+          <svg className={x.fSkull} width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 7 6-7" /></svg>
+          <SlotThumb slot={st.worst.slot} size={60} />
+          <b>{st.worst.slot?.name || '—'}</b>
+          <strong>{st.worst.multi.toFixed(1)}x</strong>
+          <span className={x.fWorstWin}>€{parseBet(st.worst.payment).toFixed(0)}</span>
         </div>
       )}
     </button>
