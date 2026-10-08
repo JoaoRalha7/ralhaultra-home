@@ -13,10 +13,17 @@ export default function DevToolsGuard() {
   useEffect(() => {
     if (skip) { setOpen(false); return }
     if (window.matchMedia?.('(pointer: coarse)').matches) return // phones and tablets
+    // 1) docked devtools shrink the page; 2) an object with a getter is only read when the console is open
+    // (works in device mode and undocked windows, where the size check cannot see anything)
+    const probe = new Image()
+    let probed = false
+    Object.defineProperty(probe, 'id', { get() { probed = true; return '' } })
     const check = () => {
       const wide = window.outerWidth - window.innerWidth > 200
       const tall = window.outerHeight - window.innerHeight > 220
-      setOpen(wide || tall)
+      probed = false
+      console.log('%c', probe) // eslint-disable-line no-console
+      setTimeout(() => setOpen(wide || tall || probed), 80)
     }
     const keys = (e) => {
       const k = e.key.toLowerCase()
