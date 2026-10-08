@@ -124,7 +124,7 @@ export default function Leaderboard() {
   const shown = [...podium, ...pageSlice, ...(myRank >= 0 ? [users[myRank]] : [])].map((u) => u?.username).filter(Boolean)
   const avmap = useAvatars(shown)
   const rankOf = useRanks(shown)
-  const lvlBadge = (name, size) => { const l = rankOf(name); return l == null ? null : <Medal level={l} size={size} /> }
+  const lvlBadge = (name, size) => { const l = rankOf(name); return l == null || !rankOf.isMember(name) ? null : <Medal level={l} size={size} /> }
   const goPlayer = (name) => (e) => { if (e.type === 'click' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(name) } }
 
   useEffect(() => {

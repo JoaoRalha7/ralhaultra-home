@@ -2015,7 +2015,10 @@ export default {
         const r = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=in.(${names.join(',')})&select=username,level`, { headers: sbHeaders })
         const ranks = {}
         if (r.ok) for (const x of await r.json()) ranks[x.username] = Number(x.level) || 0
-        return json({ ranks })
+        // who has really logged in (has a profile): the others have no rank badge
+        const pr = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?twitch_username=in.(${names.join(',')})&select=twitch_username`, { headers: sbHeaders })
+        const reg = pr.ok ? (await pr.json()).map((x) => String(x.twitch_username || '').toLowerCase()) : names
+        return json({ ranks, reg })
       }
 
       // ── GET /casino/limits?game=&rows=&risk=&picks=&mines= — exact min/max bet for the chosen settings ──

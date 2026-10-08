@@ -18,11 +18,14 @@ export function useRanks(usernames) {
       .then((d) => {
         if (!d) return
         const t = Date.now()
-        for (const n of need) cache.set(n, { lvl: d.ranks?.[n] ?? 0, t })
+        const reg = new Set(d.reg || need)
+        for (const n of need) cache.set(n, { lvl: d.ranks?.[n] ?? 0, reg: reg.has(n), t })
         if (alive) bump((x) => x + 1)
       })
       .catch(() => {})
     return () => { alive = false }
   }, [key])
-  return (name) => cache.get(String(name || '').toLowerCase())?.lvl
+  const fn = (name) => cache.get(String(name || '').toLowerCase())?.lvl
+  fn.isMember = (name) => cache.get(String(name || '').toLowerCase())?.reg === true
+  return fn
 }
