@@ -446,3 +446,11 @@
 .featured .fStats{align-content:center;justify-items:start}
 .featured .fProfit b{font-size:60px}
 @media(max-width:700px){.fTiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* row 2: mini-game chips (left) and stat tiles (right) share a line */
+.fChipsCell{display:flex;align-items:center;min-width:0}
+.fTiles{grid-column:auto}
+.featured .fTiles .fTile{padding:10px 14px}
+.featured .fTiles .fTile b{font-size:22px}
+.featured .fStats{align-content:end}
+@media(max-width:900px){.fTiles{grid-column:1/-1}}

@@ -206,7 +206,6 @@ function FeaturedHunt({ hunt, entries, onClick }) {
           {Array.from({ length: Math.min(st.total, 24) }, (_, i) => <i key={i} className={i < Math.round((st.opened.length / Math.max(st.total, 1)) * Math.min(st.total, 24)) ? x.segOn : ''} />)}
         </div>
         <div className={x.fCount}><b>{st.opened.length} / {st.total}</b> opened</div>
-        <FeaturedGameChips huntId={hunt.id} />
       </div>
       <div className={x.fStats}>
         <div className={x.fProfit}>
@@ -214,6 +213,7 @@ function FeaturedHunt({ hunt, entries, onClick }) {
           <b className={st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}>{st.hasResult ? money(st.profit) : '—'}</b>
         </div>
       </div>
+      <div className={x.fChipsCell}><FeaturedGameChips huntId={hunt.id} /></div>
       <div className={x.fTiles}>
         <div className={x.fTile}><span>Start</span><b>{st.balStart > 0 ? '€' + st.balStart.toFixed(0) : '—'}</b></div>
         <div className={x.fTile}><span>Pay</span><b>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</b></div>
