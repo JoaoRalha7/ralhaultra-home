@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import ProductMedia from '../components/ProductMedia'
+import ProductMedia, { isVideoUrl } from '../components/ProductMedia'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { supabase } from '../lib/supabase'
@@ -41,6 +41,43 @@ const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 const IconCoin = ({ size = 14 }) => <span className={styles.coin} style={{ width: size, height: size }} aria-hidden="true" />
 
 // ── Product card ─────────────────────────────────────────────────────────────
+// The product picture keeps turning around its vertical axis like the VIP badges (a thin stack of layers gives it
+// thickness). With the mouse over the card it eases back to face front; when the mouse leaves it starts turning again.
+const SPIN_Z = [-5, -4, -3, -2, -1]
+function ProductSpin({ src, seed }) {
+  const box = useRef(null)
+  useEffect(() => {
+    const el = box.current
+    if (!el || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
+    const card = el.closest('article') || el.parentElement
+    let angle = ([...String(seed || '')].reduce((a, c) => a + c.charCodeAt(0), 0) % 36) * 10, hover = false, raf = 0, last = performance.now(), visible = true
+    const enter = () => { hover = true }
+    const leave = () => { hover = false }
+    card.addEventListener('mouseenter', enter); card.addEventListener('mouseleave', leave)
+    const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver(([e]) => { visible = e.isIntersecting }) : null
+    io?.observe(el)
+    const loop = (now) => {
+      const dt = Math.min(64, now - last); last = now
+      if (visible) {
+        if (hover) { const d = -(((angle + 180) % 360 + 360) % 360 - 180); angle = Math.abs(d) < 0.05 ? angle + d : angle + d * (1 - Math.exp(-dt / 140)) }
+        else angle = (angle + dt * 0.06) % 360 // one turn every 6 s
+        el.style.transform = `rotateY(${angle}deg)`
+      }
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    return () => { cancelAnimationFrame(raf); card.removeEventListener('mouseenter', enter); card.removeEventListener('mouseleave', leave); io?.disconnect() }
+  }, [seed])
+  return (
+    <div className={styles.spinStage}>
+      <div className={styles.spin} ref={box}>
+        {SPIN_Z.map((z) => <img key={z} src={src} alt="" className={styles.layer} loading="lazy" style={{ transform: `translateZ(${z * 1.4}px)`, filter: `brightness(${0.55 + (z + 5) * 0.06})` }} />)}
+        <img src={src} alt="" className={`${styles.layer} ${styles.layerFront}`} loading="lazy" style={{ transform: 'translateZ(1px)' }} />
+      </div>
+    </div>
+  )
+}
+
 function ShopCard({ product, userPoints, onRedeem }) {
   const unlimited  = product.stock == null
   const outOfStock = product.stock === 0
@@ -60,7 +97,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
     >
       <div className={styles.media}>
         {product.image_url
-          ? <ProductMedia src={product.image_url} className={styles.photo} />
+          ? (isVideoUrl(product.image_url) ? <ProductMedia src={product.image_url} className={styles.photo} /> : <ProductSpin src={product.image_url} seed={product.id} />)
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
         <span className={styles.tags}>
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
