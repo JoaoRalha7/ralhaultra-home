@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
+import { Icon } from './Icon'
 import s from './BetModal.module.css'
 
 const NAMES = { mines: 'Mines', blackjack: 'Blackjack', keno: 'Keno', plinko: 'Plinko', roulette: 'Roulette', crash: 'Crash' }
-const ART = { mines: ['#0e7490', '#164e63'], blackjack: ['#6d28d9', '#312e81'], keno: ['#7e22ce', '#3b0764'], plinko: ['#2563eb', '#1e3a8a'], roulette: ['#b91c1c', '#450a0a'], crash: ['#ea580c', '#7c2d12'] }
+// same icon and colours as the Originals page
+const ART = { mines: ['mines', '#10b981', '#6ee7b7'], blackjack: ['cards', '#f5c542', '#fde68a'], crash: ['crash', '#8b5cf6', '#c4b5fd'], keno: ['keno', '#ec4899', '#f9a8d4'], plinko: ['plinko', '#06b6d4', '#67e8f9'], roulette: ['roulette', '#e11d48', '#fda4af'], jackpot: ['jackpot', '#f97316', '#fdba74'] }
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
 const SUIT = ['♠', '♥', '♦', '♣']
 const fmt = (n) => Number(n ?? 0).toLocaleString('en-GB')
@@ -113,7 +115,7 @@ export default function BetModal({ item, onClose }) {
   const r = item.round
   const game = item.game || r.game
   const Board = BOARD[game]
-  const [c1, c2] = ART[game] || ART.mines
+  const [icon, c1, c2] = ART[game] || ART.mines
   const mult = r.bet > 0 ? r.payout / r.bet : 0
   const when = item.at ? new Date(item.at).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
   return createPortal(
@@ -124,7 +126,7 @@ export default function BetModal({ item, onClose }) {
           <button type="button" className={s.x} onClick={onClose} aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
         </div>
         <div className={s.hero}>
-          <div className={s.art} style={{ background: `linear-gradient(160deg, ${c1}, ${c2})` }}><b>{NAMES[game]}</b></div>
+          <div className={s.art} style={{ '--c1': c1, '--c2': c2 }}><span className={s.artIco}><Icon name={icon} size={52} /></span><b>{NAMES[game]}</b></div>
           <div className={s.meta}>
             <div className={s.mName}>{NAMES[game]} <span className={s.id}>#{String(r.id).replace(/-/g, '').slice(0, 8)}</span></div>
             {item.by && <div className={s.mBy}>Placed by <b>{item.by}</b></div>}

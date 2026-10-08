@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { WORKER, workerPost } from '../lib/points'
 import RankName from './RankName'
 import { useRanks } from '../lib/ranks'
+import BetModal from './BetModal'
 import styles from './OriginalsBets.module.css'
 
 const TABS = [
@@ -29,6 +30,15 @@ export default function OriginalsBets() {
   const [tab, setTab] = useState('all')
   const [rows, setRows] = useState(null)
   const alive = useRef(true)
+  const [detail, setDetail] = useState(null)
+  const openRound = async (b) => {
+    if (!b.id) return
+    try {
+      const r = await fetch(`${WORKER}/casino-round?id=${encodeURIComponent(b.id)}`)
+      const d = r.ok ? await r.json() : null
+      if (d?.round) setDetail({ game: b.game, round: d.round, by: d.username || b.username, at: d.at || b.updated_at })
+    } catch { /* detail is optional */ }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -75,7 +85,7 @@ export default function OriginalsBets() {
           const g = GAMES[b.game] || [b.game, 'originals']
           const profit = (b.payout || 0) - (b.bet || 0)
           return (
-            <div key={`${b.game}-${b.updated_at}-${i}`} className={styles.row} role="row">
+            <div key={`${b.game}-${b.updated_at}-${i}`} className={styles.row} role="row" onClick={b.id ? () => openRound(b) : undefined} style={b.id ? { cursor: 'pointer' } : undefined}>
               <span className={styles.game}><Icon name={g[1]} size={16} />{g[0]}</span>
               <RankName className={styles.user} name={b.username} level={rankOf(b.username)} />
               <span className={`${styles.date} ${styles.mute}`}>{when(b.updated_at)}</span>
@@ -86,6 +96,7 @@ export default function OriginalsBets() {
           )
         })}
       </div>
+      {detail && <BetModal item={detail} onClose={() => setDetail(null)} />}
     </section>
   )
 }

@@ -5,8 +5,9 @@
 .x{width:30px;height:30px;border-radius:8px;border:0;background:transparent;color:#9aa3b2;cursor:pointer;display:grid;place-items:center}
 .x:hover{background:rgba(255,255,255,.08);color:#fff}
 .hero{display:flex;gap:18px;align-items:center;margin-bottom:18px}
-.art{flex:none;width:110px;height:148px;border-radius:10px;display:flex;align-items:flex-end;justify-content:center;padding:10px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
-.art b{font:800 17px "Bricolage Grotesque",sans-serif;text-transform:uppercase;letter-spacing:.02em;text-align:center}
+.art{flex:none;width:110px;height:148px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:18px 8px 12px;box-shadow:0 10px 26px rgba(0,0,0,.5);background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--c1) 38%,transparent),transparent 70%),linear-gradient(170deg,#1a1f2b,#10131a);border:1px solid color-mix(in srgb,var(--c1) 45%,transparent)}
+.artIco{width:74px;height:74px;border-radius:20px;display:grid;place-items:center;color:#06120c;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 8px 22px color-mix(in srgb,var(--c1) 45%,transparent)}
+.art b{font:800 15px "Bricolage Grotesque",sans-serif;text-transform:uppercase;letter-spacing:.02em;text-align:center}
 .meta{display:flex;flex-direction:column;gap:7px;min-width:0}
 .mName{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .id{font-size:11px;font-weight:600;color:#9aa3b2;background:rgba(255,255,255,.07);border-radius:6px;padding:3px 8px}

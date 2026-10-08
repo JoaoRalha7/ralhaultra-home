@@ -909,7 +909,7 @@ export default {
         const who = await getUser(request, env, sbHeaders)
         if (!who) return json({ error: 'unauthorized' }, 401)
         const r = await fetch(
-          `${env.SUPABASE_URL}/rest/v1/casino_games?user_id=eq.${who.id}&status=eq.done&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=300`,
+          `${env.SUPABASE_URL}/rest/v1/casino_games?user_id=eq.${who.id}&status=eq.done&select=id,username,game,bet,payout,updated_at&order=updated_at.desc&limit=300`,
           { headers: sbHeaders }
         )
         const grouped = new Map()
@@ -1741,19 +1741,29 @@ export default {
         return json({ redeems })
       }
 
+      // ── GET /casino-round?id= (public: one FINISHED round, for the bet detail modal) ──
+      if (pathname === '/casino-round') {
+        const id = searchParams.get('id') || ''
+        if (!/^[A-Za-z0-9-]{1,64}$/.test(id)) return json({ error: 'bad id' }, 400)
+        const r = await fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?id=eq.${id}&status=eq.done&select=*&limit=1`, { headers: sbHeaders })
+        const row = r.ok ? (await r.json())?.[0] : null
+        if (!row) return json({ error: 'not found' }, 404)
+        return json({ ok: true, round: publicGame(row.game, row, Date.now()), username: row.username, at: row.updated_at })
+      }
+
       // ── GET /casino-feed (public: finished rounds only, no game state) ────────
       if (pathname === '/casino-feed') {
         const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
         // ?sort=top: biggest single payouts (all time) instead of the latest rounds
         if (searchParams.get('sort') === 'top') {
           const t = await fetch(
-            `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&payout=gt.0&select=username,game,bet,payout,updated_at&order=payout.desc&limit=${limit}`,
+            `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&payout=gt.0&select=id,username,game,bet,payout,updated_at&order=payout.desc&limit=${limit}`,
             { headers: sbHeaders }
           )
           return json({ rounds: t.ok ? await t.json() : [] })
         }
         const r = await fetch(
-          `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&updated_at=lte.${new Date().toISOString()}&select=username,game,bet,payout,updated_at&order=updated_at.desc&limit=${Math.min(limit * 30, 300)}`,
+          `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&updated_at=lte.${new Date().toISOString()}&select=id,username,game,bet,payout,updated_at&order=updated_at.desc&limit=${Math.min(limit * 30, 300)}`,
           { headers: sbHeaders }
         )
         if (!r.ok) return json({ rounds: [] })
