@@ -72,8 +72,8 @@ function Spot({ c, t, v = null, cls = '', style, children }) {
   const a = c.amountAt(t, v)
   const win = c.res && c.res.bets?.some((b) => b.type === t && (b.value ?? null) === v) && c.res.payout > 0
   return (
-    <button type="button" className={`${styles.spot} ${cls}`} style={style} disabled={c.locked} onClick={() => c.add(t, v)} aria-label={`${t} ${v ?? ''}`}>
-      {children}
+    <button type="button" className={`${styles.spot} ${cls} ${a > 0 ? styles.has : ''}`} style={style} disabled={c.locked} onClick={() => c.add(t, v)} aria-label={`${t} ${v ?? ''}`}>
+      <span className={styles.lab2}>{children}</span>
       {a > 0 && <i className={`${styles.chip} ${win ? styles.won : ''}`}>{short(a)}</i>}
     </button>
   )
@@ -86,7 +86,7 @@ export default function Roulette() {
   const [mode, setMode] = useState('manual')
   const turbo = false
   const [adv, setAdv] = useState(false)
-  const [off, setOff] = useState(2) // first chip shown in the chip carousel
+  const [off, setOff] = useState(1) // first chip shown in the chip carousel
   const shaking = useFlag(g.shake)
   const [cfg, setCfg] = useState({ rounds: '0', stopProfit: '', stopLoss: '' })
   const [auto, setAuto] = useState(false)
@@ -225,8 +225,8 @@ export default function Roulette() {
   const ctx = { amountAt, res, locked, add }
   const hitCls = (n) => (shownNum === n ? styles.hit : '')
   const half = () => { if (!locked) setBets((b) => b.map((x) => ({ ...x, amount: Math.max(1, Math.floor(x.amount / 2)) }))) }
-  const recent = g.history.slice(0, 8).map((h) => ({ n: Number(h.label), k: rColor(Number(h.label)) }))
-  const shownChips = CHIPS.slice(off, off + 5)
+  const recent = g.history.slice(0, 5).map((h) => ({ n: Number(h.label), k: rColor(Number(h.label)) }))
+  const shownChips = CHIPS.slice(off, off + 4)
   const won = res && res.payout > res.bet
 
   return (
@@ -247,7 +247,7 @@ export default function Roulette() {
                   <button key={c} type="button" aria-label={`Chip ${c}`} aria-pressed={chip === c} className={`${styles.disc} ${styles['c' + Math.min(4, CHIPS.indexOf(c) % 5)]} ${chip === c ? styles.sel : ''}`} onClick={() => setChip(c)}>{short(c)}</button>
                 ))}
               </div>
-              <button type="button" className={`${styles.arrow}`} aria-label="Next chips" disabled={off + 5 >= CHIPS.length} onClick={() => setOff((o) => Math.min(CHIPS.length - 5, o + 1))}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+              <button type="button" className={`${styles.arrow}`} aria-label="Next chips" disabled={off + 4 >= CHIPS.length} onClick={() => setOff((o) => Math.min(CHIPS.length - 4, o + 1))}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
             </div>
           </div>
 
