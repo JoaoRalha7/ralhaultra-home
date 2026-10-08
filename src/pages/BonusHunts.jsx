@@ -170,15 +170,15 @@ function FeaturedHunt({ hunt, entries, onClick }) {
       <div className={x.fMain}>
         <div className={x.fTop}>
           {hunt.active
-            ? <span className={x.pillLive}><span className={x.liveDot} />Live hunt</span>
+            ? <span className={x.pillLive}><span className={x.liveDot} />LIVE</span>
             : <span className={x.pillOff}>Latest hunt</span>}
           <span className={x.fDate}>{fmtDate(hunt.date)}</span>
         </div>
         <h2 className={x.fTitle}>Bonus Hunt #{hunt.id}</h2>
-        <div className={x.fProgress}>
-          <div className={x.fBar}><i style={{ width: (st.total ? (st.opened.length / st.total) * 100 : 0) + '%' }} /></div>
-          <span>{st.opened.length} of {st.total} bonuses opened</span>
+        <div className={x.fSeg} aria-hidden="true">
+          {Array.from({ length: Math.min(st.total, 24) }, (_, i) => <i key={i} className={i < Math.round((st.opened.length / Math.max(st.total, 1)) * Math.min(st.total, 24)) ? x.segOn : ''} />)}
         </div>
+        <div className={x.fCount}><b>{st.opened.length} / {st.total}</b> opened</div>
         <FeaturedGameChips huntId={hunt.id} />
       </div>
       <div className={x.fStats}>
@@ -186,17 +186,17 @@ function FeaturedHunt({ hunt, entries, onClick }) {
           <span className={x.lbl}>Profit</span>
           <b className={st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}>{st.hasResult ? money(st.profit) : '—'}</b>
         </div>
-        <div><span className={x.lbl}>Start</span><b>{st.balStart > 0 ? '€' + st.balStart.toFixed(2) : '—'}</b></div>
-        <div><span className={x.lbl}>Total pay</span><b>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(2) : '—'}</b></div>
-        <div><span className={x.lbl}>Avg multi</span><b>{st.avg > 0 ? st.avg.toFixed(2) + 'x' : '—'}</b></div>
-        <div><span className={x.lbl}>Best</span><b className={x.gold}>{st.best ? st.best.multi.toFixed(0) + 'x' : '—'}</b>{st.best && <small>{st.best.slot?.name}</small>}</div>
+        <div className={x.fTile}><span>Start</span><b>{st.balStart > 0 ? '€' + st.balStart.toFixed(0) : '—'}</b></div>
+        <div className={x.fTile}><span>Pay</span><b>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</b></div>
+        <div className={x.fTile}><span>Avg</span><b>{st.avg > 0 ? st.avg.toFixed(2) + 'x' : '—'}</b></div>
       </div>
       {st.best && (
         <div className={x.fBest}>
-          <SlotThumb slot={st.best.slot} size={46} />
-          <div><small>Best bonus so far</small><b>{st.best.slot?.name || '—'}</b></div>
+          <svg className={x.fCrown} width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></svg>
+          <SlotThumb slot={st.best.slot} size={60} />
+          <b>{st.best.slot?.name || '—'}</b>
           <strong>{st.best.multi.toFixed(0)}x</strong>
-          <span className={x.fBestWin}>€{parseBet(st.best.payment).toFixed(2)}</span>
+          <span className={x.fBestWin}>+€{parseBet(st.best.payment).toFixed(0)}</span>
         </div>
       )}
     </button>

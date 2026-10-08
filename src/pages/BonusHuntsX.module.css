@@ -348,3 +348,21 @@
 @media (min-width:1101px){
   .dBody{height:auto;min-height:0;max-height:calc(100vh - 96px)}
 }
+
+/* featured hunt v2: bigger numbers, fewer micro labels */
+.fSeg{display:flex;gap:5px}
+.fSeg i{flex:1;height:10px;border-radius:99px;background:rgba(255,255,255,.1)}
+.fSeg i.segOn,.segOn{background:var(--acc2)}
+.fCount{font-size:15px;color:var(--mute)}
+.fCount b{font:800 26px "Bricolage Grotesque",sans-serif;color:var(--text);margin-right:6px}
+.fStats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fProfit b{font-size:64px}
+.fTile{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.fTile span{display:block;font-size:14px;color:var(--mute);font-weight:600}
+.fTile b{margin-top:4px;font-size:26px}
+.fBest{gap:16px;padding:14px 18px;border-radius:18px}
+.fBest b{flex:1;font-size:20px}
+.fBest strong{font-size:38px}
+.fBestWin{font-size:18px}
+.fCrown{color:var(--gold);flex:none}
+@media(max-width:700px){.fProfit b{font-size:44px}.fStats{grid-template-columns:repeat(3,minmax(0,1fr))}.fTile b{font-size:20px}.fBest strong{font-size:28px}}

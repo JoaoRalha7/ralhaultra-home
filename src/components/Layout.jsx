@@ -65,6 +65,7 @@ export default function Layout() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [live, setLive] = useState([]);
+  const [navLive, setNavLive] = useState({});
   const [ageOk, setAgeOk] = useState(false);
   const [votePop, setVotePop] = useState(false);
   const voteSeen = () => { try { return sessionStorage.getItem('ru-vote-seen') === '1'; } catch { return false; } };
@@ -123,6 +124,23 @@ export default function Layout() {
     return () => {
       alive = false;
     };
+  }, []);
+
+  // Sidebar LIVE tags: live bonus hunt, open giveaway, active tournament
+  useEffect(() => {
+    let alive = true;
+    const check = async () => {
+      const nowIso = new Date().toISOString();
+      const [h, g, t] = await Promise.all([
+        supabase.from('bonus_hunts').select('id').eq('active', true).limit(1),
+        supabase.from('giveaways').select('id').eq('status', 'active').gt('ends_at', nowIso).limit(1),
+        supabaseDash.from('tournaments').select('id').eq('status', 'active').limit(1),
+      ].map((p) => p.then((r) => !!r.data?.length, () => false)));
+      if (alive) setNavLive({ '/bonus-hunts': h, '/giveaways': g, '/torneios': t });
+    };
+    check();
+    const iv = setInterval(() => { if (!document.hidden) check(); }, 30000);
+    return () => { alive = false; clearInterval(iv); };
   }, []);
 
   // Invite visitors to vote when a bonus hunt minigame is open (once per session, after other popups)
@@ -217,6 +235,7 @@ export default function Layout() {
                     <NavLink to={to} end={to === '/'} title={label} aria-label={label} data-tone={tone} className={({ isActive }) => `nav${isActive || inOrig ? ' on' : ''}`}>
                       <span className="ico"><Icon name={icon} /></span>
                       <span className="lbl">{label}</span>
+                      {navLive[to] && <span className="liveTag"><i />Live</span>}
                     </NavLink>
                     {inOrig && (
                       <div className="subnav">

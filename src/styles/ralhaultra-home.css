@@ -865,3 +865,11 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 @keyframes dailyPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,197,66,.4)}50%{box-shadow:0 0 0 7px rgba(245,197,66,0),0 0 18px rgba(245,197,66,.28)}}
 @keyframes dailyWiggle{0%,86%,100%{transform:rotate(0)}89%{transform:rotate(-12deg)}92%{transform:rotate(10deg)}95%{transform:rotate(-6deg)}98%{transform:rotate(3deg)}}
 @media (prefers-reduced-motion:reduce){.top .bell.dailyReady,.top .bell.dailyReady svg{animation:none}}
+
+/* sidebar LIVE tag */
+.liveTag{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fca5a5;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.4);padding:3px 8px;border-radius:99px}
+.liveTag i{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:liveBlink 1.4s ease-in-out infinite}
+@keyframes liveBlink{50%{opacity:.25}}
+.app.collapsed aside .nav{position:relative}
+.app.collapsed .liveTag{position:absolute;top:6px;right:8px;margin:0;padding:0;border:0;background:transparent;font-size:0;gap:0}
+@media (prefers-reduced-motion:reduce){.liveTag i{animation:none}}
