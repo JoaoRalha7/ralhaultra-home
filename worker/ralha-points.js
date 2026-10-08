@@ -1946,23 +1946,27 @@ export default {
         for (const g of games) add(g.game, Number(g.bet) || 0, Number(g.payout) || 0)
         for (const c of crash) { const bet = Number(c.bet) || 0; add('crash', bet, c.cashed_at ? Math.floor(bet * Number(c.cashed_at)) : 0) }
         // follow date from Twitch (optional: needs TWITCH_CLIENT_ID, TWITCH_BROADCASTER_ID and TWITCH_BROADCASTER_TOKEN with the moderator:read:followers scope)
-        let followedAt = null
+        let followedAt = null, followWhy = null
         try {
           let tid = bal[0]?.twitch_id
           const bid = env.TWITCH_BROADCASTER_ID || '216681327'
           const tok = env.TWITCH_CLIENT_ID ? await twitchUserToken(env) : null
+          if (!env.TWITCH_CLIENT_ID) followWhy = 'no TWITCH_CLIENT_ID'
+          else if (!tok) followWhy = 'no user token (check TWITCH_CLIENT_SECRET and TWITCH_REFRESH_TOKEN)'
           const th = tok ? { 'Client-Id': env.TWITCH_CLIENT_ID, Authorization: `Bearer ${tok}` } : null
           if (th && !tid) { // not seen in chat yet: look the id up by login
             const ur = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(name)}`, { headers: th })
             if (ur.ok) tid = (await ur.json())?.data?.[0]?.id || null
+            else followWhy = `users lookup ${ur.status}`
           }
           if (th && tid) {
             const fr = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${encodeURIComponent(bid)}&user_id=${encodeURIComponent(tid)}`, { headers: th })
-            if (fr.ok) followedAt = (await fr.json())?.data?.[0]?.followed_at || null
-          }
+            if (fr.ok) { followedAt = (await fr.json())?.data?.[0]?.followed_at || null; if (!followedAt) followWhy = 'not following' }
+            else followWhy = `followers ${fr.status}`
+          } else if (th && !followWhy) followWhy = 'twitch id not found'
         } catch { /* follow date is optional */ }
         const data = {
-          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt,
+          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt, followWhy,
           joined: prof[0]?.created_at || bal[0]?.created_at || null, avatar: prof[0]?.avatar_url || null,
           stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
