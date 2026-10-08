@@ -16,6 +16,7 @@ import Legal from './pages/Legal';
 import Leaderboard from './pages/Leaderboard';
 import Vip from './pages/Vip';
 import Profile from './pages/Profile';
+import DevToolsGuard from './components/DevToolsGuard';
 import MiniGame from './pages/MiniGame';
 import Mines from './pages/Mines';
 import MiniGameAvgMulti from './pages/MiniGameAvgMulti';
@@ -77,6 +78,8 @@ const SOON = [
 
 export default function App() {
   return (
+    <>
+    <DevToolsGuard />
     <Routes>
       <Route path="auth/callback" element={<AuthCallback />} />
       <Route path="dashboard/*" element={<Dashboard />} />
@@ -128,5 +131,6 @@ export default function App() {
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Route>
     </Routes>
+    </>
   );
 }
