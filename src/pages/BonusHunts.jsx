@@ -16,7 +16,7 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const GRID_PAGE = 12
+const GRID_PAGE = 8
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────
 const CalendarIcon  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -328,6 +328,18 @@ function FeaturedGameChips({ huntId }) {
   )
 }
 
+// PostgREST returns at most 1000 rows per request: page through a query builder factory
+async function fetchAll(build) {
+  const out = []
+  for (let from = 0; from < 20000; from += 1000) {
+    const { data, error } = await build().range(from, from + 999)
+    if (error || !data) break
+    out.push(...data)
+    if (data.length < 1000) break
+  }
+  return out
+}
+
 // ── Hunt Detail ────────────────────────────────────────────────────────────────
 function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const location = useLocation()
@@ -382,12 +394,13 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
 
         Promise.all([
           supabaseDash.from('slot_stats').select('slot_id, best_payment, avg_payment, total_bonus_opened').in('slot_id', slotIds),
-          supabaseDash.from('bonus_entries')
+          fetchAll(() => supabaseDash.from('bonus_entries')
             .select('slot_id, bet, payment')
             .in('slot_id', slotIds)
             .eq('opened', true)
             .not('payment', 'is', null)
-        ]).then(([{ data: statsData }, { data: allEntries }]) => {
+            .order('id'))
+        ]).then(([{ data: statsData }, allEntries]) => {
           const statsMap = {}
           ;(statsData || []).forEach(s => { statsMap[s.slot_id] = s })
           setSlotStats(statsMap)
@@ -710,22 +723,24 @@ export default function BonusHunts() {
   const [gridPage, setGridPage]         = useState(1)
   const [sort, setSort]               = useState('new')
 
+  const loadedOnce = useRef(false)
   const load = useCallback(async () => {
-    setLoading(true)
+    if (!loadedOnce.current) setLoading(true)   // realtime refreshes stay silent (no spinner flash)
     const { data: huntsData } = await supabaseDash
       .from('bonus_hunts').select('*').order('id', { ascending: false })
-    if (!huntsData?.length) { setLoading(false); return }
+    if (!huntsData?.length) { loadedOnce.current = true; setLoading(false); return }
     const ids = huntsData.map(h => h.id)
-    const { data: allEntries } = await supabaseDash
+    const allEntries = await fetchAll(() => supabaseDash
       .from('bonus_entries')
       .select('id, hunt_id, bet, payment, opened, is_super, slot:slots(name, image_url)')
       .in('hunt_id', ids)
+      .order('id'))
     const map = {}
     ;(allEntries || []).forEach(e => {
       if (!map[e.hunt_id]) map[e.hunt_id] = []
       map[e.hunt_id].push(e)
     })
-    setHunts(huntsData); setByHunt(map); setLoading(false)
+    setHunts(huntsData); setByHunt(map); loadedOnce.current = true; setLoading(false)
   }, [])
 
   // Auto-open hunt se vier do Stats
@@ -739,17 +754,19 @@ export default function BonusHunts() {
 
   useEffect(() => {
     load()
-    const ch = supabaseDash.channel('hunts-public-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_hunts' }, load)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_entries' }, () => { if (!selectedHunt) load() })
+    let t = null
+    const soon = () => { clearTimeout(t); t = setTimeout(load, 600) }   // debounce bursts of changes
+    const ch = supabaseDash.channel('hunts-public-rt-' + Math.random().toString(36).slice(2, 7))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_hunts' }, soon)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_entries' }, soon)
       .subscribe()
-    return () => ch.unsubscribe()
-  }, [load, selectedHunt])
+    return () => { clearTimeout(t); ch.unsubscribe() }
+  }, [load])
 
   if (selectedHunt) return (
     <HuntDetail
       key={selectedHunt.id}
-      hunt={selectedHunt}
+      hunt={hunts.find(h => h.id === selectedHunt.id) || selectedHunt}
       hunts={hunts}
       byHunt={byHunt}
       onNavigate={setSelectedHunt}
