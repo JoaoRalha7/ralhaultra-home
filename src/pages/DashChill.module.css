@@ -161,3 +161,7 @@
 .hl { background: none; color: #fff; text-decoration: underline; text-decoration-color: #f5c542; text-underline-offset: 3px; }
 .pickerFoot { display: flex; gap: 16px; padding: 10px 20px; border-top: 1px solid #1c1f27; font-size: 11px; color: #5a6070; }
 .modalInput:focus, .modalInput:focus-visible { outline: none; box-shadow: none; }
+
+/* selected state must win over hover */
+.seg .segOn, .seg .segOn:hover { background: var(--c-lite); color: #0a0b0e; }
+.quick .qOn, .quick .qOn:hover { background: var(--c-lite); border-color: var(--c-lite); color: #0a0b0e; }

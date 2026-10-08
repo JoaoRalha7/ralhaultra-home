@@ -1,16 +1,30 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import styles from './DashGiveaways.module.css'
 
 const EMPTY = { prize: '', title: '', description: '', kind: 'giveaway', ends_at: '', image_url: '', ticket_cost: '0', max_tickets: '' }
-const fmtDate = (d) => new Date(d).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+const DURATIONS = [['1 h', 1], ['24 h', 24], ['7 dias', 168], ['30 dias', 720]]
+const COSTS = [['Grátis', '0'], ['100', '100'], ['500', '500'], ['1000', '1000']]
+const fmtDate = (d) => new Date(d).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 const pick = (n) => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n }
+const pad = (n) => String(n).padStart(2, '0')
+const toLocalInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+const left = (end) => {
+  const ms = new Date(end) - Date.now()
+  if (ms <= 0) return null
+  const m = Math.floor(ms / 60000)
+  const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mi = m % 60
+  return d > 0 ? `${d}d ${h}h` : `${h}h ${pad(mi)}m`
+}
 
 export default function DashGiveaways() {
   const [list, setList] = useState(null)
   const [entries, setEntries] = useState([])
   const [f, setF] = useState(EMPTY)
+  const [tab, setTab] = useState('active')
+  const [dur, setDur] = useState(null)
   const [msg, setMsg] = useState(null)
+  const [, tick] = useState(0)
   const say = (text, err) => { setMsg({ text, err }); setTimeout(() => setMsg(null), 3500) }
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   const ok = f.prize.trim() && f.title.trim() && f.ends_at
@@ -25,6 +39,12 @@ export default function DashGiveaways() {
     if (g.error) say(g.error.message, true)
   }, [])
   useEffect(() => { load() }, [load])
+  useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 30000); return () => clearInterval(t) }, [])
+
+  const setDuration = (h) => {
+    setDur(h)
+    setF((s) => ({ ...s, ends_at: toLocalInput(new Date(Date.now() + h * 3600000)) }))
+  }
 
   const create = async (e) => {
     e.preventDefault()
@@ -35,7 +55,7 @@ export default function DashGiveaways() {
       ticket_cost: Math.max(0, parseInt(f.ticket_cost, 10) || 0), max_tickets: parseInt(f.max_tickets, 10) || null,
     })
     if (error) return say(error.message, true)
-    setF(EMPTY); say('Criado.'); load()
+    setF(EMPTY); setDur(null); say('Criado.'); load()
   }
 
   const draw = async (g) => {
@@ -60,55 +80,154 @@ export default function DashGiveaways() {
     load()
   }
 
-  const stats = (id) => {
+  const stats = useCallback((id) => {
     const rows = entries.filter((x) => x.giveaway_id === id)
     return { tickets: rows.reduce((n, x) => n + (x.tickets || 1), 0), people: new Set(rows.map((x) => x.user_id)).size }
-  }
+  }, [entries])
+
+  const isOver = (g) => g.status === 'ended' || new Date(g.ends_at) <= new Date()
+  const active = useMemo(() => (list || []).filter((g) => !isOver(g)), [list]) // eslint-disable-line
+  const done = useMemo(() => (list || []).filter((g) => isOver(g)), [list]) // eslint-disable-line
+
+  const totals = useMemo(() => {
+    const ids = new Set(active.map((g) => g.id))
+    const rows = entries.filter((x) => ids.has(x.giveaway_id))
+    const spent = (list || []).reduce((n, g) => n + (g.ticket_cost || 0) * entries.filter((x) => x.giveaway_id === g.id).reduce((a, x) => a + (x.tickets || 1), 0), 0)
+    return {
+      tickets: rows.reduce((n, x) => n + (x.tickets || 1), 0),
+      people: new Set(rows.map((x) => x.user_id)).size,
+      spent,
+    }
+  }, [active, entries, list])
+
+  const shown = tab === 'active' ? active : done
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div className={styles.title}>GIVEAWAYS &amp; RAFFLES</div>
-        <div className={styles.sub}>Criar e gerir os sorteios da página pública. Bilhetes pagos com pontos.</div>
+      <div>
+        <h1 className={styles.title}>Giveaways</h1>
+        <p className={styles.sub}>Cria e gere os sorteios da página pública. Os bilhetes são pagos com pontos.</p>
       </div>
 
-      <form className={styles.form} onSubmit={create}>
-        <b>Novo giveaway</b>
-        <input placeholder="Prémio (ex: PS5 + GTA VI)" value={f.prize} onChange={set('prize')} />
-        <input placeholder="Título" value={f.title} onChange={set('title')} />
-        <input placeholder="Descrição (opcional)" value={f.description} onChange={set('description')} />
-        <select value={f.kind} onChange={set('kind')}><option value="giveaway">Giveaway</option><option value="raffle">Raffle</option></select>
-        <input type="datetime-local" value={f.ends_at} onChange={set('ends_at')} />
-        <input type="number" min="0" placeholder="Custo do bilhete (pts, 0 = grátis)" value={f.ticket_cost} onChange={set('ticket_cost')} />
-        <input type="number" min="1" placeholder="Máx. bilhetes (vazio = ilimitado)" value={f.max_tickets} onChange={set('max_tickets')} />
-        <input placeholder="URL da imagem (opcional)" value={f.image_url} onChange={set('image_url')} />
-        <button type="submit" disabled={!ok}>Criar</button>
-      </form>
+      <div className={styles.stats}>
+        <div className={styles.stat}><small>Ativos</small><b>{active.length}</b></div>
+        <div className={styles.stat}><small>Bilhetes</small><b>{totals.tickets}</b></div>
+        <div className={styles.stat}><small>Jogadores</small><b>{totals.people}</b></div>
+        <div className={styles.stat}><small>Pontos gastos</small><b className={styles.gold}>{totals.spent.toLocaleString('pt-PT')}</b></div>
+      </div>
 
-      {list === null ? <p className={styles.empty}>A carregar…</p> : list.length === 0 ? <p className={styles.empty}>Ainda não há giveaways.</p> : (
-        <div className={styles.table}>
-          <div className={`${styles.row} ${styles.head}`}><span>Prémio</span><span>Tipo</span><span>Termina</span><span>Custo</span><span>Bilhetes</span><span>Estado</span><span /></div>
-          {list.map((g) => {
+      <div className={styles.layout}>
+        <form className={styles.panel} onSubmit={create}>
+          <div className={styles.panelTitle}>Novo giveaway</div>
+
+          <div className={styles.seg}>
+            <button type="button" className={f.kind === 'giveaway' ? styles.segOn : ''} onClick={() => setF((s) => ({ ...s, kind: 'giveaway' }))}>Giveaway</button>
+            <button type="button" className={f.kind === 'raffle' ? styles.segOn : ''} onClick={() => setF((s) => ({ ...s, kind: 'raffle' }))}>Raffle</button>
+          </div>
+
+          <label className={styles.fld}><span>Prémio</span>
+            <input placeholder="ex: PS5 + GTA VI" value={f.prize} onChange={set('prize')} /></label>
+          <label className={styles.fld}><span>Título</span>
+            <input placeholder="ex: Sorteio de outubro" value={f.title} onChange={set('title')} /></label>
+
+          <div className={styles.fld}><span>Termina em</span>
+            <div className={styles.chips}>
+              {DURATIONS.map(([l, h]) => (
+                <button key={h} type="button" className={dur === h ? styles.chipOn : ''} onClick={() => setDuration(h)}>{l}</button>
+              ))}
+            </div>
+            <input type="datetime-local" value={f.ends_at} onChange={(e) => { setDur(null); set('ends_at')(e) }} />
+          </div>
+
+          <div className={styles.fld}><span>Custo do bilhete (pts)</span>
+            <div className={styles.chips}>
+              {COSTS.map(([l, v]) => (
+                <button key={v} type="button" className={f.ticket_cost === v ? styles.chipOn : ''} onClick={() => setF((s) => ({ ...s, ticket_cost: v }))}>{l}</button>
+              ))}
+            </div>
+            <input type="number" min="0" placeholder="Outro valor" value={f.ticket_cost} onChange={set('ticket_cost')} />
+          </div>
+
+          <div className={styles.two}>
+            <label className={styles.fld}><span>Máx. bilhetes</span>
+              <input type="number" min="1" placeholder="Sem limite" value={f.max_tickets} onChange={set('max_tickets')} /></label>
+            <label className={styles.fld}><span>Imagem</span>
+              <input placeholder="URL (opcional)" value={f.image_url} onChange={set('image_url')} /></label>
+          </div>
+
+          <label className={styles.fld}><span>Descrição</span>
+            <input placeholder="Opcional" value={f.description} onChange={set('description')} /></label>
+
+          <button type="submit" className={styles.cta} disabled={!ok}>Criar giveaway</button>
+        </form>
+
+        <div className={styles.stage}>
+          <div className={styles.tabs}>
+            <button type="button" className={tab === 'active' ? styles.tabOn : ''} onClick={() => setTab('active')}>Ativos <i>{active.length}</i></button>
+            <button type="button" className={tab === 'done' ? styles.tabOn : ''} onClick={() => setTab('done')}>Terminados <i>{done.length}</i></button>
+          </div>
+
+          {list === null ? null : shown.length === 0 ? (
+            <p className={styles.empty}>{tab === 'active' ? 'Sem giveaways ativos.' : 'Ainda não há giveaways terminados.'}</p>
+          ) : shown.map((g) => {
             const st = stats(g.id)
-            const over = g.status === 'ended' || new Date(g.ends_at) <= new Date()
-            return (
-              <div className={styles.row} key={g.id}>
-                <span className={styles.prize}><b>{g.prize}</b><small>{g.title}</small></span>
-                <span>{g.kind === 'raffle' ? 'Raffle' : 'Giveaway'}</span>
-                <span>{fmtDate(g.ends_at)}</span>
-                <span>{g.ticket_cost > 0 ? `${g.ticket_cost} pts` : 'Grátis'}{g.max_tickets ? ` · máx ${g.max_tickets}` : ''}</span>
-                <span>{st.tickets} <small>({st.people} jogadores)</small></span>
-                <span className={g.winner ? styles.won : over ? styles.ended : styles.live}>{g.winner ? `Vencedor: ${g.winner}` : over ? 'Terminado' : 'Ativo'}</span>
-                <span className={styles.acts}>
-                  {!g.winner && st.tickets > 0 && <button type="button" onClick={() => draw(g)}>{over ? 'Sortear' : 'Terminar e sortear'}</button>}
-                  {!over && <button type="button" onClick={() => end(g)}>Terminar</button>}
-                  <button type="button" className={styles.del} onClick={() => del(g)}>Apagar</button>
-                </span>
+            const over = isOver(g)
+            const soon = !over && new Date(g.ends_at) - Date.now() < 3600000
+            const pct = g.max_tickets ? Math.min(100, Math.round((st.tickets / g.max_tickets) * 100)) : null
+            return over ? (
+              <div className={styles.rowDone} key={g.id}>
+                <div className={styles.thumbSm}>{g.image_url && <img src={g.image_url} alt="" />}</div>
+                <div className={styles.rowMain}>
+                  <div className={styles.rowName}>{g.prize}</div>
+                  <div className={styles.rowSub}>{g.kind === 'raffle' ? 'Raffle' : 'Giveaway'} · terminou a {fmtDate(g.ends_at)} · {st.tickets} bilhetes</div>
+                </div>
+                {g.winner ? (
+                  <div className={styles.winner}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4" /><path d="M18 9h2a2 2 0 0 0 2-2V5h-4" /><path d="M12 17v4M8 21h8M6 9a6 6 0 0 0 12 0V3H6v6z" /></svg>
+                    {g.winner}
+                  </div>
+                ) : st.tickets > 0 ? (
+                  <button type="button" className={styles.primary} onClick={() => draw(g)}>Sortear</button>
+                ) : <span className={styles.muted}>Sem participantes</span>}
+                <button type="button" className={styles.ghost} onClick={() => del(g)}>Apagar</button>
+              </div>
+            ) : (
+              <div className={styles.card} key={g.id}>
+                <div className={styles.thumb}>{g.image_url && <img src={g.image_url} alt="" />}</div>
+                <div className={styles.cardBody}>
+                  <div className={styles.cardTop}>
+                    <div className={styles.cardInfo}>
+                      <div className={styles.badges}>
+                        <span className={styles.kind}>{g.kind === 'raffle' ? 'Raffle' : 'Giveaway'}</span>
+                        <span className={`${styles.state} ${soon ? styles.stateSoon : ''}`}><i />{soon ? 'A terminar' : 'Ativo'}</span>
+                      </div>
+                      <div className={styles.cardPrize}>{g.prize}</div>
+                      <div className={styles.cardTitle}>{g.title}</div>
+                    </div>
+                    <div className={styles.time}>
+                      <b className={soon ? styles.gold : ''}>{left(g.ends_at) || '0h 00m'}</b>
+                      <small>{fmtDate(g.ends_at)}</small>
+                    </div>
+                  </div>
+                  <div>
+                    <div className={styles.meter}>
+                      <span><b>{st.tickets}</b> bilhetes · {st.people} jogadores</span>
+                      <span>{g.ticket_cost > 0 ? `${g.ticket_cost} pts cada` : 'Grátis'}{g.max_tickets ? ` · máx ${g.max_tickets}` : ''}</span>
+                    </div>
+                    <div className={styles.bar}><div style={{ width: `${pct ?? (st.tickets ? 100 : 0)}%` }} className={pct === null ? styles.barFlat : ''} /></div>
+                  </div>
+                  <div className={styles.acts}>
+                    {st.tickets > 0 && <button type="button" className={styles.primary} onClick={() => draw(g)}>Terminar e sortear</button>}
+                    <button type="button" className={styles.ghost} onClick={() => end(g)}>Terminar</button>
+                    <button type="button" className={`${styles.ghost} ${styles.push}`} onClick={() => del(g)}>Apagar</button>
+                  </div>
+                </div>
               </div>
             )
           })}
         </div>
-      )}
+      </div>
+
       {msg && <div className={`${styles.toast} ${msg.err ? styles.err : ''}`}>{msg.text}</div>}
     </div>
   )
