@@ -141,10 +141,11 @@ export default function Roulette() {
     if (!g.user) return
     const opp = ROULETTE.opposite[type]
     if (opp && bets.some((b) => b.type === opp)) { g.setErr(`You can't bet on both ${type} and ${opp}`); return }
+    if (total + chip > MAX_BET) { g.setErr(`Max total bet is ${fmt(MAX_BET)}`); return }
     setBets((prev) => {
       const i = prev.findIndex((b) => b.type === type && (b.value ?? null) === value)
       const next = prev.map((b) => ({ ...b }))
-      if (i >= 0) next[i].amount = Math.min(MAX_BET, next[i].amount + chip)
+      if (i >= 0) next[i].amount += chip
       else if (next.length < ROULETTE.maxBets) next.push({ type, value, amount: chip })
       return next
     })
@@ -153,7 +154,7 @@ export default function Roulette() {
   }
   const undo = () => { if (!locked) setBets((b) => b.slice(0, -1)) }
   const clear = () => { if (!locked) { setBets([]); setRes(null); setShownNum(null) } }
-  const double = () => { if (!locked) setBets((b) => b.map((x) => ({ ...x, amount: Math.min(MAX_BET, x.amount * 2) }))) }
+  const double = () => { if (!locked) { if (total * 2 > MAX_BET) { g.setErr(`Max total bet is ${fmt(MAX_BET)}`); return } setBets((b) => b.map((x) => ({ ...x, amount: x.amount * 2 }))) } }
 
   const setW = (a) => wRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`)
   const setB = (a, r) => { bRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`); cRef.current?.setAttribute('cy', String(C - r)) }
@@ -250,7 +251,7 @@ export default function Roulette() {
   }
 
   const setC = (k) => (e) => setCfg((c) => ({ ...c, [k]: e.target.value }))
-  const canSpin = !!g.user && !!bets.length && !locked && !g.busy && total >= MIN_BET && total <= MAX_BET * 5
+  const canSpin = !!g.user && !!bets.length && !locked && !g.busy && total >= MIN_BET && total <= MAX_BET
   const ctx = { amountAt, res, locked, add }
   const hitCls = (n) => (shownNum === n ? styles.hit : '')
   const half = () => { if (!locked) setBets((b) => b.map((x) => ({ ...x, amount: Math.max(1, Math.floor(x.amount / 2)) }))) }
@@ -281,7 +282,7 @@ export default function Roulette() {
           </div>
 
           <div className={styles.fld}>
-            <span className={styles.lab}>Total Bet<MaxBet note="per spot" /></span>
+            <span className={styles.lab}>Total Bet<MaxBet note="total" /></span>
             <div className={`${styles.total} ${locked ? styles.off : ''}`}>
               <i className={styles.coin} aria-hidden="true" />
               <b>{fmt(total)}</b>

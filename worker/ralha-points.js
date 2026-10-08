@@ -1003,7 +1003,7 @@ export default {
             body.bet = rBets.reduce((a, b) => a + b.amount, 0)
           }
           const bet = parseInt(body.bet, 10)
-          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > (game === 'roulette' ? econMaxBet(game, body) * 5 : econMaxBet(game, body))) return json({ error: 'invalid bet', min: CASINO.minBet, max: econMaxBet(game, body) }, 400)
+          if (!Number.isInteger(bet) || bet < CASINO.minBet || bet > econMaxBet(game, body)) return json({ error: 'invalid bet', min: CASINO.minBet, max: econMaxBet(game, body) }, 400)
 
           let existing = await loadActive()
           if (existing) {
@@ -1880,7 +1880,7 @@ export default {
         if (!CASINO_GAMES.includes(game)) return json({ error: 'unknown game' }, 400)
         const n = Math.max(1, Math.min(10, parseInt(searchParams.get('picks') || '10', 10) || 10))
         const body = { rows: searchParams.get('rows'), risk: searchParams.get('risk') || undefined, mines: searchParams.get('mines'), picks: new Array(n).fill(0) }
-        return json({ min: CASINO.minBet, max: econMaxBet(game, body), roulette: game === 'roulette' ? econMaxBet(game, body) * 5 : undefined })
+        return json({ min: CASINO.minBet, max: econMaxBet(game, body) })
       }
 
       // ── GET /leaderboard ─────────────────────────────────────────────────────
