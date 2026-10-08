@@ -145,8 +145,12 @@ export default function Shop() {
   const [toast,          setToast]          = useState(null)
 
   useEffect(() => {
-    supabase.from('shop_products').select('*').eq('active', true).order('id')
+    const load = () => supabase.from('shop_products').select('*').eq('active', true).order('id')
       .then(({ data, error }) => { if (!error) setProducts(data || []); setLoadingProds(false) })
+    load()
+    // live stock: refresh while the tab is visible
+    const id = setInterval(() => { if (!document.hidden) load() }, 15000)
+    return () => clearInterval(id)
   }, [])
 
   useEffect(() => {
@@ -157,9 +161,12 @@ export default function Shop() {
   }, [])
 
   useEffect(() => {
-    supabase.from('shop_redeems').select('id, twitch_username, created_at, shop_products(name, image_url)')
+    const load = () => supabase.from('shop_redeems').select('id, twitch_username, created_at, shop_products(name, image_url)')
       .order('created_at', { ascending: false }).limit(5)
       .then(({ data, error }) => { if (!error && data) setRecent(data) })
+    load()
+    const id = setInterval(() => { if (!document.hidden) load() }, 15000)
+    return () => clearInterval(id)
   }, [])
 
   let filtered = activeCategory === 'all' ? products : products.filter(p => p.category === activeCategory)

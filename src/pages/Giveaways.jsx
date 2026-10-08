@@ -143,7 +143,11 @@ export default function Giveaways() {
     setEntries(e.error ? [] : e.data || [])
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const id = setInterval(() => { if (!document.hidden) load() }, 15000) // live tickets and new giveaways
+    return () => clearInterval(id)
+  }, [load])
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
   const { count, people } = useMemo(() => {
