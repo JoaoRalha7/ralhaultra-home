@@ -10,7 +10,7 @@ import LoginModal from './LoginModal';
 import LiveVotePopup from './LiveVotePopup';
 import { useAuth } from '../hooks/useAuth';
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
-import { supabaseDash } from '../lib/supabase';
+import { supabase, supabaseDash } from '../lib/supabase';
 
 const NAV_GROUPS = [
   { label: 'Discover', items: [['home', 'Home', '/', 'blue'], ['tag', 'Casinos & Offers', '/offers', 'green'], ['trophy', 'Leaderboard', '/leaderboard', 'gold']] },
@@ -60,6 +60,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [dailyOpen, setDailyOpen] = useState(false);
+  const [dailyReady, setDailyReady] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [live, setLive] = useState([]);
@@ -94,6 +95,24 @@ export default function Layout() {
   useEffect(() => {
     if (user) setLoginOpen(false);
   }, [user]);
+
+  // Daily rewards: highlight the gift button when the daily claim or the wheel is available
+  useEffect(() => {
+    if (!user?.id) { setDailyReady(false); return undefined; }
+    let alive = true;
+    const check = () => {
+      supabase.from('profiles').select('last_daily_claim, last_wheel_spin').eq('id', user.id).single()
+        .then(({ data }) => {
+          if (!alive) return;
+          const ready = (t) => !t || Date.now() - new Date(t).getTime() >= 86400000;
+          setDailyReady(ready(data?.last_daily_claim) || ready(data?.last_wheel_spin));
+        })
+        .catch(() => alive && setDailyReady(false));
+    };
+    check();
+    const t = setInterval(check, 60000);
+    return () => { alive = false; clearInterval(t); };
+  }, [user?.id, dailyOpen]);
 
   useEffect(() => {
     let alive = true;
@@ -151,7 +170,7 @@ export default function Layout() {
           <div className="sp" />
           {points !== null && <div className="pts"><span className="coin" />{points.toLocaleString('pt-PT')}</div>}
           {user && (
-            <button className="bell" aria-label="Daily rewards" onClick={() => setDailyOpen(true)}><Icon name="gift" /></button>
+            <button className={`bell${dailyReady ? ' dailyReady' : ''}`} aria-label={dailyReady ? 'Daily rewards - ready to claim' : 'Daily rewards'} title={dailyReady ? 'Rewards ready to claim!' : 'Daily rewards'} onClick={() => setDailyOpen(true)}><Icon name="gift" />{dailyReady && <b className="dailyDot" />}</button>
           )}
           <div className="bellwrap">
             <button className="bell" aria-label="Notifications" aria-expanded={bellOpen} onClick={() => setBellOpen((v) => !v)}>
