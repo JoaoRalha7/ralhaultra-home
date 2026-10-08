@@ -1282,3 +1282,23 @@
 .costBanner{justify-content:space-between;padding:2px 2px 4px;font-size:15px}
 .costBalance{background:rgba(255,255,255,.06);border:1px solid var(--line);padding:6px 14px;border-radius:99px}
 .costBalance strong{font:800 15px var(--head)}
+
+/* ══ Pick & Win v4: compact, flat, clean ══ */
+.grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.card{border-radius:12px;background:#10141c;border:1px solid rgba(255,255,255,.07)}
+.cardImgWrap{aspect-ratio:1/1}
+.cardPickable:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.28);box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.cardNum{top:6px;left:6px;font-size:10px;padding:2px 7px;background:rgba(8,10,16,.7)}
+.cardSuperBadge{top:6px;right:6px;font-size:9px}
+.cardFooter{padding:8px 10px 10px;gap:2px}
+.cardName{font-size:12px;font-weight:700}
+.cardBet{font-size:11px}
+.cardWin{font:800 12px var(--head)}
+.cardCta{padding:26px 10px 8px}
+.cardCta span{font-size:12px}
+.cardCta b{font-size:10px;padding:2px 7px}
+.progressTrack{height:6px}
+.progressLabel{font-size:12px;font-weight:700;color:var(--mute)}
+.costBanner{font-size:13px}
+.costBalance{padding:4px 12px}
+.costBalance strong{font-size:13px}
