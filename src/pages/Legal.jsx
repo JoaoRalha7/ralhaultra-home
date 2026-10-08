@@ -118,7 +118,7 @@ function richRules(levels) {
       <p>Every Monday at 03:30 UTC we pay you back a percentage of your <b>net losses</b> from the previous week (Monday to Sunday). Net loss means total bet minus total paid out. If you won more than you lost, there is no cashback, and wins reduce it. The percentage depends on your rank, and the payout has a weekly cap of 50,000 points. You can follow your estimate live in the Cashback tab of your rewards.</p>
     </>],
     ['Bets and limits', <>
-      <p>The minimum bet is 10 points. The maximum bet is shown next to the bet field in every game and is never above 2,000 points (Crash allows up to 1,000, and the Jackpot has its own limits: up to 1,000 per deposit and 5,000 in total per round). Some settings, such as high-risk modes with big multipliers, lower the maximum. Each round also has a maximum payout. If you type a bigger amount, or press 2x past the limit, it is set to the maximum automatically.</p>
+      <p>The minimum bet is 10 points. The maximum bet is the same in every game and every mode: 1,000 points (the Jackpot has its own limits: up to 1,000 per deposit and 5,000 in total per round). Each round also has a maximum payout. If you type a bigger amount, or press 2x past the limit, it is set to the maximum automatically.</p>
     </>],
     ['Provably fair', <>
       <p>Every Originals game is provably fair. Before you play, we publish a hash of our secret seed. Your client seed and a round counter are combined with it to produce each result, and the seed is revealed afterwards, so you can check that nothing was changed. Your recent rounds and their fair data are in your profile.</p>

@@ -547,29 +547,16 @@ async function jpState(env, sbH, now) {
 
 // ── New economy casino rules (only when ECONOMY_SOURCE=supabase) ──────────────────
 // No payout ceiling per round: every game is capped at 1000x the bet instead, and the max bet of each
-// game is risk_cap / its top multiplier (at most ECON_BET_CEIL), so one round can never reach the cheapest shop prize.
+// game is risk_cap / its top multiplier (now one fixed ECON_MAX_BET for all), so one round can never reach the cheapest shop prize.
 const ECON_RISK_CAP = 100000
 const ECON_MAX_MULT = 1000
-const ECON_BET_CEIL = 2000     // highest bet any Original allows (only low-multiplier games get there; the rest stay risk-capped)
-const ECON_CRASH_MAX = 1000
+const ECON_MAX_BET = 1000      // same max bet in every Original, whatever the mode or risk
 const econOn = () => !!ECON && ECON.ECONOMY_SOURCE === 'supabase'
 const jpMax = () => (econOn() ? 1000 : JP.maxDeposit)    // jackpot deposit limit (new economy: same as the other games)
 const jpTotal = () => (econOn() ? 5000 : JP.maxTotal)
 const payCap = (bet) => (econOn() ? Math.floor(bet * ECON_MAX_MULT) : CASINO.maxPayout)
-function econMaxBet(game, body) {
-  if (!econOn()) return CASINO.maxBet
-  if (game === 'crash') return ECON_CRASH_MAX // crash: fixed (the 1000x cap still applies)
-  let top = 2
-  try {
-    if (game === 'crash') top = CASINO.crashCap
-    else if (game === 'plinko') top = Math.max(...plinkoTable(parseInt(body.rows, 10), body.risk))
-    else if (game === 'keno') top = Math.max(...kenoTable(Array.isArray(body.picks) ? body.picks.length : 10, KENO_RISK[body.risk] ? body.risk : 'classic'))
-    else if (game === 'mines') { const m = Math.min(24, Math.max(1, parseInt(body.mines, 10) || 3)); top = minesMult(CASINO.grid - m, m) }
-    else if (game === 'roulette') top = 36
-    else if (game === 'blackjack') top = 4
-  } catch { top = ECON_MAX_MULT }
-  top = Math.min(ECON_MAX_MULT, Math.max(2, top))
-  return Math.max(CASINO.minBet, Math.min(ECON_BET_CEIL, Math.floor(ECON_RISK_CAP / top)))
+function econMaxBet() {
+  return ECON_MAX_BET   // one fixed max bet for every Original and every mode
 }
 
 // Hourly VIP refresh and Monday weekly cashback (only with the new economy). Both SQL functions are idempotent.
