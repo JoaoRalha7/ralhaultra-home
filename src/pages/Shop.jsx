@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
@@ -77,6 +78,38 @@ function ProductSpin({ src, seed }) {
   )
 }
 
+// ── Info modal: the full product description (the card only shows two lines) ─────
+function InfoModal({ product, onClose }) {
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [onClose])
+  const rar = rarityOf(product.cost)
+  return createPortal(
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} style={{ '--c': product.color || '#3b82f6' }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={product.name}>
+        <div className={styles.mMedia} style={{ aspectRatio: '16 / 7' }}>
+          {product.image_url ? <img src={product.image_url} alt="" style={{ objectFit: 'contain', padding: 10 }} /> : <span className={styles.initial}>{product.name?.[0]?.toUpperCase()}</span>}
+        </div>
+        <div className={styles.mBody}>
+          <div className={styles.infoTags}>
+            <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
+            {product.stock != null && <span className={styles.infoStock}>{product.stock === 0 ? 'Sold out' : `${product.stock} left`}</span>}
+          </div>
+          <h2>{product.name}</h2>
+          <p className={styles.infoText}>{product.description}</p>
+          <div className={styles.infoPrice}><IconCoin size={18} /><b>{fmt(product.cost)}</b><span>pts</span></div>
+        </div>
+        <div className={styles.actions}>
+          <button className={styles.ghost} onClick={onClose} style={{ gridColumn: '1 / -1' }}>Close</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 function ShopCard({ product, userPoints, onRedeem }) {
   const unlimited  = product.stock == null
   const outOfStock = product.stock === 0
@@ -88,6 +121,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
   const disabled   = outOfStock || !canAfford
   const locked     = outOfStock || (loggedIn && !canAfford)
   const rar        = rarityOf(product.cost)
+  const [info, setInfo] = useState(false)
 
   return (
     <article
@@ -107,7 +141,13 @@ function ShopCard({ product, userPoints, onRedeem }) {
 
       <div className={styles.body}>
         <h3 className={styles.name} title={product.name}>{product.name}</h3>
-        {product.description && <p className={styles.desc}>{product.description}</p>}
+        {product.description && (
+          <div className={styles.descRow}>
+            <p className={styles.desc}>{product.description}</p>
+            <button type="button" className={styles.infoBtn} onClick={() => setInfo(true)} aria-label={`More about ${product.name}`} title="More info">i</button>
+          </div>
+        )}
+        {info && <InfoModal product={product} onClose={() => setInfo(false)} />}
 
         <div className={styles.foot}>
           <div className={styles.priceRow}>
