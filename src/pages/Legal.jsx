@@ -125,6 +125,7 @@ function richRules(levels) {
     </>],
     ['Mini-games', <>
       <p>The viewer mini-games (Pick &amp; Win, Guess the Balance, Average Multi) cost 100 points per entry, charged when you enter. Entries are only open while the round is open. Prizes are given by the streamer after the round ends.</p>
+      <p><b>Average Multi:</b> you pick the range you think the hunt's average multiplier will land in. Only the correct range wins, and everyone who picked it shares the prize pool equally. If nobody picked the correct range, nobody wins.</p>
     </>],
     ['Vouchers', <>
       <p>Voucher codes give a set amount of points. Each code can be used <b>once per person</b>, may have a limited number of total uses and may expire. Enter them in your profile, in the Vouchers tab. Sharing or reselling codes is not allowed.</p>

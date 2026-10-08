@@ -1332,6 +1332,7 @@ function GtbPanel({ hunt }) {
               />
             </div>
 
+            {previewWinId && previewRanked.length === 0 && <div className={styles.awardModalReason}>No one picked the {AVG_BUCKETS.find(b => b.id === previewWinId)?.label} range.</div>}
             {previewRanked.length > 0 && (
               <div className={styles.awardModalRows}>
                 {previewRanked.slice(0, 3).map((e, i) => {
@@ -1491,20 +1492,20 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
     if (!avg || avg <= 0) { setAwardMsg({ type: 'error', text: 'Enter the actual avg multi first.' }); return }
     setAwarding(true); setAwardMsg(null)
 
-    const ranked = [...entries]
-      .map(e => ({ ...e, gap: Math.abs(parseBet(e.guess) - avg) }))
-      .sort((a, b) => a.gap - b.gap)
-
-    const toAward = [
-      { entry: ranked[0], rank: 1, pts: game.points_1st || 0 },
-      { entry: ranked[1], rank: 2, pts: game.points_2nd || 0 },
-      { entry: ranked[2], rank: 3, pts: game.points_3rd || 0 },
-    ].filter(r => r.entry)
+    // Only the correct range wins: everyone who picked the bucket containing the real average
+    // shares the whole prize pool (1st + 2nd + 3rd) equally.
+    const winId   = getBucket(avg)?.id
+    const winners = entries.filter(e => (e.bucket || getBucket(parseBet(e.guess))?.id) === winId)
+    const pool    = (game.points_1st || 0) + (game.points_2nd || 0) + (game.points_3rd || 0)
+    const share   = winners.length ? Math.floor(pool / winners.length) : 0
+    const winSet  = new Set(winners.map(w => w.id))
 
     const results = []
-    for (const { entry, rank, pts } of toAward) {
+    for (const entry of entries) {
+      const won = winSet.has(entry.id)
+      const pts = won ? share : 0
       await supabaseDash.from('avg_multi_entries').update({
-        rank, points_awarded: pts, gap: Math.abs(parseBet(entry.guess) - avg), awarded_at: new Date().toISOString()
+        rank: won ? 1 : null, points_awarded: pts, gap: Math.abs(parseBet(entry.guess) - avg), awarded_at: new Date().toISOString()
       }).eq('id', entry.id)
       if (pts > 0) {
         try {
@@ -1513,6 +1514,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
         } catch { results.push(`${entry.twitch_username}: connection error`) }
       }
     }
+    if (!winners.length) results.push('No one picked the correct range')
 
     await supabaseDash.from('avg_multi_games').update({ status: 'finished', result_avg: avg }).eq('id', game.id)
     await load()
@@ -1525,9 +1527,12 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
   const isFinished = game?.status === 'finished'
 
   const previewAvg    = parseFloat(actualAvg)
-  const previewRanked = !isNaN(previewAvg) && previewAvg > 0
-    ? [...entries].map(e => ({ ...e, gap: Math.abs(parseBet(e.guess) - previewAvg) })).sort((a, b) => a.gap - b.gap)
+  const previewWinId  = !isNaN(previewAvg) && previewAvg > 0 ? getBucket(previewAvg)?.id : null
+  const previewRanked = previewWinId
+    ? entries.filter(e => (e.bucket || getBucket(parseBet(e.guess))?.id) === previewWinId).map(e => ({ ...e, gap: Math.abs(parseBet(e.guess) - previewAvg) }))
     : []
+  const previewPool   = (game?.points_1st || 0) + (game?.points_2nd || 0) + (game?.points_3rd || 0)
+  const previewShare  = previewRanked.length ? Math.floor(previewPool / previewRanked.length) : 0
 
   const calcedAvg = calcAvgFromEntries()
 
@@ -1729,13 +1734,13 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
 
             {previewRanked.length > 0 && (
               <div className={styles.awardModalRows}>
-                {previewRanked.slice(0,3).map((e,i) => {
-                  const pts = [game.points_1st,game.points_2nd,game.points_3rd][i]||0
+                {previewRanked.map((e,i) => {
+                  const pts = previewShare
                   const colors = ['#fbbf24','#94a3b8','#cd7c54']
                   return (
                     <div key={e.id} className={styles.awardModalRow}>
                       <div className={styles.awardModalRowLeft}>
-                        <svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke={colors[i]} strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round'>
+                        <svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke={colors[0]} strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round'>
                           <path d='M6 9H4a2 2 0 0 1-2-2V5h4'/><path d='M18 9h2a2 2 0 0 0 2-2V5h-4'/>
                           <path d='M12 17v4'/><path d='M8 21h8'/>
                           <path d='M6 9a6 6 0 0 0 12 0V3H6v6z'/>
