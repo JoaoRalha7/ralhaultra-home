@@ -1894,6 +1894,8 @@ export default function DashHunt() {
   const handleSetMode = async (m) => {
     setMode(m)
     if (hunt?.id) await supabaseDash.from('bonus_hunts').update({ mode: m }).eq('id', hunt.id)
+    // keep the OBS bar activity in sync with Hunting/Opening
+    await supabaseDash.from('dashboard_state').update({ activity: m }).eq('id', 'aa9660ca-4c53-4d4d-b81b-b3d231660420')
   }
 
   const handleMarkActive = async () => {
@@ -1994,7 +1996,6 @@ export default function DashHunt() {
             <h1>Bonus Hunt {hunt ? `#${hunt.id}` : ''}</h1>
             {hunt?.active && <span className={styles.hxLive}><i />Ativo</span>}
           </div>
-          {mode === 'hunting' && <p>Regista a aposta de cada slot antes de começar a abrir.</p>}
         </div>
         <div className={styles.hxActions}>
           <div className={styles.hxSeg}>
