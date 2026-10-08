@@ -8,6 +8,8 @@ import DailyRewardsModal from './DailyRewardsModal';
 import Footer from './Footer';
 import LoginModal from './LoginModal';
 import UserMenu from './UserMenu';
+import RewardsPanel from './RewardsModal';
+import { workerGet } from '../lib/vip';
 import LiveVotePopup from './LiveVotePopup';
 import { useAuth } from '../hooks/useAuth';
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
@@ -66,6 +68,8 @@ export default function Layout() {
   const [bellOpen, setBellOpen] = useState(false);
   const [live, setLive] = useState([]);
   const [navLive, setNavLive] = useState({});
+  const [rewardsOpen, setRewardsOpen] = useState(false);
+  const [claimable, setClaimable] = useState([]);
   const [ageOk, setAgeOk] = useState(false);
   const [votePop, setVotePop] = useState(false);
   const voteSeen = () => { try { return sessionStorage.getItem('ru-vote-seen') === '1'; } catch { return false; } };
@@ -126,6 +130,20 @@ export default function Layout() {
     };
   }, []);
 
+  // Level-up rewards waiting to be claimed (shown in the bell)
+  useEffect(() => {
+    if (!user?.id) { setClaimable([]); return undefined; }
+    let alive = true;
+    const check = () => workerGet('/vip').then((d) => {
+      if (!alive || !d?.me) return;
+      const done = new Set(d.me.claimed || []);
+      setClaimable((d.levels || []).filter((l) => l.level > 0 && l.level <= d.me.level && Number(l.levelup_reward) > 0 && !done.has(l.level)));
+    });
+    check();
+    const iv = setInterval(() => { if (!document.hidden) check(); }, 90000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [user?.id, rewardsOpen]);
+
   // Sidebar LIVE tags: live bonus hunt, open giveaway, active tournament
   useEffect(() => {
     let alive = true;
@@ -172,6 +190,8 @@ export default function Layout() {
     }
   };
 
+  const notifCount = live.length + claimable.length + (user && dailyReady ? 1 : 0);
+
   return (
     <>
       <IconSprite />
@@ -194,16 +214,24 @@ export default function Layout() {
           <div className="bellwrap">
             <button className="bell" aria-label="Notifications" aria-expanded={bellOpen} onClick={() => setBellOpen((v) => !v)}>
               <Icon name="bell" />
-              {live.length > 0 && <i>{live.length}</i>}
+              {notifCount > 0 && <i>{notifCount}</i>}
             </button>
             {bellOpen && (
               <div className="drop" role="menu">
-                {live.length === 0 ? (
-                  <p className="dropEmpty">No live games right now.</p>
+                {notifCount === 0 ? (
+                  <p className="dropEmpty">You are all caught up.</p>
                 ) : (
-                  live.map(({ name, view, huntId }) => (
-                    <Link key={view} to="/bonus-hunts" state={{ huntId, view }} onClick={() => setBellOpen(false)}>{name}<span className="chip">Live</span></Link>
-                  ))
+                  <>
+                    {user && dailyReady && (
+                      <button type="button" className="dropItem" onClick={() => { setBellOpen(false); setDailyOpen(true); }}>Daily reward ready<span className="chip">Claim</span></button>
+                    )}
+                    {claimable.map((l) => (
+                      <button type="button" key={l.level} className="dropItem" onClick={() => { setBellOpen(false); setRewardsOpen(true); }}>Rank reward: {l.name}<span className="chip">+{Number(l.levelup_reward).toLocaleString('en-US')}</span></button>
+                    ))}
+                    {live.map(({ name, view, huntId }) => (
+                      <Link key={view} to="/bonus-hunts" state={{ huntId, view }} onClick={() => setBellOpen(false)}>{name} open<span className="chip">Live</span></Link>
+                    ))}
+                  </>
                 )}
               </div>
             )}
@@ -235,7 +263,7 @@ export default function Layout() {
                     <NavLink to={to} end={to === '/'} title={label} aria-label={label} data-tone={tone} className={({ isActive }) => `nav${isActive || inOrig ? ' on' : ''}`}>
                       <span className="ico"><Icon name={icon} /></span>
                       <span className="lbl">{label}</span>
-                      {navLive[to] && <span className="liveTag"><i />Live</span>}
+                      {navLive[to] && (to === '/giveaways' ? <span className="liveDotOnly" title="Live" /> : <span className="liveTag"><i />Live</span>)}
                     </NavLink>
                     {inOrig && (
                       <div className="subnav">
@@ -263,6 +291,7 @@ export default function Layout() {
 
       {votePop && live.length > 0 && <LiveVotePopup games={live} onGo={goVote} onClose={closeVote} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+      <RewardsPanel open={rewardsOpen} onClose={() => setRewardsOpen(false)} />
       {dailyOpen && <DailyRewardsModal onClose={() => setDailyOpen(false)} onPointsUpdate={() => refresh?.()} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
       {isSettingUp && <AccountSetupOverlay />}
