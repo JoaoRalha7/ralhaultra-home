@@ -132,24 +132,26 @@ export default function AccountSetupOverlay() {
       }}>
 
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <img src="/assets/04.png" alt="RALHA" style={{ height: 52, objectFit: 'contain' }} />
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ width: 60, height: 60, borderRadius: 16, margin: '0 auto', background: 'linear-gradient(135deg, #1b2238, #10131d)', border: '1px solid rgba(255,255,255,.1)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+            <img src="/assets/04.png" alt="RALHA" style={{ width: 46, height: 46, objectFit: 'contain' }} />
+          </div>
         </div>
 
         {/* Card */}
         <div style={{
-          background: 'rgba(255,255,255,.05)',
+          background: '#0c0f17',
           border: '1px solid rgba(255,255,255,.09)',
-          borderRadius: 20, padding: '28px 24px',
+          borderRadius: 24, padding: '30px 26px',
           boxShadow: '0 24px 80px rgba(0,0,0,.6)',
         }}>
           {/* Header */}
           <div style={{ marginBottom: 24 }}>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '.01em', fontFamily: 'Rubik, sans-serif' }}>
-              Setting Up Your Account
+              Setting up your account
             </h2>
             <p style={{ margin: '6px 0 0', fontSize: 13, color: 'rgba(232,238,252,.4)', lineHeight: 1.5, fontFamily: 'Rubik, sans-serif' }}>
-              Please wait while we prepare everything for you...
+              This only takes a moment.
             </p>
           </div>
 
@@ -162,7 +164,7 @@ export default function AccountSetupOverlay() {
             <div style={{ height: 4, borderRadius: 99, background: 'rgba(255,255,255,.07)', overflow: 'hidden' }}>
               <div style={{
                 height: '100%', borderRadius: 99,
-                background: 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                background: '#3b82f6',
                 width: `${(completed / STEPS.length) * 100}%`,
                 transition: 'width .5s cubic-bezier(.4,0,.2,1)',
               }} />
@@ -178,7 +180,7 @@ export default function AccountSetupOverlay() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'rgba(255,255,255,.18)', letterSpacing: '.02em', fontFamily: 'Rubik, sans-serif' }}>
-          +18 · Gamble responsibly
+          18+ · Gamble responsibly
         </p>
       </div>
     </div>

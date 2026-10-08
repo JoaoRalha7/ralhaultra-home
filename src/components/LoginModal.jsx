@@ -40,10 +40,32 @@ export default function LoginModal({ onClose }) {
         </div>
 
         {/* Title */}
-        <h2 className={styles.title}>Sign In</h2>
+        <h2 className={styles.title}>Sign in</h2>
         <p className={styles.sub}>
-          You'll be redirected to Twitch to verify your account and load your points.
+          One click with Twitch. We verify your account and load your points.
         </p>
+
+        {/* Perks */}
+        <div className={styles.perks}>
+          <div className={styles.perk}>
+            <div className={`${styles.perkIcon} ${styles.pBlue}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1-1.7 2.5-1.7s2.5.7 2.5 1.7-1 1.5-2.5 1.8-2.5.8-2.5 1.8 1 1.7 2.5 1.7 2.5-.7 2.5-1.7"/></svg>
+            </div>
+            <div><b>Earn points</b><span>Watch the stream and collect points</span></div>
+          </div>
+          <div className={styles.perk}>
+            <div className={`${styles.perkIcon} ${styles.pPink}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18"/></svg>
+            </div>
+            <div><b>Giveaways &amp; Shop</b><span>Enter raffles and redeem prizes</span></div>
+          </div>
+          <div className={styles.perk}>
+            <div className={`${styles.perkIcon} ${styles.pGold}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9Z"/></svg>
+            </div>
+            <div><b>Mini-games</b><span>Guess the hunt and climb the leaderboard</span></div>
+          </div>
+        </div>
 
         {/* Terms checkbox */}
         <label className={`${styles.termsLabel} ${shaking ? styles.shake : ''}`}>
@@ -70,12 +92,14 @@ export default function LoginModal({ onClose }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
           </svg>
-          CONTINUE WITH TWITCH
+          Continue with Twitch
         </button>
+
+        {!accepted && <div className={styles.hint}>Accept the terms to continue</div>}
 
         {/* Responsible gaming note */}
         <p className={styles.legal}>
-          +18 · Gamble responsibly ·{' '}
+          18+ · Gamble responsibly ·{' '}
           <a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware</a>
         </p>
 
