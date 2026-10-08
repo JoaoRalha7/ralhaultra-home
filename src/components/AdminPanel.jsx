@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, supabaseDash } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 import OfferRow from './OfferRow'
 import { FeaturedOfferModal } from './HomeModals'
 import { autoFeatured } from '../data/featuredOffer'
@@ -648,6 +649,7 @@ function MethodRow({ method, onEdit, onDelete, onToggle }) {
 // ── Main ───────────────────────────────────────────────────
 export default function AdminPanel({ onClose }) {
   const { signOut, isOwner, user } = useAuth()
+  const navigate = useNavigate()
   const [admins, setAdmins] = useState([])
   const [adminName, setAdminName] = useState('')
   const [adminMsg, setAdminMsg] = useState('')
@@ -770,6 +772,12 @@ export default function AdminPanel({ onClose }) {
               ))}
             </nav>
 
+            {isOwner() && (
+              <button className={styles.navItem} style={{ marginBottom: 6 }} onClick={() => { onClose(); navigate('/dashboard') }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>
+                <span>Dashboard</span>
+              </button>
+            )}
             <button className={styles.logoutItem} onClick={async () => { await signOut(); onClose() }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><polyline points="16 17 21 12 16 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
               Logout
