@@ -147,16 +147,6 @@ export default function DashBarra({ state, onStateChange }) {
           <span>Activity</span>
           <div className={styles.nowVal}>{activeAct ? <b className={styles.actText}>{activeAct.icon}{activeAct.label}</b> : <b className={styles.dim}>Nenhuma</b>}</div>
         </div>
-        <div className={styles.nowCard}>
-          <span>Logo da barra</span>
-          <div className={styles.nowVal}>
-            <div className={styles.mainLogo}>{state.main_logo ? <img src={state.main_logo} alt="" onError={e => e.target.style.opacity = '.2'} /> : <i>—</i>}</div>
-            <label className={styles.upBtn}>
-              {uploading === 'main' ? 'A carregar…' : <>{IUp}Trocar</>}
-              <input type="file" accept="image/*" ref={mainFileRef} onChange={handleMainLogo} hidden />
-            </label>
-          </div>
-        </div>
       </div>
 
       <div className={styles.layout}>
