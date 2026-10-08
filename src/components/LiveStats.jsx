@@ -88,8 +88,6 @@ export default function LiveStats({ onClose }) {
 
       <div className={styles.nums}>
         <p><span>Profit</span>{money(s.profit, true)}</p>
-        <hr />
-        <p><span>Wagered</span>{money(s.wagered)}</p>
       </div>
       <div className={styles.plot}><Chart line={s.line} /></div>
       <div className={styles.wl}>
