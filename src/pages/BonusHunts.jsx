@@ -267,8 +267,9 @@ function useHuntGames(huntId) {
   const [list, setList] = useState(null)
   useEffect(() => {
     let off = false
+    let timer = null
     setList(null)
-    ;(async () => {
+    const load = async () => {
       const out = await Promise.all(GAME_DEFS.map(async (d) => {
         const { data: gs, error } = await supabaseDash.from(d.games).select('*')
           .eq('hunt_id', huntId).in('status', ['open', 'closed', 'finished'])
@@ -282,8 +283,18 @@ function useHuntGames(huntId) {
         return { ...d, game, count: rows.length, winner }
       }))
       if (!off) setList(out)
-    })()
-    return () => { off = true }
+    }
+    const soon = () => { clearTimeout(timer); timer = setTimeout(load, 250) }
+    load()
+    // instant updates when the streamer opens / closes a game or someone enters; light poll as a safety net
+    const ch = supabaseDash.channel(`hunt-games-${huntId}-${Math.random().toString(36).slice(2, 7)}`)
+    GAME_DEFS.forEach(d => {
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: d.games }, soon)
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: d.entries }, soon)
+    })
+    ch.subscribe()
+    const iv = setInterval(() => { if (!document.hidden) load() }, 8000)
+    return () => { off = true; clearTimeout(timer); clearInterval(iv); supabaseDash.removeChannel(ch) }
   }, [huntId])
   return list
 }
