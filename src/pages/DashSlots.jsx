@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabaseDash } from '../lib/supabase'
 import styles from './Dashslots.module.css'
 
-const PAGE_SIZE = 30
+const PAGE_SIZE = 24
 
 const SORT_OPTIONS = [
   { value: 'name',      label: 'Nome A–Z' },
