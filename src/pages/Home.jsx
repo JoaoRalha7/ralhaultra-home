@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import OfferRow from '../components/OfferRow';
@@ -240,6 +240,12 @@ export default function Home() {
   const live = useTwitchStatus();
   const [tab, setTab] = useState('shop');
   const [offers, setOffers] = useState(null);
+  const offersBox = useRef(null);
+  const holdH = (() => { try { return Number(localStorage.getItem('ocH')) || 0; } catch { return 0; } })();
+  useLayoutEffect(() => {
+    const h = offersBox.current?.getBoundingClientRect().height;
+    if (offers && offers.length && h > 100 && window.innerWidth > 1100) { try { localStorage.setItem('ocH', String(Math.round(h))); } catch {} }
+  }, [offers]);
   const [methodsBySlug, setMethodsBySlug] = useState({});
   const [selectedCasino, setSelectedCasino] = useState(null);
   const [redirect, setRedirect] = useState(null);
@@ -459,10 +465,10 @@ export default function Home() {
 
       <section>
         <SectionHead icon="tag" title="Top Offers" showAll="/offers" />
-        {!offers ? <div className="oHold" aria-hidden="true" /> : (
-          <OfferCarousel>
+        {!offers ? <div className="oHold" aria-hidden="true" style={holdH ? { minHeight: holdH } : undefined} /> : (
+          <div ref={offersBox} style={{ display: "flow-root" }}><OfferCarousel>
             {offers.map((o, i) => <OfferRow key={o.id} rank={i + 1} o={o} onClaim={claim} onInfo={info} methodsBySlug={methodsBySlug} />)}
-          </OfferCarousel>
+          </OfferCarousel></div>
         )}
       </section>
 
