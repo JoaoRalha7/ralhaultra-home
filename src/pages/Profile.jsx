@@ -40,7 +40,7 @@ function Activity() {
           <div key={i} className={styles.row}>
             <b>{a.title}</b>
             <span className={styles.date}>{new Date(a.at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}</span>
-            <b className={`${styles.r} ${styles.num}`}>{a.value > 0 ? '+ ' : a.value < 0 ? '- ' : ''}{fmt(Math.abs(a.value))}</b>
+            <b className={`${styles.r} ${styles.num}`} style={a.status === 'REJECTED' ? { opacity: .5 } : undefined}>{a.status === 'REJECTED' ? 'Refunded' : <>{a.value > 0 ? '+ ' : a.value < 0 ? '- ' : ''}{fmt(Math.abs(a.value))}</>}</b>
             <span className={styles.r}><i className={`${styles.st} ${styles['st' + a.status] || ''}`}>{a.status}</i></span>
           </div>
         ))}
