@@ -65,7 +65,7 @@ function Money({ label, value, setValue, disabled, min }) {
       <div className={`${styles.money} ${disabled ? styles.off : ''}`}>
         <i className={styles.coin} aria-hidden="true" />
         <input type="number" inputMode="numeric" min={min} value={value} disabled={disabled} placeholder="0"
-          onChange={(e) => setValue(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
+          onChange={(e) => setValue(e.target.value === '' ? '' : Math.min(MAX_BET, Math.max(0, Math.floor(Number(e.target.value)))))}
           onBlur={() => setValue(min === 0 && !clamp(value) ? '' : set(value))} />
         <button type="button" disabled={disabled} onClick={() => set((Number(value) || 0) / 2)}>1/2</button>
         <button type="button" disabled={disabled} onClick={() => set((Number(value) || min || MIN_BET) * 2)}>2x</button>
@@ -104,7 +104,7 @@ export default function Blackjack() {
   const act = (a, extra) => { playSfx('click'); g.hold.current = true; g.act(a, extra) }
   const offer = active && r?.ins === 'offer'
   const ppv = tab === 'side' ? clamp(pp) : 0, t3v = tab === 'side' ? clamp(t3) : 0
-  const place = () => { playSfx('click'); g.hold.current = true; g.start({ bet: Number(bet), pp: ppv >= MIN_BET ? ppv : 0, t3: t3v >= MIN_BET ? t3v : 0, seats }) }
+  const place = () => { playSfx('click'); g.hold.current = true; g.start({ bet: Math.min(MAX_BET, Math.max(MIN_BET, Math.floor(Number(bet)) || MIN_BET)), pp: ppv >= MIN_BET ? ppv : 0, t3: t3v >= MIN_BET ? t3v : 0, seats }) }
   const n = r?.hands.length || 0
   const first = (i, ci) => (ci * (n + 1) + i) * 170 // opening deal order: every seat, then the dealer
 
