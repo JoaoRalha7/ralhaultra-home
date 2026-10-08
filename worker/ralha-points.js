@@ -1639,6 +1639,22 @@ export default {
         return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
       }
 
+      // ── POST /voucher/redeem ──
+      if (pathname === '/voucher/redeem' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who?.username) return json({ error: 'unauthorized' }, 401)
+        const body = await request.json().catch(() => ({}))
+        const code = String(body.code || '').trim().slice(0, 40)
+        if (!code) return json({ error: 'invalid_code' }, 400)
+        const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/redeem_voucher`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: who.username, p_code: code }) })
+        if (!r.ok) {
+          const t = await r.text()
+          const e = ['invalid_code', 'expired', 'used_up', 'already_redeemed'].find((k) => t.includes(k))
+          return json({ error: e || 'failed' }, e ? 400 : 502)
+        }
+        return json({ ok: true, points: Number(await r.json()) })
+      }
+
       if (request.method !== 'GET')
         return new Response('Method not allowed', { status: 405, headers: corsHeaders })
 
@@ -1805,22 +1821,6 @@ export default {
         for (const a of acts) counts[a.kind]++
         const list = acts.filter((a) => kind === 'all' || a.kind === kind).sort((a, b) => (a.at < b.at ? 1 : -1))
         return json({ stats: { bets: games.length + crash.length, wins, losses }, counts, total: list.length, page, items: list.slice((page - 1) * 8, page * 8) })
-      }
-
-      // ── POST /voucher/redeem ──
-      if (pathname === '/voucher/redeem' && request.method === 'POST') {
-        const who = await getUser(request, env, sbHeaders)
-        if (!who?.username) return json({ error: 'unauthorized' }, 401)
-        const body = await request.json().catch(() => ({}))
-        const code = String(body.code || '').trim().slice(0, 40)
-        if (!code) return json({ error: 'invalid_code' }, 400)
-        const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/redeem_voucher`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: who.username, p_code: code }) })
-        if (!r.ok) {
-          const t = await r.text()
-          const e = ['invalid_code', 'expired', 'used_up', 'already_redeemed'].find((k) => t.includes(k))
-          return json({ error: e || 'failed' }, e ? 400 : 502)
-        }
-        return json({ ok: true, points: Number(await r.json()) })
       }
 
       // ── GET /leaderboard ─────────────────────────────────────────────────────
