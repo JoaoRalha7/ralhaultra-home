@@ -363,3 +363,10 @@
 .cfArr:hover { border-color: #3b82f6; background: #17305f; }
 .cfL { left: 8px; } .cfR { right: 8px; }
 @media (max-width: 640px) { .ringCap { padding: 0 14px 4px; } .capHead strong { font-size: 19px; } .capStats { grid-template-columns: repeat(2, 1fr); } .capStats b { font-size: 16px; } .capBtn { width: 100%; } .cfArr { top: 110px; } .cfL { left: 6px; } .cfR { right: 6px; } }
+
+/* ring skeleton (matches the coverflow layout) */
+.ringSkel { position: absolute; inset: 0; border-radius: 10px; border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.10) 50%, rgba(255,255,255,.05) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s ease infinite;
+  transform: translateX(calc(var(--k) * 78%)) translateZ(calc(var(--k) * var(--k) * -120px)) rotateY(calc(var(--k) * -28deg));
+  opacity: calc(1 - (var(--k) * var(--k)) * .22); }

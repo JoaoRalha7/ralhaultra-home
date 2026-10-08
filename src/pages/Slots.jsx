@@ -372,7 +372,13 @@ function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, 
         </div>
       </div>
       {loading || !n ? (
-        <div className={styles.carouselLoading}>{[...Array(7)].map((_, i) => <div key={i} className={styles.skeletonCard} />)}</div>
+        <div className={styles.ringWrap}>
+          <div className={styles.ring} style={{ '--w': `${w}px`, '--h': `${Math.round(w * 4 / 3)}px`, cursor: 'default' }} aria-hidden="true">
+            <div className={styles.ringInner}>
+              {[-2, -1, 0, 1, 2].map(k => <div key={k} className={styles.ringSkel} style={{ '--k': k }} />)}
+            </div>
+          </div>
+        </div>
       ) : (
         <div className={styles.ringWrap}>
           <button type="button" className={`${styles.cfArr} ${styles.cfL}`} aria-label={`Previous ${title}`} onClick={() => move(-1)}><Chev d="M15 18l-6-6 6-6" /></button>
