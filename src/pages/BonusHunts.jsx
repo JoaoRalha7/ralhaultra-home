@@ -213,6 +213,8 @@ function FeaturedHunt({ hunt, entries, onClick }) {
           <span className={x.lbl}>Profit</span>
           <b className={st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}>{st.hasResult ? money(st.profit) : '—'}</b>
         </div>
+      </div>
+      <div className={x.fTiles}>
         <div className={x.fTile}><span>Start</span><b>{st.balStart > 0 ? '€' + st.balStart.toFixed(0) : '—'}</b></div>
         <div className={x.fTile}><span>Pay</span><b>{st.totalPay > 0 ? '€' + st.totalPay.toFixed(0) : '—'}</b></div>
         <div className={x.fTile}><span>Avg</span><b>{st.avg > 0 ? st.avg.toFixed(2) + 'x' : '—'}</b></div>

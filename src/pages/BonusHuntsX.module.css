@@ -438,3 +438,11 @@
 .fChipLiveTag i{width:7px;height:7px;border-radius:50%;background:#ef4444;animation:fBlink 1.4s ease-in-out infinite}
 @keyframes fBlink{50%{opacity:.25}}
 .fChip:not(.fChipLive){opacity:.75}
+
+/* stats row under mini-game chips, full width */
+.fTiles{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.featured .fTiles .fTile{padding:12px 16px}
+.featured .fTiles .fTile b{font-size:24px}
+.featured .fStats{align-content:center;justify-items:start}
+.featured .fProfit b{font-size:60px}
+@media(max-width:700px){.fTiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
