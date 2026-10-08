@@ -312,26 +312,6 @@ async function twitchUserToken(env) {
   return env.TWITCH_BROADCASTER_TOKEN || null
 }
 
-// StreamElements watchtime leaderboard (minutes per viewer), cached 10 min: the per-user endpoint does not return it
-let SE_WATCH = null
-async function seWatchMap(env) {
-  if (SE_WATCH && Date.now() - SE_WATCH.at < 600000) return SE_WATCH.map
-  const map = new Map()
-  try {
-    for (let off = 0, i = 0; i < 8; i++) {
-      const r = await fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/watchtime?limit=1000&offset=${off}`, { headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } })
-      if (!r.ok) break
-      const users = (await r.json())?.users ?? []
-      if (!users.length) break
-      for (const u of users) map.set(String(u.username).toLowerCase(), Number(u.minutes ?? u.watchtime) || 0)
-      off += users.length
-      if (users.length < 1000) break
-    }
-  } catch { /* optional */ }
-  if (map.size) SE_WATCH = { at: Date.now(), map }
-  return map.size ? map : (SE_WATCH?.map || map)
-}
-
 // Crash multiplier helpers
 const crashAtMs = (m) => Math.log(m) / CASINO.crashRate
 const crashMultAt = (ms) => Math.floor(Math.exp(CASINO.crashRate * Math.max(0, ms)) * 100) / 100
@@ -1988,7 +1968,7 @@ export default {
           } else if (th && !followWhy) followWhy = 'twitch id not found'
         } catch { /* follow date is optional */ }
         const data = {
-          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Math.max(Number(bal[0]?.watch_minutes) || 0, Number(se?.watchtime) || 0, (await seWatchMap(env)).get(name) || 0), followedAt, followWhy,
+          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Math.max(Number(bal[0]?.watch_minutes) || 0, Number(se?.watchtime) || 0), followedAt, followWhy,
           joined: prof[0]?.created_at || bal[0]?.created_at || null, avatar: prof[0]?.avatar_url || null,
           stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
