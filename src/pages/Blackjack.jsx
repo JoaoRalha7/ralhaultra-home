@@ -158,9 +158,12 @@ export default function Blackjack() {
                 return (
                   <div key={hi} className={`${styles.seat} ${on ? styles.seatOn : ''}`}>
                     <div className={styles.tags}>
-                      <span className={`${styles.pill} ${on ? styles.pillOn : ''} ${tone ? styles['p_' + tone] : ''}`}>{showTotal(h.cards, h.total, !h.done)}</span>
+                      {res ? (
+                        <span className={`${styles.fpill} ${styles['f_' + tone]}`}><i>{showTotal(h.cards, h.total, !h.done)}</i><em>{res[0]}</em></span>
+                      ) : (
+                        <span className={`${styles.pill} ${on ? styles.pillOn : ''}`}>{showTotal(h.cards, h.total, !h.done)}</span>
+                      )}
                       {h.doubled && <small className={styles.tag}>DOUBLE</small>}
-                      {res && <small className={`${styles.tag} ${styles['t_' + tone]}`}>{res[0]}</small>}
                       {side.map((t) => <small key={t} className={`${styles.tag} ${styles.t_win}`}>{t}</small>)}
                     </div>
                     <div className={styles.hand}>

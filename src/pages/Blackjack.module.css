@@ -88,3 +88,8 @@
 .pop hr { width: 54%; margin: 9px auto; border: 0; height: 1px; background: rgba(255,255,255,.14); }
 .pop span { display: flex; align-items: center; justify-content: center; gap: 7px; color: #fff; font: 700 14px "DM Sans", sans-serif; }
 @keyframes popIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } }
+
+.fpill { --fc: #22ff7a; display: inline-flex; align-items: center; gap: 9px; height: 30px; padding: 0 14px 0 3px; border-radius: 999px; border: 2px solid var(--fc); background: #0d1018; }
+.fpill i { display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 999px; background: var(--fc); color: #04140d; font: 800 13px "DM Sans", sans-serif; font-style: normal; }
+.fpill em { color: #fff; font: 800 13px "DM Sans", sans-serif; font-style: normal; letter-spacing: .02em; }
+.f_push { --fc: #fbbf24; } .f_lose { --fc: #f87171; }
