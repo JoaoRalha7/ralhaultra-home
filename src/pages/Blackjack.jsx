@@ -98,7 +98,8 @@ export default function Blackjack() {
   }, [rid, rdone, dlen]) // eslint-disable-line react-hooks/exhaustive-deps
   const shown = done && fin === r.id // results visible
   const waiting = done && !shown
-  const act = (a) => { playSfx('click'); g.hold.current = true; g.act(a) }
+  const act = (a, extra) => { playSfx('click'); g.hold.current = true; g.act(a, extra) }
+  const offer = active && r?.ins === 'offer'
   const ppv = tab === 'side' ? clamp(pp) : 0, t3v = tab === 'side' ? clamp(t3) : 0
   const place = () => { playSfx('click'); g.hold.current = true; g.start({ bet: Number(bet), pp: ppv >= MIN_BET ? ppv : 0, t3: t3v >= MIN_BET ? t3v : 0, seats }) }
   const n = r?.hands.length || 0
@@ -126,10 +127,10 @@ export default function Blackjack() {
             </div>
           </div>
           <div className={styles.acts}>
-            <button type="button" disabled={!active || g.busy} onClick={() => act('hit')}><Ico n="hit" />Hit</button>
-            <button type="button" disabled={!active || g.busy} onClick={() => act('stand')}><Ico n="stand" />Stand</button>
-            <button type="button" disabled={!active || g.busy || !r?.canSplit} onClick={() => act('split')}><Ico n="split" />Split</button>
-            <button type="button" disabled={!active || g.busy || !r?.canDouble} onClick={() => act('double')}><Ico n="double" />Double</button>
+            <button type="button" disabled={!active || g.busy || offer} onClick={() => act('hit')}><Ico n="hit" />Hit</button>
+            <button type="button" disabled={!active || g.busy || offer} onClick={() => act('stand')}><Ico n="stand" />Stand</button>
+            <button type="button" disabled={!active || g.busy || offer || !r?.canSplit} onClick={() => act('split')}><Ico n="split" />Split</button>
+            <button type="button" disabled={!active || g.busy || offer || !r?.canDouble} onClick={() => act('double')}><Ico n="double" />Double</button>
           </div>
           <button type="button" className={styles.place} disabled={active || waiting || g.busy || !g.user || Number(bet) < MIN_BET} onClick={place}>{g.user ? 'Place Bet' : 'Log in to play'}</button>
           {g.err && <p className={styles.err}>{g.err}</p>}
@@ -140,6 +141,7 @@ export default function Blackjack() {
           <div className={styles.shoe} aria-hidden="true" />
           {r && (
             <div className={styles.dealer}>
+              {shown && r.insPayout > 0 && <small className={`${styles.tag} ${styles.t_win}`}>INSURANCE 2:1</small>}
               <span className={styles.pill}>{done ? dTotal(r.dealer.slice(0, dCount)) : r.dealerTotal}</span>
               <div className={styles.cards}>
                 {r.dealer.map((c, i) => <Card key={`${r.id}-d${i}${i === 1 && done ? 'o' : ''}`} c={c} reveal={i === 1 && done} delay={i === 0 ? first(n, 0) : i === 1 ? 0 : 750 + (i - 2) * 600} />)}
@@ -147,7 +149,17 @@ export default function Blackjack() {
               </div>
             </div>
           )}
-          <div className={styles.rules}><b>Blackjack 3:2</b><span>Dealer stands on 17</span></div>
+          {offer && (
+            <div className={styles.ins} role="dialog" aria-label="Insurance">
+              <b>Insurance</b>
+              <span><i className={styles.coin} />{fmt(r.insCost)}</span>
+              <div>
+                <button type="button" disabled={g.busy} onClick={() => act('insurance', { take: false })}>No</button>
+                <button type="button" className={styles.insYes} disabled={g.busy} onClick={() => act('insurance', { take: true })}>Yes</button>
+              </div>
+            </div>
+          )}
+          {!offer && <div className={styles.rules}><b>Blackjack 3:2</b><span>Dealer stands on 17</span></div>}
           {r && (
             <div className={styles.seats}>
               {r.hands.map((h, hi) => {
