@@ -74,19 +74,16 @@ function RankCard({ l, me }) {
 
 function Faq({ levels }) {
   const [open, setOpen] = useState(null)
-  const f = (n) => Number(n || 0).toLocaleString('en-US')
   const top = levels[levels.length - 1]
   const items = [
-    ['How do I rank up?', 'You need two things at once: enough points wagered in the Originals and enough hours watched. Both bars in your rewards must be full to reach the next rank.'],
-    ['How is my progress percentage calculated?', 'It is the average of your wagered progress and your hours progress toward the next rank. Each one is capped at 100%, so having lots of wager but few hours will not fill the bar.'],
-    ['Do wagered points go down when I win?', 'No. Every bet you place counts toward your wager, win or lose, and the total never goes down.'],
-    ['What is the level-up reward?', 'A one-time bonus for each rank you reach. Open your rewards and press Claim. Each rank can be claimed once per person.'],
-    ['How does the daily boost work?', 'Your daily reward is increased by a percentage based on your rank, from +5% at Bronze up to +' + (top?.daily_boost_pct ?? 25) + '% at ' + (top?.name || 'Diamond') + '. It stacks on top of your streak.'],
-    ['What is the watch bonus?', 'Extra points per minute while the stream is live. It adds to your sub multiplier, and the total is capped at 2.5x.'],
-    ['How does cashback work?', 'Every Monday at 03:30 UTC you get a percentage of your net losses from the previous week. If you won more than you lost, there is nothing to pay back. The weekly cap is 50,000 points.'],
-    ['Why is my rank not updating?', 'Ranks refresh every hour and right after you place a bet. If it still looks wrong, reload the page and check that you are logged in with Twitch.'],
-    ['Do ranks change my odds?', 'Never. Ranks only reward time and activity. Every game is provably fair.'],
-    ['Where can I read every rule?', 'On the Site Rules page, with all the details about points, limits, vouchers and fair play.'],
+    ['How do I rank up?', 'Watch the stream and play the Originals. You need enough hours watched and enough points wagered.'],
+    ['Do I need both hours and wager?', 'Yes. Both bars have to be full to reach the next rank.'],
+    ['Does my wager go down if I win?', 'No. Every bet counts, win or lose.'],
+    ['What do I get when I rank up?', 'A one-time reward for each new rank. Open your rewards and press Claim.'],
+    ['What is the daily boost?', 'A bonus on your daily reward that grows with your rank, up to +' + (top?.daily_boost_pct ?? 25) + '% at ' + (top?.name || 'Diamond') + '.'],
+    ['How does cashback work?', 'Every Monday you get back a percentage of last week\'s net losses. If you won, there is no cashback.'],
+    ['Why is my rank not updating?', 'It updates every hour and after your bets. Reload the page if it still looks wrong.'],
+    ['Do ranks change my odds?', 'No. Every game is provably fair for everyone.'],
   ]
   const cols = [items.filter((_, i) => i % 2 === 0), items.filter((_, i) => i % 2 === 1)]
   return (
