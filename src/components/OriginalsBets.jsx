@@ -33,7 +33,8 @@ export default function OriginalsBets() {
   const alive = useRef(true)
   const [detail, setDetail] = useState(null)
   const [fresh, setFresh] = useState(() => new Set())   // rows that just arrived (slide-in animation)
-  const seen = useRef(null)
+  const seen = useRef(null)   // keys (top tab) or newest timestamp (feeds) of the previous list
+  const reqSeq = useRef(0)
   const openRound = async (b) => {
     if (!b.id) return
     try {
@@ -44,6 +45,7 @@ export default function OriginalsBets() {
   }
 
   const load = useCallback(async () => {
+    const mySeq = ++reqSeq.current
     try {
       let list = []
       if (tab === 'mine') {
@@ -54,14 +56,20 @@ export default function OriginalsBets() {
         const r = await fetch(`${WORKER}/casino-feed?limit=10${tab === 'top' ? '&sort=top' : ''}`)
         list = r.ok ? (await r.json()).rounds || [] : []
       }
-      if (alive.current) {
+      if (alive.current && mySeq === reqSeq.current) {   // ignore answers that arrive out of order
         const next = list.slice(0, 10)
-        const keys = next.map(rowKey)
-        if (seen.current) {
-          const add = keys.filter((k) => !seen.current.has(k))
-          if (add.length) { setFresh(new Set(add)); setTimeout(() => { if (alive.current) setFresh(new Set()) }, 1400) }
+        let add = []
+        if (tab === 'top') {
+          const keys = next.map(rowKey)
+          if (seen.current) add = keys.filter((k) => !seen.current.has(k))
+          seen.current = new Set(keys)
+        } else {
+          // new = strictly newer than the newest row we already showed (never re-flags rows that were already there)
+          const newest = next.reduce((m, b) => (b.updated_at > m ? b.updated_at : m), '')
+          if (seen.current) add = next.filter((b) => b.updated_at > seen.current).map(rowKey)
+          if (!seen.current || newest > seen.current) seen.current = newest
         }
-        seen.current = new Set(keys)
+        if (add.length) { setFresh(new Set(add)); setTimeout(() => { if (alive.current) setFresh(new Set()) }, 1400) }
         setRows(next)
       }
     } catch {
