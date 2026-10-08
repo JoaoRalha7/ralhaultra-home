@@ -14,6 +14,7 @@ import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Legal from './pages/Legal';
 import Leaderboard from './pages/Leaderboard';
+import Vip from './pages/Vip';
 import MiniGame from './pages/MiniGame';
 import Mines from './pages/Mines';
 import MiniGameAvgMulti from './pages/MiniGameAvgMulti';
@@ -95,6 +96,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="offers" element={<Offers />} />
         <Route path="leaderboard" element={<Leaderboard />} />
+        <Route path="vip" element={<Vip />} />
         <Route path="shop" element={<Shop />} />
         <Route path="giveaways" element={<Giveaways />} />
         <Route path="slots" element={<Slots />} />

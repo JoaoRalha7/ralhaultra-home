@@ -7,6 +7,7 @@ export function IconSprite() {
         <symbol id="tag" viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol>
         <symbol id="trophy" viewBox="0 0 24 24"><path d="M8 4h8v6a4 4 0 01-8 0zM8 6H4v1a4 4 0 004 4M16 6h4v1a4 4 0 01-4 4M12 14v4M8 20h8"/></symbol>
         <symbol id="cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+        <symbol id="crown" viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></symbol>
         <symbol id="gift" viewBox="0 0 24 24"><path d="M4 9h16v4H4zM5 13v8h14v-8M12 9v12M12 9S10 4 8 5s0 4 4 4zM12 9s2-5 4-4 0 4-4 4z"/></symbol>
         <symbol id="bag" viewBox="0 0 24 24"><path d="M3 4h3l2 12h10l2-9H7"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></symbol>
         <symbol id="slots" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M9 5v14M15 5v14"/></symbol>
