@@ -245,3 +245,25 @@
   .compName { font-size: 10px; }
   .compScore { font-size: 11px; padding-right: 7px; }
 }
+
+
+/* cleaner hero: no micro-copy */
+.board{grid-template-columns:1.4fr 1fr 1fr 1fr}
+.tileBig{grid-column:auto}
+.tileBig .tileVal{font-size:40px;letter-spacing:-.03em}
+.tileLbl{text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+.tileSlot{grid-column:span 2}
+.tileSlot .tileName{display:flex;align-items:center;gap:7px;font-size:15px}
+.tIcoPos{color:var(--gold);flex:none}
+.tIcoNeg{color:#f87171;flex:none}
+.tileX{font-size:24px}
+.heroMain .title{font-size:clamp(34px,4.2vw,52px)}
+.prog{flex-direction:row;align-items:center;gap:14px;max-width:420px}
+.prog .progBar{flex:1;height:8px}
+.progNum{font:800 22px/1 "Bricolage Grotesque",sans-serif;color:#eef1f7;font-variant-numeric:tabular-nums}
+.progNum small{font-size:14px;color:var(--mute);font-weight:700}
+.spotLbl{font-size:0}
+.spotLbl svg{display:block}
+.spotName{font-size:28px}
+.spotScore{font-size:44px}
+@media (max-width:900px){.board{grid-template-columns:1fr 1fr}.tileBig{grid-column:span 2}.tileSlot{grid-column:span 2}}

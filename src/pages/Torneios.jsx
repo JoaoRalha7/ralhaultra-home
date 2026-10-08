@@ -341,7 +341,7 @@ function HistoryList({ list, onOpen, activeTournamentId }) {
             <div className={styles.histCardHead}>
               <div style={{ flex:1, minWidth:0 }}>
                 <div className={styles.histTitle}>{t.title}</div>
-                <div className={styles.histMeta}>{fmtDate(t.created_at)} · {t.size} slots</div>
+                <div className={styles.histMeta}>{fmtDate(t.created_at)}</div>
               </div>
               <span className={`${styles.histPill} ${t.status==='active' ? styles.histPillAct : styles.histPillDone}`}>
                 {t.status==='active'
@@ -372,7 +372,7 @@ function HistoryList({ list, onOpen, activeTournamentId }) {
                 {getScore(champ) !== null && <span className={styles.histBestScore}>{getScore(champ).toFixed(2)}</span>}
               </div>
             ) : (
-              <div className={styles.histBestEmpty}>No champion yet</div>
+              <div className={styles.histBestEmpty}>—</div>
             )}
           </div>
         )
@@ -428,16 +428,16 @@ export default function Torneios() {
   const fin      = bracket[bracket.length - 1]?.[0]
   const champion = fin?.winner ? fin[fin.winner] : null
   const champScore = champion ? getScore(champion) : null
-  const isActive = active.status === 'active'
+  const isActive = active.status === 'active' && !champion
   const totalMatches = bracket.reduce((n, r) => n + r.length, 0)
   const decided = bracket.reduce((n, r) => n + r.filter(m => m.winner).length, 0)
   const bal = parseFloat(active.balance_start) || 0
 
   const tiles = [
-    { lbl: 'Total bet', val: stats.totalBet > 0 ? `${stats.totalBet.toFixed(2)}€` : '—', cls: styles.tAmber },
-    { lbl: 'Total won', val: stats.totalWon > 0 ? `${stats.totalWon.toFixed(2)}€` : '—', cls: styles.tViolet },
-    { lbl: 'Profit / loss', val: stats.totalBet > 0 ? `${pnlPos ? '+' : ''}${stats.pnl.toFixed(2)}€` : '—', cls: stats.totalBet > 0 ? (pnlPos ? styles.tPos : styles.tNeg) : '', big: true },
-    ...(bal ? [{ lbl: 'Starting balance', val: `${bal.toFixed(2)}€` }] : []),
+    { lbl: 'Profit', val: stats.totalBet > 0 ? `${pnlPos ? '+' : ''}${stats.pnl.toFixed(2)}€` : '—', cls: stats.totalBet > 0 ? (pnlPos ? styles.tPos : styles.tNeg) : '', big: true },
+    ...(bal ? [{ lbl: 'Start', val: `${bal.toFixed(2)}€` }] : []),
+    { lbl: 'Bet', val: stats.totalBet > 0 ? `${stats.totalBet.toFixed(2)}€` : '—', cls: styles.tAmber },
+    { lbl: 'Won', val: stats.totalWon > 0 ? `${stats.totalWon.toFixed(2)}€` : '—', cls: styles.tViolet },
   ]
 
   return (
@@ -451,19 +451,17 @@ export default function Torneios() {
             <button className={styles.swBtn} onClick={() => nextT && handleOpen(nextT)} disabled={!nextT} title={nextT?.title} aria-label="Next tournament">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
             </button>
-            <span className={styles.swCount}>{tournaments.length - activeIdx} of {tournaments.length}</span>
           </div>
           <h1 className={styles.title}>{active.title}</h1>
           <div className={styles.heroMeta}>
             {isActive
-              ? <span className={styles.pillAct}><span className={styles.actDot}/>In progress</span>
+              ? <span className={styles.pillAct}><span className={styles.actDot}/>Live</span>
               : <span className={styles.pillDone}>Finished</span>}
             <span>{fmtDate(active.created_at)}</span>
-            <span>{active.size} slots</span>
           </div>
           <div className={styles.prog}>
             <div className={styles.progBar}><i style={{ width: (totalMatches ? (decided / totalMatches) * 100 : 0) + '%' }} /></div>
-            <span>{decided} of {totalMatches} matches decided</span>
+            <b className={styles.progNum}>{decided}<small>/{totalMatches}</small></b>
           </div>
         </div>
 
@@ -472,9 +470,8 @@ export default function Torneios() {
             <>
               <div className={styles.spotArt}><SlotImg slot={champion.slot} size={96} radius={14} /></div>
               <div className={styles.spotBody}>
-                <span className={styles.spotLbl}>
-                  <svg width="14" height="12" viewBox="0 0 26 22" fill="currentColor"><path d="M3 2L13 8L23 2L20 17H6L3 2Z"/><rect x="6" y="18" width="14" height="3" rx="1.5"/></svg>
-                  Champion
+                <span className={styles.spotLbl} aria-label="Champion">
+                  <svg width="18" height="15" viewBox="0 0 26 22" fill="currentColor"><path d="M3 2L13 8L23 2L20 17H6L3 2Z"/><rect x="6" y="18" width="14" height="3" rx="1.5"/></svg>
                 </span>
                 <b className={styles.spotName}>{champion.slot.name}</b>
                 {champion.player && <span className={styles.spotPlayer}><UserIcon size={11} />{champion.player}</span>}
@@ -483,9 +480,10 @@ export default function Torneios() {
             </>
           ) : (
             <div className={styles.spotBody}>
-              <span className={styles.spotLbl}>Champion</span>
-              <b className={styles.spotName}>To be decided</b>
-              <span className={styles.spotPlayer}>Tap any match in the bracket for its details.</span>
+              <span className={styles.spotLbl} aria-label="Champion">
+                <svg width="18" height="15" viewBox="0 0 26 22" fill="currentColor"><path d="M3 2L13 8L23 2L20 17H6L3 2Z"/><rect x="6" y="18" width="14" height="3" rx="1.5"/></svg>
+              </span>
+              <b className={styles.spotName}>TBD</b>
             </div>
           )}
         </div>
@@ -498,12 +496,16 @@ export default function Torneios() {
             <b className={`${styles.tileVal} ${t.cls || ''}`}>{t.val}</b>
           </div>
         ))}
-        {[['Best slot', stats.best, styles.tPos], ['Worst slot', stats.worst, styles.tNeg]].map(([lbl, x, cls]) => x && (
+        {[['best', stats.best, styles.tPos], ['worst', stats.worst, styles.tNeg]].map(([lbl, x, cls]) => x && (
           <div key={lbl} className={`${styles.tile} ${styles.tileSlot}`}>
             <SlotImg slot={x.slot} size={40} radius={10} />
             <div className={styles.tileTxt}>
-              <span className={styles.tileLbl}>{lbl}</span>
-              <b className={styles.tileName}>{x.name}</b>
+              <b className={styles.tileName}>
+                {lbl === 'best'
+                  ? <svg className={styles.tIcoPos} width="13" height="11" viewBox="0 0 26 22" fill="currentColor"><path d="M3 2L13 8L23 2L20 17H6L3 2Z"/><rect x="6" y="18" width="14" height="3" rx="1.5"/></svg>
+                  : <svg className={styles.tIcoNeg} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>}
+                {x.name}
+              </b>
               {x.player && <span className={styles.tilePlayer}><UserIcon size={9} />{x.player}</span>}
             </div>
             <b className={`${styles.tileX} ${cls}`}>{x.score.toFixed(2)}x</b>
@@ -518,8 +520,7 @@ export default function Torneios() {
         </button>
         <button role="tab" aria-selected={tab==='history'} className={`${styles.tab} ${tab==='history' ? styles.tabActive : ''}`} onClick={() => setTab('history')}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Past tournaments
-          {tournaments.length > 0 && <span className={styles.tabBadge}>{tournaments.length}</span>}
+          History
         </button>
       </div>
 
