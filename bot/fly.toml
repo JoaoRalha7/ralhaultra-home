@@ -1,12 +1,16 @@
 app = "ralha-bot"
-primary_region = "lhr"
+primary_region = "cdg"
 
 [build]
 
-# No [http_service]: the bot only makes outbound connections.
+# No [http_service]: the bot only makes outbound connections and must never be auto-stopped.
 [processes]
   app = "node dist/index.js"
+
+[[restart]]
+  policy = "always"
 
 [[vm]]
   size = "shared-cpu-1x"
   memory = "512mb"
+  processes = ["app"]
