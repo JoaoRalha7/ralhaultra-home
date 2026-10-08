@@ -28,6 +28,9 @@ const VIDEO_FALLBACK = [
 
 const DAILY_LABELS = { wheel: 'Daily Wheel', 'daily wheel': 'Daily Wheel', claim: 'Daily Claim', 'daily claim': 'Daily Claim' };
 
+// Test: the Top points box next to Latest Streams / Clips (set to true to bring it back).
+const SHOW_TOP_POINTS = false;
+
 const TABS = [
   { key: 'shop', label: 'Shop', icon: 'bag' },
   { key: 'giveaways', label: 'Giveaways & Raffles', icon: 'gift' },
@@ -459,7 +462,7 @@ export default function Home() {
       </section>
 
       <section>
-        <div className="lsx">
+        <div className={`lsx${SHOW_TOP_POINTS ? '' : ' lsxFull'}`}>
           <div className="lcols">
             <div className="lcol">
               <div className="chd"><span><Icon name="tv" size={16} />Latest Streams</span><Link to="/stream">View all</Link></div>
@@ -470,7 +473,7 @@ export default function Home() {
               <Coverflow label="clip" items={clips.length ? clips : null} fallback={CLIP_FALLBACK} onPlay={playClip} />
             </div>
           </div>
-          <aside className="lbp" aria-label="Top points">
+          {SHOW_TOP_POINTS && <aside className="lbp" aria-label="Top points">
             <div className="lbh"><span>Top points</span><Link to="/leaderboard">View all</Link></div>
             {board.length === 0 ? <p className="lbn">Leaderboard unavailable right now.</p> : (
               <ol>
@@ -490,7 +493,7 @@ export default function Home() {
                 )}
               </ol>
             )}
-          </aside>
+          </aside>}
         </div>
       </section>
 

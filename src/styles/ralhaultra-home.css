@@ -880,3 +880,5 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .dropItem:hover{background:var(--panel2)}
 .drop .chip{background:#10281a;color:#4ade80}
 @media (prefers-reduced-motion:reduce){.liveDotOnly{animation:none}}
+
+.lsxFull{grid-template-columns:minmax(0,1fr)}
