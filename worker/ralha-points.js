@@ -1748,7 +1748,18 @@ export default {
         const r = await fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?id=eq.${id}&status=eq.done&select=*&limit=1`, { headers: sbHeaders })
         const row = r.ok ? (await r.json())?.[0] : null
         if (!row) return json({ error: 'not found' }, 404)
-        return json({ ok: true, round: publicGame(row.game, row, Date.now()), username: row.username, at: row.updated_at })
+        const round = publicGame(row.game, row, Date.now())
+        if (row.game === 'plinko') { // a multi-ball drop is stored as several rows with the same instant: show them together
+          const sib = await fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?username=eq.${encodeURIComponent(row.username)}&game=eq.plinko&status=eq.done&updated_at=eq.${encodeURIComponent(row.updated_at)}&select=*&order=created_at.asc&limit=100`, { headers: sbHeaders })
+          const list = sib.ok ? await sib.json() : []
+          if (Array.isArray(list) && list.length > 1) {
+            const balls = list.map((x) => publicGame('plinko', x, Date.now()))
+            round.balls = balls.map((b) => ({ mult: b.mult, slot: b.slot, bet: b.bet, payout: b.payout }))
+            round.bet = balls.reduce((a, b) => a + (b.bet || 0), 0)
+            round.payout = balls.reduce((a, b) => a + (b.payout || 0), 0)
+          }
+        }
+        return json({ ok: true, round, username: row.username, at: row.updated_at })
       }
 
       // ── GET /casino-feed (public: finished rounds only, no game state) ────────

@@ -76,3 +76,17 @@
 .rbig{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font:800 20px "Bricolage Grotesque",sans-serif;color:#fff}
 .rbWin{background:rgba(52,211,153,.14)!important;color:#6ee7b7}
 .rbets em{font-style:normal;color:#34d399;font-weight:800;margin-left:6px}
+
+/* plinko like Degen: multiplier chip(s), risk tabs, row count */
+.plk{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px}
+.plkChips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.plkChip{min-width:54px;text-align:center;padding:9px 12px;border-radius:8px;font-weight:800;font-size:14px;color:#2b1500;background:#f59e0b;box-shadow:0 3px 0 #b45309}
+.plkLow{background:#475569;color:#e2e8f0;box-shadow:0 3px 0 #1e293b}
+.plkTop{background:#34d399;color:#04210f;box-shadow:0 3px 0 #047857}
+.risks3{display:grid;grid-template-columns:repeat(3,1fr);width:100%;background:#0f1218;border-radius:10px;padding:4px;gap:2px}
+.risks3 span{text-align:center;padding:10px 0;font-weight:700;font-size:13px;color:#7b8394;border-radius:8px}
+.risks3 .riskOn{background:#262b37;color:#fff}
+.plkRows{width:100%;display:flex;flex-direction:column;gap:7px}.plkRows small{color:#9aa3b2;font-size:12px}
+.plkRows div{background:#0f1218;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:13px 14px;font-weight:700}
+.roul{width:100%}
+.rtable{width:100%}

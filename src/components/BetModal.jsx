@@ -79,19 +79,16 @@ function BlackjackBoard({ r }) {
   )
 }
 
+const fmtX = (x) => (x >= 100 ? Math.round(x) : x >= 10 ? x.toFixed(1) : x.toFixed(2).replace(/\.?0+$/, ''))
 function PlinkoBoard({ r }) {
-  const rows = r.rows || 0
-  let x = 0
-  const pts = [[0, 0]]
-  ;(r.path || []).forEach((d, i) => { x += d ? 0.5 : -0.5; pts.push([x, i + 1]) })
-  const W = 300, H = 200, sx = W / (rows + 2), sy = H / (rows + 1)
+  const balls = r.balls && r.balls.length ? r.balls : [{ mult: r.mult, slot: r.slot }]
   return (
-    <div className={s.plinko}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" aria-hidden="true">
-        {Array.from({ length: rows }, (_, row) => Array.from({ length: row + 1 }, (_, k) => <circle key={row + '-' + k} cx={W / 2 + (k - row / 2) * sx} cy={(row + 0.5) * sy} r="2.2" fill="rgba(255,255,255,.25)" />))}
-        <polyline fill="none" stroke="#34d399" strokeWidth="2.4" strokeLinejoin="round" points={pts.map(([px, py]) => `${W / 2 + px * sx},${py * sy - sy / 2}`).join(' ')} />
-      </svg>
-      <p>{rows} rows &middot; {r.risk} risk &middot; slot {r.slot + 1}</p>
+    <div className={s.plk}>
+      <div className={s.plkChips}>
+        {balls.map((b, i) => <span key={i} className={`${s.plkChip} ${b.mult < 1 ? s.plkLow : b.mult >= 10 ? s.plkTop : ''}`}>{fmtX(b.mult)}</span>)}
+      </div>
+      <div className={s.risks3}>{['low', 'medium', 'high'].map((k) => <span key={k} className={r.risk === k ? s.riskOn : ''}>{k[0].toUpperCase() + k.slice(1)}</span>)}</div>
+      <div className={s.plkRows}><small>Row Count</small><div>{r.rows}</div></div>
     </div>
   )
 }

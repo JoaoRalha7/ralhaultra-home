@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import BetModal from '../components/BetModal'
 import { Confetti, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import { PLINKO, plinkoTable } from '../lib/plinko'
 import shared from './Casino.module.css'
@@ -73,6 +74,7 @@ export default function Plinko() {
   const [view, setView] = useState({ balls: [], rips: [] })
   const [hits, setHits] = useState({}) // slot -> landing counter (restarts the bin animation)
   const [recent, setRecent] = useState([]) // newest first
+  const [detail, setDetail] = useState(null)
   const shaking = useFlag(g.shake)
 
   const R = useRef({})
@@ -122,7 +124,7 @@ export default function Plinko() {
       land: () => {
         playSfx('click')
         setHits((h) => ({ ...h, [s.slot]: (h[s.slot] || 0) + 1 }))
-        setRecent((r) => [{ id: s.id || S.id, m: s.mult, c: binColor(s.slot, nrows) }, ...r].slice(0, 12))
+        setRecent((r) => [{ id: s.id || S.id, m: s.mult, c: binColor(s.slot, nrows), round: s, at: Date.now() }, ...r].slice(0, 12))
         g.settle(s)
         if (newPoints != null) g.setPoints(newPoints)
         onLanded?.(s)
@@ -259,7 +261,8 @@ export default function Plinko() {
             {view.balls.map((b) => <circle key={b.id} cx={b.x} cy={b.y} r={Math.max(5, dx * 0.15)} className={styles.ball} />)}
           </svg>
           <div className={styles.recent} aria-label="Recent results">
-            {recent.map((x) => <span key={x.id} style={{ background: x.c }}>{label(x.m)}</span>)}
+            {recent.map((x) => <span key={x.id} style={{ background: x.c, cursor: x.round ? 'pointer' : undefined }} onClick={x.round ? () => setDetail({ game: 'plinko', round: x.round, by: g.twitchUser, at: x.at }) : undefined}>{label(x.m)}</span>)}
+            {detail && <BetModal item={detail} onClose={() => setDetail(null)} />}
           </div>
           <Confetti fire={g.fire} colors={['#34d399', '#6ee7b7', '#22d3ee', '#f5c542', '#fff']} />
         </section>
