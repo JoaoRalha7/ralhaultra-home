@@ -18,6 +18,58 @@ const GAME_COSTS = { pick: 100, gtb: 100, avg: 100 }
 
 const ADMIN_IDS = ['13878854-d588-4c49-ad36-1428920902bd']
 
+// ── Points backend switch ─────────────────────────────────────────────────────────
+// Every points call in this file goes to StreamElements' URL. While ECONOMY_SOURCE is not
+// 'supabase' nothing changes. When it is 'supabase', the shadowed fetch() below answers those
+// same URLs from point_balances (same response shape), so the ~18 call sites stay untouched.
+let ECON = null // env of the current invocation (set in fetch/scheduled)
+const _fetch = globalThis.fetch.bind(globalThis)
+const SE_POINTS_RE = /^https:\/\/api\.streamelements\.com\/kappa\/v2\/points\/[^/]+\/(.+)$/
+const fetch = (url, init) => {
+  if (ECON && ECON.ECONOMY_SOURCE === 'supabase' && typeof url === 'string') {
+    const m = SE_POINTS_RE.exec(url)
+    if (m) return econPoints(ECON, m[1], init || {})
+  }
+  return _fetch(url, init)
+}
+const econJson = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } })
+async function econPoints(env, rest, init) {
+  const sb = { 'Content-Type': 'application/json', 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}` }
+  try {
+    // GET /top?limit=&offset=
+    if (rest.startsWith('top')) {
+      const q = new URLSearchParams(rest.split('?')[1] || '')
+      const limit = Math.min(parseInt(q.get('limit') || '100', 10), 1000)
+      const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0)
+      const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?select=username,balance&order=balance.desc,username.asc&limit=${limit}&offset=${offset}`, { headers: sb })
+      if (!r.ok) return econJson({ error: 'db error' }, 502)
+      const rows = await r.json()
+      return econJson({ users: rows.map((x) => ({ username: x.username, points: Number(x.balance) })) })
+    }
+    const [user, amountStr] = rest.split('/')
+    const username = decodeURIComponent(user).toLowerCase()
+    // PUT /{user}/{amount}: add (or subtract) points
+    if ((init.method || 'GET').toUpperCase() === 'PUT' && amountStr !== undefined) {
+      const delta = parseInt(amountStr, 10)
+      if (!Number.isInteger(delta)) return econJson({ error: 'invalid amount' }, 400)
+      const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/add_points`, { method: 'POST', headers: sb, body: JSON.stringify({ p_username: username, p_delta: delta, p_reason: 'worker' }) })
+      if (!r.ok) {
+        const t = await r.text()
+        return econJson({ error: t.includes('insufficient') ? 'insufficient points' : 'db error', detail: t }, t.includes('insufficient') ? 400 : 502)
+      }
+      const bal = Number(await r.json())
+      return econJson({ username, points: bal, newAmount: bal })
+    }
+    // GET /{user}: balance
+    const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(username)}&select=balance`, { headers: sb })
+    if (!r.ok) return econJson({ error: 'db error' }, 502)
+    const row = (await r.json())?.[0]
+    return econJson({ username, points: Number(row?.balance ?? 0) })
+  } catch (e) {
+    return econJson({ error: e.message }, 502)
+  }
+}
+
 
 // ── Casino games (Mines, Blackjack, Crash, Keno) ───────────────────────────────────
 // All game state and randomness live here. The browser only sends intents
@@ -493,6 +545,7 @@ async function jpState(env, sbH, now) {
 export default {
   // Cron Trigger (every minute): keeps Crash rounds running with nobody on the page, and settles jackpots
   async scheduled(event, env, ctx) {
+    ECON = env
     const sbHeaders = { 'Content-Type': 'application/json', 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}` }
     ctx.waitUntil((async () => {
       try { const now = Date.now(); const rounds = await clEnsure(env, sbHeaders, now); if (rounds[0]) await clSettle(env, sbHeaders, rounds[0], now) } catch (e) { console.error('cron crash', e.message) }
@@ -511,6 +564,7 @@ export default {
 
     if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
+    ECON = env
     const url = new URL(request.url)
     const { searchParams, pathname } = url
 
@@ -639,6 +693,38 @@ export default {
         if (!res.ok) return json({ error: `SE API erro ${res.status}`, detail: await res.text() }, res.status)
         const data = await res.json()
         return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
+      }
+
+      // ── POST /admin/import-se ─────────────────────────────────────────────────
+      // Streamer only. Copies every StreamElements balance into point_balances (idempotent: re-run it
+      // right before the cutover and only the difference is applied). ?mult=N scales old -> new economy,
+      // ?dry=1 only counts and shows the top 5 without writing.
+      if (pathname === '/admin/import-se' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who || !ADMIN_IDS.includes(who.id)) return json({ error: 'unauthorized' }, 401)
+        const mult = Number(searchParams.get('mult') || '1')
+        const dry = searchParams.get('dry') === '1'
+        if (!(mult > 0)) return json({ error: 'invalid mult' }, 400)
+
+        const all = []
+        const PAGE = 100
+        for (let offset = 0; offset < 50000; offset += PAGE) {
+          const r = await _fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/top?limit=${PAGE}&offset=${offset}`, { headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } })
+          if (!r.ok) return json({ error: `SE API erro ${r.status}`, detail: await r.text(), fetched: all.length }, 502)
+          const users = (await r.json()).users ?? []
+          for (const u of users) all.push({ username: String(u.username).toLowerCase(), points: Number(u.points) || 0 })
+          if (users.length < PAGE) break
+        }
+        const total = all.reduce((s, u) => s + u.points, 0)
+        if (dry) return json({ ok: true, dry: true, users: all.length, totalPointsOld: total, mult, top5: all.slice(0, 5) })
+
+        let written = 0
+        for (let i = 0; i < all.length; i += 500) {
+          const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/import_se_balances`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_rows: all.slice(i, i + 500), p_mult: mult }) })
+          if (!r.ok) return json({ error: 'import failed', detail: await r.text(), written }, 502)
+          written += Number(await r.json())
+        }
+        return json({ ok: true, users: all.length, written, totalPointsOld: total, mult })
       }
 
       // ── POST /jackpot/state | /jackpot/deposit ────────────────────────────────────
