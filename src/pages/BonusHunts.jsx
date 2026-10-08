@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import TwitchAvatar from '../components/TwitchAvatar'
 import { useAvatars } from '../lib/avatars'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import MiniGame from './MiniGame'
 import MiniGameGtb from './MiniGameGtb'
 import MiniGameAvgMulti from './MiniGameAvgMulti'
@@ -343,6 +343,7 @@ async function fetchAll(build) {
 // ── Hunt Detail ────────────────────────────────────────────────────────────────
 function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const gameList = useHuntGames(hunt.id)
   const pickRows = (gameList || []).find(g => g.key === 'pick')?.rows || []
   const pickBy = {}
