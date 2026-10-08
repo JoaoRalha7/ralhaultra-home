@@ -115,6 +115,9 @@
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  /* the site's global `main` rule must not frame the dashboard */
+  padding: 0;
+  gap: 0;
 }.navItemActive.nav_pink { background: rgba(236,72,153,.12); border-color: rgba(236,72,153,.25); color: #f9a8d4; }
 /* ── MOBILE ── */
 .mobBar, .scrim { display: none; }
