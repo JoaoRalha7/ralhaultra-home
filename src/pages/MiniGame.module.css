@@ -1393,3 +1393,4 @@
 .lbMore:hover{border-color:var(--acc)}
 .compact .lbList{max-height:260px}
 .compact .lbGap{display:none}
+.lbAvImg{flex:none;width:30px;height:30px;border-radius:50%;object-fit:cover;background:#1b2130}

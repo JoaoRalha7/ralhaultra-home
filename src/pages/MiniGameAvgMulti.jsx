@@ -484,8 +484,8 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
                 )}
               </div>
 
-              {/* SIDEBAR */}
-              {entries.length > 0 && (
+              {/* SIDEBAR — only the final results; the live guess list is gone */}
+              {entries.length > 0 && isFinished && (
                 <aside className={styles.sidebar}>
                   <div className={styles.sidebarHead}>
                     {isFinished
