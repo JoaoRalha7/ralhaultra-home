@@ -173,7 +173,7 @@ export default function Blackjack() {
                   <div key={hi} className={`${styles.seat} ${on ? styles.seatOn : ''}`}>
                     {side.length > 0 && (
                       <div className={styles.sides}>
-                        {side.map(([nm, m]) => <span key={nm} className={styles.sbet} style={{ '--d': `${first(hi, 1) + 450}ms` }}><em>{nm}</em><i>{m}:1</i></span>)}
+                        {side.map(([nm, m]) => <span key={nm} className={styles.sbet} style={{ '--d': `${first(hi, 1) + 450}ms` }}><em>{nm}</em><i>{m - 1}:1</i></span>)}
                       </div>
                     )}
                     <div className={styles.tags}>

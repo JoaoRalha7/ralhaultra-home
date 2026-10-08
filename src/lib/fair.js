@@ -47,5 +47,5 @@ export async function derive(game, server, client, nonce, o = {}) {
   }
   if (game === 'jackpot') return { game, ticket: rg.float() }
   const u = rg.float()
-  return { game: 'crash', x: Math.min(1000, Math.max(1, Math.floor((0.97 / (1 - u)) * 100) / 100)) }
+  return { game: 'crash', x: Math.min(1000, Math.max(1, Math.floor((0.99 / (1 - u)) * 100) / 100)) }
 }
