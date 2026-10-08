@@ -244,224 +244,119 @@ export default function DashChill() {
     <div className={styles.loadingPage}><div className={styles.spinner} /> A carregar o estúdio...</div>
   )
 
+  const multiCls = multi >= 100 ? styles.multHigh : multi >= 10 ? styles.multMid : ''
+  const del = (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+  )
+
   return (
     <div className={styles.page}>
-      
-      {/* ── HEADER PREMIUM ── */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <div className={styles.headerLogo}>
-            <div className={styles.pulseDot} />
-            <span className={styles.headerTitle}>DashChill</span>
-          </div>
-          <div className={styles.headerDivider} />
-          <span className={styles.headerSub}>Modo Streamer</span>
+
+      <div className={styles.head}>
+        <div>
+          <h1 className={styles.title}>Chill</h1>
+          <p className={styles.sub}>Regista cada jogada da sessão. Aparece no OBS em direto.</p>
         </div>
-        <div className={styles.headerRight}>
-          <button className={styles.resetBtn} onClick={handleResetSession}>Nova Sessão</button>
-          <button className={`${styles.activateBtn} ${activated ? styles.activateBtnDone : ''}`} onClick={activate}>
-            {activated ? '✓ Sincronizado' : 'Sincronizar OBS'}
+        <div className={styles.headBtns}>
+          <button type="button" className={styles.ghost} onClick={handleResetSession}>Nova sessão</button>
+          <button type="button" className={`${styles.ghost} ${styles.ghostOn}`} onClick={activate}>
+            <span className={styles.dot} />{activated ? 'Sincronizado' : 'Sincronizar OBS'}
           </button>
         </div>
       </div>
 
-      <div className={styles.bodyGrid}>
-        
-        {/* ── COLUNA ESQUERDA (SLOT & STATS) ── */}
-        <div className={styles.colLeft}>
-          
-          <div className={styles.bentoCard} style={{ padding: 0, overflow: 'hidden' }}>
+      <div className={styles.layout}>
+
+        <div className={styles.panel}>
+          <button type="button" className={styles.pick} onClick={() => setPickerOpen(true)}>
             {slot ? (
-              <div className={styles.slotPlayer}>
-                <div className={styles.slotPlayerBg}>
-                  <SlotImg slot={slot} fullCover={true} />
-                  <div className={styles.slotPlayerGradient} />
+              <>
+                <div className={styles.pickImg}><SlotImg slot={slot} fullCover radius={8} /></div>
+                <div className={styles.pickInfo}>
+                  <div className={styles.pickName}>{slot.name}</div>
+                  <div className={styles.pickProv}>{slot.provider}</div>
                 </div>
-                
-                <div className={styles.slotPlayerContent}>
-                  <div className={styles.slotPlayerTop}>
-                    <span className={styles.liveTag}>Em Jogo</span>
-                    <button className={styles.iconBtn} onClick={() => setPickerOpen(true)} title="Trocar Jogo">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m21 16-4 4-4-4M21 20V4M3 8l4-4 4 4M3 4v16"/></svg>
-                    </button>
-                  </div>
-                  
-                  <div className={styles.slotPlayerBottom}>
-                    <h2 className={styles.spName}>{slot.name}</h2>
-                    <div className={styles.spMeta}>
-                      <span className={styles.spProv}>{slot.provider}</span>
-                      {slot.volatility && <span className={styles.spVol}>{slot.volatility}</span>}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7b8190" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 16-4 4-4-4M21 20V4M3 8l4-4 4 4M3 4v16" /></svg>
+              </>
             ) : (
-              <div className={styles.slotEmpty} onClick={() => setPickerOpen(true)}>
-                <div className={styles.addCircle}>+</div>
-                <span>Selecionar Jogo</span>
-              </div>
+              <span className={styles.pickEmpty}>Selecionar jogo</span>
             )}
+          </button>
+
+          <div className={styles.seg}>
+            <button type="button" className={type === 'bonus_buy' ? styles.segOn : ''} onClick={() => setType('bonus_buy')}>Buy</button>
+            <button type="button" className={type === 'spin' ? styles.segOn : ''} onClick={() => setType('spin')}>Spin</button>
           </div>
 
-          {/* Quick Stats */}
-          {slot && (
-            <div className={styles.statsGrid}>
-              <div className={`${styles.bentoCard} ${styles.statMiniCard}`}>
-                <span className={styles.smLbl}>Total Apostado</span>
-                <span className={styles.smVal} style={{ color: 'var(--accent-orange)' }}>{fmt(stats.totalBet)}€</span>
-              </div>
-              <div className={`${styles.bentoCard} ${styles.statMiniCard}`}>
-                <span className={styles.smLbl}>Lucro / Prejuízo</span>
-                <span className={styles.smVal} style={{ color: stats.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                  {stats.pnl >= 0 ? '+' : ''}{fmt(stats.pnl)}€
-                </span>
-              </div>
-              <div className={`${styles.bentoCard} ${styles.statMiniCard}`}>
-                <span className={styles.smLbl}>Maior Vitória</span>
-                <span className={styles.smVal}>{fmt(stats.bestWin)}€</span>
-              </div>
-              <div className={`${styles.bentoCard} ${styles.statMiniCard}`}>
-                <span className={styles.smLbl}>Melhor Multi</span>
-                <span className={styles.smVal} style={{ color: '#fff' }}>{stats.bestMulti.toFixed(1)}x</span>
-              </div>
-            </div>
-          )}
+          <div className={styles.lbl}>Aposta</div>
+          <label className={styles.field}>
+            <span>€</span>
+            <input ref={betRef} type="number" min="0" step="0.01" value={bet}
+              onChange={e => setBet(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && payRef.current?.focus()}
+              placeholder="0.00" />
+          </label>
+          <div className={styles.quick}>
+            {QUICK_BETS.map(val => (
+              <button key={val} type="button" className={parseFloat(bet) === val ? styles.qOn : ''} onClick={() => setBet(val.toString())}>{val}</button>
+            ))}
+          </div>
+
+          <div className={`${styles.lbl} ${styles.lbl2}`}>Prémio</div>
+          <label className={`${styles.field} ${styles.fieldWin}`}>
+            <span>€</span>
+            <input ref={payRef} type="number" min="0" step="0.01" value={payment}
+              onChange={e => setPayment(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder="0.00" />
+            <span className={`${styles.mult} ${multiCls}`}>{multi !== null ? `${multi.toFixed(2)}x` : '0.00x'}</span>
+          </label>
+
+          <button type="button"
+            className={`${styles.cta} ${saveStatus === 'success' ? styles.ctaOk : ''} ${saveStatus === 'error' ? styles.ctaErr : ''}`}
+            onClick={handleAdd} disabled={!bet || saveStatus === 'saving' || !slot}>
+            {saveStatus === 'saving' && <div className={styles.spinnerSm} style={{ borderTopColor: '#0a0b0e' }} />}
+            {saveStatus === 'success' && 'Registado'}
+            {saveStatus === 'error' && 'Erro. Tentar de novo'}
+            {saveStatus === 'idle' && 'Confirmar registo'}
+          </button>
+          <p className={styles.note}>Enter na aposta passa ao prémio. Enter no prémio confirma.</p>
         </div>
 
-        {/* ── COLUNA CENTRAL (FORMULÁRIO POS) ── */}
-        <div className={styles.colCenter}>
-          <div className={`${styles.bentoCard} ${styles.posCard}`}>
-            
-            <div className={styles.posHeader}>
-              <h3 className={styles.posTitle}>Registo</h3>
-              <div className={styles.segmentedControl}>
-                <div className={`${styles.segmentOption} ${type === 'bonus_buy' ? styles.segmentActive : ''}`} onClick={() => setType('bonus_buy')}>Buy</div>
-                <div className={`${styles.segmentOption} ${type === 'spin' ? styles.segmentActive : ''}`} onClick={() => setType('spin')}>Spin</div>
-              </div>
-            </div>
+        <div className={styles.stage}>
+          <div className={styles.stats}>
+            <div className={styles.stat}><small>Apostado</small><b>{fmt(stats.totalBet)}€</b></div>
+            <div className={styles.stat}><small>Lucro</small><b style={{ color: stats.pnl > 0 ? 'var(--c-win)' : stats.pnl < 0 ? '#f87171' : undefined }}>{stats.pnl > 0 ? '+' : ''}{fmt(stats.pnl)}€</b></div>
+            <div className={styles.stat}><small>Maior win</small><b>{fmt(stats.bestWin)}€</b></div>
+            <div className={styles.stat}><small>Melhor multi</small><b style={{ color: stats.bestMulti >= 100 ? 'var(--c-gold)' : undefined }}>{stats.bestMulti.toFixed(1)}x</b></div>
+          </div>
 
-            <div className={styles.posBody}>
-              
-              <div className={styles.posInputArea}>
-                <div className={styles.posLabelRow}>
-                  <label>Valor da Aposta</label>
-                  <div className={styles.quickBetsRow}>
-                    {QUICK_BETS.map(val => (
-                      <button key={val} className={styles.qbBtn} onClick={() => setBet(val.toString())}>
-                        {val}
-                      </button>
-                    ))}
+          <div className={styles.listHead}>{slot ? slot.name : 'Sessão'} <span>{displayEntries.length} {displayEntries.length === 1 ? 'jogada' : 'jogadas'}</span></div>
+
+          <div className={styles.list}>
+            {displayEntries.length === 0 ? (
+              <div className={styles.empty}>Ainda sem jogadas</div>
+            ) : displayEntries.map(e => {
+              const b = parseFloat(e.bet) || 0
+              const p = parseFloat(e.payment) || 0
+              const m = b > 0 && p > 0 ? p / b : 0
+              const timeStr = new Date(e.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+              return (
+                <div key={e.id} className={styles.row}>
+                  <div className={styles.rowImg}><SlotImg slot={e.slot} fullCover radius={6} /></div>
+                  <div className={styles.rowMain}>
+                    <div className={styles.rowName}>{e.slot?.name || 'Sessão'}</div>
+                    <div className={styles.rowSub}>{TYPE_LABEL[e.game_type] || 'Buy'} · {timeStr}</div>
                   </div>
+                  <div className={styles.rowBet}>{fmt(b)}€</div>
+                  <div className={`${styles.rowWin} ${p > b ? styles.rowWinPos : ''}`}>{fmt(p)}€</div>
+                  {m >= 2 ? <div className={`${styles.rowMulti} ${m >= 100 ? styles.rowMultiHigh : ''}`}>{m >= 10 ? m.toFixed(0) : m.toFixed(1)}x</div> : <div className={styles.rowMulti} style={{ visibility: 'hidden' }} />}
+                  {sessionIds.current.has(e.id)
+                    ? <button type="button" className={styles.rowDel} aria-label="Apagar" onClick={() => handleDelete(e.id)}>{del}</button>
+                    : <span className={styles.rowDelGap} />}
                 </div>
-                <div className={styles.hugeInputWrap}>
-                  <span className={styles.hugeSymbol}>€</span>
-                  <input ref={betRef} className={styles.hugeInput} type="number" min="0" step="0.01"
-                    value={bet} onChange={e => setBet(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && payRef.current?.focus()}
-                    placeholder="0.00" />
-                </div>
-              </div>
-
-              <div className={styles.posDivider}>
-                <div className={styles.posDivLine} />
-                <div className={`${styles.posMultiBadge} ${multi >= 100 ? styles.mHigh : multi >= 20 ? styles.mMid : ''}`}>
-                  {multi !== null ? `${multi.toFixed(2)}x` : '0.00x'}
-                </div>
-                <div className={styles.posDivLine} />
-              </div>
-
-              <div className={styles.posInputArea}>
-                <label className={styles.cleanLabel}>Prémio Final</label>
-                <div className={`${styles.hugeInputWrap} ${styles.hugeInputWrapWin}`}>
-                  <span className={`${styles.hugeSymbol} ${styles.hugeSymbolWin}`}>€</span>
-                  <input ref={payRef} className={`${styles.hugeInput} ${styles.hugeInputWin}`} type="number" min="0" step="0.01"
-                    value={payment} onChange={e => setPayment(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                    placeholder="0.00" />
-                </div>
-              </div>
-
-            </div>
-
-            <div className={styles.posFooter}>
-              <button 
-                className={`
-                  ${styles.btnAction} 
-                  ${saveStatus === 'success' ? styles.btnSuccess : ''}
-                  ${saveStatus === 'error' ? styles.btnError : ''}
-                `} 
-                onClick={handleAdd} 
-                disabled={!bet || saveStatus === 'saving' || !slot}
-              >
-                {saveStatus === 'saving' && <div className={styles.spinnerSm} />}
-                {saveStatus === 'success' && <>✓ Registado!</>}
-                {saveStatus === 'error' && <>✕ Erro. Tentar de novo.</>}
-                {saveStatus === 'idle' && (
-                  <>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    Confirmar Registo
-                  </>
-                )}
-              </button>
-            </div>
-
-          </div>
-        </div>
-
-        {/* ── COLUNA DIREITA (NOTIFICAÇÕES iOS STYLE) ── */}
-        <div className={styles.colRight}>
-          <div className={styles.feedContainer}>
-            <div className={styles.feedHeader}>
-              <h3 className={styles.feedTitle}>Atividade</h3>
-              <span className={styles.feedCount}>{displayEntries.length}</span>
-            </div>
-            
-            <div className={styles.feedScroll}>
-              {displayEntries.length === 0 ? (
-                <div className={styles.feedEmpty}>
-                  <div className={styles.feedEmptyIcon}>📋</div>
-                  A lista está vazia
-                </div>
-              ) : (
-                displayEntries.map(e => {
-                  const b = parseFloat(e.bet) || 0;
-                  const p = parseFloat(e.payment) || 0;
-                  const m = b > 0 && p > 0 ? p / b : 0;
-                  const timeStr = new Date(e.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-                  
-                  return (
-                    <div key={e.id} className={styles.feedNotification}>
-                      <div className={styles.fnIconWrap}>
-                        {e.game_type === 'spin' ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth="2.5" strokeLinecap="round"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 13a10 10 0 0 1-18.26 3.37M2 11a10 10 0 0 1 18.26-3.37"/></svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" strokeWidth="2.5" strokeLinecap="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/></svg>
-                        )}
-                      </div>
-                      
-                      <div className={styles.fnContent}>
-                        <div className={styles.fnTop}>
-                          <span className={styles.fnSlot}>{e.slot?.name || 'Sessão'}</span>
-                          <span className={styles.fnTime}>{timeStr}</span>
-                        </div>
-                        <div className={styles.fnData}>
-                          <span className={styles.fnBet}>Aposta: {fmt(b)}€</span>
-                          <span className={styles.fnSep}>•</span>
-                          <span className={styles.fnWin} style={{ color: p > b ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                            {p > 0 ? `${fmt(p)}€` : '0.00€'}
-                          </span>
-                          {m >= 10 && <span className={styles.fnMultiBadge}>{m.toFixed(0)}x</span>}
-                        </div>
-                      </div>
-
-                      {sessionIds.current.has(e.id) && (
-                        <button className={styles.fnDel} onClick={() => handleDelete(e.id)}>✕</button>
-                      )}
-                    </div>
-                  )
-                })
-              )}
-            </div>
+              )
+            })}
           </div>
         </div>
 
