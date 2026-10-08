@@ -67,3 +67,9 @@
 .recent span { display: grid; place-items: center; height: 26px; border-radius: 6px; color: #1a0d05; font: 800 12px "DM Sans", sans-serif; animation: chipIn .25s ease-out both; }
 @keyframes chipIn { from { opacity: 0; transform: translateY(-14px); } }
 @media (max-width: 1100px) { .stage { min-height: 460px; padding-right: 70px; } .recent { width: 42px; } }
+
+.balls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 9px; background: #0a0c11; }
+.balls button { height: 32px; border-radius: 6px; border: 0; background: transparent; color: #8b92a5; font: 700 13px "DM Sans", sans-serif; cursor: pointer; }
+.balls button:hover:not(:disabled) { color: #fff; }
+.balls button.on { background: #232733; color: #fff; }
+.balls button:disabled { cursor: default; opacity: .7; }

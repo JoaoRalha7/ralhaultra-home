@@ -67,19 +67,21 @@ export default function Plinko() {
   const [cfg, setCfg] = useState({ stopProfit: '', stopLoss: '', onWin: '', onLoss: '' })
   const [auto, setAuto] = useState(false)
   const [sending, setSending] = useState(false)
+  const [count, setCount] = useState(1)
+  const [pend, setPend] = useState(0) // balls accepted by the server but not released yet
   const [view, setView] = useState({ balls: [], rips: [] })
   const [hits, setHits] = useState({}) // slot -> landing counter (restarts the bin animation)
   const [recent, setRecent] = useState([]) // newest first
   const shaking = useFlag(g.shake)
 
   const R = useRef({})
-  R.current = { bet, rows, risk, cfg, nBets }
+  R.current = { bet, rows, risk, cfg, nBets, count }
   const stop = useRef(false), alive = useRef(true)
   const B = useRef({ balls: [], rips: [], raf: 0, id: 0, net: 0, last: null })
   useEffect(() => { alive.current = true; return () => { alive.current = false; stop.current = true; cancelAnimationFrame(B.current.raf) } }, [])
 
   const flying = view.balls.length > 0
-  const lockBoard = flying || auto
+  const lockBoard = flying || auto || pend > 0
   const table = plinkoTable(rows, risk)
   const dx = (W - 56) / (rows + 2)
   const dy = Math.min(dx * 0.9, 470 / (rows + 1))
@@ -130,14 +132,19 @@ export default function Plinko() {
 
   // sends one ball; resolves when the server has accepted it (the ball keeps falling on its own)
   const drop = async (stake, onLanded) => {
-    const { rows: rw, risk: rk } = R.current
+    const { rows: rw, risk: rk, count: ct } = R.current
     setSending(true)
-    const data = await g.batch({ bet: stake, rows: rw, risk: rk, count: 1 })
+    const data = await g.batch({ bet: stake, rows: rw, risk: rk, count: ct })
     setSending(false)
-    const s = data?.state
-    if (!s || s.game !== 'plinko') return null
-    addBall(s, stake, data.newPoints, onLanded)
-    return s
+    const list = ct > 1 ? data?.balls : data?.state ? [data.state] : null
+    if (!Array.isArray(list) || !list.length) return null
+    const gap = list.length > 12 ? 70 : 115
+    setPend((p) => p + list.length)
+    list.forEach((r, i) => setTimeout(() => {
+      setPend((p) => p - 1)
+      if (alive.current) addBall({ ...r, rows: r.rows || rw }, stake, i === list.length - 1 ? data.newPoints : null, onLanded)
+    }, i * gap))
+    return { list, wait: (list.length - 1) * gap }
   }
 
   const place = async () => {
@@ -162,8 +169,8 @@ export default function Plinko() {
       if (l) { const pct = l > 0 ? num(c.onWin) : num(c.onLoss); cur = pct ? Math.min(MAX_BET, Math.max(MIN_BET, Math.round(cur * (1 + pct / 100)))) : base; B.current.last = null }
       const s = await drop(cur, (r) => { const p = r.payout - r.bet; B.current.net += p; B.current.last = p || -1 })
       if (!s) break
-      n++
-      await sleep(380)
+      n += s.list.length
+      await sleep(380 + s.wait)
     }
     while (B.current.balls.length && alive.current) await sleep(120)
     if (alive.current) setAuto(false)
@@ -191,6 +198,12 @@ export default function Plinko() {
             </div>
           </div>
           <RiskSelect value={risk} setValue={setRisk} disabled={lockBoard} />
+          <div className={styles.fld}>
+            <span className={styles.lab}>Balls</span>
+            <div className={styles.balls}>
+              {[1, 5, 10, 25].map((n) => <button key={n} type="button" disabled={auto} className={count === n ? styles.on : ''} onClick={() => setCount(n)}>{n}</button>)}
+            </div>
+          </div>
 
           {tab === 'auto' && (
             <>
