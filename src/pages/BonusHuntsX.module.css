@@ -420,3 +420,21 @@
 .dProfit .fBest > b { grid-area: name; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dProfit .fBest > strong { grid-area: mult; font-size: 26px; }
 .dProfit .fBest > span { grid-area: win; font-size: 14px; }
+
+/* best | worst always split 50/50 */
+.fBW .fBest{grid-column:auto}
+.fEmpty{justify-content:center;opacity:.6}
+.fEmpty b{flex:none!important;font-size:15px}
+.fEmpty span{color:var(--mute);font-size:13px;font-weight:500}
+.dProfit .fEmpty{display:flex}
+
+/* mini-game chips */
+.fChip{gap:10px;padding:6px 14px 6px 8px;border-radius:14px;font-size:14px;background:rgba(255,255,255,.05)}
+.fChipIco{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.07);color:var(--text)}
+.fChipIco svg{width:16px;height:16px}
+.fChipName{color:var(--text);font-weight:700}
+.fChipOff{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22)}
+.fChipLiveTag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fca5a5}
+.fChipLiveTag i{width:7px;height:7px;border-radius:50%;background:#ef4444;animation:fBlink 1.4s ease-in-out infinite}
+@keyframes fBlink{50%{opacity:.25}}
+.fChip:not(.fChipLive){opacity:.75}

@@ -182,7 +182,9 @@ function BestWorst({ best, worst, compact }) {
   return (
     <div className={x.fBW}>
       {row(best, false)}
-      {worst && worst.id !== best.id && row(worst, true)}
+      {worst && worst.id !== best.id
+        ? row(worst, true)
+        : <div className={`${x.fBest} ${x.fWorst} ${x.fEmpty} ${compact ? x.fCompact : ''}`}><b>Worst bonus</b><span>waiting for more bonuses</span></div>}
     </div>
   )
 }
@@ -301,7 +303,9 @@ function FeaturedGameChips({ huntId }) {
     <div className={x.fGames}>
       {active.map(g => (
         <span key={g.key} className={`${x.fChip} ${g.game.status === 'open' ? x.fChipLive : ''}`}>
-          <GameIcon k={g.key} />{g.label}<em>{g.game.status === 'open' ? 'Live' : 'Closed'}</em>
+          <span className={x.fChipIco}><GameIcon k={g.key} /></span>
+          <span className={x.fChipName}>{g.label}</span>
+          {g.game.status === 'open' ? <em className={x.fChipLiveTag}><i />Live</em> : <i className={x.fChipOff} title="Closed" />}
         </span>
       ))}
     </div>
