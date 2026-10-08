@@ -227,11 +227,13 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
   // Listen for new games
   useEffect(() => {
     const ch = supabaseDash.channel('gtb-games-new')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'gtb_games' }, () => {
-        loadAllGames(); setIdx(0)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gtb_games' }, (p) => {
+        loadAllGames()
+        if (p.eventType === 'INSERT') setIdx(0)
       })
       .subscribe()
-    return () => ch.unsubscribe()
+    const poll = setInterval(() => { if (!document.hidden) loadAllGames() }, 10000)
+    return () => { ch.unsubscribe(); clearInterval(poll) }
   }, [loadAllGames])
 
   const goLeft  = () => { setIdx(i => Math.min(i + 1, games.length - 1)); setShowHistory(false) }

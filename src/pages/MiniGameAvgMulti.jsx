@@ -219,9 +219,13 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
 
   useEffect(() => {
     const ch = supabaseDash.channel('avg-games-new')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avg_multi_games' }, () => { loadAllGames(); setIdx(0) })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avg_multi_games' }, (p) => {
+        loadAllGames()
+        if (p.eventType === 'INSERT') setIdx(0)
+      })
       .subscribe()
-    return () => ch.unsubscribe()
+    const poll = setInterval(() => { if (!document.hidden) loadAllGames() }, 10000)
+    return () => { ch.unsubscribe(); clearInterval(poll) }
   }, [loadAllGames])
 
   const goLeft  = () => { setIdx(i => Math.min(i + 1, games.length - 1)); setShowHistory(false) }

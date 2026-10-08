@@ -262,12 +262,15 @@ export default function MiniGame({ huntId = null }) {
   // Listen for new games
   useEffect(() => {
     const ch = supabaseDash.channel('pick-games-new')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pick_games' }, () => {
+      // any change (a new game, or an existing one being opened/closed) reloads the list; only a new game jumps to it
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pick_games' }, (p) => {
         loadAllGames()
-        setIdx(0) // jump to newest
+        if (p.eventType === 'INSERT') setIdx(0)
       })
       .subscribe()
-    return () => ch.unsubscribe()
+    // safety net in case the realtime socket drops
+    const poll = setInterval(() => { if (!document.hidden) loadAllGames() }, 10000)
+    return () => { ch.unsubscribe(); clearInterval(poll) }
   }, [loadAllGames])
 
   // ── Navigation ─────────────────────────────────────────────────────────────

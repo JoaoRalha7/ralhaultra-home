@@ -35,7 +35,8 @@ export default function MiniGamesHub() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'avg_multi_games' }, loadStatuses)
       .subscribe()
 
-    return () => ch.unsubscribe()
+    const poll = setInterval(() => { if (!document.hidden) loadStatuses() }, 10000)
+    return () => { ch.unsubscribe(); clearInterval(poll) }
   }, [])
 
   const tabs = [
