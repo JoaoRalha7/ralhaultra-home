@@ -684,10 +684,9 @@ export default function AdminPanel({ onClose }) {
     const name = adminName.trim().toLowerCase().replace(/^@/, '')
     if (!name) return
     setAdminMsg('')
-    const { data: p } = await supabase.from('profiles').select('id,twitch_username').ilike('twitch_username', name).maybeSingle()
-    if (!p) { setAdminMsg('User not found. They must log in to the site once first.'); return }
-    const { error } = await supabase.from('admins').upsert({ user_id: p.id, username: p.twitch_username })
+    const { data, error } = await supabase.rpc('add_admin', { p_username: name })
     if (error) { setAdminMsg(error.message); return }
+    if (!data?.ok) { setAdminMsg(data?.error === 'not found' ? 'User not found. They must log in to the site once first.' : (data?.error || 'Failed')); return }
     setAdminName(''); loadAdmins()
   }
   const removeAdmin = async (id) => {
