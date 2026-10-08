@@ -476,3 +476,5 @@
 .gv2 .pickStats span:first-child{display:none}
 .gv2 .gboxBody>div{padding:4px 0 0 !important}
 .gv2 .pickBtn{margin-top:6px}
+.fChip{padding:5px 14px 5px 6px}
+.gv2.gboxLive svg{filter:drop-shadow(0 0 10px rgba(239,68,68,.35))}

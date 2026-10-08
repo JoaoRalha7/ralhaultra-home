@@ -4,6 +4,7 @@ import MiniGame from './MiniGame'
 import MiniGameGtb from './MiniGameGtb'
 import MiniGameAvgMulti from './MiniGameAvgMulti'
 import { supabaseDash } from '../lib/supabase'
+import MiniLogo from '../components/MiniLogo'
 import { useAuth } from '../hooks/useAuth'
 import styles from './BonusHunts.module.css'
 import x from './BonusHuntsX.module.css'
@@ -317,7 +318,7 @@ function FeaturedGameChips({ huntId }) {
     <div className={x.fGames}>
       {active.map(g => (
         <span key={g.key} className={`${x.fChip} ${g.game.status === 'open' ? x.fChipLive : ''}`}>
-          <span className={x.fChipIco}><GameIcon k={g.key} /></span>
+          <MiniLogo k={g.key} size={28} />
           <span className={x.fChipName}>{{ pick: 'PICK & WIN', gtb: 'GTB', avg: 'AVG' }[g.key] || g.label}</span>
           {g.game.status === 'open' ? <em className={x.fChipLiveTag}><i />Live</em> : <i className={x.fChipOff} title="Closed" />}
         </span>
@@ -491,19 +492,18 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
     if (!gameList) return null
     if (!g?.game) return (
       <section id={'game-' + key} className={`${x.gbox} ${x.gboxMini}`} aria-label={d.label}>
-        <span className={x.gameIcon}><GameIcon k={key} /></span>
+        <MiniLogo k={key} size={30} />
         <b>{d.label}</b>
         <em>No game yet</em>
       </section>
     )
     const st = g.game.status
     const live = st === 'open'
-    const SIG = { pick: 'P&W', gtb: 'GTB', avg: 'AVG' }
     const unit = key === 'pick' ? (g.count === 1 ? 'pick' : 'picks') : (g.count === 1 ? 'guess' : 'guesses')
     return (
       <section id={'game-' + key} className={`${x.gbox} ${x.gv2} ${live ? x.gboxLive : ''}`} aria-label={d.label}>
         <header className={x.gv2Head}>
-          <span className={x.gv2Ico}>{SIG[key]}</span>
+          <MiniLogo k={key} size={48} />
           <div className={x.gv2Name}><b>{d.label}</b><small>{d.blurb}</small></div>
           <span className={`${x.gv2St} ${live ? x.gv2Live : ''}`}><i />{GAME_STATUS[st].label.toUpperCase()}</span>
         </header>
