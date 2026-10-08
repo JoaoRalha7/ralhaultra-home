@@ -524,7 +524,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
           <div className={x.gv2Name}><b>{d.label}</b><small>{d.blurb}</small></div>
           <span className={`${x.gv2St} ${live ? x.gv2Live : ''}`}><i />{GAME_STATUS[st].label.toUpperCase()}</span>
         </header>
-        <div className={x.gv2Count}><b>{g.count}</b></div>
+        <div className={x.gv2Count}><span>{key === 'pick' ? 'Picks' : 'Guesses'}</span><b>{g.count}</b></div>
         <div className={x.gboxBody}>{node}</div>
       </section>
     )
