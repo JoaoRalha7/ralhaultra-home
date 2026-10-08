@@ -95,3 +95,17 @@
 @media (max-width: 1100px) { .stage { min-height: 640px; } }
 
 .spot.has .lab2 { opacity: 0; }
+
+/* grouped inside bets: hot spots on the edges between number cells */
+.cell { position: relative; min-width: 0; }
+.cell > .spot { width: 100%; height: 100%; }
+.hot { position: absolute; z-index: 3; padding: 0; border: 0; border-radius: 6px; background: transparent; cursor: pointer; display: grid; place-items: center; }
+.hot:hover:not(:disabled) { background: rgba(255,255,255,.28); }
+.hot:disabled { cursor: default; }
+.hR { right: -9px; top: 18%; width: 13px; height: 64%; }
+.hB { bottom: -9px; left: 18%; height: 13px; width: 64%; }
+.hC { right: -10px; bottom: -10px; width: 15px; height: 15px; z-index: 4; }
+.hL { left: -9px; top: 18%; width: 13px; height: 64%; }
+.hLB { left: -10px; bottom: -10px; width: 15px; height: 15px; z-index: 4; }
+.mchip { position: relative; z-index: 5; pointer-events: none; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 999px; border: 2px dashed rgba(255,255,255,.75); background: #f59e0b; color: #fff; font: 800 10px "DM Sans", sans-serif; }
+.mchip.won { background: #22ff7a; color: #08130d; }

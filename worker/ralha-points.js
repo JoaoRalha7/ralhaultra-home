@@ -74,11 +74,23 @@ function plinkoTable(rows, risk = 'medium') {
 // European roulette (single zero). Payouts are total multiples of the stake (stake included).
 const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
 const REDS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
-const ROULETTE = { maxBets: 49, opposite: { red: 'black', black: 'red', odd: 'even', even: 'odd', low: 'high', high: 'low' }, payouts: { straight: 36, red: 2, black: 2, odd: 2, even: 2, low: 2, high: 2, dozen: 3, column: 3 } }
+const ROULETTE = { maxBets: 100, opposite: { red: 'black', black: 'red', odd: 'even', even: 'odd', low: 'high', high: 'low' }, payouts: { straight: 36, red: 2, black: 2, odd: 2, even: 2, low: 2, high: 2, dozen: 3, column: 3, multi: 0 } }
+// legal grouped inside bets, keyed by their sorted numbers: splits, streets/trios, corners/first four, double streets
+const MULTI = (() => {
+  const S = new Set(), add = (a) => S.add(a.slice().sort((x, y) => x - y).join('-'))
+  for (let n = 1; n <= 36; n++) { if (n % 3 !== 0) add([n, n + 1]); if (n <= 33) add([n, n + 3]) }
+  for (const z of [1, 2, 3]) add([0, z])
+  for (let k = 0; k < 12; k++) add([3 * k + 1, 3 * k + 2, 3 * k + 3])
+  add([0, 1, 2]); add([0, 2, 3]); add([0, 1, 2, 3])
+  for (let n = 1; n <= 32; n++) if (n % 3 !== 0) add([n, n + 1, n + 3, n + 4])
+  for (let k = 0; k < 11; k++) add([3 * k + 1, 3 * k + 2, 3 * k + 3, 3 * k + 4, 3 * k + 5, 3 * k + 6])
+  return S
+})()
 const rColor = (n) => (n === 0 ? 'green' : REDS.includes(n) ? 'red' : 'black')
 function rouletteMult(bet, n) {
   const { type, value } = bet
   let win = false
+  if (type === 'multi') { const nums = String(value).split('-').map(Number); return nums.includes(n) ? 36 / nums.length : 0 }
   if (type === 'straight') win = n === value
   else if (n === 0) win = false
   else if (type === 'red') win = rColor(n) === 'red'
@@ -94,6 +106,7 @@ function rouletteMult(bet, n) {
 function validBet(b) {
   if (!b || !(b.type in ROULETTE.payouts)) return false
   if (!Number.isInteger(b.amount) || b.amount <= 0) return false
+  if (b.type === 'multi') return typeof b.value === 'string' && MULTI.has(b.value)
   if (b.type === 'straight') return Number.isInteger(b.value) && b.value >= 0 && b.value <= 36
   if (b.type === 'dozen' || b.type === 'column') return Number.isInteger(b.value) && b.value >= 1 && b.value <= 3
   return true
@@ -882,7 +895,7 @@ export default {
         if (pathname === '/casino/start') {
           let rBets = null
           if (game === 'roulette') {
-            rBets = Array.isArray(body.bets) ? body.bets.map((b) => ({ type: b?.type, value: b?.value == null ? null : Number(b.value), amount: Number(b?.amount) })) : []
+            rBets = Array.isArray(body.bets) ? body.bets.map((b) => ({ type: b?.type, value: b?.value == null ? null : b?.type === 'multi' ? String(b.value) : Number(b.value), amount: Number(b?.amount) })) : []
             if (!rBets.length || rBets.length > ROULETTE.maxBets || !rBets.every((b) => validBet(b) && b.amount >= CASINO.minBet && b.amount <= CASINO.maxBet)) return json({ error: 'invalid bets' }, 400)
             if (rBets.some((b) => ROULETTE.opposite[b.type] && rBets.some((o) => o.type === ROULETTE.opposite[b.type])) || new Set(rBets.map((b) => b.type + ':' + b.value)).size !== rBets.length) return json({ error: 'invalid bets' }, 400) // no red+black / odd+even / low+high, no duplicate spots
             body.bet = rBets.reduce((a, b) => a + b.amount, 0)

@@ -79,6 +79,33 @@ function Spot({ c, t, v = null, cls = '', style, children }) {
   )
 }
 
+// a table cell for one number, plus the invisible hot spots on its right / bottom edges and corner (splits, streets, corners, lines)
+function Hot({ c, v, cls }) {
+  const a = c.amountAt('multi', v)
+  const win = c.res && c.res.bets?.some((b) => b.type === 'multi' && b.value === v) && c.res.payout > 0
+  return (
+    <button type="button" className={`${styles.hot} ${cls}`} disabled={c.locked} onClick={() => c.add('multi', v)} aria-label={`bet ${v}`}>
+      {a > 0 && <i className={`${styles.mchip} ${win ? styles.won : ''}`}>{short(a)}</i>}
+    </button>
+  )
+}
+const mkey = (...n) => n.sort((x, y) => x - y).join('-')
+function NumCell({ c, n, col, row, cls }) {
+  return (
+    <div className={styles.cell} style={{ gridColumn: col + 2, gridRow: row + 1 }}>
+      <Spot c={c} t="straight" v={n} cls={cls}>{n}</Spot>
+      {col < 11 && <Hot c={c} v={mkey(n, n + 3)} cls={styles.hR} />}
+      {row < 2 && <Hot c={c} v={mkey(n - 1, n)} cls={styles.hB} />}
+      {row < 2 && col < 11 && <Hot c={c} v={mkey(n - 1, n, n + 2, n + 3)} cls={styles.hC} />}
+      {row === 2 && <Hot c={c} v={mkey(n, n + 1, n + 2)} cls={styles.hB} />}
+      {row === 2 && col < 11 && <Hot c={c} v={mkey(n, n + 1, n + 2, n + 3, n + 4, n + 5)} cls={styles.hC} />}
+      {col === 0 && <Hot c={c} v={mkey(0, n)} cls={styles.hL} />}
+      {col === 0 && row < 2 && <Hot c={c} v={mkey(0, n - 1, n)} cls={styles.hLB} />}
+      {col === 0 && row === 2 && <Hot c={c} v={mkey(0, 1, 2, 3)} cls={styles.hLB} />}
+    </div>
+  )
+}
+
 export default function Roulette() {
   const g = useCasino('roulette')
   const [chip, setChip] = useState(100)
@@ -323,7 +350,7 @@ export default function Roulette() {
               {Array.from({ length: 36 }, (_, i) => {
                 const col = Math.floor(i / 3), row = i % 3 // row 0 is the top line: 3, 6, 9 ...
                 const n = col * 3 + (3 - row)
-                return <Spot c={ctx} key={n} t="straight" v={n} cls={`${styles[rColor(n)]} ${hitCls(n)}`} style={{ gridColumn: col + 2, gridRow: row + 1 }}>{n}</Spot>
+                return <NumCell c={ctx} key={n} n={n} col={col} row={row} cls={`${styles[rColor(n)]} ${hitCls(n)}`} />
               })}
               {[3, 2, 1].map((c, r) => <Spot c={ctx} key={c} t="column" v={c} cls={styles.out} style={{ gridColumn: 14, gridRow: r + 1 }}>2:1</Spot>)}
               {[1, 2, 3].map((d) => <Spot c={ctx} key={d} t="dozen" v={d} cls={styles.out} style={{ gridColumn: `${2 + (d - 1) * 4} / span 4`, gridRow: 4 }}>{d === 1 ? '1 to 12' : d === 2 ? '13 to 24' : '25 to 36'}</Spot>)}
