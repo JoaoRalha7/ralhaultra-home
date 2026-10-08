@@ -190,9 +190,9 @@ function DetailModal({ hunt, onClose }) {
             {entries.map((e, i) => {
               const bet = parseBet(e.bet)
               const multi = bet > 0 && e.payment != null ? parseBet(e.payment) / bet : null
-              const mc = multi === null ? '' : multi >= 100 ? styles.hxMGold : multi >= 1 ? styles.hxMGreen : styles.hxMRed
+              const mc = multi === null ? '' : multi >= 100 ? styles.hxMGreen : styles.hxMRed
               return (
-                <div key={e.id} className={`${styles.hxDRow} ${multi !== null && multi >= 1 ? styles.hxDRowWin : ''}`}>
+                <div key={e.id} className={`${styles.hxDRow} ${multi !== null && multi >= 100 ? styles.hxDRowWin : ''}`}>
                   <span className={styles.hxIdx}>#{i + 1}</span>
                   <img src={e.slot?.image_url || ''} alt="" onError={ev => ev.target.style.opacity = '.2'} />
                   <div className={styles.hxDName}>
@@ -870,8 +870,8 @@ function StatsPanel({ hunt, entries, mode, balanceEnd, onBalanceEndChange, onSav
 function SlotRow({ entry, index, mode, current, onUpdateBet, onUpdatePayment, onToggleSuper, onDelete }) {
   const bet = parseBet(entry.bet)
   const multi = bet > 0 && entry.payment != null && entry.opened ? parseBet(entry.payment) / bet : null
-  const won = multi !== null && multi >= 1
-  const mc = multi === null ? '' : multi >= 100 ? styles.hxMGold : multi >= 1 ? styles.hxMGreen : styles.hxMRed
+  const won = multi !== null && multi >= 100
+  const mc = multi === null ? '' : multi >= 100 ? styles.hxMGreen : styles.hxMRed
 
   return (
     <div className={`${styles.hxRow} ${won ? styles.hxRowWin : ''} ${current ? styles.hxRowCur : ''} ${mode === 'opening' && !entry.opened && !current ? styles.hxRowWait : ''}`}>
@@ -1946,9 +1946,7 @@ export default function DashHunt() {
             <h1>Bonus Hunt {hunt ? `#${hunt.id}` : ''}</h1>
             {hunt?.active && <span className={styles.hxLive}><i />Ativo</span>}
           </div>
-          <p>{mode === 'hunting'
-            ? 'Regista a aposta de cada slot antes de começar a abrir.'
-            : nextEntry ? `Regista o pagamento de cada bónus por ordem. Vai a seguir: ${nextEntry.slot?.name || '—'}.` : 'Todos os bónus foram abertos.'}</p>
+          {mode === 'hunting' && <p>Regista a aposta de cada slot antes de começar a abrir.</p>}
         </div>
         <div className={styles.hxActions}>
           <div className={styles.hxSeg}>
