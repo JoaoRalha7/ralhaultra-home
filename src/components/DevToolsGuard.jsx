@@ -18,12 +18,17 @@ export default function DevToolsGuard() {
     const probe = new Image()
     let probed = false
     Object.defineProperty(probe, 'id', { get() { probed = true; return '' } })
+    // sticky: once detected, the notice stays until the tools have been closed for ~5 seconds in a row
+    let clear = 0
     const check = () => {
       const wide = window.outerWidth - window.innerWidth > 200
       const tall = window.outerHeight - window.innerHeight > 220
       probed = false
       console.log('%c', probe) // eslint-disable-line no-console
-      setTimeout(() => setOpen(wide || tall || probed), 80)
+      setTimeout(() => {
+        if (wide || tall || probed) { clear = 0; setOpen(true) }
+        else if (++clear >= 5) setOpen(false)
+      }, 250)
     }
     const keys = (e) => {
       const k = e.key.toLowerCase()
