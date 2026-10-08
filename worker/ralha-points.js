@@ -1965,9 +1965,14 @@ export default {
           get(`crash_bets?username=eq.${name}&select=bet,cashed_at&limit=5000`),
         ])
         if (!bal[0] && !prof[0] && !games.length && !crash.length) return json({ error: 'not found' }, 404)
-        // real signup date (first login) comes from the auth user
-        let joinedAt = null
-        if (prof[0]?.id) { try { const ar = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${prof[0].id}`, { headers: sbHeaders }); if (ar.ok) joinedAt = (await ar.json())?.created_at || null } catch { /* optional */ } }
+        // real signup date (first login) comes from the auth user; if the profile name does not match, use the account that placed the bets
+        let joinedAt = null, pid = prof[0]?.id || null, pAvatar = prof[0]?.avatar_url || null
+        if (!pid) { const g1 = await get(`casino_games?username=eq.${name}&select=user_id&limit=1`); pid = g1[0]?.user_id || null }
+        if (!pid) { const g2 = await get(`crash_bets?username=eq.${name}&select=user_id&limit=1`); pid = g2[0]?.user_id || null }
+        if (pid) {
+          try { const ar = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${pid}`, { headers: sbHeaders }); if (ar.ok) joinedAt = (await ar.json())?.created_at || null } catch { /* optional */ }
+          if (!pAvatar) pAvatar = (await get(`profiles?id=eq.${pid}&select=avatar_url`))[0]?.avatar_url || null
+        }
         let wins = 0, losses = 0, wagered = 0, bestWin = 0, bestMult = 0
         const per = {}
         const add = (game, bet, pay) => {
@@ -2002,7 +2007,7 @@ export default {
         } catch { /* follow date is optional */ }
         const data = {
           ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt, followWhy,
-          joined: joinedAt, registered: !!prof[0] || games.length > 0 || crash.length > 0, avatar: prof[0]?.avatar_url || null,
+          joined: joinedAt, registered: !!pid || !!prof[0] || games.length > 0 || crash.length > 0, avatar: pAvatar || null,
           stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
         }
