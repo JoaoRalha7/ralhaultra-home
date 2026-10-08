@@ -1286,8 +1286,9 @@ export default {
               s.ins = take ? 'taken' : 'declined'
               const extra = take ? Math.floor(s.hands.reduce((a, h) => a + h.bet, 0) / 2) : 0
               if (take) { s.insStake = extra; s.sideStake = (s.sideStake || 0) + extra }
-              // no peek: the hole card stays face down, the insurance is settled when the round ends
               if (extra > 0) { const w2 = await withStake(s, extra); if (w2.err) return w2.err }
+              // the dealer peeks after the insurance answer: with a blackjack the round ends here, every hand is settled
+              if (isBJ(s.dealer)) { s.hands.forEach((h) => { h.done = true }); return finishRound(s) }
               return proceed(s)
             }
 
