@@ -79,7 +79,7 @@ function ProductSpin({ src, seed }) {
 }
 
 // ── Info modal: the full product description (the card only shows two lines) ─────
-function InfoModal({ product, onClose }) {
+function InfoModal({ product, onClose, label, canRedeem, onRedeem }) {
   useEffect(() => {
     const k = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', k)
@@ -89,8 +89,8 @@ function InfoModal({ product, onClose }) {
   return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} style={{ '--c': product.color || '#3b82f6' }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={product.name}>
-        <div className={styles.mMedia} style={{ aspectRatio: '16 / 7' }}>
-          {product.image_url ? <img src={product.image_url} alt="" style={{ objectFit: 'contain', padding: 10 }} /> : <span className={styles.initial}>{product.name?.[0]?.toUpperCase()}</span>}
+        <div className={styles.infoMedia}>
+          {product.image_url ? <img src={product.image_url} alt="" /> : <span className={styles.initial}>{product.name?.[0]?.toUpperCase()}</span>}
         </div>
         <div className={styles.mBody}>
           <div className={styles.infoTags}>
@@ -102,7 +102,8 @@ function InfoModal({ product, onClose }) {
           <div className={styles.infoPrice}><IconCoin size={18} /><b>{fmt(product.cost)}</b><span>pts</span></div>
         </div>
         <div className={styles.actions}>
-          <button className={styles.ghost} onClick={onClose} style={{ flex: 1 }}>Close</button>
+          <button className={styles.ghost} onClick={onClose}>Close</button>
+          <button className={styles.confirm} disabled={!canRedeem} onClick={() => { onClose(); onRedeem(product) }}>{label}</button>
         </div>
       </div>
     </div>,
@@ -147,7 +148,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
             <button type="button" className={styles.infoBtn} onClick={() => setInfo(true)} aria-label={`More about ${product.name}`} title="More info">i</button>
           </div>
         )}
-        {info && <InfoModal product={product} onClose={() => setInfo(false)} />}
+        {info && <InfoModal product={product} onClose={() => setInfo(false)} canRedeem={!disabled} onRedeem={onRedeem} label={outOfStock ? 'Sold out' : !loggedIn ? 'Log in to redeem' : canAfford ? 'Redeem' : 'Not enough points'} />}
 
         <div className={styles.foot}>
           <div className={styles.priceRow}>
