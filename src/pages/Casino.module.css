@@ -3,7 +3,7 @@
 .page[data-game="mines"] { --g1: #10b981; --g2: #6ee7b7; }
 .page[data-game="blackjack"] { --g1: #f5c542; --g2: #fde68a; }
 .page[data-game="crash"] { --g1: #22e07a; --g2: #86efac; }
-.page[data-game="keno"] { --g1: #ec4899; --g2: #f9a8d4; }
+.page[data-game="keno"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="plinko"] { --g1: #06b6d4; --g2: #67e8f9; }
 .page[data-game="roulette"] { --g1: #e11d48; --g2: #fda4af; }
 .page[data-game="jackpot"] { --g1: #f97316; --g2: #fdba74; }

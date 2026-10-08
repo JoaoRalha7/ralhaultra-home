@@ -1,27 +1,75 @@
 import { useEffect, useRef, useState } from 'react'
-import { BetPanel, Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
 import { KENO, KENO_RISK, kenoTable } from '../lib/keno'
-import styles from './Casino.module.css'
+import shared from './Casino.module.css'
+import styles from './Keno.module.css'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const num = (v) => Math.max(0, Number(v) || 0)
+const clampBet = (v) => Math.max(MIN_BET, Math.min(MAX_BET, Math.floor(Number(v)) || MIN_BET))
+const cap = (s) => s[0].toUpperCase() + s.slice(1)
+const xfmt = (m) => (m >= 100 ? Math.round(m).toLocaleString('en-US') : Number.isInteger(m) ? String(m) : m.toFixed(2)) + 'x'
+const Chev = ({ up }) => <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{up ? <path d="M6 15l6-6 6 6" /> : <path d="M6 9l6 6 6-6" />}</svg>
+
+function Money({ label, value, setValue, disabled }) {
+  return (
+    <div className={styles.fld}>
+      <span className={styles.lab}>{label}</span>
+      <div className={`${styles.money} ${disabled ? styles.off : ''}`}>
+        <i className={styles.coin} aria-hidden="true" />
+        <input type="number" inputMode="numeric" min={MIN_BET} value={value} disabled={disabled}
+          onChange={(e) => setValue(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
+          onBlur={() => setValue(clampBet(value))} />
+        <button type="button" disabled={disabled} onClick={() => setValue(clampBet((Number(value) || MIN_BET) / 2))}>1/2</button>
+        <button type="button" disabled={disabled} onClick={() => setValue(clampBet((Number(value) || MIN_BET) * 2))}>2x</button>
+      </div>
+    </div>
+  )
+}
+
+function RiskSelect({ value, setValue, disabled }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const off = (e) => { if (!box.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', off)
+    return () => document.removeEventListener('mousedown', off)
+  }, [open])
+  return (
+    <div className={styles.fld} ref={box}>
+      <span className={styles.lab}>Risk</span>
+      <button type="button" className={`${styles.sel} ${disabled ? styles.off : ''}`} disabled={disabled} onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}>
+        <b>{cap(value)}</b><Chev up={open} />
+      </button>
+      {open && (
+        <ul className={styles.list} role="listbox">
+          {Object.keys(KENO_RISK).map((k) => (
+            <li key={k} role="option" aria-selected={k === value} className={k === value ? styles.cur : ''} onClick={() => { setValue(k); setOpen(false) }}>{cap(k)}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 export default function Keno() {
   const g = useCasino('keno')
   const [bet, setBet] = useState(100)
   const [picks, setPicks] = useState([])
-  const [mode, setMode] = useState('manual')
+  const [tab, setTab] = useState('manual')
   const [risk, setRisk] = useState('classic')
-  const [turbo, setTurbo] = useState(false)
-  const [cfg, setCfg] = useState({ rounds: '10', stopProfit: '', stopLoss: '', onWin: '', onLoss: '' })
+  const [nBets, setNBets] = useState(0)
+  const [adv, setAdv] = useState(false)
+  const [cfg, setCfg] = useState({ stopProfit: '', stopLoss: '', onWin: '', onLoss: '' })
   const [view, setView] = useState(null) // { res, shown }
   const [auto, setAuto] = useState(false)
-  const [stat, setStat] = useState({ n: 0, net: 0 })
   const [playing, setPlaying] = useState(false)
+  const shaking = useFlag(g.shake)
 
   // latest values for the async loops
   const R = useRef({})
-  R.current = { bet, picks, turbo, cfg, risk }
+  R.current = { bet, picks, cfg, risk, nBets }
   const stop = useRef(false)
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false; stop.current = true } }, [])
@@ -30,7 +78,11 @@ export default function Keno() {
   const table = picks.length ? kenoTable(picks.length, risk) : []
   const res = view?.res
   const done = !!res && view.shown >= KENO.draw
-  const drawnSet = new Set(res ? res.draw.slice(0, view.shown) : [])
+  const drawn = res ? res.draw.slice(0, view.shown) : []
+  const drawnSet = new Set(drawn)
+  const pickSet = new Set(res ? res.picks : picks)
+  const hitsNow = drawn.filter((n) => pickSet.has(n)).length
+  const won = done && res.payout > res.bet
 
   const toggle = (n) => {
     if (locked) return
@@ -48,20 +100,17 @@ export default function Keno() {
 
   // one round: server settles instantly, the client only animates the reveal
   const playRound = async (stake) => {
-    const { picks: pk, turbo: tb, risk: rk } = R.current
+    const { picks: pk, risk: rk } = R.current
     setPlaying(true); setView(null)
-    g.quiet.current = tb; g.hold.current = true
+    g.hold.current = true
     const data = await g.start({ bet: stake, picks: pk, risk: rk })
     if (!data?.state || data.state.game !== 'keno') { g.release(); setPlaying(false); return null }
     const s = data.state
-    if (tb) { setView({ res: s, shown: KENO.draw }) }
-    else {
-      for (let i = 1; i <= KENO.draw; i++) {
-        if (!alive.current) return s
-        setView({ res: s, shown: i })
-        playSfx(pk.includes(s.draw[i - 1]) ? 'gem' : 'click')
-        await sleep(i === KENO.draw ? 260 : 120)
-      }
+    for (let i = 1; i <= KENO.draw; i++) {
+      if (!alive.current) return s
+      setView({ res: s, shown: i })
+      playSfx(pk.includes(s.draw[i - 1]) ? 'gem' : 'click')
+      await sleep(i === KENO.draw ? 260 : 120)
     }
     g.release()
     setPlaying(false)
@@ -70,125 +119,124 @@ export default function Keno() {
 
   const playOnce = async () => {
     if (locked || !picks.length || Number(bet) < MIN_BET) return
-    await playRound(Number(bet))
+    await playRound(clampBet(bet))
   }
 
   const runAuto = async () => {
     if (locked || !picks.length || Number(bet) < MIN_BET) return
-    stop.current = false; setAuto(true); setStat({ n: 0, net: 0 })
-    const base = Number(bet)
+    stop.current = false; setAuto(true)
+    const base = clampBet(bet)
     let cur = base, n = 0, net = 0
     while (!stop.current && alive.current) {
       const c = R.current.cfg
-      const max = Math.floor(num(c.rounds))
+      const max = Math.floor(num(R.current.nBets))
       if (max && n >= max) break
       const s = await playRound(cur)
       if (!s) break
       n++; net += s.payout - s.bet
-      setStat({ n, net })
       const profit = s.payout - s.bet
       if (num(c.stopProfit) && net >= num(c.stopProfit)) break
       if (num(c.stopLoss) && -net >= num(c.stopLoss)) break
       const pct = profit > 0 ? num(c.onWin) : num(c.onLoss)
       cur = pct ? Math.min(MAX_BET, Math.max(MIN_BET, Math.round(cur * (1 + pct / 100)))) : base
-      await sleep(R.current.turbo ? 90 : 650)
+      await sleep(650)
     }
-    g.quiet.current = false
     if (alive.current) { setAuto(false); setPlaying(false) }
   }
 
-  const won = done && res.payout > res.bet
-  const profit = done ? res.payout - res.bet : 0
   const setC = (k) => (e) => setCfg((c) => ({ ...c, [k]: e.target.value }))
-  const disabledStart = g.busy || !g.user || !picks.length || Number(bet) < MIN_BET
+  const canGo = !g.busy && !!g.user && picks.length > 0 && Number(bet) >= MIN_BET && !playing
+  const switchTab = (t) => { if (!locked) setTab(t) }
 
   return (
-    <Page game="keno" title="Keno" sub="Pick up to 10 numbers. The house draws 10 of 40. The more you match, the more you win.">
-      <div className={styles.layout}>
-        <BetPanel points={g.points} bet={bet} setBet={setBet} locked={locked} loggedIn={!!g.user}>
-          <div className={styles.seg} role="tablist">
-            <button type="button" role="tab" aria-selected={mode === 'manual'} className={mode === 'manual' ? styles.on : ''} disabled={auto} onClick={() => setMode('manual')}>Manual</button>
-            <button type="button" role="tab" aria-selected={mode === 'auto'} className={mode === 'auto' ? styles.on : ''} disabled={auto} onClick={() => setMode('auto')}>Auto</button>
+    <Page game="keno" title="Keno" sub="">
+      <div className={shared.layout}>
+        <aside className={`${shared.panel} ${styles.panel}`}>
+          <div className={styles.tabs} role="tablist">
+            <button type="button" role="tab" aria-selected={tab === 'manual'} disabled={locked} className={tab === 'manual' ? styles.on : ''} onClick={() => switchTab('manual')}>Manual</button>
+            <button type="button" role="tab" aria-selected={tab === 'auto'} disabled={locked} className={tab === 'auto' ? styles.on : ''} onClick={() => switchTab('auto')}>Auto</button>
           </div>
+          <Money label="Bet Amount" value={bet} setValue={setBet} disabled={locked} />
+          <RiskSelect value={risk} setValue={(k) => { setRisk(k); setView(null) }} disabled={locked} />
 
-          <span className={styles.lbl}>Risk</span>
-          <div className={`${styles.quick} ${styles.riskRow}`}>
-            {Object.keys(KENO_RISK).map((k) => (
-              <button key={k} type="button" disabled={locked} className={risk === k ? styles.on : ''} onClick={() => { setRisk(k); setView(null) }}>{k[0].toUpperCase() + k.slice(1)}</button>
-            ))}
-          </div>
-
-          {mode === 'auto' && (
+          {tab === 'auto' && (
             <>
-              <div className={styles.kRow}>
-                <label>Rounds (0 = endless)<input type="number" min="0" inputMode="numeric" value={cfg.rounds} disabled={auto} onChange={setC('rounds')} /></label>
-                <label>Stop on profit<input type="number" min="0" inputMode="numeric" placeholder="off" value={cfg.stopProfit} disabled={auto} onChange={setC('stopProfit')} /></label>
-                <label>On win, bet +%<input type="number" min="0" inputMode="numeric" placeholder="reset" value={cfg.onWin} disabled={auto} onChange={setC('onWin')} /></label>
-                <label>On loss, bet +%<input type="number" min="0" inputMode="numeric" placeholder="reset" value={cfg.onLoss} disabled={auto} onChange={setC('onLoss')} /></label>
+              <div className={styles.fld}>
+                <span className={styles.lab}>Number of Bets</span>
+                <div className={`${styles.money} ${auto ? styles.off : ''}`}>
+                  <input type="number" inputMode="numeric" min="0" value={nBets} disabled={auto} onChange={(e) => setNBets(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))} />
+                  <span className={styles.inf} aria-hidden="true">&infin;</span>
+                </div>
               </div>
-              <div className={styles.kRow} style={{ gridTemplateColumns: '1fr' }}>
-                <label>Stop on loss<input type="number" min="0" inputMode="numeric" placeholder="off" value={cfg.stopLoss} disabled={auto} onChange={setC('stopLoss')} /></label>
-              </div>
+              <button type="button" className={styles.advRow} onClick={() => setAdv((v) => !v)} aria-pressed={adv}>
+                <span>Advanced Settings</span><i className={adv ? styles.swOn : ''} />
+              </button>
+              {adv && (
+                <>
+                  {[['Stop on Profit', 'stopProfit'], ['Stop on Loss', 'stopLoss']].map(([l, k]) => (
+                    <div key={k} className={styles.fld}><span className={styles.lab}>{l}</span><div className={styles.money}><i className={styles.coin} /><input type="number" min="0" value={cfg[k]} disabled={auto} onChange={setC(k)} /></div></div>
+                  ))}
+                  {[['On Win, Increase Bet by %', 'onWin'], ['On Loss, Increase Bet by %', 'onLoss']].map(([l, k]) => (
+                    <div key={k} className={styles.fld}><span className={styles.lab}>{l}</span><div className={styles.money}><input type="number" min="0" placeholder="Reset" value={cfg[k]} disabled={auto} onChange={setC(k)} /><span className={styles.inf}>%</span></div></div>
+                  ))}
+                </>
+              )}
             </>
           )}
 
-          <button type="button" className={`${styles.turbo} ${turbo ? styles.on : ''}`} aria-pressed={turbo} onClick={() => setTurbo((t) => !t)}>
-            <span>Turbo<small>No draw animation or sound</small></span><i />
-          </button>
-
-          {auto && (
-            <div className={styles.autoStat}>
-              <span>Round {stat.n}</span>
-              <span className={stat.net >= 0 ? styles.pos : styles.neg}>{stat.net >= 0 ? '+' : '-'}{fmt(Math.abs(stat.net))} pts</span>
-            </div>
-          )}
-
+          <div className={styles.twoBtn}>
+            <button type="button" className={styles.ghost} disabled={locked} onClick={randomPick}>Random</button>
+            <button type="button" className={styles.ghost} disabled={locked || !picks.length} onClick={clear}>Clear</button>
+          </div>
+          <div className={styles.grow} />
           {auto ? (
-            <button type="button" className={styles.ctaAlt} onClick={() => { stop.current = true }}>Stop auto</button>
-          ) : mode === 'auto' ? (
-            <button type="button" className={styles.cta} disabled={disabledStart || playing} onClick={runAuto}>{g.user ? 'Start auto bet' : 'Log in to play'}</button>
+            <button type="button" className={styles.go} onClick={() => { stop.current = true }}>Stop Autobet</button>
+          ) : tab === 'auto' ? (
+            <button type="button" className={styles.go} disabled={!canGo} onClick={runAuto}>{g.user ? 'Start Autobet' : 'Log in to play'}</button>
           ) : (
-            <button type="button" className={styles.cta} disabled={disabledStart || playing} onClick={playOnce}>
-              {!g.user ? 'Log in to play' : !picks.length ? 'Pick your numbers' : 'Bet'}
-            </button>
+            <button type="button" className={styles.go} disabled={!canGo} onClick={playOnce}>{g.user ? 'Place Bet' : 'Log in to play'}</button>
           )}
           {g.err && <p className={styles.err}>{g.err}</p>}
-          <p className={styles.note}>Payouts are fixed by the odds of your pick count (about 99% return, 1000x max). Higher risk pays less on low hits and far more on high hits. Autobet stops on its own if you run out of points or hit an error.</p>
-        </BetPanel>
+        </aside>
 
-        <section className={styles.stage}>
-          <HistoryStrip items={g.history} />
-          <div className={styles.ribbon}>
-            <div><small>Picks</small><b>{picks.length}/{KENO.max}</b></div>
-            <div><small>Hits</small><b>{done ? `${res.hits}/${res.picks.length}` : '-'}</b></div>
-            <div><small>Multiplier</small><b>{done ? `${res.mult.toFixed(2)}x` : '-'}</b></div>
-            <div className={won ? styles.ribGold : ''}><small>Profit</small><b>{done ? `${profit >= 0 ? '+' : '-'}${fmt(Math.abs(profit))}` : '-'}</b></div>
+        <section className={`${styles.stage} ${shaking ? shared.shake : ''}`}>
+          <div className={styles.histWrap}><HistoryStrip items={g.history} /></div>
+          <div className={styles.board}>
+            <div className={styles.grid}>
+              {Array.from({ length: KENO.size }, (_, i) => {
+                const n = i + 1
+                const sel = pickSet.has(n), isDrawn = drawnSet.has(n)
+                const hit = sel && isDrawn, miss = !sel && isDrawn
+                return (
+                  <button key={n} type="button" disabled={locked} onClick={() => toggle(n)} aria-pressed={sel}
+                    className={`${styles.tile} ${sel ? styles.tSel : ''} ${hit ? styles.tHit : ''} ${miss ? styles.tMiss : ''}`}>
+                    {hit ? <span className={styles.oct}>{n}</span> : n}
+                  </button>
+                )
+              })}
+            </div>
+            {won && (
+              <div className={styles.pop} role="status" key={res.id}>
+                <b>{res.mult.toFixed(2)}&times;</b>
+                <hr />
+                <span><i className={styles.coin} />{fmt(res.payout)}</span>
+              </div>
+            )}
           </div>
 
-          <div className={styles.kenoGrid}>
-            {Array.from({ length: KENO.size }, (_, i) => {
-              const n = i + 1
-              const sel = picks.includes(n), drawn = drawnSet.has(n)
-              return (
-                <button key={n} type="button" disabled={locked} onClick={() => toggle(n)} aria-pressed={sel}
-                  className={`${styles.kn} ${sel ? styles.sel : ''} ${drawn ? styles.drawn : ''} ${sel && drawn ? styles.hit : ''}`}>{n}</button>
-              )
-            })}
-          </div>
-
-          <div className={styles.kenoTools}>
-            <button type="button" disabled={locked} onClick={randomPick}>Random pick</button>
-            <button type="button" disabled={locked || !picks.length} onClick={clear}>Clear</button>
-          </div>
-
-          {picks.length > 0 && (
-            <div className={styles.payRow} aria-label="Paytable">
-              {table.map((m, h) => (
-                <span key={h} className={done && res.hits === h ? styles.cur : ''}><small>{h} hit{h === 1 ? '' : 's'}</small>{m ? `${m.toFixed(2)}x` : '0x'}</span>
+          {picks.length > 0 || res ? (
+            <div className={styles.pay} style={{ gridTemplateColumns: `repeat(${table.length || 1}, 1fr)` }} aria-label="Paytable">
+              {(res ? kenoTable(res.picks.length, res.risk || risk) : table).map((m, h) => (
+                <div key={h} className={h === hitsNow ? styles.cur : ''}>
+                  <span className={h <= hitsNow ? styles.live : ''}><i />{h}</span>
+                  {xfmt(m || 0)}
+                </div>
               ))}
             </div>
+          ) : (
+            <div className={styles.hint}>Select 1-10 numbers to play</div>
           )}
-          <Confetti fire={g.fire} colors={['#ec4899', '#f9a8d4', '#34d399', '#f5c542', '#fff']} />
+          <Confetti fire={g.fire} colors={['#34d399', '#6ee7b7', '#22d3ee', '#f5c542', '#fff']} />
         </section>
       </div>
     </Page>
