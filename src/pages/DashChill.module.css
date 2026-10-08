@@ -144,3 +144,20 @@
 .spinner { width: 24px; height: 24px; }
 .spinnerSm { width: 20px; height: 20px; border-width: 2px; border-top-color: #fff; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* picker: neutral dark, keyboard friendly */
+.modalOverlay { background: rgba(0,0,0,.7); }
+.modalBox { background: #0d0f14; border: 1px solid #1c1f27; border-radius: 22px; width: min(600px, 92vw); max-height: 78vh; box-shadow: 0 30px 80px rgba(0,0,0,.8); backdrop-filter: none; }
+.modalSearch { padding: 16px 20px; background: #08090c; border-bottom: 1px solid #1c1f27; }
+.modalInput { font-size: 16px; font-weight: 600; }
+.pickerList { padding: 8px; }
+.pickerLabel { padding: 8px 12px 6px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #7b8190; }
+.pickerItem { padding: 8px 12px; border-radius: 12px; border-bottom: 0; gap: 14px; }
+.pickerItem:hover { background: transparent; }
+.pickerItemOn, .pickerItemOn:hover { background: #171a21; }
+.pickerItemName { font-size: 15px; }
+.pickerItemMeta { gap: 10px; align-items: center; }
+.volTag { color: #c9ced9; background: #1c1f27; padding: 1px 7px; }
+.hl { background: none; color: #fff; text-decoration: underline; text-decoration-color: #f5c542; text-underline-offset: 3px; }
+.pickerFoot { display: flex; gap: 16px; padding: 10px 20px; border-top: 1px solid #1c1f27; font-size: 11px; color: #5a6070; }
+.modalInput:focus, .modalInput:focus-visible { outline: none; box-shadow: none; }

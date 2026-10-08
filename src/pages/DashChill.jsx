@@ -39,28 +39,94 @@ function SlotImg({ slot, size = 36, radius = 16, fullCover = false }) {
 }
 
 // ── SlotPicker Modal ───────────────────────────────────────
+const norm = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const clean = (t) => t.replace(/[%_,()*\\]/g, ' ').trim()
+
+function rank(slot, tokens) {
+  const n = norm(slot.name)
+  const full = tokens.join(' ')
+  if (n === full) return 0
+  if (n.startsWith(full)) return 1
+  if (n.startsWith(tokens[0])) return 2
+  if (n.split(/\s+/).some(w => w.startsWith(tokens[0]))) return 3
+  return 4
+}
+
+function Mark({ text, tokens }) {
+  if (!tokens.length) return text
+  const re = new RegExp(`(${tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'ig')
+  return text.split(re).map((part, i) => (i % 2 ? <mark key={i} className={styles.hl}>{part}</mark> : part))
+}
+
 function SlotPicker({ onSelect, onClose }) {
   const [q, setQ]             = useState('')
   const [results, setResults] = useState([])
+  const [recent, setRecent]   = useState([])
   const [loading, setLoading] = useState(false)
+  const [cursor, setCursor]   = useState(0)
   const timer    = useRef(null)
   const inputRef = useRef(null)
+  const listRef  = useRef(null)
+  const seq      = useRef(0)
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 60) }, [])
 
+  // slots usados mais recentemente no Chill, para escolher sem escrever
+  useEffect(() => {
+    let live = true
+    supabaseDash.from('bonus_entries')
+      .select('created_at, slot:slots(id,name,provider,image_url,volatility,rtp)')
+      .not('slot_id', 'is', null).order('created_at', { ascending: false }).limit(60)
+      .then(({ data }) => {
+        if (!live) return
+        const seen = new Set(); const out = []
+        for (const e of data || []) {
+          if (e.slot && !seen.has(e.slot.id)) { seen.add(e.slot.id); out.push(e.slot) }
+          if (out.length >= 8) break
+        }
+        setRecent(out)
+      })
+    return () => { live = false }
+  }, [])
+
+  const tokens = useMemo(() => norm(clean(q)).split(/\s+/).filter(Boolean), [q])
+
   const search = (term) => {
     setQ(term)
+    setCursor(0)
     clearTimeout(timer.current)
-    if (!term.trim()) { setResults([]); return }
+    const toks = clean(term).split(/\s+/).filter(Boolean)
+    if (!toks.length) { setResults([]); setLoading(false); return }
+    setLoading(true)
     timer.current = setTimeout(async () => {
-      setLoading(true)
-      const { data } = await supabaseDash.from('slots')
-        .select('id,name,provider,image_url,volatility,rtp')
-        .or(`name.ilike.%${term}%,provider.ilike.%${term}%`)
-        .order('name').limit(20)
-      setResults(data || [])
+      const my = ++seq.current
+      let byName = supabaseDash.from('slots').select('id,name,provider,image_url,volatility,rtp')
+      toks.forEach(t => { byName = byName.ilike('name', `%${t}%`) })
+      const byProv = supabaseDash.from('slots').select('id,name,provider,image_url,volatility,rtp')
+        .ilike('provider', `%${toks.join(' ')}%`).order('name').limit(12)
+      const [{ data: a }, { data: b }] = await Promise.all([byName.limit(40), byProv])
+      if (my !== seq.current) return
+      const map = new Map()
+      ;[...(a || []), ...(b || [])].forEach(x => map.set(x.id, x))
+      const nt = toks.map(norm)
+      const list = [...map.values()].sort((x, y) => rank(x, nt) - rank(y, nt) || x.name.localeCompare(y.name)).slice(0, 30)
+      setResults(list)
       setLoading(false)
-    }, 250)
+    }, 160)
+  }
+
+  const items = q.trim() ? results : recent
+
+  useEffect(() => {
+    listRef.current?.querySelector('[data-on="1"]')?.scrollIntoView({ block: 'nearest' })
+  }, [cursor, items])
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') { onClose(); return }
+    if (!items.length) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setCursor(c => Math.min(c + 1, items.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); onSelect(items[cursor] || items[0]) }
   }
 
   return (
@@ -69,26 +135,30 @@ function SlotPicker({ onSelect, onClose }) {
         <div className={styles.modalSearch}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{color: 'rgba(255,255,255,0.4)'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input ref={inputRef} className={styles.modalInput} value={q}
-            onChange={e => search(e.target.value)} placeholder="Procurar jogo..." />
-          {q && <button className={styles.modalClear} onClick={() => { setQ(''); setResults([]) }}>✕</button>}
+            onChange={e => search(e.target.value)} onKeyDown={onKey} placeholder="Procurar jogo ou provider..." />
+          {q && <button type="button" className={styles.modalClear} aria-label="Limpar" onClick={() => { setQ(''); setResults([]); inputRef.current?.focus() }}>✕</button>}
         </div>
-        <div className={styles.pickerList}>
-          {!q && <div className={styles.pickerHint}>Escreve o nome da slot ou provider</div>}
-          {loading && <div className={styles.pickerHint}>A procurar...</div>}
-          {!loading && q && results.length === 0 && <div className={styles.pickerHint}>Sem resultados</div>}
-          {results.map(s => (
-            <div key={s.id} className={styles.pickerItem} onClick={() => onSelect(s)}>
-              <SlotImg slot={s} size={48} radius={12} />
+        <div className={styles.pickerList} ref={listRef}>
+          {!q.trim() && <div className={styles.pickerLabel}>{recent.length ? 'Usados recentemente' : 'Escreve o nome do jogo ou do provider'}</div>}
+          {q.trim() && loading && !results.length && <div className={styles.pickerHint}>A procurar...</div>}
+          {q.trim() && !loading && results.length === 0 && <div className={styles.pickerHint}>Sem resultados para "{q.trim()}"</div>}
+          {items.map((s, i) => (
+            <div key={s.id} data-on={i === cursor ? '1' : undefined}
+              className={`${styles.pickerItem} ${i === cursor ? styles.pickerItemOn : ''}`}
+              onMouseMove={() => i !== cursor && setCursor(i)} onClick={() => onSelect(s)}>
+              <SlotImg slot={s} size={40} radius={8} />
               <div className={styles.pickerItemInfo}>
-                <div className={styles.pickerItemName}>{s.name}</div>
+                <div className={styles.pickerItemName}><Mark text={s.name} tokens={tokens} /></div>
                 <div className={styles.pickerItemMeta}>
                   <span className={styles.provTag}>{s.provider}</span>
+                  {s.rtp && <span>RTP {s.rtp}%</span>}
                   {s.volatility && <span className={styles.volTag}>{s.volatility}</span>}
                 </div>
               </div>
             </div>
           ))}
         </div>
+        <div className={styles.pickerFoot}><span>↑ ↓ navegar</span><span>Enter escolher</span><span>Esc fechar</span></div>
       </div>
     </div>
   )
