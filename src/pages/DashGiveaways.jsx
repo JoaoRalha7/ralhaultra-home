@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import DashVouchers from './DashVouchers'
 import styles from './DashGiveaways.module.css'
 
 const EMPTY = { prize: '', title: '', description: '', kind: 'giveaway', ends_at: '', image_url: '', ticket_cost: '0', max_tickets: '' }
@@ -119,6 +120,7 @@ export default function DashGiveaways() {
   const [entries, setEntries] = useState([])
   const [f, setF] = useState(EMPTY)
   const [tab, setTab] = useState('active')
+  const [section, setSection] = useState('giveaways')
   const [dur, setDur] = useState(null)
   const [msg, setMsg] = useState(null)
   const [, tick] = useState(0)
@@ -198,6 +200,13 @@ export default function DashGiveaways() {
   }, [active, entries, list])
 
   const shown = tab === 'active' ? active : done
+  const switcher = (
+    <div className={styles.tabs}>
+      <button type="button" className={section === 'giveaways' ? styles.tabOn : ''} onClick={() => setSection('giveaways')}>Giveaways</button>
+      <button type="button" className={section === 'vouchers' ? styles.tabOn : ''} onClick={() => setSection('vouchers')}>Vouchers</button>
+    </div>
+  )
+  if (section === 'vouchers') return <DashVouchers switcher={switcher} />
 
   return (
     <div className={styles.page}>
@@ -205,6 +214,7 @@ export default function DashGiveaways() {
         <h1 className={styles.title}>Giveaways</h1>
         <p className={styles.sub}>Cria e gere os sorteios da página pública. Os bilhetes são pagos com pontos.</p>
       </div>
+      {switcher}
 
       <div className={styles.stats}>
         <div className={styles.stat}><small>Ativos</small><b>{active.length}</b></div>

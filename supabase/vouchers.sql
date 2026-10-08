@@ -47,3 +47,12 @@ $$;
 revoke all on function public.redeem_voucher(text, text) from public, anon, authenticated;
 
 -- Example (create a code):  insert into vouchers (code, points, max_uses) values ('WELCOME', 2000, 100);
+
+-- Dashboard access: only the streamer can manage vouchers (same admin id as giveaways).
+drop policy if exists "vouchers admin" on public.vouchers;
+create policy "vouchers admin" on public.vouchers for all
+  using (auth.uid() = '13878854-d588-4c49-ad36-1428920902bd')
+  with check (auth.uid() = '13878854-d588-4c49-ad36-1428920902bd');
+drop policy if exists "voucher redemptions admin read" on public.voucher_redemptions;
+create policy "voucher redemptions admin read" on public.voucher_redemptions for select
+  using (auth.uid() = '13878854-d588-4c49-ad36-1428920902bd');
