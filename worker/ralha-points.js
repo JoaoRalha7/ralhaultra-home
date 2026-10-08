@@ -164,6 +164,7 @@ function validBet(b) {
   return true
 }
 
+const PLAYER_CACHE = new Map()
 const _u32 = new Uint32Array(1)
 function rndInt(n) { // unbiased integer in [0, n)
   const lim = Math.floor(0x100000000 / n) * n
@@ -1882,6 +1883,43 @@ export default {
         for (const a of acts) counts[a.kind]++
         const list = acts.filter((a) => kind === 'all' || a.kind === kind).sort((a, b) => (a.at < b.at ? 1 : -1))
         return json({ stats: { bets: games.length + crash.length, wins, losses }, counts, total: list.length, page, items: list.slice((page - 1) * 8, page * 8) })
+      }
+
+      // ── GET /player?u=name — public player card (originals stats only; never balance or private data) ──
+      if (pathname === '/player' && request.method === 'GET') {
+        const name = (searchParams.get('u') || '').toLowerCase().trim().replace(/^@/, '')
+        if (!/^[a-z0-9_]{1,30}$/.test(name)) return json({ error: 'bad name' }, 400)
+        const ck = PLAYER_CACHE.get(name)
+        if (ck && Date.now() - ck.at < 20000) return json(ck.data)
+        const get = async (q) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${q}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
+        const [bal, prof, games, crash] = await Promise.all([
+          get(`point_balances?username=eq.${name}&select=level,created_at,wagered_total&limit=1`),
+          get(`profiles?twitch_username=ilike.${name}&select=avatar_url,created_at&limit=1`),
+          get(`casino_games?username=eq.${name}&status=eq.done&select=game,bet,payout&limit=10000`),
+          get(`crash_bets?username=eq.${name}&select=bet,cashed_at&limit=5000`),
+        ])
+        if (!bal[0] && !prof[0] && !games.length && !crash.length) return json({ error: 'not found' }, 404)
+        let wins = 0, losses = 0, wagered = 0, bestWin = 0, bestMult = 0
+        const per = {}
+        const add = (game, bet, pay) => {
+          wagered += bet
+          if (pay > bet) wins++; else losses++
+          if (pay - bet > bestWin) bestWin = pay - bet
+          if (bet > 0 && pay / bet > bestMult) bestMult = pay / bet
+          const g = per[game] || (per[game] = { game, bets: 0, wagered: 0, profit: 0 })
+          g.bets++; g.wagered += bet; g.profit += pay - bet
+        }
+        for (const g of games) add(g.game, Number(g.bet) || 0, Number(g.payout) || 0)
+        for (const c of crash) { const bet = Number(c.bet) || 0; add('crash', bet, c.cashed_at ? Math.floor(bet * Number(c.cashed_at)) : 0) }
+        const data = {
+          ok: true, username: name, level: Number(bal[0]?.level) || 0,
+          joined: prof[0]?.created_at || bal[0]?.created_at || null, avatar: prof[0]?.avatar_url || null,
+          stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
+          games: Object.values(per).sort((a, b) => b.bets - a.bets),
+        }
+        if (PLAYER_CACHE.size > 300) PLAYER_CACHE.clear()
+        PLAYER_CACHE.set(name, { at: Date.now(), data })
+        return json(data)
       }
 
       // ── GET /ranks?u=a,b,c — VIP level of up to 60 usernames (public, for the feeds) ──

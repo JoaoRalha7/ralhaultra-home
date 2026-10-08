@@ -1,3 +1,4 @@
+import { PlayerModalHost, openPlayer } from './PlayerModal';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Icon, IconSprite } from './Icon';
@@ -204,8 +205,10 @@ export default function Layout() {
   };
 
   const onSearch = (e) => {
-    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-      navigate(`/slots?q=${encodeURIComponent(e.currentTarget.value.trim())}`);
+    const v = e.currentTarget.value.trim();
+    if (e.key === 'Enter' && v) {
+      if (v.startsWith('@')) { openPlayer(v); e.currentTarget.value = ''; return; }   // @name opens the player profile
+      navigate(`/slots?q=${encodeURIComponent(v)}`);
     }
   };
 
@@ -214,6 +217,7 @@ export default function Layout() {
   return (
     <>
       <IconSprite />
+      <PlayerModalHost />
       <AgeVerification onVerified={() => setAgeOk(true)} />
       <div className={`app${open ? '' : ' collapsed'}`}>
         <header className="top">
@@ -223,7 +227,7 @@ export default function Layout() {
           <Link className="logo" to="/">Ralha<b>Ultra</b><span className="beta">BETA</span></Link>
           <label className="search">
             <Icon name="search" />
-            <input placeholder="Search slots..." aria-label="Search slots" onKeyDown={onSearch} />
+            <input placeholder="Search slots or @player..." aria-label="Search slots or players (type @ before a username)" onKeyDown={onSearch} />
           </label>
           <div className="sp" />
           {points !== null && <div className="pts"><span className="coin" />{points.toLocaleString('pt-PT')}</div>}

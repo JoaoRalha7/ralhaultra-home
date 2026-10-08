@@ -5,6 +5,7 @@ import { WORKER, workerPost } from '../lib/points'
 import RankName from './RankName'
 import { useRanks } from '../lib/ranks'
 import BetModal from './BetModal'
+import { openPlayer } from './PlayerModal'
 import styles from './OriginalsBets.module.css'
 
 const TABS = [
@@ -107,7 +108,7 @@ export default function OriginalsBets() {
           return (
             <div key={rowKey(b)} className={`${styles.row}${fresh.has(rowKey(b)) ? ` ${styles.fresh}` : ''}`} role="row" onClick={b.id ? () => openRound(b) : undefined} style={b.id ? { cursor: 'pointer' } : undefined}>
               <span className={styles.game}><Icon name={g[1]} size={16} />{g[0]}</span>
-              <RankName className={styles.user} name={b.username} level={rankOf(b.username)} />
+              <span className={styles.userLink} onClick={(e) => { e.stopPropagation(); openPlayer(b.username) }}><RankName className={styles.user} name={b.username} level={rankOf(b.username)} /></span>
               <span className={`${styles.date} ${styles.mute}`}>{when(b.updated_at)}</span>
               <span className={styles.r}>{fmt(b.bet)} <i className="coin" /></span>
               <span className={`${styles.r} ${styles.mul} ${styles.mute}`}>{mult(b.bet, b.payout)}</span>

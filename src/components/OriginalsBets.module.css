@@ -29,3 +29,6 @@
 @keyframes rowIn{from{opacity:0;transform:translateY(-14px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes rowGlow{0%{background:rgba(52,211,153,.22)}100%{background:transparent}}
 @media (prefers-reduced-motion:reduce){.fresh{animation:none}}
+
+.userLink{cursor:pointer;min-width:0;overflow:hidden}
+.userLink:hover{text-decoration:underline;text-underline-offset:3px}
