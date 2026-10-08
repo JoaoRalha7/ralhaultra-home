@@ -129,9 +129,8 @@ export default function Roulette() {
   const setB = (a, r) => { bRef.current?.setAttribute('transform', `rotate(${a} ${C} ${C})`); cRef.current?.setAttribute('cy', String(C - r)) }
   const showBall = () => { if (bRef.current) bRef.current.style.opacity = '1' }
   // the wheel never stops: it turns at a steady speed, with the ball riding in its pocket between spins
-  const ROT = 0.018 // degrees per ms
+  const ROT = 0.042 // degrees per ms (about 40 degrees per second)
   useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
     let raf = 0, last = 0
     const tick = (now) => {
       if (!animRef.current) {
