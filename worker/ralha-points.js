@@ -1740,6 +1740,7 @@ export default {
         const who = await getUser(request, env, sbHeaders)
         if (who?.username) {
           const u = who.username
+          await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: u }) }).catch(() => {})
           const br = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(u)}&select=balance,watch_minutes,wagered_total,level`, { headers: sbHeaders })
           const row = (await br.json())?.[0] || {}
           const now = new Date()

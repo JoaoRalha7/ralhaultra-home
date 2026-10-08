@@ -61,6 +61,7 @@ async function main() {
       const m = Number(data?.watch_minutes ?? 0)
       await chat.say(channel, `@${user} já viste ${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}m de stream.`)
     } else if (cmd === 'level' || cmd === 'nivel') {
+      await sb.rpc('refresh_vip_user', { p_user: name })
       const [{ data: me }, { data: lv }] = await Promise.all([
         sb.from('point_balances').select('level,wagered_total,watch_minutes').eq('username', name).maybeSingle(),
         sb.from('vip_levels').select('*').order('level'),

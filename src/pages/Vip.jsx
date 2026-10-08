@@ -52,7 +52,11 @@ function useVip() {
       setData(await r.json()); setError(false)
     } catch { setError(true) }
   }, [])
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const t = setInterval(() => { if (!document.hidden) load() }, 15000) // live: wagered, rank and cashback refresh while the page is open
+    return () => clearInterval(t)
+  }, [load])
   return { data, error, reload: load }
 }
 
