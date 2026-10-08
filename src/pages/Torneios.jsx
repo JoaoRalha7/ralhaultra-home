@@ -1,7 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabaseDash } from '../lib/supabase'
 import styles from './Torneios.module.css'
+import TwitchAvatar from '../components/TwitchAvatar'
+import { useAvatars } from '../lib/avatars'
+
+const AvatarCtx = createContext({})
+
+// every player name found anywhere inside saved brackets
+function collectPlayers(v, out = new Set()) {
+  if (Array.isArray(v)) v.forEach(i => collectPlayers(i, out))
+  else if (v && typeof v === 'object') {
+    if (typeof v.player === 'string' && v.player.trim()) out.add(v.player.trim())
+    Object.values(v).forEach(i => collectPlayers(i, out))
+  }
+  return out
+}
 
 // ── Hook: window width ───────────────────────────────────────
 function useWindowWidth() {
@@ -93,13 +107,9 @@ function SlotImg({ slot, size = 32, radius = 5 }) {
 }
 
 // ── UserIcon ─────────────────────────────────────────────────
-function UserIcon({ size = 10 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: .7 }}>
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  )
+function UserIcon({ size = 10, name }) {
+  const map = useContext(AvatarCtx)
+  return <TwitchAvatar name={name} map={map} size={Math.round(size * 1.6)} />
 }
 
 // ── Connectors ───────────────────────────────────────────────
@@ -164,7 +174,7 @@ function RCol({ matches, ri, totalRounds, outerH, seedOffset = 0, label, onSelec
                 {sA && <div className={styles.seed}>{sA}</div>}
                 <SlotImg slot={a?.slot} size={ROW_H} radius={0} />
                 <div className={styles.compInfo}>
-                  {a?.slot ? <><div className={styles.compName}>{a.slot.name}</div>{a.player && <div className={styles.compPlayer}><UserIcon size={9} />{a.player}</div>}</>
+                  {a?.slot ? <><div className={styles.compName}>{a.slot.name}</div>{a.player && <div className={styles.compPlayer}><UserIcon size={9} name={a.player} />{a.player}</div>}</>
                     : <span className={styles.compTbd}>TBD</span>}
                 </div>
                 {scA !== null && <div className={`${styles.compScore} ${winner==='a' ? styles.compScoreWin : ''}`}>{scA.toFixed(2)}</div>}
@@ -176,7 +186,7 @@ function RCol({ matches, ri, totalRounds, outerH, seedOffset = 0, label, onSelec
                 {sB && <div className={styles.seed}>{sB}</div>}
                 <SlotImg slot={b?.slot} size={ROW_H} radius={0} />
                 <div className={styles.compInfo}>
-                  {b?.slot ? <><div className={styles.compName}>{b.slot.name}</div>{b.player && <div className={styles.compPlayer}><UserIcon size={9} />{b.player}</div>}</>
+                  {b?.slot ? <><div className={styles.compName}>{b.slot.name}</div>{b.player && <div className={styles.compPlayer}><UserIcon size={9} name={b.player} />{b.player}</div>}</>
                     : <span className={styles.compTbd}>TBD</span>}
                 </div>
                 {scB !== null && <div className={`${styles.compScore} ${winner==='b' ? styles.compScoreWin : ''}`}>{scB.toFixed(2)}</div>}
@@ -282,7 +292,7 @@ function BottomPanel({ selected, onClose }) {
             )}
           </div>
           {comp.player && (
-            <div className={styles.bpFp}><UserIcon size={9} />{comp.player}</div>
+            <div className={styles.bpFp}><UserIcon size={9} name={comp.player} />{comp.player}</div>
           )}
           <div className={styles.bpFstats}>
             {bet > 0 && (
@@ -368,7 +378,7 @@ function HistoryList({ list, onOpen, activeTournamentId }) {
             {champ?.slot ? (
               <div className={styles.histBest}>
                 <SlotImg slot={champ.slot} size={28} radius={5} />
-                <span className={styles.histBestName}>{champ.slot.name}{champ.player ? <><UserIcon size={10} />{champ.player}</> : ''}</span>
+                <span className={styles.histBestName}>{champ.slot.name}{champ.player ? <><UserIcon size={10} name={champ.player} />{champ.player}</> : ''}</span>
                 {getScore(champ) !== null && <span className={styles.histBestScore}>{getScore(champ).toFixed(2)}</span>}
               </div>
             ) : (
@@ -390,6 +400,8 @@ export default function Torneios() {
   const [loading,     setLoading]     = useState(true)
   const [tab,         setTab]         = useState('bracket')
   const [selected,    setSelected]    = useState(null)
+  const playerNames = [...collectPlayers(tournaments.map(t => t.bracket))]
+  const avMap = useAvatars(playerNames)
 
   useEffect(() => {
     supabaseDash.from('tournaments').select('*').order('created_at', { ascending: false })
@@ -441,6 +453,7 @@ export default function Torneios() {
   ]
 
   return (
+    <AvatarCtx.Provider value={avMap}>
     <div className={styles.page}>
       <header className={styles.hero}>
         <div className={styles.heroMain}>
@@ -474,7 +487,7 @@ export default function Torneios() {
                   <svg width="18" height="15" viewBox="0 0 26 22" fill="currentColor"><path d="M3 2L13 8L23 2L20 17H6L3 2Z"/><rect x="6" y="18" width="14" height="3" rx="1.5"/></svg>
                 </span>
                 <b className={styles.spotName}>{champion.slot.name}</b>
-                {champion.player && <span className={styles.spotPlayer}><UserIcon size={11} />{champion.player}</span>}
+                {champion.player && <span className={styles.spotPlayer}><UserIcon size={11} name={champion.player} />{champion.player}</span>}
                 {champScore !== null && <span className={styles.spotScore}>{champScore.toFixed(2)}<small>x</small></span>}
               </div>
             </>
@@ -506,7 +519,7 @@ export default function Torneios() {
                   : <svg className={styles.tIcoNeg} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>}
                 {x.name}
               </b>
-              {x.player && <span className={styles.tilePlayer}><UserIcon size={9} />{x.player}</span>}
+              {x.player && <span className={styles.tilePlayer}><UserIcon size={9} name={x.player} />{x.player}</span>}
             </div>
             <b className={`${styles.tileX} ${cls}`}>{x.score.toFixed(2)}x</b>
           </div>
@@ -541,5 +554,6 @@ export default function Torneios() {
         <HistoryList list={tournaments} onOpen={handleOpen} activeTournamentId={active?.id} />
       )}
     </div>
+    </AvatarCtx.Provider>
   )
 }
