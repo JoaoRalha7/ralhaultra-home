@@ -1340,3 +1340,10 @@
 .embedded .mainLayout{grid-template-columns:minmax(0,1fr) 250px;gap:14px}
 .embedded .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media (max-width:760px){.embedded .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.embedded .grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.embedded .card{border-radius:12px}
+.embedded .cardFooter{padding:7px 9px 9px}
+.embedded .cardName{font-size:12px}
+.embedded .cardBet,.embedded .cardWin{font-size:11px}
+.embedded .cardNum{font-size:9px;padding:1px 7px;top:5px;left:5px}
+@media (max-width:760px){.embedded .grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
