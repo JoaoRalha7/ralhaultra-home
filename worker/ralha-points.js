@@ -1960,11 +1960,14 @@ export default {
         const get = async (q) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${q}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
         const [bal, prof, games, crash] = await Promise.all([
           get(`point_balances?username=eq.${name}&select=level,created_at,wagered_total,watch_minutes,twitch_id&limit=1`),
-          get(`profiles?twitch_username=ilike.${name}&select=avatar_url,created_at&limit=1`),
+          get(`profiles?twitch_username=ilike.${encodeURIComponent(name.replace(/_/g, '\\_'))}&select=id,avatar_url&limit=1`),
           get(`casino_games?username=eq.${name}&status=eq.done&select=game,bet,payout&limit=10000`),
           get(`crash_bets?username=eq.${name}&select=bet,cashed_at&limit=5000`),
         ])
         if (!bal[0] && !prof[0] && !games.length && !crash.length) return json({ error: 'not found' }, 404)
+        // real signup date (first login) comes from the auth user
+        let joinedAt = null
+        if (prof[0]?.id) { try { const ar = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${prof[0].id}`, { headers: sbHeaders }); if (ar.ok) joinedAt = (await ar.json())?.created_at || null } catch { /* optional */ } }
         let wins = 0, losses = 0, wagered = 0, bestWin = 0, bestMult = 0
         const per = {}
         const add = (game, bet, pay) => {
@@ -1999,7 +2002,7 @@ export default {
         } catch { /* follow date is optional */ }
         const data = {
           ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt, followWhy,
-          joined: prof[0]?.created_at || null, registered: !!prof[0], avatar: prof[0]?.avatar_url || null,
+          joined: joinedAt, registered: !!prof[0] || games.length > 0 || crash.length > 0, avatar: prof[0]?.avatar_url || null,
           stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
         }
@@ -2012,12 +2015,12 @@ export default {
       if (pathname === '/ranks' && request.method === 'GET') {
         const names = [...new Set((searchParams.get('u') || '').toLowerCase().split(',').map((x) => x.trim()).filter((x) => /^[a-z0-9_]{1,30}$/.test(x)))].slice(0, 60)
         if (!names.length) return json({ ranks: {} })
-        const r = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=in.(${names.join(',')})&select=username,level`, { headers: sbHeaders })
-        const ranks = {}
-        if (r.ok) for (const x of await r.json()) ranks[x.username] = Number(x.level) || 0
+        const r = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=in.(${names.join(',')})&select=username,level,wagered_total`, { headers: sbHeaders })
+        const ranks = {}, played = []
+        if (r.ok) for (const x of await r.json()) { ranks[x.username] = Number(x.level) || 0; if (Number(x.wagered_total) > 0) played.push(x.username) }
         // who has really logged in (has a profile): the others have no rank badge
         const pr = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?twitch_username=in.(${names.join(',')})&select=twitch_username`, { headers: sbHeaders })
-        const reg = pr.ok ? (await pr.json()).map((x) => String(x.twitch_username || '').toLowerCase()) : names
+        const reg = pr.ok ? [...(await pr.json()).map((x) => String(x.twitch_username || '').toLowerCase()), ...played] : names
         return json({ ranks, reg })
       }
 
