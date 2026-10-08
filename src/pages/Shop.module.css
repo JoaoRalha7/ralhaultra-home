@@ -173,3 +173,15 @@
 .lock { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(11,14,20,.8); border: 1px solid #2a3040; color: #9aa3b8; }
 .lock { top: auto; bottom: 10px; }
 @media (max-width: 560px) { .stock { top: auto; bottom: 8px; right: auto; left: 8px; } .lock { right: 8px; bottom: 8px; } }
+
+
+/* refined: one accent colour on every Redeem button, progress always visible, lists at the bottom */
+.cardReady:hover { border-color: #3a4256; box-shadow: 0 14px 40px -20px var(--c); }
+.cardReady .btn, .topBtn { background: var(--acc); color: #fff; }
+.cardReady .btn:hover:not(:disabled), .topBtn:hover:not(:disabled) { filter: brightness(1.12); }
+.priceRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.note2 { font-size: 12px; color: var(--mute); text-align: right; }
+.needBar i.full { background: var(--pos); }
+.top { grid-template-columns: 130px minmax(0, 1fr) auto; padding: 16px 26px 16px 16px; }
+.topArt { height: 110px; }
+.info { margin: 28px 0 0; }

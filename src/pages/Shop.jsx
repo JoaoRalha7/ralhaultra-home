@@ -38,12 +38,6 @@ const ago = (d) => {
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 
 const IconCoin = ({ size = 14 }) => <span className={styles.coin} style={{ width: size, height: size }} aria-hidden="true" />
-const IconGift = ({ size = 15 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
-    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-  </svg>
-)
 
 // ── Product card ─────────────────────────────────────────────────────────────
 function ShopCard({ product, userPoints, onRedeem }) {
@@ -69,13 +63,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
         <span className={styles.tags}>
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
-          <span className={styles.cat}>{product.category}</span>
         </span>
-        {locked && !outOfStock && (
-          <span className={styles.lock} aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-          </span>
-        )}
         {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Gone</span>}
         {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
       </div>
@@ -85,21 +73,20 @@ function ShopCard({ product, userPoints, onRedeem }) {
         {product.description && <p className={styles.desc}>{product.description}</p>}
 
         <div className={styles.foot}>
-          <div className={styles.price}>
-            <IconCoin size={18} />
-            <b>{fmt(product.cost)}</b>
-            <span>pts</span>
+          <div className={styles.priceRow}>
+            <div className={styles.price}>
+              <IconCoin size={18} />
+              <b>{fmt(product.cost)}</b>
+              <span>pts</span>
+            </div>
+            {!outOfStock && loggedIn && <small className={styles.note2}>{canAfford ? 'You can afford this' : `${fmt(missing)} pts to go`}</small>}
           </div>
 
-          {!outOfStock && loggedIn && !canAfford && (
-            <div className={styles.need}>
-              <div className={styles.needBar}><i style={{ width: pct + '%' }} /></div>
-              <small>{fmt(missing)} pts to go</small>
-            </div>
+          {!outOfStock && loggedIn && (
+            <div className={styles.needBar}><i className={canAfford ? styles.full : ''} style={{ width: (canAfford ? 100 : pct) + '%' }} /></div>
           )}
 
           <button className={styles.btn} onClick={() => !disabled && onRedeem(product)} disabled={disabled}>
-            {canAfford && !outOfStock && <IconGift />}
             {outOfStock ? 'Sold out' : !loggedIn ? 'Log in to redeem' : canAfford ? 'Redeem' : 'Not enough points'}
           </button>
         </div>
@@ -256,6 +243,44 @@ export default function Shop() {
         </article>
       )}
 
+      <div className={styles.bar}>
+        <div className={styles.seg} role="tablist">
+          {CATEGORIES.map(cat => (
+            <button key={cat.id} role="tab" aria-selected={activeCategory === cat.id}
+              className={`${styles.segBtn} ${activeCategory === cat.id ? styles.segOn : ''}`}
+              onClick={() => setActiveCategory(cat.id)}>
+              {cat.label}
+              <span>{cat.id === 'all' ? products.length : products.filter(p => p.category === cat.id).length}</span>
+            </button>
+          ))}
+        </div>
+        <div className={styles.barRight}>
+          {points !== null && (
+            <button className={`${styles.chip} ${onlyAfford ? styles.chipOn : ''}`} onClick={() => setOnlyAfford(v => !v)} aria-pressed={onlyAfford}>
+              I can afford
+            </button>
+          )}
+          <select className={styles.select} value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort prizes">
+            {SORTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {loadingProds ? (
+        <div className={styles.grid}>{[0, 1, 2, 3].map(i => <div key={i} className={styles.skel} />)}</div>
+      ) : filtered.length === 0 ? (
+        <div className={styles.empty}>
+          <p>{onlyAfford ? 'Nothing you can afford yet. Keep watching to earn more points.' : 'No prizes in this category yet.'}</p>
+          {onlyAfford && <button className={styles.chip} onClick={() => setOnlyAfford(false)}>Show all prizes</button>}
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {filtered.map(product => (
+            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} />
+          ))}
+        </div>
+      )}
+
       <section className={styles.info}>
         <div className={styles.panel}>
           <div className={styles.rHead}><span>Top points</span><Link className={styles.all} to="/leaderboard">View all</Link></div>
@@ -294,44 +319,6 @@ export default function Shop() {
           )}
         </div>
       </section>
-
-      <div className={styles.bar}>
-        <div className={styles.seg} role="tablist">
-          {CATEGORIES.map(cat => (
-            <button key={cat.id} role="tab" aria-selected={activeCategory === cat.id}
-              className={`${styles.segBtn} ${activeCategory === cat.id ? styles.segOn : ''}`}
-              onClick={() => setActiveCategory(cat.id)}>
-              {cat.label}
-              <span>{cat.id === 'all' ? products.length : products.filter(p => p.category === cat.id).length}</span>
-            </button>
-          ))}
-        </div>
-        <div className={styles.barRight}>
-          {points !== null && (
-            <button className={`${styles.chip} ${onlyAfford ? styles.chipOn : ''}`} onClick={() => setOnlyAfford(v => !v)} aria-pressed={onlyAfford}>
-              I can afford
-            </button>
-          )}
-          <select className={styles.select} value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort prizes">
-            {SORTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {loadingProds ? (
-        <div className={styles.grid}>{[0, 1, 2, 3].map(i => <div key={i} className={styles.skel} />)}</div>
-      ) : filtered.length === 0 ? (
-        <div className={styles.empty}>
-          <p>{onlyAfford ? 'Nothing you can afford yet. Keep watching to earn more points.' : 'No prizes in this category yet.'}</p>
-          {onlyAfford && <button className={styles.chip} onClick={() => setOnlyAfford(false)}>Show all prizes</button>}
-        </div>
-      ) : (
-        <div className={styles.grid}>
-          {filtered.map(product => (
-            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} />
-          ))}
-        </div>
-      )}
 
       {confirmProduct && (
         <ConfirmModal product={confirmProduct} balance={points} loading={redeeming} onConfirm={handleConfirm} onCancel={() => !redeeming && setConfirmProduct(null)} />
