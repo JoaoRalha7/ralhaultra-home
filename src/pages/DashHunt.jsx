@@ -695,7 +695,7 @@ function PickPanel({ hunt, entries }) {
   )
 }
 
-function StatsPanel({ hunt, entries, balanceEnd, onBalanceEndChange, onSaveBalanceEnd, saving }) {
+function StatsPanel({ hunt, entries, mode, balanceEnd, onBalanceEndChange, onSaveBalanceEnd, saving }) {
   const opened   = entries.filter(e => e.opened && e.payment != null && parseBet(e.bet) > 0)
   const totalBet = entries.reduce((a, e) => a + parseBet(e.bet), 0)
   const totalPay = opened.reduce((a, e) => a + parseBet(e.payment), 0)
@@ -721,93 +721,68 @@ function StatsPanel({ hunt, entries, balanceEnd, onBalanceEndChange, onSaveBalan
   const best  = sorted[0] || null
   const worst = sorted[sorted.length - 1] || null
 
+  const Stat = ({ label, val, cls, strong }) => (
+    <div className={`${styles.hxStat} ${strong ? styles.hxStatStrong : ''}`}>
+      <span>{label}</span><b className={cls || ''}>{val}</b>
+    </div>
+  )
+  const BW = ({ kind, e }) => (
+    <div className={styles.hxStat}>
+      <span className={kind === 'best' ? styles.amber : styles.red}>{kind === 'best' ? 'Best' : 'Worst'}</span>
+      <div className={styles.hxBW}>
+        <img src={e.slot?.image_url || ''} alt="" onError={ev => ev.target.style.opacity = '.2'} />
+        <div>
+          <div className={styles.hxBWName}>{e.slot?.name || '—'}</div>
+          <div className={styles.hxBWSub}>{fmt(parseBet(e.bet))}€ → {fmt(parseBet(e.payment))}€</div>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (mode === 'hunting') {
+    return (
+      <div className={styles.hxSide}>
+        <div className={styles.hxGrid}>
+          <Stat label="Saldo inicial" val={balStart > 0 ? fmt(balStart) + '€' : '—'} />
+          <Stat label="Total apostado" val={fmt(totalBet) + '€'} />
+          <Stat label="BE inicial" val={beInit > 0 ? beInit.toFixed(2) + 'x' : '—'} cls={styles.amber} />
+          <Stat label="Slots" val={total} />
+        </div>
+        <div className={`${styles.hxStat} ${styles.hxBal}`}>
+          <span>Saldo final</span>
+          <div className={styles.hxBalRow}>
+            <input className={styles.hxInput} type="number" step="0.01" min="0"
+              value={balanceEnd} onChange={e => onBalanceEndChange(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && onSaveBalanceEnd()} placeholder="0.00" />
+            <button className={styles.hxSave} onClick={onSaveBalanceEnd} disabled={saving}>{saving ? 'A guardar…' : 'Guardar'}</button>
+          </div>
+          <small>Saldo depois de comprar todos os bónus. Define o target do opening.</small>
+        </div>
+        <Stat label="Target do opening" val={target > 0 ? fmt(target) + '€' : '—'} cls={styles.amber} />
+      </div>
+    )
+  }
+
   return (
-    <div className={styles.statsPanel}>
-
-      {/* Grid 2 colunas — 6 stats */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <span className={styles.statCardLabel}>Target</span>
-          <span className={styles.statCardVal}>{balStart > 0 ? fmt(balStart)+'€' : '—'}</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statCardLabel}>Total Pago</span>
-          <span className={`${styles.statCardVal} ${styles.green}`}>{fmt(totalPay)}€</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statCardLabel}>BE Inicial</span>
-          <span className={`${styles.statCardVal} ${styles.amber}`}>{beInit > 0 ? beInit.toFixed(2)+'x' : '—'}</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statCardLabel}>BE Atual</span>
-          <span className={`${styles.statCardVal} ${styles.amber}`}>{beAtual > 0 ? beAtual.toFixed(2)+'x' : '—'}</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statCardLabel}>AVG Multi</span>
-          <span className={styles.statCardVal}>{avg > 0 ? avg.toFixed(2)+'x' : '—'}</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statCardLabel}>Bónus</span>
-          <span className={styles.statCardVal}>{nOpen} / {total}</span>
+    <div className={styles.hxSide}>
+      <div className={`${styles.hxStat} ${styles.hxProfit}`}>
+        <span>Profit</span>
+        <b className={profit >= 0 ? styles.green : styles.red}>{(profit >= 0 ? '+' : '') + fmt(profit) + '€'}</b>
+        <div className={styles.hxProg}>
+          <div><span>Progresso</span><span><strong>{nOpen}</strong> / {total}</span></div>
+          <i><u style={{ width: pct + '%' }} /></i>
         </div>
       </div>
-
-      {/* Profit — full width */}
-      <div className={styles.profitCard}>
-        <span className={styles.profitLabel}>Profit</span>
-        <span className={`${styles.profitVal} ${profit >= 0 ? styles.green : styles.red}`}>
-          {(profit >= 0 ? '+' : '') + fmt(profit) + '€'}
-        </span>
+      <div className={styles.hxGrid}>
+        <Stat label="Total pago" val={fmt(totalPay) + '€'} cls={styles.green} />
+        <Stat label="AVG multi" val={avg > 0 ? avg.toFixed(2) + 'x' : '—'} />
+        <Stat label="Saldo final" val={hasBalEnd ? fmt(balEndN) + '€' : '—'} />
+        <Stat label="BE atual" val={beAtual > 0 ? beAtual.toFixed(2) + 'x' : '—'} cls={styles.amber} strong />
       </div>
-
-      {/* Progresso */}
-      <div className={styles.progressCard}>
-        <div className={styles.progressTop}>
-          <span className={styles.progressLabel}>Progresso</span>
-          <span className={styles.progressVal}>{nOpen} / {total}</span>
-        </div>
-        <div className={styles.progBar}>
-          <div className={styles.progFill} style={{ width: pct + '%' }} />
-        </div>
-      </div>
-
-      {/* Saldo Final */}
-      <div className={styles.balanceCard}>
-        <span className={styles.balanceLabel}>Saldo Final</span>
-        <input className={styles.statInput} type="number" step="0.01" min="0"
-          value={balanceEnd} onChange={e => onBalanceEndChange(e.target.value)} placeholder="€" />
-        <button className={styles.saveBtn} onClick={onSaveBalanceEnd} disabled={saving}>
-          {saving ? 'A guardar...' : 'Guardar'}
-        </button>
-      </div>
-
-      {/* Best */}
-      {best && (
-        <div className={styles.bwCard}>
-          <span className={`${styles.bwLabel} ${styles.bwBest}`}>Best</span>
-          <div className={styles.bwRow}>
-            <img src={best.slot?.image_url||''} alt="" className={styles.bwThumb}
-              onError={e => e.target.style.opacity='.2'} />
-            <div style={{ minWidth: 0 }}>
-              <div className={styles.bwName}>{best.slot?.name||'—'}</div>
-              <div className={styles.bwSub}>{fmt(parseBet(best.bet))}€ → {fmt(parseBet(best.payment))}€</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Worst */}
-      {worst && worst.id !== best?.id && (
-        <div className={styles.bwCard}>
-          <span className={`${styles.bwLabel} ${styles.bwWorst}`}>Worst</span>
-          <div className={styles.bwRow}>
-            <img src={worst.slot?.image_url||''} alt="" className={styles.bwThumb}
-              onError={e => e.target.style.opacity='.2'} />
-            <div style={{ minWidth: 0 }}>
-              <div className={styles.bwName}>{worst.slot?.name||'—'}</div>
-              <div className={styles.bwSub}>{fmt(parseBet(worst.bet))}€ → {fmt(parseBet(worst.payment))}€</div>
-            </div>
-          </div>
+      {(best || worst) && (
+        <div className={styles.hxGrid}>
+          {best && <BW kind="best" e={best} />}
+          {worst && worst.id !== best?.id && <BW kind="worst" e={worst} />}
         </div>
       )}
     </div>
@@ -815,61 +790,54 @@ function StatsPanel({ hunt, entries, balanceEnd, onBalanceEndChange, onSaveBalan
 }
 
 // ── Slot Row ───────────────────────────────────────────────
-function SlotRow({ entry, mode, onUpdateBet, onUpdatePayment, onToggleSuper, onDelete }) {
-  const multi = parseBet(entry.bet) > 0 && entry.payment != null
-    ? parseBet(entry.payment) / parseBet(entry.bet) : null
+function SlotRow({ entry, index, mode, current, onUpdateBet, onUpdatePayment, onToggleSuper, onDelete }) {
+  const bet = parseBet(entry.bet)
+  const multi = bet > 0 && entry.payment != null && entry.opened ? parseBet(entry.payment) / bet : null
+  const won = multi !== null && multi >= 1
+  const mc = multi === null ? '' : multi >= 100 ? styles.hxMGold : multi >= 1 ? styles.hxMGreen : styles.hxMRed
 
   return (
-    <div className={`${styles.slotRow} ${entry.opened ? styles.slotRowOpened : ''}`}>
-      <div className={styles.slotInfo}>
-        <img src={entry.slot?.image_url||''} alt={entry.slot?.name} className={styles.slotThumb}
-          onError={e => e.target.style.opacity='.2'} />
-        <div style={{ minWidth: 0 }}>
-          <div className={styles.slotName}>{entry.slot?.name||'—'}</div>
-          <div className={styles.slotProv}>{entry.slot?.provider||''}</div>
+    <div className={`${styles.hxRow} ${won ? styles.hxRowWin : ''} ${current ? styles.hxRowCur : ''} ${mode === 'opening' && !entry.opened && !current ? styles.hxRowWait : ''}`}>
+      {current && <span className={styles.hxCurTag}><i />A abrir</span>}
+      <div className={styles.hxSlot}>
+        <span className={styles.hxIdx}>#{index}</span>
+        <img src={entry.slot?.image_url || ''} alt="" className={styles.hxCover} onError={e => e.target.style.opacity = '.2'} />
+        <div className={styles.hxNameWrap}>
+          <div className={styles.hxName}>{entry.slot?.name || '—'}</div>
+          <div className={styles.hxProv}>{entry.slot?.provider || ''}</div>
         </div>
       </div>
 
-      <div style={{ textAlign: 'right' }}>
-        {mode === 'hunting' ? (
-          <input className={styles.inp} type="number" step="0.01" min="0"
-            defaultValue={entry.bet !== null ? entry.bet : ''} placeholder="0.00"
-            onBlur={e => onUpdateBet(entry.id, e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
-        ) : (
-          <span className={`${styles.betDisplay} ${!entry.bet ? styles.betDisplayDim : ''}`}>
-            {entry.bet ? fmt(parseBet(entry.bet))+'€' : '—'}
-          </span>
-        )}
-      </div>
-
-      <div style={{ display:'flex', justifyContent:'center', alignItems:'center' }}>
-        <button
-          className={`${styles.superBtn} ${entry.is_super ? styles.superBtnOn : ''} ${mode==='opening' ? styles.superBtnLocked : ''}`}
-          onClick={() => mode === 'hunting' && onToggleSuper(entry.id, !entry.is_super)}
-        ><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></button>
-      </div>
-
-      <div style={{ textAlign: 'right' }}>
-        <input
-          className={`${styles.inp} ${styles.inpPay} ${mode==='hunting' ? styles.inpLocked : ''}`}
-          type="number" step="0.01" min="0"
-          defaultValue={entry.payment !== null ? entry.payment : ''} placeholder="0.00"
-          onBlur={e => mode==='opening' && onUpdatePayment(entry.id, e.target.value)}
+      {mode === 'hunting' ? (
+        <input className={styles.hxFld} type="number" step="0.01" min="0"
+          defaultValue={entry.bet !== null ? entry.bet : ''} placeholder="0.00"
+          onBlur={e => onUpdateBet(entry.id, e.target.value)}
           onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
-      </div>
+      ) : (
+        <span className={`${styles.hxBet} ${!entry.bet ? styles.hxDim : ''}`}>{entry.bet ? fmt(bet) + '€' : '—'}</span>
+      )}
 
-      <div className={`${styles.multiVal} ${multiClass(multi, styles)}`}>
-        {multi !== null ? multi.toFixed(1)+'x' : '—'}
-      </div>
+      <button
+        className={`${styles.hxSuper} ${entry.is_super ? styles.hxSuperOn : ''}`}
+        aria-label="Super"
+        disabled={mode !== 'hunting'}
+        onClick={() => mode === 'hunting' && onToggleSuper(entry.id, !entry.is_super)}
+      ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg></button>
 
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end' }}>
-        <button
-          className={styles.delBtn}
-          onClick={() => mode === 'hunting' && onDelete(entry.id)}
-          style={mode==='opening' ? { opacity:.12, pointerEvents:'none' } : {}}
-        ><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round'><line x1='18' y1='6' x2='6' y2='18'/><line x1='6' y1='6' x2='18' y2='18'/></svg></button>
-      </div>
+      <input
+        className={`${styles.hxFld} ${mode === 'hunting' ? styles.hxFldLock : ''} ${current ? styles.hxFldCur : ''}`}
+        type="number" step="0.01" min="0" disabled={mode === 'hunting'}
+        defaultValue={entry.payment !== null ? entry.payment : ''} placeholder={mode === 'hunting' ? '—' : '0.00'}
+        onBlur={e => mode === 'opening' && onUpdatePayment(entry.id, e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
+
+      <div className={`${styles.hxMulti} ${mc}`}>{multi !== null ? multi.toFixed(1) + 'x' : '—'}</div>
+
+      {mode === 'hunting' ? (
+        <button className={styles.hxDel} aria-label="Remover" onClick={() => onDelete(entry.id)}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      ) : <span />}
     </div>
   )
 }
@@ -1889,117 +1857,84 @@ export default function DashHunt() {
     await loadActiveHunt()
   }
 
+  const nextEntry = entries.find(e => !e.opened) || null
+
   if (view === 'history') return <HistoryView onBack={() => setView('main')} onReopen={handleReopen} />
 
   return (
-    <div className={styles.page}>
-      {/* Topbar */}
-      <div className={styles.topbar}>
-        <button className={styles.menuBtn} onClick={() => navigate('/dashboard')}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          Menu
-        </button>
-        <div className={styles.huntTitle}>
-          <span className={styles.huntLabel}>Hunt</span>
-          <span className={styles.huntNum}>{hunt ? `#${hunt.id}` : '#—'}</span>
-          {hunt?.active && <><span className={styles.liveDot} /><span className={styles.liveLabel}>Ativo</span></>}
-        </div>
-        <button className={styles.ghostBtn} onClick={() => setView('history')}>Histórico</button>
-      </div>
-
-      {/* Modebar */}
-      <div className={styles.modebar}>
-        <button className={`${styles.modeBtn} ${mode==='hunting' ? styles.modeBtnHunt : ''}`} onClick={() => handleSetMode('hunting')}>
-          <span className={styles.modeDot} style={{ background: mode==='hunting' ? '#3b82f6' : 'rgba(255,255,255,.2)' }} />
-          Hunting
-        </button>
-        <button className={`${styles.modeBtn} ${mode==='opening' ? styles.modeBtnOpen : ''}`} onClick={() => handleSetMode('opening')}>
-          <span className={styles.modeDot} style={{ background: mode==='opening' ? '#22c55e' : 'rgba(255,255,255,.2)' }} />
-          Opening
-        </button>
-        <div className={styles.modebarRight}>
-          {hunt && <>
-            <button className={styles.ghostBtn} onClick={handleReorderByBet}>Ordenar por Bet</button>
-            <button className={styles.ghostBtn} onClick={handleMarkActive}>Marcar Ativo</button>
-            <button className={styles.ghostBtn} onClick={() => setMiniGamesOpen(true)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg>
-              Mini-Games
-            </button>
-          </>}
-          <button className={styles.primaryBtn} onClick={() => setNewHuntOpen(true)}>+ Novo Hunt</button>
-        </div>
-      </div>
-
-      {/* Infobar */}
-      <div className={`${styles.infobar} ${mode==='opening' ? styles.infobarOpen : styles.infobarHunt}`}>
-        <span className={styles.infoDot} />
-        {mode === 'hunting' ? 'Modo Hunting — regista as apostas por slot' : 'Modo Opening — regista os pagamentos'}
-      </div>
-
-      {/* Body */}
-      <div className={styles.body}>
-        {loading ? (
-          <div className={styles.loading}><div className={styles.spinner} /> A carregar...</div>
-        ) : !hunt ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-            <div className={styles.emptyTitle}>Nenhum Bonus Hunt ativo</div>
-            <div className={styles.emptySub}>Cria um novo hunt para começar</div>
-            <button className={styles.primaryBtn} style={{ marginTop: 16 }} onClick={() => setNewHuntOpen(true)}>+ Novo Hunt</button>
+    <div className={`${styles.page} ${styles.hxPage}`}>
+      <div className={styles.hxHead}>
+        <div>
+          <div className={styles.hxTitleRow}>
+            <h1>Bonus Hunt {hunt ? `#${hunt.id}` : ''}</h1>
+            {hunt?.active && <span className={styles.hxLive}><i />Ativo</span>}
           </div>
-        ) : (
-          <div className={styles.bodyInner}>
-            <div className={styles.tableArea}>
-              {/* Search */}
-              <div className={styles.searchRow}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input className={styles.searchInput} value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Adicionar slot..." autoComplete="off" />
-                {search && <button className={styles.searchClear} onClick={() => setSearch('')}><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round'><line x1='18' y1='6' x2='6' y2='18'/><line x1='6' y1='6' x2='18' y2='18'/></svg></button>}
+          <p>{mode === 'hunting'
+            ? 'Regista a aposta de cada slot antes de começar a abrir.'
+            : nextEntry ? `Regista o pagamento de cada bónus por ordem. Vai a seguir: ${nextEntry.slot?.name || '—'}.` : 'Todos os bónus foram abertos.'}</p>
+        </div>
+        <div className={styles.hxActions}>
+          <div className={styles.hxSeg}>
+            <button className={mode === 'hunting' ? styles.hxSegOn : ''} onClick={() => handleSetMode('hunting')}><i />Hunting</button>
+            <button className={mode === 'opening' ? `${styles.hxSegOn} ${styles.hxSegOpen}` : ''} onClick={() => handleSetMode('opening')}><i />Opening</button>
+          </div>
+          {hunt && <>
+            <button className={styles.hxGhost} onClick={handleReorderByBet}>Ordenar por bet</button>
+            <button className={styles.hxGhost} onClick={() => setMiniGamesOpen(true)}>Mini-games</button>
+          </>}
+          <button className={styles.hxGhost} onClick={() => setView('history')}>Histórico</button>
+          <button className={styles.hxPrimary} onClick={() => setNewHuntOpen(true)}>Novo hunt</button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className={styles.loading}><div className={styles.spinner} /> A carregar...</div>
+      ) : !hunt ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyTitle}>Nenhum Bonus Hunt ativo</div>
+          <div className={styles.emptySub}>Cria um novo hunt para começar</div>
+          <button className={styles.hxPrimary} style={{ marginTop: 16 }} onClick={() => setNewHuntOpen(true)}>Novo hunt</button>
+        </div>
+      ) : (
+        <div className={styles.hxLayout}>
+          <div className={styles.hxMain}>
+            {mode === 'hunting' && (
+              <div className={styles.hxSearch}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Adicionar slot…" autoComplete="off" />
+                {search && <button onClick={() => setSearch('')} aria-label="Limpar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
                 {searchRes.length > 0 && (
-                  <ul className={styles.searchResults}>
+                  <ul className={styles.hxResults}>
                     {searchRes.map(slot => (
-                      <li key={slot.id} className={styles.searchItem}
-                        onClick={() => { setAddSlot(slot); setSearch('') }}>
-                        <img src={slot.image_url||''} alt={slot.name} onError={e => e.target.style.opacity='.2'} />
-                        <div className={styles.searchItemInfo}>
-                          <span className={styles.searchItemName}>{slot.name}</span>
-                          {slot.provider && <span className={styles.searchItemProv}>{slot.provider}</span>}
-                        </div>
+                      <li key={slot.id} onClick={() => { setAddSlot(slot); setSearch('') }}>
+                        <img src={slot.image_url || ''} alt="" onError={e => e.target.style.opacity = '.2'} />
+                        <div><b>{slot.name}</b>{slot.provider && <small>{slot.provider}</small>}</div>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
+            )}
 
-              {/* Table head */}
-              <div className={styles.tableHead}>
-                <div>Slot</div>
-                <div style={{ textAlign:'right' }}>Bet</div>
-                <div style={{ textAlign:'center' }}>⭐</div>
-                <div style={{ textAlign:'right' }}>Payment</div>
-                <div style={{ textAlign:'right' }}>Multi</div>
-                <div />
-              </div>
-
-              {/* Table body */}
-              <div className={styles.tableBody}>
-                {entries.length === 0
-                  ? <div className={styles.emptyTable}><p>Pesquisa uma slot acima para adicionar</p></div>
-                  : entries.map(e => (
-                      <SlotRow key={e.id} entry={e} mode={mode}
-                        onUpdateBet={handleUpdateBet} onUpdatePayment={handleUpdatePayment}
-                        onToggleSuper={handleToggleSuper} onDelete={handleDelete} />
-                    ))
-                }
-              </div>
+            <div className={styles.hxTh}>
+              <span>Slot</span><span>Bet</span><span>Super</span><span>Pagamento</span><span>Multi</span><span />
             </div>
 
-            <StatsPanel hunt={hunt} entries={entries} balanceEnd={balanceEnd}
-              onBalanceEndChange={setBalanceEnd} onSaveBalanceEnd={handleSaveBalanceEnd} saving={savingBal} />
+            <div className={styles.hxList}>
+              {entries.length === 0
+                ? <p className={styles.hxEmpty}>Pesquisa uma slot acima para adicionar</p>
+                : entries.map((e, i) => (
+                    <SlotRow key={e.id} entry={e} index={i + 1} mode={mode} current={mode === 'opening' && nextEntry?.id === e.id}
+                      onUpdateBet={handleUpdateBet} onUpdatePayment={handleUpdatePayment}
+                      onToggleSuper={handleToggleSuper} onDelete={handleDelete} />
+                  ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          <StatsPanel hunt={hunt} entries={entries} mode={mode} balanceEnd={balanceEnd}
+            onBalanceEndChange={setBalanceEnd} onSaveBalanceEnd={handleSaveBalanceEnd} saving={savingBal} />
+        </div>
+      )}
 
       {newHuntOpen    && <NewHuntModal onClose={() => setNewHuntOpen(false)} onCreated={handleHuntCreated} />}
       {addSlot        && <AddSlotModal slot={addSlot} onClose={() => setAddSlot(null)} onAdd={handleAddSlot} />}
