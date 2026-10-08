@@ -86,3 +86,54 @@
 .neg{color:var(--neg)}
 .cancel{height:38px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--mute);font:700 13px "DM Sans",sans-serif;cursor:pointer}
 @media (max-width:520px){.grid{grid-template-columns:1fr}.card{grid-template-columns:110px minmax(0,1fr)}}
+
+
+/* refined: vertical cards, countdown tiles, your odds, recently drawn */
+.chip{border-color:#f5c54266;background:var(--panel);color:var(--text)}
+.top{grid-template-columns:130px minmax(0,1fr) auto;padding:18px 28px 18px 18px;border-color:var(--line);background:linear-gradient(135deg,#17202f,#0f141d)}
+.topArt{height:120px;border-radius:14px;background:radial-gradient(90% 90% at 50% 100%,#a78bfa73,transparent 70%),#121722;color:#ffffff73}
+.topArt img{width:100%;height:100%;object-fit:cover;border-radius:14px;filter:none}
+.topMeta{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.topMeta b{color:var(--acc2);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.tiles div{padding:8px 0;border:1px solid var(--line);border-radius:10px;background:#0f141d}
+.tiles b{display:block;font:800 22px "Bricolage Grotesque",sans-serif;font-variant-numeric:tabular-nums}
+.tiles small{font-size:10px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase}
+.topSide{min-width:260px;gap:12px}
+.enter{height:44px}
+
+.tabs{display:inline-flex;gap:4px;padding:4px;margin:6px 0 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.tabs button{height:40px;padding:0 16px;border:0;border-radius:9px;background:transparent;font-size:13px}
+.tabs button i{background:none;padding:0;opacity:.8;font-size:11px}
+.tabs button.on{background:var(--acc);color:#fff}
+
+.grid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.card{display:flex;flex-direction:column;gap:0;padding:0;border-radius:18px}
+.card:hover{border-color:#3a4256}
+.art{min-height:0;height:130px;border-radius:0;background:radial-gradient(90% 90% at 50% 100%,#3b82f666,transparent 70%),#10141d;color:#ffffff66}
+.time{position:absolute;top:12px;right:12px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#c3cadb;background:#0b0e14bf;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.time.soon{color:var(--gold);border-color:#f5c54280}
+.kind{top:12px;left:12px;font-size:12px;letter-spacing:0;text-transform:none;color:#c3cadb}
+.body{flex:1;gap:6px;padding:16px 18px 18px}
+.body h3{font-size:18px;letter-spacing:-.01em}
+.desc{min-height:38px;line-height:1.45;-webkit-line-clamp:2}
+.meta{gap:16px;font-size:12px;padding-top:6px}
+.mine{display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:12px}
+.mine>div:first-child{display:flex;justify-content:space-between;font-size:12px}
+.mine span{color:var(--mute)}
+.mine b{color:var(--acc2);font-weight:600}
+.bar{height:4px;border-radius:99px;background:#ffffff1a;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--gold))}
+.body .enter{margin-top:12px}
+.winner{margin-top:auto}
+
+.recent{margin-top:32px;display:flex;flex-direction:column;gap:14px}
+.recent h2{margin:0;font:800 20px "Bricolage Grotesque",sans-serif}
+.recentGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.drawn{display:flex;align-items:center;gap:14px;min-height:64px;padding:12px 18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;color:var(--gold)}
+.drawn div{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.drawn b{color:var(--text);font-size:14px}
+.drawn span,.drawn small{font-size:12px;color:var(--mute)}
+@media (max-width:760px){.top{grid-template-columns:1fr}.topSide{min-width:0}}
+@media (max-width:520px){.card{display:flex}}
+.card{height:100%}
