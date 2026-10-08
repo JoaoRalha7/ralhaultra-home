@@ -152,8 +152,9 @@ function huntStats(hunt, entries) {
   const worst    = ranked.length > 1 ? ranked[ranked.length - 1] : null
   const totalBet = entries.reduce((a, e) => a + parseBet(e.bet), 0)
   const be       = totalBet > 0 ? balStart / totalBet : 0
+  const finished = entries.length > 0 && entries.every(e => e.opened)
   return {
-    opened, totalPay, balStart, profit, avg, best, worst, be,
+    opened, totalPay, balStart, profit, avg, best, worst, be, finished, live: !!hunt.active && !finished,
     total: entries.length,
     supers: entries.filter(e => e.is_super).length,
     hasResult: opened.length > 0,
@@ -195,9 +196,9 @@ function FeaturedHunt({ hunt, entries, onClick }) {
     <button type="button" className={x.featured} onClick={onClick}>
       <div className={x.fMain}>
         <div className={x.fTop}>
-          {hunt.active
+          {st.live
             ? <span className={x.pillLive}><span className={x.liveDot} />LIVE</span>
-            : <span className={x.pillOff}>Latest hunt</span>}
+            : <span className={x.pillOff}>{st.finished ? 'FINISHED' : 'Latest hunt'}</span>}
           <span className={x.fDate}>{fmtDate(hunt.date)}</span>
         </div>
         <h2 className={x.fTitle}>Bonus Hunt #{hunt.id}</h2>
@@ -225,9 +226,9 @@ function FeaturedHunt({ hunt, entries, onClick }) {
 function HuntCard({ hunt, entries, onClick }) {
   const st = huntStats(hunt, entries)
   return (
-    <button type="button" className={`${x.hCard} ${hunt.active ? x.hCardLive : ''}`} onClick={onClick}>
+    <button type="button" className={`${x.hCard} ${st.live ? x.hCardLive : ''}`} onClick={onClick}>
       <div className={x.hcTop}>
-        <span className={x.hcId}>#{hunt.id}{hunt.active && <span className={x.liveDot} />}</span>
+        <span className={x.hcId}>#{hunt.id}{st.live && <span className={x.liveDot} />}</span>
         <span className={x.hcDate}>{fmtDate(hunt.date)}</span>
       </div>
       <b className={`${x.hcProfit} ${st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}`}>{st.hasResult ? money(st.profit) : '—'}</b>
@@ -656,7 +657,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
             const cur = h.id === hunt.id
             return (
               <button key={h.id} className={`${x.rib} ${cur ? x.ribOn : ''} ${st.hasResult ? (st.profit >= 0 ? x.ribWin : x.ribLoss) : ''}`} onClick={() => !cur && onNavigate(h)} aria-current={cur ? 'true' : undefined}>
-                <small>#{h.id}{h.active && <i className={x.liveDot} />}</small>
+                <small>#{h.id}{st.live && <i className={x.liveDot} />}</small>
                 <b>{st.hasResult ? money(st.profit) : '—'}</b>
                 <em>{st.total} bonuses</em>
               </button>
@@ -728,8 +729,10 @@ export default function BonusHunts() {
     />
   )
 
-  const visibleHunts = tab === 'active' ? hunts.filter(h => h.active) : hunts
-  const featured = hunts.find(h => h.active) || hunts[0] || null
+  const liveNow = (h) => huntStats(h, byHunt[h.id] || []).live
+  const liveCount = hunts.filter(liveNow).length
+  const visibleHunts = tab === 'active' ? hunts.filter(liveNow) : hunts
+  const featured = hunts.find(liveNow) || hunts[0] || null
   const baseHistory = tab === 'active' ? visibleHunts : visibleHunts.filter(h => h !== featured)
   const sortKey = (h) => {
     const st = huntStats(h, byHunt[h.id] || [])
@@ -768,7 +771,7 @@ export default function BonusHunts() {
         <div className={x.seg} role="tablist">
           <button role="tab" aria-selected={tab === 'all'} className={`${x.segBtn} ${tab === 'all' ? x.segOn : ''}`} onClick={() => { setTab('all'); setGridPage(1) }}>History</button>
           <button role="tab" aria-selected={tab === 'active'} className={`${x.segBtn} ${tab === 'active' ? x.segOn : ''}`} onClick={() => { setTab('active'); setGridPage(1) }}>
-            Live{hunts.filter(h => h.active).length > 0 && <span className={x.segBadge}>{hunts.filter(h => h.active).length}</span>}
+            Live{liveCount > 0 && <span className={x.segBadge}>{liveCount}</span>}
           </button>
         </div>
       </header>

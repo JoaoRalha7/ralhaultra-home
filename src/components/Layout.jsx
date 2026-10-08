@@ -155,15 +155,29 @@ export default function Layout() {
     const check = async () => {
       const nowIso = new Date().toISOString();
       const [h, g, t] = await Promise.all([
-        supabaseDash.from('bonus_hunts').select('id').eq('active', true).limit(1),
+        supabaseDash.from('bonus_hunts').select('id').eq('active', true).limit(1).then(async (r) => {
+          const id = r.data?.[0]?.id;
+          if (!id) return { data: [] };
+          // a hunt whose bonuses are all opened is finished, not live
+          const [any, pend] = await Promise.all([
+            supabaseDash.from('bonus_entries').select('id', { count: 'exact', head: true }).eq('hunt_id', id),
+            supabaseDash.from('bonus_entries').select('id', { count: 'exact', head: true }).eq('hunt_id', id).eq('opened', false),
+          ]);
+          return { data: !any.count || pend.count > 0 ? [{ id }] : [] };
+        }),
         supabase.from('giveaways').select('id').eq('status', 'active').gt('ends_at', nowIso).limit(1),
         supabaseDash.from('tournaments').select('id').eq('status', 'active').limit(1),
       ].map((p) => p.then((r) => !!r.data?.length, () => false)));
       if (alive) setNavLive({ '/bonus-hunts': h, '/giveaways': g, '/torneios': t });
     };
     check();
+    const ch = supabaseDash.channel('layout-nav-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_hunts' }, check)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_entries' }, check)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments' }, check)
+      .subscribe();
     const iv = setInterval(() => { if (!document.hidden) check(); }, 15000);
-    return () => { alive = false; clearInterval(iv); };
+    return () => { alive = false; clearInterval(iv); supabaseDash.removeChannel(ch); };
   }, []);
 
   // Invite visitors to vote when a bonus hunt minigame is open (once per session, after other popups)
