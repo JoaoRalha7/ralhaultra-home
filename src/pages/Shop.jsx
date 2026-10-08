@@ -20,6 +20,13 @@ const SORTS = [
   { id: 'high',    label: 'Price: high to low' },
 ]
 
+// rarity comes from the price, so it works without any new column
+const rarityOf = (cost) =>
+  cost >= 500000 ? { id: 'legendary', label: 'Legendary' }
+  : cost >= 100000 ? { id: 'epic', label: 'Epic' }
+  : cost >= 20000 ? { id: 'rare', label: 'Rare' }
+  : { id: 'common', label: 'Common' }
+
 const ago = (d) => {
   const m = Math.max(1, Math.round((Date.now() - new Date(d)) / 60000))
   if (m < 60) return `${m}m ago`
@@ -31,6 +38,12 @@ const ago = (d) => {
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 
 const IconCoin = ({ size = 14 }) => <span className={styles.coin} style={{ width: size, height: size }} aria-hidden="true" />
+const IconGift = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+  </svg>
+)
 
 // ── Product card ─────────────────────────────────────────────────────────────
 function ShopCard({ product, userPoints, onRedeem }) {
@@ -43,16 +56,26 @@ function ShopCard({ product, userPoints, onRedeem }) {
   const pct        = loggedIn ? Math.min(100, (userPoints / product.cost) * 100) : 0
   const disabled   = outOfStock || !canAfford
   const locked     = outOfStock || (loggedIn && !canAfford)
+  const rar        = rarityOf(product.cost)
 
   return (
     <article
-      className={`${styles.card} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''} ${locked ? styles.cardLocked : ''}`}
+      className={`${styles.card} ${styles['r_' + rar.id]} ${outOfStock ? styles.cardOut : ''} ${canAfford && !outOfStock ? styles.cardReady : ''} ${locked ? styles.cardLocked : ''}`}
       style={{ '--c': product.color || '#3b82f6' }}
     >
       <div className={styles.media}>
         {product.image_url
           ? <img src={product.image_url} alt="" className={styles.photo} loading="lazy" />
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
+        <span className={styles.tags}>
+          <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
+          <span className={styles.cat}>{product.category}</span>
+        </span>
+        {locked && !outOfStock && (
+          <span className={styles.lock} aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          </span>
+        )}
         {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Gone</span>}
         {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
       </div>
@@ -76,6 +99,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
           )}
 
           <button className={styles.btn} onClick={() => !disabled && onRedeem(product)} disabled={disabled}>
+            {canAfford && !outOfStock && <IconGift />}
             {outOfStock ? 'Sold out' : !loggedIn ? 'Log in to redeem' : canAfford ? 'Redeem' : 'Not enough points'}
           </button>
         </div>
@@ -157,8 +181,10 @@ export default function Shop() {
   if (sort === 'high') filtered = [...filtered].sort((a, b) => b.cost - a.cost)
 
   const affordableCount = points === null ? 0 : products.filter(p => p.stock !== 0 && p.cost <= points).length
+  // top prize = most expensive item still in stock
   const me = twitchUsername ? twitchUsername.toLowerCase() : null
   const myRank = me ? board.findIndex(u => u.username?.toLowerCase() === me) : -1
+  const featured = [...products].filter(p => p.stock !== 0).sort((a, b) => b.cost - a.cost)[0] || null
 
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
 
@@ -202,42 +228,32 @@ export default function Shop() {
         </div>
       </header>
 
-      <div className={styles.bar}>
-        <div className={styles.seg} role="tablist">
-          {CATEGORIES.map(cat => (
-            <button key={cat.id} role="tab" aria-selected={activeCategory === cat.id}
-              className={`${styles.segBtn} ${activeCategory === cat.id ? styles.segOn : ''}`}
-              onClick={() => setActiveCategory(cat.id)}>
-              {cat.label}
-              <span>{cat.id === 'all' ? products.length : products.filter(p => p.category === cat.id).length}</span>
+      {featured && (
+        <article className={styles.top} style={{ '--c': featured.color || '#f5c542' }}>
+          <div className={styles.topArt}>
+            {featured.image_url ? <img src={featured.image_url} alt="" /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
+          </div>
+          <div className={styles.topText}>
+            <div className={styles.topTags}>
+              <span className={`${styles.rar} ${styles['rar_' + rarityOf(featured.cost).id]}`}>Top prize</span>
+              {featured.stock != null && featured.stock <= 5 && <span className={styles.limited}>Only {featured.stock} left</span>}
+            </div>
+            <h2>{featured.name}</h2>
+            {featured.description && <p>{featured.description}</p>}
+          </div>
+          <div className={styles.topBuy}>
+            <div className={styles.topPrice}><IconCoin size={22} /><b>{fmt(featured.cost)}</b><span>pts</span></div>
+            {points !== null && points < featured.cost && (
+              <div className={styles.need}>
+                <div className={styles.needBar}><i style={{ width: Math.min(100, (points / featured.cost) * 100) + '%' }} /></div>
+                <small>{fmt(featured.cost - points)} pts to go</small>
+              </div>
+            )}
+            <button className={styles.topBtn} disabled={points === null || points < featured.cost} onClick={() => handleRedeem(featured)}>
+              {points === null ? 'Log in to redeem' : points >= featured.cost ? 'Redeem' : 'Locked'}
             </button>
-          ))}
-        </div>
-        <div className={styles.barRight}>
-          {points !== null && (
-            <button className={`${styles.chip} ${onlyAfford ? styles.chipOn : ''}`} onClick={() => setOnlyAfford(v => !v)} aria-pressed={onlyAfford}>
-              I can afford
-            </button>
-          )}
-          <select className={styles.select} value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort prizes">
-            {SORTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {loadingProds ? (
-        <div className={styles.grid}>{[0, 1, 2, 3].map(i => <div key={i} className={styles.skel} />)}</div>
-      ) : filtered.length === 0 ? (
-        <div className={styles.empty}>
-          <p>{onlyAfford ? 'Nothing you can afford yet. Keep watching to earn more points.' : 'No prizes in this category yet.'}</p>
-          {onlyAfford && <button className={styles.chip} onClick={() => setOnlyAfford(false)}>Show all prizes</button>}
-        </div>
-      ) : (
-        <div className={styles.grid}>
-          {filtered.map(product => (
-            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} />
-          ))}
-        </div>
+          </div>
+        </article>
       )}
 
       <section className={styles.info}>
@@ -278,6 +294,44 @@ export default function Shop() {
           )}
         </div>
       </section>
+
+      <div className={styles.bar}>
+        <div className={styles.seg} role="tablist">
+          {CATEGORIES.map(cat => (
+            <button key={cat.id} role="tab" aria-selected={activeCategory === cat.id}
+              className={`${styles.segBtn} ${activeCategory === cat.id ? styles.segOn : ''}`}
+              onClick={() => setActiveCategory(cat.id)}>
+              {cat.label}
+              <span>{cat.id === 'all' ? products.length : products.filter(p => p.category === cat.id).length}</span>
+            </button>
+          ))}
+        </div>
+        <div className={styles.barRight}>
+          {points !== null && (
+            <button className={`${styles.chip} ${onlyAfford ? styles.chipOn : ''}`} onClick={() => setOnlyAfford(v => !v)} aria-pressed={onlyAfford}>
+              I can afford
+            </button>
+          )}
+          <select className={styles.select} value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort prizes">
+            {SORTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {loadingProds ? (
+        <div className={styles.grid}>{[0, 1, 2, 3].map(i => <div key={i} className={styles.skel} />)}</div>
+      ) : filtered.length === 0 ? (
+        <div className={styles.empty}>
+          <p>{onlyAfford ? 'Nothing you can afford yet. Keep watching to earn more points.' : 'No prizes in this category yet.'}</p>
+          {onlyAfford && <button className={styles.chip} onClick={() => setOnlyAfford(false)}>Show all prizes</button>}
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {filtered.map(product => (
+            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} />
+          ))}
+        </div>
+      )}
 
       {confirmProduct && (
         <ConfirmModal product={confirmProduct} balance={points} loading={redeeming} onConfirm={handleConfirm} onCancel={() => !redeeming && setConfirmProduct(null)} />
