@@ -997,13 +997,13 @@ export default {
             const dc = [deck[n], deck[2 * n + 1]]
             let sidePayout = 0
             const hands = Array.from({ length: n }, (_, i) => {
-              const cards = [deck[i], deck[n + 1 + i]], h = { cards, bet }, side = {}
+              const cards = [deck[i], deck[n + 1 + i]], h = { cards, bet, ...(isBJ([deck[i], deck[n + 1 + i]]) ? { done: true, nat: true } : {}) }, side = {}
               if (sides.pp) { const r = sidePP(cards[0], cards[1]); side.pp = { stake: sides.pp, ...r }; sidePayout += sides.pp * r.mult }
               if (sides.t3) { const r = sideT3(cards[0], cards[1], dc[0]); side.t3 = { stake: sides.t3, ...r }; sidePayout += sides.t3 * r.mult }
               if (side.pp || side.t3) h.side = side
               return h
             })
-            state = { fair: fx.fair, deck: deck.slice(2 * n + 2), dealer: dc, hands, active: n - 1, sideStake: n * (sides.pp + sides.t3), sidePayout, ins: dc[0] % 13 === 0 ? 'offer' : null }
+            state = { fair: fx.fair, deck: deck.slice(2 * n + 2), dealer: dc, hands, active: Math.max(0, hands.findLastIndex((h) => !h.done)), sideStake: n * (sides.pp + sides.t3), sidePayout, ins: dc[0] % 13 === 0 ? 'offer' : null }
           } else {
             state = { fair: fx.fair, crashAt: newCrashPoint(rg.float()), startedAt: Date.now() + 600, auto: params.auto || null }
           }
@@ -1020,24 +1020,13 @@ export default {
             let p = await seAdd(kenoPayout); if (!p.ok) p = await seAdd(kenoPayout)
             if (p.points != null) newPoints = p.points
           }
-          if (game === 'blackjack' && state.ins !== 'offer') {
-            // naturals are settled at once: blackjack pays 3:2, a dealer blackjack ends the round
+          if (game === 'blackjack' && state.ins !== 'offer' && state.hands.every((h) => h.done)) {
+            // every seat has a natural and there is nothing left to decide: the dealer turns the hole card now.
+            // No peek: a dealer blackjack is only found out here (or after the players have acted), never earlier.
             const dBJ = isBJ(state.dealer)
-            const hs = state.hands.map((h) => {
-              const pBJ = isBJ(h.cards)
-              if (!pBJ && !dBJ) return h
-              return { ...h, done: true, nat: true, result: pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'lose', payout: pBJ && dBJ ? h.bet : pBJ ? h.bet * 2.5 : 0 }
-            })
-            if (hs.some((h) => h.nat)) {
-              const open = hs.findLastIndex((h) => !h.done)
-              if (open < 0) {
-                const f = await finish(created, { ...state, hands: hs, outcome: hs.length > 1 ? 'multi' : dBJ && !isBJ(hs[0].cards) ? 'dealer_blackjack' : hs[0].result }, hs.reduce((a, h) => a + h.payout, 0) + state.sidePayout)
-                if (f.row) { row = f.row; newPoints = f.newPoints ?? newPoints }
-              } else {
-                const sv = await save(created, { state: { ...state, hands: hs, active: open } })
-                if (sv) row = sv
-              }
-            }
+            const hs = state.hands.map((h) => ({ ...h, result: dBJ ? 'push' : 'blackjack', payout: dBJ ? h.bet : h.bet * 2.5 }))
+            const f = await finish(created, { ...state, hands: hs, outcome: hs.length > 1 ? 'multi' : hs[0].result }, hs.reduce((a, h) => a + h.payout, 0) + state.sidePayout)
+            if (f.row) { row = f.row; newPoints = f.newPoints ?? newPoints }
           }
           return out(row, { newPoints })
         }
@@ -1085,21 +1074,24 @@ export default {
             const nextActive = (s) => { const i = s.hands.findLastIndex((h) => !h.done); if (i >= 0) s.active = i; return i < 0 } // seats play from the right
             // all hands finished: dealer plays (unless everyone busted), then settle every hand
             const finishRound = async (s) => {
+              const dBJ = isBJ(s.dealer) // the hole card is only looked at now: a dealer blackjack beats every hand that is not a natural
               const anyLive = s.hands.some((h) => !h.nat && bjTotal(h.cards) <= 21)
-              if (anyLive) while (bjTotal(s.dealer) < 17) s.dealer = [...s.dealer, s.deck.shift()]
+              if (anyLive && !dBJ) while (bjTotal(s.dealer) < 17) s.dealer = [...s.dealer, s.deck.shift()]
               const d = bjTotal(s.dealer)
               let total = 0
               s.hands = s.hands.map((h) => {
-                if (h.nat) { total += h.payout; return h }
+                if (h.nat) { const pay = dBJ ? h.bet : h.bet * 2.5; total += pay; return { ...h, result: dBJ ? 'push' : 'blackjack', payout: pay } }
                 const p = bjTotal(h.cards)
                 let result, payout
                 if (p > 21) { result = 'bust'; payout = 0 }
+                else if (dBJ) { result = 'lose'; payout = 0 }
                 else if (d > 21 || p > d) { result = 'win'; payout = h.bet * 2 }
                 else if (p === d) { result = 'push'; payout = h.bet }
                 else { result = 'lose'; payout = 0 }
                 total += payout
                 return { ...h, result, payout }
               })
+              if (s.ins === 'taken' && dBJ) { s.insPayout = s.insStake * 3; s.sidePayout = (s.sidePayout || 0) + s.insPayout }
               s.outcome = s.hands.length === 1 ? s.hands[0].result : 'multi'
               const f = await finish(row, s, total + (s.sidePayout || 0))
               if (f.conflict) return json({ error: 'conflict' }, 409)
@@ -1128,16 +1120,11 @@ export default {
             if (cur.ins === 'offer' && action !== 'insurance') return json({ error: 'insurance pending' }, 400)
             if (action === 'insurance') {
               if (cur.ins !== 'offer') return json({ error: 'no insurance offer' }, 400)
-              const s = clone(), take = !!body.take, dBJ = isBJ(s.dealer)
+              const s = clone(), take = !!body.take
               s.ins = take ? 'taken' : 'declined'
               const extra = take ? Math.floor(s.hands.reduce((a, h) => a + h.bet, 0) / 2) : 0
-              if (take) { s.insStake = extra; s.sideStake = (s.sideStake || 0) + extra; if (dBJ) { s.insPayout = extra * 3; s.sidePayout = (s.sidePayout || 0) + extra * 3 } }
-              // the dealer peek that was held back: naturals are settled now
-              s.hands = s.hands.map((h) => {
-                const pBJ = isBJ(h.cards)
-                if (!pBJ && !dBJ) return h
-                return { ...h, done: true, nat: true, result: pBJ && dBJ ? 'push' : pBJ ? 'blackjack' : 'lose', payout: pBJ && dBJ ? h.bet : pBJ ? h.bet * 2.5 : 0 }
-              })
+              if (take) { s.insStake = extra; s.sideStake = (s.sideStake || 0) + extra }
+              // no peek: the hole card stays face down, the insurance is settled when the round ends
               if (extra > 0) { const w2 = await withStake(s, extra); if (w2.err) return w2.err }
               return proceed(s)
             }
