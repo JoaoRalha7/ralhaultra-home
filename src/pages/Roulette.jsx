@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Confetti, Page, fmt, useFlag, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, Page, fmt, useFlag, playSfx, useCasino, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import { WHEEL, rColor, ROULETTE } from '../lib/roulette'
 import shared from './Casino.module.css'
 import styles from './Roulette.module.css'
@@ -108,6 +108,7 @@ function NumCell({ c, n, col, row, cls }) {
 
 export default function Roulette() {
   const g = useCasino('roulette')
+  useMaxBet('roulette')
   const [chip, setChip] = useState(100)
   const [bets, setBets] = useState([]) // { type, value, amount }
   const [mode, setMode] = useState('manual')
@@ -280,7 +281,7 @@ export default function Roulette() {
           </div>
 
           <div className={styles.fld}>
-            <span className={styles.lab}>Total Bet</span>
+            <span className={styles.lab}>Total Bet<MaxBet note="per spot" /></span>
             <div className={`${styles.total} ${locked ? styles.off : ''}`}>
               <i className={styles.coin} aria-hidden="true" />
               <b>{fmt(total)}</b>

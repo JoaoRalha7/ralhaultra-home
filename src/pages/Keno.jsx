@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import { KENO, KENO_RISK, kenoTable } from '../lib/keno'
 import shared from './Casino.module.css'
 import styles from './Keno.module.css'
@@ -14,7 +14,7 @@ const Chev = ({ up }) => <svg viewBox="0 0 24 24" width="14" height="14" fill="n
 function Money({ label, value, setValue, disabled }) {
   return (
     <div className={styles.fld}>
-      <span className={styles.lab}>{label}</span>
+      <span className={styles.lab}>{label}{label === 'Bet Amount' && <MaxBet />}</span>
       <div className={`${styles.money} ${disabled ? styles.off : ''}`}>
         <i className={styles.coin} aria-hidden="true" />
         <input type="number" inputMode="numeric" min={MIN_BET} value={value} disabled={disabled}
@@ -59,6 +59,7 @@ export default function Keno() {
   const [picks, setPicks] = useState([])
   const [tab, setTab] = useState('manual')
   const [risk, setRisk] = useState('classic')
+  useMaxBet('keno', { picks: picks.length || 10, risk }, bet, setBet)
   const [nBets, setNBets] = useState(0)
   const [adv, setAdv] = useState(false)
   const [cfg, setCfg] = useState({ stopProfit: '', stopLoss: '', onWin: '', onLoss: '' })

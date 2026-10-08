@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import { Gem as GemI, Bomb as BombI } from '../components/MineIcons'
 import shared from './Casino.module.css'
 import styles from './Mines.module.css'
@@ -16,7 +16,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 function Money({ label, value, setValue, disabled }) {
   return (
     <div className={styles.fld}>
-      <span className={styles.lab}>{label}</span>
+      <span className={styles.lab}>{label}{label === 'Bet Amount' && <MaxBet />}</span>
       <div className={`${styles.money} ${disabled ? styles.off : ''}`}>
         <i className={styles.coin} aria-hidden="true" />
         <input type="number" inputMode="numeric" min={MIN_BET} value={value} disabled={disabled}
@@ -60,6 +60,7 @@ export default function Mines() {
   const [tab, setTab] = useState('manual')
   const [bet, setBet] = useState(100)
   const [mines, setMines] = useState(3)
+  useMaxBet('mines', { mines }, bet, setBet)
   const [picks, setPicks] = useState([]) // auto: tiles to reveal, in click order
   const [nBets, setNBets] = useState(0)
   const [adv, setAdv] = useState(false)

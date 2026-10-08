@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Confetti, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import { PLINKO, plinkoTable } from '../lib/plinko'
 import shared from './Casino.module.css'
 import styles from './Plinko.module.css'
@@ -61,6 +61,7 @@ export default function Plinko() {
   const [bet, setBet] = useState(100)
   const [rows, setRows] = useState(16)
   const [risk, setRisk] = useState('medium')
+  useMaxBet('plinko', { rows, risk }, bet, setBet)
   const [tab, setTab] = useState('manual')
   const [nBets, setNBets] = useState(0)
   const [adv, setAdv] = useState(false)

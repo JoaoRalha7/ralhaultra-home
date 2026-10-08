@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import shared from './Casino.module.css'
 import styles from './Blackjack.module.css'
 
@@ -61,7 +61,7 @@ function Money({ label, value, setValue, disabled, min }) {
   const set = (v) => setValue(Math.max(min, Math.min(MAX_BET, Math.floor(v) || min)))
   return (
     <div className={styles.fld}>
-      <span className={styles.lab}>{label}</span>
+      <span className={styles.lab}>{label}{label === 'Bet Amount' && <MaxBet />}</span>
       <div className={`${styles.money} ${disabled ? styles.off : ''}`}>
         <i className={styles.coin} aria-hidden="true" />
         <input type="number" inputMode="numeric" min={min} value={value} disabled={disabled} placeholder="0"
@@ -78,6 +78,7 @@ export default function Blackjack() {
   const g = useCasino('blackjack')
   const [tab, setTab] = useState('standard')
   const [bet, setBet] = useState(100)
+  useMaxBet('blackjack', {}, bet, setBet)
   const [pp, setPp] = useState('')
   const [t3, setT3] = useState('')
   const [seats, setSeats] = useState(1)

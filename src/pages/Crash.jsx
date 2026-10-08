@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { recordStat } from '../lib/liveStats'
-import { Confetti, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET } from './CasinoShared'
+import { Confetti, Page, UserAv, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import { workerPost } from '../lib/points'
 import shared from './Casino.module.css'
 import styles from './Crash.module.css'
@@ -78,6 +78,7 @@ const Av = ({ name, map }) => <UserAv name={name} src={map?.[String(name).toLowe
 export default function Crash() {
   const g = useCasino('crash')
   const [bet, setBet] = useState(100)
+  useMaxBet('crash', {}, bet, setBet)
   const [data, setData] = useState(null) // last public state from the server
   const [offset, setOffset] = useState(0) // server clock minus local clock
   const [now, setNow] = useState(Date.now())
@@ -280,7 +281,7 @@ export default function Crash() {
           {!(tab === 'auto' && showSettings === false) && (
             <>
               <div className={styles.fld}>
-                <span className={styles.lab}>Bet Amount</span>
+                <span className={styles.lab}>Bet Amount<MaxBet /></span>
                 <div className={`${styles.money} ${locked ? styles.off : ''}`}>
                   <i className={styles.coin} />
                   <input type="number" inputMode="numeric" min={MIN_BET} value={bet} disabled={locked}

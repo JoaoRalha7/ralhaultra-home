@@ -1833,6 +1833,15 @@ export default {
         return json({ ranks })
       }
 
+      // ── GET /casino/limits?game=&rows=&risk=&picks=&mines= — exact min/max bet for the chosen settings ──
+      if (pathname === '/casino/limits' && request.method === 'GET') {
+        const game = searchParams.get('game') || ''
+        if (!CASINO_GAMES.includes(game)) return json({ error: 'unknown game' }, 400)
+        const n = Math.max(1, Math.min(10, parseInt(searchParams.get('picks') || '10', 10) || 10))
+        const body = { rows: searchParams.get('rows'), risk: searchParams.get('risk') || undefined, mines: searchParams.get('mines'), picks: new Array(n).fill(0) }
+        return json({ min: CASINO.minBet, max: econMaxBet(game, body), roulette: game === 'roulette' ? econMaxBet(game, body) * 5 : undefined })
+      }
+
       // ── GET /leaderboard ─────────────────────────────────────────────────────
       if (pathname === '/leaderboard') {
         const limit  = Math.min(parseInt(searchParams.get('limit')  || '100'), 100)

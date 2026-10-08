@@ -5,12 +5,41 @@ import OriginalsBelow from '../components/OriginalsBelow'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
-import { workerPost } from '../lib/points'
+import { workerPost, WORKER } from '../lib/points'
 import { Link } from 'react-router-dom'
 import styles from './Casino.module.css'
 
 export const MIN_BET = 10
-export const MAX_BET = 10000
+export const DEFAULT_MAX_BET = 10000
+// Live binding: the real max bet for the current game settings (set by useMaxBet), read by every bet field.
+export let MAX_BET = DEFAULT_MAX_BET
+
+// Asks the server for the exact max bet of the chosen settings (mines, rows, risk, picks) and keeps MAX_BET in sync.
+export function useMaxBet(game, params = {}, bet, setBet) {
+  const [max, setMax] = useState(MAX_BET)
+  const key = JSON.stringify(params)
+  useEffect(() => {
+    let alive = true
+    const q = new URLSearchParams({ game, ...Object.fromEntries(Object.entries(JSON.parse(key)).filter(([, v]) => v != null && v !== '')) })
+    const t = setTimeout(() => {
+      fetch(`${WORKER}/casino/limits?${q}`).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (!alive || !d?.max) return
+        MAX_BET = d.max
+        setMax(d.max)
+      }).catch(() => {})
+    }, 150)
+    return () => { alive = false; clearTimeout(t) }
+  }, [game, key])
+  useEffect(() => () => { MAX_BET = DEFAULT_MAX_BET }, [])
+  // settings changed and the current bet is now above the max: pull it down
+  useEffect(() => { if (setBet && Number(bet) > max) setBet(max) }, [max, bet, setBet])
+  return max
+}
+
+// "Max bet 500" tag, shown at the right of the Bet Amount label
+export function MaxBet({ note }) {
+  return <span style={{ float: 'right', color: '#f5c542', fontWeight: 700 }}>Max bet {MAX_BET.toLocaleString('en-GB')}{note ? ` ${note}` : ''}</span>
+}
 export const fmt = (n) => Number(n ?? 0).toLocaleString('en-GB')
 
 const ERR = {
@@ -18,10 +47,8 @@ const ERR = {
   'invalid picks': 'Pick between 1 and 10 numbers.',
   'invalid bets': 'Check your bets and try again.',
   'invalid plinko': 'Invalid Plinko settings.',
-  'invalid side bet': `Side bets must be 0 or between ${MIN_BET} and ${fmt(MAX_BET)} points.`,
   'cannot split': 'You cannot split this hand.',
   'cannot double': 'You cannot double this hand.',
-  'invalid bet': `Bet must be between ${MIN_BET} and ${fmt(MAX_BET)} points.`,
   unauthorized: 'Log in again to play.',
   not_logged_in: 'Log in with Twitch to play.',
   conflict: 'Something changed, try again.',
@@ -200,6 +227,13 @@ export function ChipStack({ amount }) {
 
 // Shared game plumbing: login/points, resuming an active round, start/act calls.
 const INSTANT = ['keno', 'plinko', 'roulette']
+// Bet limit errors quote the real max bet sent by the server
+function errText(d) {
+  if (d?.error === 'invalid bet') return `Bet must be between ${MIN_BET} and ${fmt(d.max ?? MAX_BET)} points.`
+  if (d?.error === 'invalid side bet') return `Side bets must be 0 or between ${MIN_BET} and ${fmt(MAX_BET)} points.`
+  return ERR[d?.error] || 'Something went wrong. Try again.'
+}
+
 export function useCasino(game) {
   const { user, profile } = useAuth()
   const twitchUser = profile?.twitch_username || user?.user_metadata?.name || null
@@ -285,7 +319,7 @@ export function useCasino(game) {
     try {
       const { ok, data } = await workerPost(path, { game, ...body })
       apply(data)
-      if (!ok) { setErr(ERR[data.error] || 'Something went wrong. Try again.'); return null }
+      if (!ok) { setErr(errText(data)); return null }
       return data
     } catch { setErr('Connection error. Try again.'); return null }
     finally { setBusy(false) }
@@ -297,7 +331,7 @@ export function useCasino(game) {
     setErr('')
     try {
       const { ok, data } = await workerPost('/casino/start', { game, ...body })
-      if (!ok) { setErr(ERR[data.error] || 'Something went wrong. Try again.'); return null }
+      if (!ok) { setErr(errText(data)); return null }
       return data
     } catch { setErr('Connection error. Try again.'); return null }
   }, [game])

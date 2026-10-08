@@ -1,6 +1,6 @@
 import { recordStat } from '../lib/liveStats'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Coin, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
+import { Coin, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import { holdPointsPulls } from '../hooks/useStreamElementsPoints'
 import { workerPost } from '../lib/points'
 import styles from './Casino.module.css'
@@ -217,7 +217,7 @@ export default function Jackpot() {
       <div className={styles.layout}>
         <aside className={`${styles.panel} ${J.panel}`}>
           <div className={J.fld}>
-            <span className={J.lab}>Bet Amount</span>
+            <span className={J.lab}>Bet Amount<MaxBet /></span>
             <div className={J.money}>
               <i className={J.coin} aria-hidden="true" />
               <input type="number" inputMode="numeric" min={MIN_BET} value={amount}
