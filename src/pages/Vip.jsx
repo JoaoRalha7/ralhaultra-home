@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { WORKER } from '../lib/points'
-import { Medal } from '../components/Medal'
+import { Medal, Medal3D, RANK_COLORS } from '../components/Medal'
 import { RewardsModal, Lock, Check, Bar, progressOf, fmt } from '../components/RewardsModal'
 import styles from './Vip.module.css'
 
@@ -53,8 +53,8 @@ function ProgressCard({ levels, me, onOpen }) {
 function RankCard({ l, me }) {
   const state = !me ? 'locked' : l.level < me.level ? 'done' : l.level === me.level ? 'current' : 'locked'
   return (
-    <div className={`${styles.rank} ${state === 'current' ? styles.rankCur : ''} ${state === 'locked' ? styles.rankLocked : ''}`}>
-      <Medal level={l.level} size={56} />
+    <div className={`${styles.rank} ${state === 'current' ? styles.rankCur : ''} ${state === 'locked' ? styles.rankLocked : ''}`} style={{ '--rc': RANK_COLORS[l.level] }}>
+      <div className={styles.stage}><Medal3D level={l.level} size={84} delay={l.level * 0.9} /></div>
       <h3>{l.name}</h3>
       <ul>
         <li>{Number(l.min_wagered) ? `${fmt(l.min_wagered)} wagered` : 'Free for everyone'}</li>

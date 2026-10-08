@@ -29,7 +29,7 @@ function Emblem({ level, fill }) {
 }
 
 // Original rank badge: a metal hexagon with a bevel, a recessed plate and an emblem per rank.
-export function Medal({ level = 0, size = 44 }) {
+export function Medal({ level = 0, size = 44, plain = false }) {
   const id = useId().replace(/:/g, '')
   const [l, m, d, dd] = RAMP[level] || RAMP[0]
   return (
@@ -46,8 +46,25 @@ export function Medal({ level = 0, size = 44 }) {
       <path d={HEX} fill="none" stroke={l} strokeOpacity=".85" strokeWidth="1" />
       <path d={INNER} fill={`url(#${id}p)`} />
       <path d={INNER} fill="none" stroke={m} strokeOpacity=".7" strokeWidth=".9" />
-      <g clipPath={`url(#${id}c)`}><path d="M0 0h44v19C30 24 14 24 0 17z" fill={`url(#${id}s)`} opacity=".7" /></g>
-      <Emblem level={level} fill={`url(#${id}e)`} />
+      {!plain && <g clipPath={`url(#${id}c)`}><path d="M0 0h44v19C30 24 14 24 0 17z" fill={`url(#${id}s)`} opacity=".7" /></g>}
+      {!plain && <Emblem level={level} fill={`url(#${id}e)`} />}
     </svg>
+  )
+}
+
+// Thick 3D version: a stack of layers along Z that turns around its vertical axis (CSS in Vip.module.css: .spin3d).
+export function Medal3D({ level = 0, size = 64, delay = 0, className = '' }) {
+  const layers = [-5, -4, -3, -2, -1]
+  return (
+    <div className={className} style={{ width: size, height: size, perspective: 700 }}>
+      <div style={{ position: 'relative', width: size, height: size, transformStyle: 'preserve-3d', animation: `medalSpin 7s cubic-bezier(.6,0,.25,1) ${delay}s infinite` }}>
+        {layers.map((z) => (
+          <div key={z} style={{ position: 'absolute', inset: 0, transform: `translateZ(${z * 1.4}px)`, filter: `brightness(${0.55 + (z + 5) * 0.06})` }}>
+            <Medal level={level} size={size} plain />
+          </div>
+        ))}
+        <div style={{ position: 'absolute', inset: 0, transform: 'translateZ(1px)' }}><Medal level={level} size={size} /></div>
+      </div>
+    </div>
   )
 }
