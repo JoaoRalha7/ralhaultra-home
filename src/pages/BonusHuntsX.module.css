@@ -373,3 +373,22 @@
 .fSkull{color:var(--neg);flex:none}
 .fWorstWin{font-size:18px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
 @media(max-width:700px){.fStats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* hunt detail v2 */
+.dTitle{font-size:clamp(32px,4vw,48px)}
+.sNext{box-shadow:0 0 12px rgba(147,197,253,.6);background:var(--acc2)!important}
+.dProfit>b{font-size:60px}
+.bwCard b{font-size:18px}
+.dBoard{gap:12px}
+.dTile{padding:16px 18px}
+.dTile .lbl{font-size:14px;margin-bottom:4px}
+.dTile b{font:800 28px "Bricolage Grotesque",sans-serif}
+.gboxMini{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.gboxMini b{flex:1;font-size:16px}
+.gboxMini em{font-style:normal;color:var(--mute);font-size:14px}
+.prov{display:block;flex-basis:100%;color:var(--mute);font-size:13px;font-weight:500;margin-top:2px}
+.nextTag{font-size:11px;font-weight:800;color:var(--acc2);border:1px solid rgba(147,197,253,.4);border-radius:99px;padding:2px 9px;margin-left:8px}
+.nextRow{background:linear-gradient(90deg,rgba(59,130,246,.16),transparent);box-shadow:inset 3px 0 0 var(--acc2)}
+.mBar{display:block;height:5px;border-radius:9px;background:rgba(255,255,255,.08);margin-top:6px;min-width:60px}
+.mBar i{display:block;height:100%;border-radius:9px;background:var(--gold)}
+.tbl td{padding-top:12px;padding-bottom:12px}

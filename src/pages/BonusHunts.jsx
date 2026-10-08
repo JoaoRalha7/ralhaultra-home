@@ -431,11 +431,11 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
   const worst = [...withMulti].sort((a, b) => a.multi - b.multi)[0] || null
   const ribRef = useRef(null)
   const stats = [
-    { lbl: 'Start balance', val: balStart > 0 ? '€' + balStart.toFixed(2) : '—' },
-    { lbl: 'Total pay', val: totalPay > 0 ? '€' + totalPay.toFixed(2) : '—', cls: x.pos },
-    { lbl: 'Initial break-even', val: beInit > 0 ? beInit.toFixed(2) + 'x' : '—' },
-    { lbl: 'Break-even now', val: beCurr > 0 ? beCurr.toFixed(2) + 'x' : '0x', cls: x.neg },
-    { lbl: 'Average multi', val: avg > 0 ? avg.toFixed(2) + 'x' : '—' },
+    { lbl: 'Start', val: balStart > 0 ? '€' + balStart.toFixed(2) : '—' },
+    { lbl: 'Pay', val: totalPay > 0 ? '€' + totalPay.toFixed(2) : '—', cls: x.pos },
+    { lbl: 'BE start', val: beInit > 0 ? beInit.toFixed(2) + 'x' : '—' },
+    { lbl: 'BE now', val: beCurr > 0 ? beCurr.toFixed(2) + 'x' : '0x', cls: x.neg },
+    { lbl: 'Avg', val: avg > 0 ? avg.toFixed(2) + 'x' : '—' },
     { lbl: 'Bonuses', val: String(entries.length) },
   ]
 
@@ -467,13 +467,10 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
     const g = (gameList || []).find(q => q.key === key)
     if (!gameList) return null
     if (!g?.game) return (
-      <section id={'game-' + key} className={x.gbox} aria-label={d.label}>
-        <header className={x.gboxHead}>
-          <span className={x.gameIcon}><GameIcon k={key} /></span>
-          <div><b>{d.label}</b><small>{d.blurb}</small></div>
-          <span className={`${x.gChip} ${x.gClosed}`}>Waiting</span>
-        </header>
-        <p className={x.gboxEmpty}>No game for this hunt yet.</p>
+      <section id={'game-' + key} className={`${x.gbox} ${x.gboxMini}`} aria-label={d.label}>
+        <span className={x.gameIcon}><GameIcon k={key} /></span>
+        <b>{d.label}</b>
+        <em>No game yet</em>
       </section>
     )
     const live = g.game.status === 'open'
@@ -500,7 +497,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
             <button className={x.navBtn} onClick={() => nextHunt && onNavigate(nextHunt)} disabled={!nextHunt} aria-label="Next hunt"><ChevRight /></button>
             {isFinished
               ? <span className={x.pillOff}>Finished</span>
-              : <span className={x.pillLive}><span className={x.liveDot} />{hunt.mode === 'opening' ? 'Opening' : 'Collecting'}</span>}
+              : <span className={x.pillLive}><span className={x.liveDot} />LIVE</span>}
             <span className={x.fDate}>{fmtDate(hunt.date)}</span>
           </div>
           <h1 className={x.dTitle}>Bonus Hunt #{hunt.id}</h1>
@@ -509,10 +506,10 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
               {entries.map(e => {
                 const m = mOf(e)
                 const st = !e.opened ? x.sPend : m >= 1 ? x.sWin : x.sLoss
-                return <i key={e.id} className={`${st} ${e.is_super ? x.sSuper : ''}`} title={`${e.slot?.name || '—'}${e.opened && m >= 0 ? ' · ' + m.toFixed(0) + 'x' : ''}`} />
+                return <i key={e.id} className={`${st} ${e.is_super ? x.sSuper : ''} ${nextUp && nextUp.id === e.id ? x.sNext : ''}`} title={`${e.slot?.name || '—'}${e.opened && m >= 0 ? ' · ' + m.toFixed(0) + 'x' : ''}`} />
               })}
             </div>
-            <span>{opened.length} of {entries.length} opened</span>
+            <div className={x.fCount}><b>{opened.length} / {entries.length}</b> opened</div>
           </div>
         </div>
         <div className={x.dProfit}>
@@ -558,7 +555,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>#</th><th>SLOT</th><th>PROVIDER</th>
+                    <th>#</th><th>SLOT</th>
                     <th className={x.sortTh} onClick={() => toggleSort('bet')}>BET{arrow('bet')}</th>
                     <th className={x.sortTh} onClick={() => toggleSort('multi')}>MULTI{arrow('multi')}</th>
                     <th className={x.sortTh} onClick={() => toggleSort('win')}>WIN{arrow('win')}</th>
@@ -572,7 +569,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
                     const mc = multi === null ? '' : multi >= 100 ? styles.good : multi >= 40 ? styles.mid : styles.bad
                     const isOpen = activePopover?.id === e.id
                     return (
-                      <tr key={e.id} className={`${e.opened ? '' : styles.unopened} ${podium[0]?.id === e.id ? x.bestRow : ''}`}>
+                      <tr key={e.id} className={`${e.opened ? '' : styles.unopened} ${podium[0]?.id === e.id ? x.bestRow : ''} ${nextUp && nextUp.id === e.id ? x.nextRow : ''}`}>
                         <td className={styles.numCell}>{idx}</td>
                         <td>
                           <div className={styles.slotCellWrap}>
@@ -591,6 +588,8 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
                                   {e.slot?.name || '—'}
                                 </button>
                                 {e.is_super && <span className={styles.superTag}>SUPER</span>}
+                                {nextUp && nextUp.id === e.id && <span className={x.nextTag}>NEXT</span>}
+                                <small className={x.prov}>{e.slot?.provider || ''}</small>
                               </div>
                             </div>
                             {isOpen && (
@@ -605,9 +604,8 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
                             )}
                           </div>
                         </td>
-                        <td className={styles.provCell}>{e.slot?.provider || '—'}</td>
                         <td className={styles.tdBet}>{e.bet ? parseBet(e.bet).toFixed(2) + ' €' : '—'}</td>
-                        <td className={`${styles.tdMulti} ${mc}`}>{multi !== null ? '×' + multi.toFixed(2) : '—'}</td>
+                        <td className={`${styles.tdMulti} ${mc}`}>{multi !== null ? <>×{multi.toFixed(2)}<span className={x.mBar}><i style={{ width: Math.min(100, (multi / Math.max(bestMulti, 1)) * 100) + '%' }} /></span></> : '—'}</td>
                         <td className={styles.tdWin}>{e.payment != null ? <strong>€{parseBet(e.payment).toFixed(2)}</strong> : '—'}</td>
                       </tr>
                     )
