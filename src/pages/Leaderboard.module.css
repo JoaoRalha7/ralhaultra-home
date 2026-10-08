@@ -114,3 +114,9 @@
 .dock button{height:36px;padding:0 16px;border-radius:11px;border:0;background:var(--acc);color:#fff;font:800 13px "DM Sans",sans-serif;cursor:pointer}
 @media (prefers-reduced-motion:reduce){.tableRow,.podiumCard{animation:none}}
 @media (max-width:760px){.dock{flex-wrap:wrap}.dock button{width:100%}}
+
+/* clickable rows + level badge */
+.tableRow,.podiumCard{cursor:pointer}
+.tableRow:focus-visible,.podiumCard:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+.colPlayer>svg,.colPlayer>span:has(svg){flex:none}
+.podiumLvl{display:inline-flex;margin-top:-2px}

@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import TwitchAvatar from '../components/TwitchAvatar'
+import { useAvatars } from '../lib/avatars'
+import { useRanks } from '../lib/ranks'
+import { Medal } from '../components/Medal'
+import { openPlayer } from '../components/PlayerModal'
 import styles from './Leaderboard.module.css'
 
 const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
@@ -10,50 +15,6 @@ const PODIUM_COLORS = {
   0: { bg: 'var(--yellow)', glow: 'rgba(251,191,36,0.3)',  label: '1ST', ring: 'var(--yellow)' },
   1: { bg: '#94a3b8',       glow: 'rgba(148,163,184,0.2)', label: '2ND', ring: '#94a3b8' },
   2: { bg: '#cd7c54',       glow: 'rgba(205,124,84,0.25)', label: '3RD', ring: '#cd7c54' },
-}
-
-// ── Funções de Avatar (Cache + IVR) ────────────────────────────────────────────
-const profileCache = {}
-async function getProfilePic(username) {
-  if (!username) return null
-  if (profileCache[username]) return profileCache[username]
-  try {
-    const c = new AbortController()
-    const t = setTimeout(() => c.abort(), 4000)
-    const res  = await fetch(`https://api.ivr.fi/v2/twitch/user?login=${username.toLowerCase()}`, { signal: c.signal })
-    clearTimeout(t)
-    const data = await res.json()
-    const url  = data?.[0]?.logo || null
-    if (url) profileCache[username] = url
-    return url
-  } catch { return null }
-}
-
-function hslFromName(name) {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff
-  return `hsl(${h % 360}, 55%, 58%)`
-}
-
-function TwitchAvatar({ username, size = 36, className = '' }) {
-  const color = hslFromName(username || '?')
-  const [imgSrc, setImgSrc] = useState(profileCache[username] || null)
-  
-  useEffect(() => {
-    if (!username) return
-    if (profileCache[username]) { setImgSrc(profileCache[username]); return }
-    let mounted = true
-    getProfilePic(username).then(url => { if (mounted && url) setImgSrc(url) })
-    return () => { mounted = false }
-  }, [username])
-
-  const style = { width: size, height: size, borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }
-  if (imgSrc) return <img src={imgSrc} alt={username} className={className} style={style} loading="lazy" />
-  return (
-    <div className={className} style={{ ...style, background: `${color}25`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.4, fontWeight: 900, color, fontFamily: 'var(--font)' }}>
-      {username?.[0]?.toUpperCase() || '?'}
-    </div>
-  )
 }
 
 // ── Efeito Ping-Pong ─────────────────────────────────────────────────────────
@@ -160,6 +121,11 @@ export default function Leaderboard() {
   const totalPages = Math.max(1, Math.ceil(tableUsers.length / PAGE_SIZE))
   const pageSlice  = tableUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const handleSearch = (e) => { setSearch(e.target.value); setPage(1) }
+  const shown = [...podium, ...pageSlice, ...(myRank >= 0 ? [users[myRank]] : [])].map((u) => u?.username).filter(Boolean)
+  const avmap = useAvatars(shown)
+  const rankOf = useRanks(shown)
+  const lvlBadge = (name, size) => { const l = rankOf(name); return l == null ? null : <Medal level={l} size={size} /> }
+  const goPlayer = (name) => (e) => { if (e.type === 'click' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(name) } }
 
   useEffect(() => {
     const el = meRef.current
@@ -244,17 +210,18 @@ export default function Leaderboard() {
             const first = idx === 0
             const mine  = p.username?.toLowerCase() === myUsername
             return (
-              <div key={p.username} className={`${styles.podiumCard} ${styles['pod' + idx]} ${mine ? styles.podMe : ''}`} style={{ '--c': col.bg, '--glow': col.glow }}>
+              <div key={p.username} role="button" tabIndex={0} onClick={goPlayer(p.username)} onKeyDown={goPlayer(p.username)} className={`${styles.podiumCard} ${styles['pod' + idx]} ${mine ? styles.podMe : ''}`} style={{ '--c': col.bg, '--glow': col.glow }}>
                 {first && (
                   <svg className={styles.crown} width="34" height="26" viewBox="0 0 34 26" aria-hidden="true">
                     <path d="M2 22L5 6l8 8 4-11 4 11 8-8 3 16z" fill="currentColor" stroke="rgba(0,0,0,.35)" strokeWidth="1.2" strokeLinejoin="round"/>
                   </svg>
                 )}
                 <div className={styles.podiumAvatarWrap}>
-                  <TwitchAvatar username={p.username} size={first ? 92 : 72} className={styles.podiumAvatar} />
+                  <TwitchAvatar name={p.username} map={avmap} size={first ? 92 : 72} className={styles.podiumAvatar} />
                   <span className={styles.podiumBadge}>{idx + 1}</span>
                 </div>
                 <SlideText text={p.username} className={styles.podiumName} />
+                {lvlBadge(p.username, 26) && <span className={styles.podiumLvl}>{lvlBadge(p.username, 26)}</span>}
                 <div className={styles.podiumPoints}>{p.points?.toLocaleString('en-GB')} <CoinSVG size={15} color={col.bg} /></div>
                 <div className={styles.step}><span>{col.label}</span></div>
               </div>
@@ -280,11 +247,12 @@ export default function Leaderboard() {
               const rank = users.findIndex(x => x.username === u.username) + 1
               const isMe = u.username?.toLowerCase() === myUsername
               return (
-                <div key={u.username} ref={isMe ? meRef : null} className={`${styles.tableRow} ${isMe ? styles.tableRowMe : ''} ${rank <= 10 ? styles.top10 : ''}`} style={{ '--i': pageSlice.indexOf(u), '--p': Math.max(2, ((u.points || 0) / maxPts) * 100) }}>
+                <div key={u.username} ref={isMe ? meRef : null} role="button" tabIndex={0} onClick={goPlayer(u.username)} onKeyDown={goPlayer(u.username)} className={`${styles.tableRow} ${isMe ? styles.tableRowMe : ''} ${rank <= 10 ? styles.top10 : ''}`} style={{ '--i': pageSlice.indexOf(u), '--p': Math.max(2, ((u.points || 0) / maxPts) * 100) }}>
                   <span className={styles.colPos}>{rank}</span>
                   <div className={styles.colPlayer}>
-                    <div className={styles.rowAvatarWrap}><TwitchAvatar username={u.username} size={36} className={styles.rowAvatar} /></div>
+                    <div className={styles.rowAvatarWrap}><TwitchAvatar name={u.username} map={avmap} size={36} className={styles.rowAvatar} /></div>
                     <SlideText text={u.username} className={styles.rowName} />
+                    {lvlBadge(u.username, 22)}
                     {isMe && <span className={styles.youBadge}>YOU</span>}
                   </div>
                   <span className={styles.colPoints}>{u.points?.toLocaleString('en-GB')} <CoinSVG size={13} /></span>
@@ -326,7 +294,7 @@ export default function Leaderboard() {
       {myRank >= 3 && !search && !meSeen && (
         <div className={styles.dock}>
           <span className={styles.dockPos}>#{myRank + 1}</span>
-          <TwitchAvatar username={users[myRank].username} size={32} className={styles.rowAvatar} />
+          <TwitchAvatar name={users[myRank].username} map={avmap} size={32} className={styles.rowAvatar} />
           <b>{users[myRank].username}</b>
           <span className={styles.dockPts}>{users[myRank].points?.toLocaleString('en-GB')} <CoinSVG size={13} /></span>
           <button type="button" onClick={() => { setPage(Math.floor((myRank - 3) / PAGE_SIZE) + 1); setJump(true) }}>Go to my position</button>
