@@ -1860,21 +1860,25 @@ export default {
         if (who?.username) {
           const u = who.username
           await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: u }) }).catch(() => {})
-          const br = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(u)}&select=balance,watch_minutes,vip_watch_base,wagered_total,level`, { headers: sbHeaders })
-          const row = (await br.json())?.[0] || {}
           const now = new Date()
           const wk = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
           wk.setUTCDate(wk.getUTCDate() - ((wk.getUTCDay() + 6) % 7)) // this Monday 00:00 UTC
           const next = new Date(wk.getTime() + 7 * 86400000 + 3.5 * 3600000) // payout: next Monday 03:30 UTC
           const since = encodeURIComponent(wk.toISOString())
+          const un = encodeURIComponent(u)
+          // the five reads are independent: run them together (usernames are stored lowercase, so eq can use the index)
+          const [br, g, c, cfg] = await Promise.all([
+            fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${un}&select=balance,watch_minutes,vip_watch_base,wagered_total,level`, { headers: sbHeaders }),
+            fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?username=eq.${un}&status=eq.done&created_at=gte.${since}&select=bet,payout&limit=5000`, { headers: sbHeaders }),
+            fetch(`${env.SUPABASE_URL}/rest/v1/crash_bets?username=eq.${un}&created_at=gte.${since}&select=bet,cashed_at&limit=5000`, { headers: sbHeaders }),
+            fetch(`${env.SUPABASE_URL}/rest/v1/economy_config?key=eq.cashback_cap_week&select=value`, { headers: sbHeaders }),
+          ])
+          const row = (await br.json())?.[0] || {}
           let wagered = 0, paid = 0
-          const g = await fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?username=ilike.${encodeURIComponent(u)}&status=eq.done&created_at=gte.${since}&select=bet,payout&limit=5000`, { headers: sbHeaders })
           if (g.ok) for (const x of await g.json()) { wagered += Number(x.bet) || 0; paid += Number(x.payout) || 0 }
-          const c = await fetch(`${env.SUPABASE_URL}/rest/v1/crash_bets?username=ilike.${encodeURIComponent(u)}&created_at=gte.${since}&select=bet,cashed_at&limit=5000`, { headers: sbHeaders })
           if (c.ok) for (const x of await c.json()) { wagered += Number(x.bet) || 0; paid += Math.floor((Number(x.bet) || 0) * (Number(x.cashed_at) || 0)) }
           const lvl = Number(row.level) || 0
           const pct = Number(levels.find((l) => l.level === lvl)?.cashback_pct) || 0
-          const cfg = await fetch(`${env.SUPABASE_URL}/rest/v1/economy_config?key=eq.cashback_cap_week&select=value`, { headers: sbHeaders })
           const cap = Number((await cfg.json())?.[0]?.value) || 50000
           const loss = Math.max(0, wagered - paid)
           me = {
