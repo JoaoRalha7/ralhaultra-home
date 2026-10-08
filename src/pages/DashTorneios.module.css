@@ -483,3 +483,86 @@
 .fieldInput:focus { border-color: #5b6070; }
 .betInput { color: #f5c542; }
 .betInput:focus { border-color: rgba(245,197,66,.5); }
+
+/* ══ Side panel alignment fix ══ */
+.sidePanelBody { overflow-x: hidden; }
+.compEditor { width: 100%; box-sizing: border-box; min-width: 0; flex-shrink: 0; }
+.compEditorInputRow > *, .compEditorInputGroup { min-width: 0; }
+.compEditorInputGroup input, .compEditor .fieldInput, .compEditor .betInput, .compEditor .resultInput { width: 100%; min-width: 0; box-sizing: border-box; }
+.compEditorTop { min-width: 0; }
+.compEditorBadges { gap: 6px; }
+.multiDisplay { min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.autoWinBadge { background: rgba(245,197,66,.14); color: #f5c542; border-color: rgba(245,197,66,.4); }
+.clearBtnSm { border-color: #1c1f27; background: #0d0f14; color: #7b8190; }
+.clearBtnSm:hover { background: #14171d; color: #fff; }
+.resultInput { background: #08090c; border: 1px solid #1c1f27; border-radius: 9px; padding: 8px 10px; color: #22e07a; }
+.resultInput:focus { border-color: rgba(34,224,122,.5); }
+
+/* ══ HISTORY redesign ══ */
+.historyWrap { background: #07080b; }
+.historyTop {
+  display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  border-bottom: 1px solid #1c1f27; justify-content: flex-start;
+}
+.historyTitle { font-size: 17px; font-weight: 800; letter-spacing: -.01em; margin: 0; }
+.hBack {
+  display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px 0 8px;
+  border-radius: 9px; border: 1px solid #1c1f27; background: #0d0f14; color: #c9ced9;
+  font: 700 12px var(--font); cursor: pointer; transition: .15s;
+}
+.hBack:hover { background: #14171d; border-color: #2a2e39; color: #fff; }
+.hCount { font-size: 12px; color: #7b8190; }
+.hTabs { margin-left: auto; display: flex; gap: 4px; padding: 3px; border-radius: 11px; background: #0d0f14; border: 1px solid #1c1f27; }
+.hTab {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border-radius: 8px;
+  border: 0; background: transparent; color: #7b8190; font: 700 12px var(--font); cursor: pointer; transition: .15s;
+}
+.hTab i { font-style: normal; font-size: 10px; opacity: .7; font-variant-numeric: tabular-nums; }
+.hTab:hover { color: #fff; }
+.hTabOn, .hTabOn:hover { background: #eef1f7; color: #0a0b0e; }
+
+.historyList { padding: 20px; gap: 18px; }
+.hGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.hCard {
+  display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 16px;
+  background: #0d0f14; border: 1px solid #1c1f27; transition: border-color .15s, transform .15s;
+}
+.hCard:hover { border-color: #343845; }
+.hCardChamp { background: linear-gradient(160deg, rgba(245,197,66,.07), #0d0f14 55%); border-color: rgba(245,197,66,.22); }
+.hCardChamp:hover { border-color: rgba(245,197,66,.45); }
+.hCardTop { display: flex; gap: 12px; min-width: 0; }
+.hThumb {
+  width: 56px; height: 56px; flex: none; border-radius: 10px; background: #08090c; border: 1px solid #1c1f27;
+  display: grid; place-items: center; overflow: hidden;
+}
+.hThumbEmpty { color: #343845; display: grid; place-items: center; }
+.hInfo { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.hTitleRow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hTitle { font-size: 15px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hPill { flex: none; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; }
+.hPillLive { color: #22e07a; background: rgba(34,224,122,.1); border: 1px solid rgba(34,224,122,.25); }
+.hPillDone { color: #7b8190; background: #14171d; border: 1px solid #1c1f27; }
+.hMeta { font-size: 12px; color: #7b8190; }
+.hChamp { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f5c542; margin-top: 2px; min-width: 0; }
+.hChamp svg { flex: none; }
+.hChamp b { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hChamp span { color: #7b8190; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hChamp em { font-style: normal; font-weight: 800; margin-left: auto; flex: none; font-variant-numeric: tabular-nums; }
+.hNoChamp { font-size: 12px; color: #4a4f5c; margin-top: 2px; }
+.hFigs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hFigs > div { padding: 8px 10px; border-radius: 10px; background: #08090c; border: 1px solid #1c1f27; display: flex; flex-direction: column; gap: 2px; }
+.hFigs span { font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #7b8190; }
+.hFigs b { font-size: 14px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+.hActions { display: flex; gap: 6px; }
+.hBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 34px; padding: 0 12px;
+  border-radius: 10px; border: 1px solid #1c1f27; background: #08090c; color: #c9ced9;
+  font: 700 12px var(--font); cursor: pointer; transition: .15s; white-space: nowrap;
+}
+.hBtn:hover { background: #14171d; border-color: #2a2e39; color: #fff; }
+.hBtnMain, .hBtnMain:hover { flex: 1; background: #eef1f7; border-color: #eef1f7; color: #0a0b0e; }
+.hBtnMain:hover { background: #fff; }
+.hBtnDanger { width: 34px; padding: 0; color: #7b8190; margin-left: auto; }
+.hBtnDanger:hover { background: rgba(239,68,68,.1); border-color: rgba(239,68,68,.35); color: #f87171; }
+@media (max-width: 760px) { .historyTop { flex-wrap: wrap; } .hTabs { margin-left: 0; width: 100%; } }
+.hActions { margin-top: auto; }

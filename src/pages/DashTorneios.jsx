@@ -196,11 +196,11 @@ function CompEditor({ data, isWinner, bonusBuys, onSave, onClear }) {
               {multi.toFixed(2)}x
             </span>
           )}
-          {isWinner && <span className={styles.autoWinBadge}>✓</span>}
+          {isWinner && <span className={styles.autoWinBadge}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>}
           {!allBuysFilled && hasContent && (
             <span title="Nem todos os buys preenchidos" style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700 }}>...</span>
           )}
-          {hasContent && <button className={styles.clearBtnSm} onClick={onClear}>✕</button>}
+          {hasContent && <button className={styles.clearBtnSm} onClick={onClear} aria-label="Limpar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
         </div>
       </div>
 
@@ -514,10 +514,20 @@ function EditTournamentModal({ tournament, bracket, onClose, onSave }) {
 }
 
 // ── HistoryView ────────────────────────────────────────────
+const Ico = {
+  back:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
+  open:  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>,
+  check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7"/></svg>,
+  trash: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>,
+  x:     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>,
+  crown: <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5L3 7z"/></svg>,
+}
+
 function HistoryView({ onBack, onOpen }) {
   const [list,    setList]    = useState([])
   const [loading, setLoading] = useState(true)
   const [page,    setPage]    = useState(0)
+  const [filter,  setFilter]  = useState('all')
   const PAGE_SIZE = 20
 
   useEffect(() => {
@@ -540,60 +550,82 @@ function HistoryView({ onBack, onOpen }) {
     setList(l => l.map(x => x.id === t.id ? { ...x, status: 'finished' } : x))
   }
 
+  const rows = useMemo(() => list.map(t => {
+    const b     = hydrate(t.bracket, t.size)
+    const fin   = b[b.length - 1]?.[0]
+    const champ = fin?.winner ? fin[fin.winner] : null
+    return { t, champ }
+  }), [list])
+
+  const nActive = list.filter(t => t.status !== 'finished').length
+  const nDone   = list.length - nActive
+  const shown   = rows.filter(({ t }) =>
+    filter === 'all' ? true : filter === 'active' ? t.status !== 'finished' : t.status === 'finished')
+
   return (
     <div className={styles.historyWrap}>
       <div className={styles.historyTop}>
-        <h2 className={styles.historyTitle}>Histórico de Torneios</h2>
-        <button className={styles.ghostBtn} onClick={onBack}>← Voltar</button>
+        <button className={styles.hBack} onClick={onBack}>{Ico.back}Voltar</button>
+        <h2 className={styles.historyTitle}>Histórico</h2>
+        <span className={styles.hCount}>{list.length} torneio{list.length === 1 ? '' : 's'}</span>
+        <div className={styles.hTabs}>
+          {[['all', 'Todos', list.length], ['active', 'Ativos', nActive], ['done', 'Concluídos', nDone]].map(([k, l, n]) => (
+            <button key={k} className={`${styles.hTab} ${filter === k ? styles.hTabOn : ''}`} onClick={() => setFilter(k)}>
+              {l}<i>{n}</i>
+            </button>
+          ))}
+        </div>
       </div>
       {loading ? (
         <div className={styles.loadingWrap}><div className={styles.spinner} /> A carregar...</div>
-      ) : list.length === 0 ? (
-        <div className={styles.emptyState}><p>Nenhum torneio ainda.</p></div>
+      ) : shown.length === 0 ? (
+        <div className={styles.emptyState}><p>Nenhum torneio aqui.</p></div>
       ) : (
         <div className={styles.historyList}>
-          {list.map(t => {
-            // hydrate only for champion display — memoized per item
-            const b      = hydrate(t.bracket, t.size)
-            const fin    = b[b.length - 1]?.[0]
-            const champ  = fin?.winner ? fin[fin.winner] : null
-            const date   = new Date(t.created_at).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            return (
-              <div key={t.id} className={styles.historyItem}>
-                <div className={styles.historyItemLeft}>
-                  <div className={styles.historyItemThumb}>
-                    {champ?.slot ? <SlotImg slot={champ.slot} size={44} radius={8} /> : null}
-                  </div>
-                  <div>
-                    <div className={styles.historyItemTitle}>{t.title}</div>
-                    <div className={styles.historyItemMeta}>
-                      {date} · {t.size} slots
-                      {t.balance_start ? ` · ${parseFloat(t.balance_start).toFixed(2)}€` : ''}
-                      {t.prize_pool ? ` · Prize: ${parseFloat(t.prize_pool).toFixed(2)}€` : ''}
-                      {' · '}
-                      <span className={t.status === 'finished' ? styles.statusDone : styles.statusActive}>
-                        {t.status === 'finished' ? 'Concluído' : 'Ativo'}
-                      </span>
+          <div className={styles.hGrid}>
+            {shown.map(({ t, champ }) => {
+              const done = t.status === 'finished'
+              const date = new Date(t.created_at).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
+              const m    = champ ? getMulti(champ) : null
+              return (
+                <div key={t.id} className={`${styles.hCard} ${champ ? styles.hCardChamp : ''}`}>
+                  <div className={styles.hCardTop}>
+                    <div className={styles.hThumb}>
+                      {champ?.slot ? <SlotImg slot={champ.slot} size={56} radius={10} /> : <span className={styles.hThumbEmpty}>{Ico.crown}</span>}
                     </div>
-                    {champ?.slot && (
-                      <div className={styles.historyItemChamp}>
-                        {champ.slot.name}
-                        {champ.player && ` · ${champ.player}`}
-                        {getMulti(champ) !== null && ` · ${getMulti(champ).toFixed(2)}x`}
+                    <div className={styles.hInfo}>
+                      <div className={styles.hTitleRow}>
+                        <span className={styles.hTitle}>{t.title}</span>
+                        <span className={`${styles.hPill} ${done ? styles.hPillDone : styles.hPillLive}`}>{done ? 'Concluído' : 'Ativo'}</span>
                       </div>
-                    )}
+                      <div className={styles.hMeta}>{date} · {t.size} slots</div>
+                      {champ?.slot ? (
+                        <div className={styles.hChamp}>
+                          {Ico.crown}
+                          <b>{champ.slot.name}</b>
+                          {champ.player && <span>{champ.player}</span>}
+                          {m !== null && <em>{m.toFixed(2)}x</em>}
+                        </div>
+                      ) : (
+                        <div className={styles.hNoChamp}>Sem campeão ainda</div>
+                      )}
+                    </div>
+                  </div>
+                  {(t.balance_start || t.prize_pool) && (
+                    <div className={styles.hFigs}>
+                      {t.balance_start ? <div><span>Balance</span><b>{parseFloat(t.balance_start).toFixed(2)}€</b></div> : null}
+                      {t.prize_pool ? <div><span>Prize pool</span><b>{parseFloat(t.prize_pool).toFixed(2)}€</b></div> : null}
+                    </div>
+                  )}
+                  <div className={styles.hActions}>
+                    <button className={`${styles.hBtn} ${styles.hBtnMain}`} onClick={() => onOpen(t)}>Abrir{Ico.open}</button>
+                    {!done && <button className={styles.hBtn} onClick={() => handleFinish(t)}>{Ico.check}Concluir</button>}
+                    <button className={`${styles.hBtn} ${styles.hBtnDanger}`} aria-label="Eliminar" onClick={() => handleDelete(t)}>{Ico.trash}</button>
                   </div>
                 </div>
-                <div className={styles.historyItemActions}>
-                  <button className={styles.hBtn} onClick={() => onOpen(t)}>Abrir</button>
-                  {t.status === 'active' && (
-                    <button className={`${styles.hBtn} ${styles.hBtnFinish}`} onClick={() => handleFinish(t)}>Concluir</button>
-                  )}
-                  <button className={`${styles.hBtn} ${styles.hBtnDanger}`} onClick={() => handleDelete(t)}>Eliminar</button>
-                </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
           {list.length === PAGE_SIZE && (
             <button className={styles.ghostBtn} style={{ alignSelf: 'center' }} onClick={() => setPage(p => p + 1)}>
               Carregar mais
