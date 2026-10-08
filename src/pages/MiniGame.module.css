@@ -1370,3 +1370,26 @@
 .compact .sidebarUser{font-size:13px}
 .compact .sidebarSlot{font-size:11px}
 .compact .barTimer{font-size:18px}
+
+/* ══ GTB leaderboard ══ */
+.lbHead{display:flex;align-items:center;gap:10px;padding:2px 2px 10px;color:var(--mute)}
+.lbTitle{display:inline-flex;align-items:center;gap:8px;font:800 14px var(--head);color:var(--text)}
+.lbTitle svg{color:var(--gold)}
+.lbCount{font:800 11px var(--head);color:var(--mute);background:rgba(255,255,255,.06);padding:2px 8px;border-radius:99px}
+.lbBy{margin-left:auto;font-size:13px}
+.lbList{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+.lbListAll{max-height:min(62vh,640px)}
+.lbRow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);font-size:14px;min-width:0}
+.lbRow1{background:linear-gradient(90deg,rgba(245,197,66,.14),rgba(245,197,66,.03));border-color:rgba(245,197,66,.4)}
+.lbRowMe{border-color:var(--acc);background:rgba(59,130,246,.1)}
+.lbPos{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:800 12px var(--head);background:rgba(255,255,255,.08);color:var(--mute)}
+.lbPos1{background:#f5c542;color:#1a1300}.lbPos2{background:#cbd5e1;color:#111}.lbPos3{background:#cd7f32;color:#1a0d00}
+.lbAv{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:800 13px var(--head);color:#fff}
+.lbUser{flex:1;min-width:0;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbGuess{font:800 14px var(--head);white-space:nowrap}
+.lbGap{color:var(--mute);font-size:12px;white-space:nowrap}
+.lbPrize{font:800 11px var(--head);color:var(--gold);white-space:nowrap}
+.lbMore{margin-top:10px;width:100%;height:40px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:700 13px var(--font);cursor:pointer}
+.lbMore:hover{border-color:var(--acc)}
+.compact .lbList{max-height:260px}
+.compact .lbGap{display:none}

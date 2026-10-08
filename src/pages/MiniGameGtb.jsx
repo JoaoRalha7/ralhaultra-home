@@ -150,6 +150,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
   const [submitting,  setSubmitting]  = useState(false)
   const [confirm,     setConfirm]     = useState(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [lbAll,       setLbAll]       = useState(false)
   const [toast,       setToast]       = useState(null)
   const [guessInput,  setGuessInput]  = useState('')
   const toastRef = useRef(null)
@@ -295,7 +296,7 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
 
   // Live ranking (finished — sort by gap asc)
   const rankedEntries = isFinished
-    ? [...entries].filter(e => e.rank).sort((a, b) => a.rank - b.rank)
+    ? [...entries].sort((a, b) => (a.gap == null ? Infinity : parseBet(a.gap)) - (b.gap == null ? Infinity : parseBet(b.gap)))
     : [...entries].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
 
   if (loading) return (
@@ -562,56 +563,36 @@ export default function MiniGameGtb({ huntId = null, compact = false }) {
               {/* RIGHT — leaderboard */}
               {entries.length > 0 && (
                 <aside className={styles.sidebar}>
-                  <div className={styles.sidebarHead}>
-                    {isFinished
-                      ? <><Medal pos={1} size={11} /><span>Final Results</span></>
-                      : <><span className={styles.sidebarHeadIcon}>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                          </svg>
-                        </span><span>Guesses</span></>
-                    }
-                    <span className={styles.sidebarCount}>{entries.length}</span>
+                  <div className={styles.lbHead}>
+                    <span className={styles.lbTitle}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></svg>
+                      Leaderboard
+                    </span>
+                    <span className={styles.lbCount}>{entries.length}</span>
+                    <span className={styles.lbBy}>{isFinished ? 'by gap' : 'latest'}</span>
                   </div>
-
-                  <div className={styles.sidebarRows}>
+                  <div className={`${styles.lbList} ${lbAll ? styles.lbListAll : ''}`}>
                     {rankedEntries.map((e, i) => {
                       const isMe = e.twitch_username?.toLowerCase() === twitchUser?.toLowerCase()
-                      const hasRank = !!e.rank
+                      const pos = e.rank || (isFinished ? i + 1 : null)
+                      const hue = [...(e.twitch_username || '?')].reduce((a, c) => a + c.charCodeAt(0), 0) % 360
                       return (
-                        <div key={e.id} className={[
-                          styles.sidebarRow,
-                          hasRank ? styles.sidebarRowRanked : '',
-                          isMe    ? styles.sidebarRowMe    : '',
-                        ].filter(Boolean).join(' ')}>
-                          <div className={styles.sidebarRowL}>
-                            <span className={styles.sidebarMedal}>
-                              {hasRank ? <Medal pos={e.rank} size={13} /> : <span className={styles.sidebarDot}/>}
-                            </span>
-                            <div className={styles.sidebarInfo}>
-                              <div className={`${styles.sidebarUser} ${isMe ? styles.sidebarUserMe : ''}`}>
-                                {e.twitch_username}
-                              </div>
-                              <div className={styles.sidebarSlot}>€{parseBet(e.guess).toFixed(2)}</div>
-                            </div>
-                          </div>
-                          <div className={styles.sidebarRowR}>
-                            {e.gap != null ? (
-                              <div className={styles.sidebarResult}>
-                                <span className={styles.sidebarMulti}>±€{parseBet(e.gap).toFixed(2)}</span>
-                                {e.points_awarded > 0 && <span className={styles.sidebarPrize}>+{e.points_awarded} pts</span>}
-                                {e.rank === 1 && game.prize_cash_1st > 0 && (
-                                  <span style={{fontSize:10, color:'#4ade80', fontWeight:800}}>+€{game.prize_cash_1st}</span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className={styles.sidebarWait}>—</span>
-                            )}
-                          </div>
+                        <div key={e.id} className={`${styles.lbRow} ${isMe ? styles.lbRowMe : ''} ${pos === 1 ? styles.lbRow1 : ''}`}>
+                          <span className={`${styles.lbPos} ${pos === 1 ? styles.lbPos1 : pos === 2 ? styles.lbPos2 : pos === 3 ? styles.lbPos3 : ''}`}>{pos ?? '·'}</span>
+                          <span className={styles.lbAv} style={{ background: `hsl(${hue} 55% 45%)` }}>{(e.twitch_username || '?')[0].toUpperCase()}</span>
+                          <span className={styles.lbUser}>{e.twitch_username}</span>
+                          <span className={styles.lbGuess}>€{parseBet(e.guess).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          {e.gap != null && <span className={styles.lbGap}>· gap €{parseBet(e.gap).toFixed(2)}</span>}
+                          {e.points_awarded > 0 && <span className={styles.lbPrize}>+{e.points_awarded}</span>}
                         </div>
                       )
                     })}
                   </div>
+                  {entries.length > 6 && (
+                    <button type="button" className={styles.lbMore} onClick={() => setLbAll(v => !v)}>
+                      {lbAll ? 'Show less' : `Show all ${entries.length} predictions`}
+                    </button>
+                  )}
                 </aside>
               )}
             </div>
