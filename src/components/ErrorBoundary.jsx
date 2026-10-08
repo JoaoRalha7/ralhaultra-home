@@ -16,6 +16,10 @@ export default class ErrorBoundary extends Component {
   render() {
     const { error } = this.state;
     if (!error) return this.props.children;
+    // OBS overlays: never show the crash screen on stream, stay transparent and blank.
+    if (window.location.pathname.toLowerCase().startsWith('/overlay')) {
+      return <style>{'html,body{background:transparent !important}'}</style>;
+    }
     return (
       <div style={{ padding: 24, maxWidth: 900, margin: '40px auto', fontFamily: 'system-ui, sans-serif', color: '#fecaca' }}>
         <h1 style={{ marginTop: 0 }}>Something broke</h1>

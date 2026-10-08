@@ -44,12 +44,14 @@ import TorneioOverlay from './overlay/Torneiooverlay';
 function Overlay({ page = false, children }) {
   useEffect(() => {
     document.body.classList.add('overlay-body');
+    document.documentElement.classList.add('overlay-html');
     const prevHtml = document.documentElement.style.background;
     const prevBody = document.body.style.background;
     document.documentElement.style.background = 'transparent';
     document.body.style.background = 'transparent';
     return () => {
       document.body.classList.remove('overlay-body');
+      document.documentElement.classList.remove('overlay-html');
       document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
     };

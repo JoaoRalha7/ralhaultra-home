@@ -203,7 +203,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 .flip-face-back { border-left: 3px solid var(--red); transform: rotateY(180deg); }
 
 .bp-layout { display: flex; align-items: center; width: 100%; gap: 18px; overflow: hidden; }
-.bp-layout.empty { justify-content: flex-start; }
+.bp-layout.is-empty { justify-content: flex-start; }
 .bp-left-group { display: flex; align-items: center; gap: 12px; }
 .bp-avatar { border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--border2); }
 .bp-player-info { display: flex; flex-direction: column; gap: 2px; justify-content: center; min-width: 0; }
@@ -335,7 +335,7 @@ function BestWorstFlip({ stats, pics }) {
 
   const renderSide = (play, payAmount, multi, accent, label) => {
     if (!play) return (
-      <div className="bp-layout empty">
+      <div className="bp-layout is-empty">
         <div className={`stat-icon ${accent}`}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>

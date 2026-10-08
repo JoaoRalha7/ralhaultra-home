@@ -443,7 +443,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 }
 
 /* ── EMPTY ── */
-.empty {
+.pk-empty {
   flex: 1; display: flex; align-items: center; justify-content: center;
   flex-direction: column; gap: 10px; opacity: .3; padding: 24px;
 }
@@ -908,7 +908,7 @@ export default function PickOverlay() {
 
             <ScrollList count={picks.length + openedCount}>
               {liveRanking.length === 0 ? (
-                <div className="empty">
+                <div className="pk-empty">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
                     <rect x="2" y="3" width="20" height="14" rx="2"/>
                     <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
@@ -1044,7 +1044,7 @@ export default function PickOverlay() {
 
             <ScrollList count={gtbEntries.length}>
               {gtbEntries.length === 0 ? (
-                <div className="empty">
+                <div className="pk-empty">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
                     <line x1="12" y1="1" x2="12" y2="23"/>
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
@@ -1147,7 +1147,7 @@ export default function PickOverlay() {
 
             <ScrollList count={avgEntries.length}>
               {avgEntries.length === 0 ? (
-                <div className="empty">
+                <div className="pk-empty">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
                     <polyline points="17 6 23 6 23 12"/>

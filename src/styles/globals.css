@@ -237,4 +237,17 @@ button { font-family: var(--font); cursor: pointer; }
 
 body.overlay-body {
   background: transparent !important;
+  font-family: 'Rubik', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
 }
+
+/* OBS pages must stay fully transparent: the Home stylesheet sets
+   color-scheme:dark and a dark html/body background on :root. */
+html.overlay-html {
+  color-scheme: normal !important;
+  background: transparent !important;
+}
+body.overlay-body button,
+body.overlay-body input,
+body.overlay-body textarea { font-family: 'Rubik', system-ui, sans-serif; }

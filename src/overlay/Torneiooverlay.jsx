@@ -359,7 +359,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 .waiting-sub   { font-size: 11px; color: rgba(255,255,255,.15); }
 
 /* TABS */
-.tabs { display: flex; border-top: 1px solid rgba(255,255,255,.06); margin-top: auto; }
+.trn-tabs { display: flex; border-top: 1px solid rgba(255,255,255,.06); margin-top: auto; }
 .tab  { flex: 1; text-align: center; padding: 8px 0; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.25); letter-spacing: .06em; text-transform: uppercase; }
 .tab.on  { color: #a78bfa; border-top: 2px solid #a78bfa; margin-top: -1px; background: rgba(124,111,255,.04); }
 .tab.won { color: #fbbf24; border-top: 2px solid #fbbf24; margin-top: -1px; background: rgba(251,191,36,.03); }
@@ -791,7 +791,7 @@ export default function TorneioOverlay() {
             )}
 
             {/* TABS */}
-            <div className="tabs">
+            <div className="trn-tabs">
               {bracket.map((_, i) => (
                 <div key={i} className={`tab${isChampMode && i === bracket.length - 1 ? ' won' : currentRi === i && !isChampMode ? ' on' : ''}`}>
                   {roundLabel(i, bracket.length)}
