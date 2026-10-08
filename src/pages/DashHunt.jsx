@@ -1813,12 +1813,169 @@ function MiniGamesModal({ hunt, entries, onClose }) {
 }
 
 // ── Main ───────────────────────────────────────────────────
+// ── Redeem flow (Opening): one slot at a time ───────────────
+function RedeemModal({ hunt, entries, balanceEnd, onSavePayment, onClose }) {
+  const PER_PAGE = 8
+  const firstPending = entries.find(e => !e.opened) || entries[0]
+  const [curId, setCurId] = useState(firstPending?.id)
+  const [pay, setPay] = useState('')
+  const [multiTxt, setMultiTxt] = useState('')
+  const [page, setPage] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const payRef = useRef(null)
+
+  const cur = entries.find(e => e.id === curId) || null
+  const bet = cur ? parseBet(cur.bet) : 0
+
+  // load the current entry's existing payment whenever the selection changes
+  useEffect(() => {
+    if (!cur) return
+    const p = cur.payment != null && cur.opened ? String(cur.payment) : ''
+    setPay(p)
+    setMultiTxt(p !== '' && bet > 0 ? String(+(parseFloat(p) / bet).toFixed(2)) : '')
+    setTimeout(() => payRef.current?.focus(), 30)
+  }, [curId])
+
+  const onPay = (v) => {
+    setPay(v)
+    const n = parseFloat(v)
+    setMultiTxt(!isNaN(n) && bet > 0 ? String(+(n / bet).toFixed(2)) : '')
+  }
+  const onMulti = (v) => {
+    setMultiTxt(v)
+    const n = parseFloat(v)
+    setPay(!isNaN(n) && bet > 0 ? String(+(n * bet).toFixed(2)) : '')
+  }
+
+  const payN = parseFloat(pay)
+  const hasPay = !isNaN(payN)
+  const sim = entries.map(e => e.id === curId ? { ...e, payment: hasPay ? payN : null, opened: hasPay && payN > 0 } : e)
+  const opened = sim.filter(e => e.opened && e.payment != null && parseBet(e.bet) > 0)
+  const totalBet = sim.reduce((a, e) => a + parseBet(e.bet), 0)
+  const totalPay = opened.reduce((a, e) => a + parseBet(e.payment), 0)
+  const sumUnop = sim.filter(e => !e.opened && parseBet(e.bet) > 0).reduce((a, e) => a + parseBet(e.bet), 0)
+  const balStart = parseBet(hunt?.balance_start)
+  const balEndN = parseFloat(balanceEnd)
+  const hasBalEnd = !isNaN(balEndN)
+  const target = hasBalEnd ? Math.max(0, balStart - balEndN) : balStart
+  const beInit = totalBet > 0 ? target / totalBet : 0
+  const beAtual = sumUnop > 0 ? (target - totalPay) / sumUnop : 0
+  const profit = hasBalEnd ? balEndN + totalPay - balStart : totalPay - balStart
+
+  const pending = entries.filter(e => !e.opened || e.id === curId)
+  const pages = Math.max(1, Math.ceil(pending.length / PER_PAGE))
+  const shown = pending.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
+  const doneCount = entries.filter(e => e.opened).length
+  const pos = Math.min(entries.length, doneCount + (cur?.opened ? 0 : 1))
+
+  const saveNext = async () => {
+    if (!cur || saving) return
+    setSaving(true)
+    const idx = entries.findIndex(e => e.id === curId)
+    const after = [...entries.slice(idx + 1), ...entries.slice(0, idx)].find(e => !e.opened)
+    await onSavePayment(cur.id, pay)
+    setSaving(false)
+    if (!after) { onClose(); return }
+    setCurId(after.id)
+    setPage(0)
+  }
+
+  if (!cur) return null
+  const last = !entries.some(e => !e.opened && e.id !== curId)
+
+  return (
+    <div className={styles.rxOverlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className={styles.rxModal}>
+        <div className={styles.rxHead}>
+          <div className={styles.rxPlay}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z" /></svg></div>
+          <h2>Bonus Opening</h2>
+          <span className={styles.rxCount}>{pos} / {entries.length}</span>
+          <div style={{ flex: 1 }} />
+          <button className={styles.rxX} onClick={onClose} aria-label="Fechar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
+        </div>
+
+        <div className={styles.rxBody}>
+          <div className={styles.rxMain}>
+            <div className={styles.rxCur}>
+              <div className={styles.rxCover}>
+                <img src={cur.slot?.image_url || ''} alt="" onError={ev => ev.target.style.opacity = '.2'} />
+                <span>ATUAL</span>
+              </div>
+              <div>
+                <div className={styles.rxName}>{cur.slot?.name || '—'}</div>
+                <div className={styles.rxProv}>{cur.slot?.provider || '—'}</div>
+              </div>
+            </div>
+
+            <label className={styles.rxFld}>
+              <span>Pagamento total (€)</span>
+              <div className={styles.rxBig}>
+                <em>€</em>
+                <input ref={payRef} type="number" step="0.01" min="0" value={pay} placeholder="0.00"
+                  onChange={e => onPay(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveNext() }} />
+              </div>
+            </label>
+
+            <div className={styles.rxTwo}>
+              <label className={styles.rxFld}>
+                <span>Multiplicador</span>
+                <div className={styles.rxBox}>
+                  <input type="number" step="0.01" min="0" value={multiTxt} placeholder="0.00" className={styles.rxMulti}
+                    onChange={e => onMulti(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveNext() }} />
+                  <em>x</em>
+                </div>
+              </label>
+              <div className={styles.rxFld}>
+                <span>Bet original</span>
+                <div className={styles.rxBox}><em>€</em><b>{fmt(bet)}</b></div>
+              </div>
+            </div>
+
+            <div className={styles.rxSpacer} />
+
+            <div className={styles.rxThree}>
+              <div className={styles.rxStat}><span>Profit / Loss</span><b className={profit >= 0 ? styles.rxPos : styles.rxNeg}>{profit >= 0 ? '+' : '−'}{fmt(Math.abs(profit))} €</b></div>
+              <div className={styles.rxStat}><span>BE inicial</span><b className={styles.amber}>{beInit > 0 ? beInit.toFixed(2) + 'x' : '—'}</b></div>
+              <div className={styles.rxStat}><span>BE atual</span><b className={styles.amber}>{sumUnop > 0 ? Math.max(0, beAtual).toFixed(2) + 'x' : '—'}</b></div>
+            </div>
+          </div>
+
+          <div className={styles.rxSide}>
+            <div className={styles.rxSideHead}><span>A seguir</span><span>Pág. {page + 1} de {pages}</span></div>
+            <div className={styles.rxGrid}>
+              {shown.map(e => (
+                <button key={e.id} className={`${styles.rxTh} ${e.id === curId ? styles.rxThOn : ''}`} onClick={() => setCurId(e.id)} title={e.slot?.name}>
+                  <img src={e.slot?.image_url || ''} alt="" onError={ev => ev.target.style.opacity = '.1'} />
+                  <i>#{entries.findIndex(x => x.id === e.id) + 1}</i>
+                </button>
+              ))}
+            </div>
+            <div className={styles.rxPager}>
+              <button disabled={page === 0} onClick={() => setPage(p => p - 1)} aria-label="Anterior"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="m15 6-6 6 6 6" /></svg></button>
+              <button disabled={page >= pages - 1} onClick={() => setPage(p => p + 1)} aria-label="Seguinte"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="m9 6 6 6-6 6" /></svg></button>
+            </div>
+            <div style={{ flex: 1 }} />
+            <button className={styles.rxSave} onClick={saveNext} disabled={saving || !hasPay}>
+              {saving ? 'A guardar…' : last ? 'Guardar e concluir' : 'Guardar e seguinte'}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="m9 6 6 6-6 6" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 export default function DashHunt() {
   const navigate = useNavigate()
   const [hunt,          setHunt]          = useState(null)
   const [entries,       setEntries]       = useState([])
   const [allSlots,      setAllSlots]      = useState([])
   const [mode,          setMode]          = useState('hunting')
+  const [redeemOpen, setRedeemOpen] = useState(false)
   const [view,          setView]          = useState('main')
   const [search,        setSearch]        = useState('')
   const [searchRes,     setSearchRes]     = useState([])
@@ -2002,6 +2159,11 @@ export default function DashHunt() {
             <button className={mode === 'hunting' ? styles.hxSegOn : ''} onClick={() => handleSetMode('hunting')}><i />Hunting</button>
             <button className={mode === 'opening' ? `${styles.hxSegOn} ${styles.hxSegOpen}` : ''} onClick={() => handleSetMode('opening')}><i />Opening</button>
           </div>
+          {hunt && mode === 'opening' && entries.some(e => !e.opened) && (
+            <button className={styles.hxStart} onClick={() => setRedeemOpen(true)}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z" /></svg>Start redeeming
+            </button>
+          )}
           {hunt && <>
             <button className={styles.hxGhost} onClick={handleReorderByBet}>Ordenar por bet</button>
             <button className={styles.hxGhost} onClick={() => setMiniGamesOpen(true)}>Mini-games</button>
@@ -2063,6 +2225,7 @@ export default function DashHunt() {
 
       {newHuntOpen    && <NewHuntModal onClose={() => setNewHuntOpen(false)} onCreated={handleHuntCreated} />}
       {addSlot        && <AddSlotModal slot={addSlot} onClose={() => setAddSlot(null)} onAdd={handleAddSlot} />}
+      {redeemOpen && hunt && <RedeemModal hunt={hunt} entries={entries} balanceEnd={balanceEnd} onSavePayment={handleUpdatePayment} onClose={() => setRedeemOpen(false)} />}
       {miniGamesOpen  && <MiniGamesModal hunt={hunt} entries={entries} onClose={() => setMiniGamesOpen(false)} />}
     </div>
   )
