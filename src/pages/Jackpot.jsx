@@ -1,9 +1,12 @@
 import { recordStat } from '../lib/liveStats'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BetPanel, Coin, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET } from './CasinoShared'
+import { Coin, Confetti, Page, UserAv, fmt, playSfx, useCasino, MIN_BET, MAX_BET } from './CasinoShared'
 import { holdPointsPulls } from '../hooks/useStreamElementsPoints'
 import { workerPost } from '../lib/points'
 import styles from './Casino.module.css'
+import J from './Jackpot.module.css'
+
+const clampBet = (v) => Math.max(MIN_BET, Math.min(MAX_BET, Math.floor(Number(v)) || MIN_BET))
 
 const WORKER = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
 const ERRS = {
@@ -210,48 +213,42 @@ export default function Jackpot() {
   const sorted = players.map((p, i) => ({ ...p, i })).sort((a, b) => b.amount - a.amount)
 
   return (
-    <Page game="jackpot" title="Jackpot" sub="Everyone adds points to one pot. When the timer ends a wheel picks the winner, and the more you add the better your chance.">
+    <Page game="jackpot" title="Jackpot" sub="">
       <div className={styles.layout}>
-        <BetPanel points={g.points} bet={amount} setBet={setAmount} locked={false} loggedIn={!!g.user}>
-          <button type="button" className={styles.cta} disabled={!g.user || busy || !open || Number(amount) < MIN_BET || capped} onClick={join}>
-            {!g.user ? 'Log in to play' : !r ? 'Loading...' : !open ? 'Pot closed' : mine ? `Add ${fmt(Number(amount) || 0)} to the pot` : `Join the pot with ${fmt(Number(amount) || 0)}`}
-          </button>
-          {err && <p className={styles.err}>{err}</p>}
-          {g.err && <p className={styles.err}>{g.err}</p>}
-          {open && add >= MIN_BET && (
-            <div className={styles.jpPreview}>
-              <div><small>{mine ? 'Now' : 'Chance'}</small><b>{mine ? fmtPct(myPct) : '-'}</b></div>
-              <i aria-hidden="true">&rarr;</i>
-              <div><small>After</small><b className={styles.jpUp}>{fmtPct(after)}</b></div>
+        <aside className={`${styles.panel} ${J.panel}`}>
+          <div className={J.fld}>
+            <span className={J.lab}>Bet Amount</span>
+            <div className={J.money}>
+              <i className={J.coin} aria-hidden="true" />
+              <input type="number" inputMode="numeric" min={MIN_BET} value={amount}
+                onChange={(e) => setAmount(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
+                onBlur={() => setAmount(clampBet(amount))} />
+              <button type="button" onClick={() => setAmount(clampBet((Number(amount) || MIN_BET) / 2))}>1/2</button>
+              <button type="button" onClick={() => setAmount(clampBet((Number(amount) || MIN_BET) * 2))}>2x</button>
             </div>
-          )}
-          {mine && (
-            <div className={styles.autoStat}><span>Your stake</span><span>{fmt(mine.amount)} pts</span></div>
-          )}
-          <p className={styles.note}>
-            The timer ({cfg ? cfg.roundMs / 1000 : 60}s) starts when a second player joins. Add as often as you like until it ends. The winner takes the pot minus a {cfg ? Math.round(cfg.fee * 100) : 5}% fee. Your chance is your share of the pot.
-          </p>
-        </BetPanel>
+          </div>
+          <div className={J.chance}>
+            <div><small>{mine ? 'Your Chance' : 'Chance'}</small><b>{mine ? fmtPct(myPct) : '-'}</b></div>
+            <i aria-hidden="true">&rarr;</i>
+            <div><small>After</small><b className={J.up}>{add >= MIN_BET && open ? fmtPct(after) : '-'}</b></div>
+          </div>
+          <div className={J.grow} />
+          <button type="button" className={J.go} disabled={!g.user || busy || !open || Number(amount) < MIN_BET || capped} onClick={join}>
+            {!g.user ? 'Log in to play' : !r ? 'Loading...' : !open ? 'Pot Closed' : mine ? 'Add to Pot' : 'Join Pot'}
+          </button>
+          {(err || g.err) && <p className={J.err}>{err || g.err}</p>}
+        </aside>
 
         <section className={`${styles.stage} ${styles.jpStage}`}>
-          <div className={styles.ribbon}>
-            <div><small>Pot</small><b>{fmt(pot)}</b></div>
-            <div><small>Players</small><b>{players.length}</b></div>
-            <div><small>Your chance</small><b>{mine ? fmtPct(myPct) : '-'}</b></div>
-            <div className={phase === 'counting' && left < 10000 ? styles.ribGold : ''}><small>Time left</small><b>{phase === 'counting' ? clock(left) : phase === 'waiting' ? '--' : '0:00'}</b></div>
-          </div>
-
           <Wheel players={players} pot={pot} avatars={avs} progress={left != null && cfg ? left / cfg.roundMs : 0} mode={phase === 'result' ? 'result' : phase} winIdx={winIdx} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
 
-          {winner && (
-            <div className={`${styles.result} ${winner.u === me ? styles.resWin : styles.resPush}`} role="status">
-              <div className={styles.resMain}>
-                <b>{winner.u === me ? 'You won the pot' : `${winner.u} won the pot`}</b>
-                <span>{fmt(winner.payout)} pts with a {fmtPct(pctOf(winner.amount, pot))} chance</span>
-              </div>
+          {winner && winner.u === me && mine && (
+            <div className={J.pop} role="status" key={r.seq}>
+              <b>{(winner.payout / mine.amount).toFixed(2)}&times;</b>
+              <hr />
+              <span><i className={J.coin} />{fmt(winner.payout)}</span>
             </div>
           )}
-
           <Confetti fire={g.fire} colors={['#f97316', '#fdba74', '#f5c542', '#fff', '#34d399']} />
         </section>
         <div className={`${styles.lvDock} ${styles.jpDock}`}>

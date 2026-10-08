@@ -6,7 +6,7 @@
 .page[data-game="keno"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="plinko"] { --g1: #22e07a; --g2: #86efac; }
 .page[data-game="roulette"] { --g1: #22e07a; --g2: #86efac; }
-.page[data-game="jackpot"] { --g1: #f97316; --g2: #fdba74; }
+.page[data-game="jackpot"] { --g1: #22e07a; --g2: #86efac; }
 
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
 .title { font: 800 clamp(30px, 4vw, 46px)/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; margin: 0; color: var(--ru-text); }
@@ -606,3 +606,14 @@
 .lvTabs .on { background: #232733; color: #fff; }
 
 .page[data-game="roulette"] .wResult { display: none; }
+
+/* ---- Jackpot: flat, same look as the other originals ---- */
+.page[data-game="jackpot"] .stage { background: #0f1118; display: flex; align-items: center; justify-content: center; padding: 22px; }
+.page[data-game="jackpot"] .stage::before { display: none; }
+.page[data-game="jackpot"] .jpWheelWrap { width: min(100%, 540px); margin: 0 auto; }
+.page[data-game="jackpot"] .jpWheelWrap::before, .page[data-game="jackpot"] .jpBulb, .page[data-game="jackpot"] .jpBezel, .page[data-game="jackpot"] .jpTick, .page[data-game="jackpot"] .jpTickBig { display: none; }
+.page[data-game="jackpot"] .jpWheel { filter: none; }
+.page[data-game="jackpot"] .jpProg { stroke: #22ff7a; filter: none; }
+.page[data-game="jackpot"] .jpInnerEdge { stroke: #2a2e3b; }
+.page[data-game="jackpot"] .jpOuterEdge { stroke: #2a2e3b; }
+.page[data-game="jackpot"] .jpHotNum { color: #f87171 !important; }
