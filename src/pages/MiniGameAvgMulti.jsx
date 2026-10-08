@@ -441,58 +441,45 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
                   </div>
                 )}
 
-                {/* Bucket selector */}
-                {isOpen && !myEntry && (
-                  <div className={avgStyles.bucketSection}>
-                    <div className={avgStyles.bucketLabel}>Select your range — click to confirm</div>
-                    <div className={avgStyles.bucketGrid}>
-                      {AVG_BUCKETS.map(b => (
-                        <button
-                          key={b.id}
-                          className={`${avgStyles.bucketBtn} ${selectedBucket?.id === b.id ? avgStyles.bucketBtnActive : ''}`}
-                          style={{ '--bcolor': b.color }}
-                          onClick={() => requestSubmit(b)}
-                          disabled={submitting}
-                        >
-                          <span className={avgStyles.bucketBtnId}>{b.id}</span>
-                          <span className={avgStyles.bucketBtnRange}>{b.label}</span>
-                          <span className={avgStyles.bucketPct}>{entries.length ? Math.round(((bucketCounts[b.id] || 0) / entries.length) * 100) : 0}%</span>
-                          {submitting && selectedBucket?.id === b.id && <Spinner size={10} />}
-                        </button>
-                      ))}
+                {/* Range tiles: pick a range while open, live distribution afterwards */}
+                {(isActive || isFinished || isClosed) && (
+                  <div className={avgStyles.tiles}>
+                    {isOpen && !myEntry && <div className={avgStyles.tilesHint}>Pick the range you think the average will land in</div>}
+                    <div className={avgStyles.tileGrid}>
+                      {AVG_BUCKETS.map(b => {
+                        const count = bucketCounts[b.id] || 0
+                        const pct = entries.length ? Math.round((count / entries.length) * 100) : 0
+                        const isWinBucket = isFinished && game.result_avg
+                          ? b.min <= game.result_avg && (b.max === null || game.result_avg <= b.max)
+                          : false
+                        const mine = myEntry?.bucket === b.id
+                        const pickable = isOpen && !myEntry && !submitting
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            disabled={!pickable}
+                            onClick={() => pickable && requestSubmit(b)}
+                            className={[avgStyles.tile, pickable ? avgStyles.tilePick : '', isWinBucket ? avgStyles.tileWin : '', mine ? avgStyles.tileMine : ''].filter(Boolean).join(' ')}
+                            style={{ '--bcolor': b.color }}
+                          >
+                            <i className={avgStyles.tileFill} style={{ height: `${pct}%` }} />
+                            <span className={avgStyles.tileTop}>
+                              <span className={avgStyles.tileId}>{b.id}</span>
+                              {isWinBucket && <span className={avgStyles.tileTag}>Win</span>}
+                              {!isWinBucket && mine && <span className={`${avgStyles.tileTag} ${avgStyles.tileTagMine}`}>You</span>}
+                              {submitting && selectedBucket?.id === b.id && <Spinner size={10} />}
+                            </span>
+                            <span className={avgStyles.tileRange}>{b.label}</span>
+                            <span className={avgStyles.tileBottom}>
+                              <b>{pct}%</b>
+                              <em>{count}</em>
+                            </span>
+                          </button>
+                        )
+                      })}
                     </div>
-                  </div>
-                )}
-
-                {(isClosed || (isFinished && !myEntry)) && (
-                  <div className={styles.gtbClosed}>
-                    <LockIcon size={16} />
-                    <span>{isClosed ? 'Picks are closed. Results coming soon.' : `Game finished. Result: ${game.result_avg ? game.result_avg + 'x' : '—'}`}</span>
-                  </div>
-                )}
-
-                {/* Bucket distribution */}
-                {entries.length > 0 && (
-                  <div className={avgStyles.distSection}>
-                    <div className={avgStyles.distLabel}>Distribution</div>
-                    {AVG_BUCKETS.map(b => {
-                      const count = bucketCounts[b.id] || 0
-                      const pct = Math.round((count / entries.length) * 100)
-                      const isWinBucket = isFinished && game.result_avg
-                        ? b.min <= game.result_avg && (b.max === null || game.result_avg <= b.max)
-                        : false
-                      return (
-                        <div key={b.id} className={`${avgStyles.distRow} ${isWinBucket ? avgStyles.distRowWin : ''}`} style={{'--bcolor': b.color}}>
-                          <div className={avgStyles.distBucketId}>{b.id}</div>
-                          <div className={avgStyles.distBucketLabel}>{b.label}</div>
-                          <div className={avgStyles.distBarWrap}>
-                            <div className={avgStyles.distBar} style={{width:`${pct}%`}} />
-                          </div>
-                          <div className={avgStyles.distPct}>{pct}%</div>
-                          <div className={avgStyles.distCount}>{count}</div>
-                        </div>
-                      )
-                    })}
+                    {isFinished && game.result_avg != null && <div className={avgStyles.tilesFinal}>Final average <b>{Number(game.result_avg).toFixed(1)}x</b></div>}
                   </div>
                 )}
               </div>

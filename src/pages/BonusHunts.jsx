@@ -507,7 +507,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
           <span className={`${x.gv2St} ${live ? x.gv2Live : ''}`}><i />{GAME_STATUS[st].label.toUpperCase()}</span>
         </header>
         <div className={x.gv2Count}><b>{g.count}</b><span>{unit}</span></div>
-        {key !== 'pick' && st === 'closed'
+        {key === 'gtb' && st === 'closed'
           ? <div className={x.gv2Off}>Results coming soon</div>
           : <div className={x.gboxBody}>{node}</div>}
       </section>

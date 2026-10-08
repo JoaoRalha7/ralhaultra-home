@@ -181,3 +181,28 @@
 .compact .bucketBtnRange{font-size:12px}
 .compact .bucketPct{font-size:11px;top:7px;right:8px}
 .compact .distSection{padding:10px 0 0;background:none;border:0}
+
+/* ══ AVG tiles: selector + distribution in one ══ */
+.tiles{display:flex;flex-direction:column;gap:10px}
+.tilesHint{font-size:13px;color:#8d96ab}
+.tileGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 12px 10px;min-height:104px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:inherit;font-family:inherit;cursor:default;transition:border-color .15s,transform .12s}
+.tileFill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,color-mix(in srgb,var(--bcolor) 38%,transparent),color-mix(in srgb,var(--bcolor) 10%,transparent));transition:height .5s ease;pointer-events:none}
+.tile>span{position:relative}
+.tilePick{cursor:pointer}
+.tilePick:hover:not(:disabled){border-color:var(--bcolor);transform:translateY(-2px)}
+.tileTop{display:flex;align-items:center;gap:8px}
+.tileId{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font:800 15px "Bricolage Grotesque",sans-serif;color:#10131c;background:var(--bcolor)}
+.tileTag{margin-left:auto;font:800 11px "DM Sans",sans-serif;padding:2px 9px;border-radius:99px;background:rgba(245,197,66,.16);color:#f5c542;border:1px solid rgba(245,197,66,.5)}
+.tileTagMine{background:rgba(59,130,246,.18);color:#93c5fd;border-color:rgba(59,130,246,.5)}
+.tileRange{font:700 13px "DM Sans",sans-serif;color:#8d96ab}
+.tileBottom{display:flex;align-items:baseline;justify-content:space-between;margin-top:auto}
+.tileBottom b{font:800 22px "Bricolage Grotesque",sans-serif}
+.tileBottom em{font-style:normal;font-size:12px;color:#8d96ab}
+.tileWin{border-color:#f5c542;box-shadow:0 0 0 1px #f5c542}
+.tileMine{border-color:#3b82f6}
+.tilesFinal{font-size:14px;color:#8d96ab}
+.tilesFinal b{color:#f5c542;font:800 16px "Bricolage Grotesque",sans-serif}
+.compact .tile{min-height:92px;padding:10px}
+.compact .tileBottom b{font-size:19px}
+@media(max-width:560px){.tileGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
