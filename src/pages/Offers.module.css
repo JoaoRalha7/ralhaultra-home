@@ -155,3 +155,12 @@
 /* ── Vertical grid (replaces the sideways carousel) ── */
 .track { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; overflow: visible; scroll-snap-type: none; cursor: default; padding: 6px 0 14px; }
 .oc { flex: none; scroll-snap-align: none; min-width: 0; }
+
+/* loading: nothing visible, space reserved; cards fade in */
+.hold { min-height: 480px; }
+@keyframes cardFade { from { opacity: 0; } to { opacity: 1; } }
+.track > * { animation: cardFade .8s ease-out both; }
+.track > *:nth-child(2) { animation-delay: .1s; }
+.track > *:nth-child(3) { animation-delay: .2s; }
+.track > *:nth-child(n+4) { animation-delay: .3s; }
+@media (prefers-reduced-motion: reduce) { .track > * { animation: none; } }

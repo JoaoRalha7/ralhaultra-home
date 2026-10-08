@@ -201,15 +201,6 @@ export default function Offers() {
   const list = casinos.filter(c =>
     filter === 'all' || (filter === 'hot' && c.is_hot) || (filter === 'new' && c.is_new) || (filter === 'fs' && c.is_freespins))
 
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <div className={styles.spinner} />
-        <span>Loading offers...</span>
-      </div>
-    )
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -225,7 +216,7 @@ export default function Offers() {
         </div>
       </div>
 
-      {list.length === 0 ? (
+      {loading ? <div className={styles.hold} aria-hidden="true" /> : list.length === 0 ? (
         <div className={styles.empty}>
           <p>No offers available{filter !== 'all' ? ' for this filter' : ' at the moment'}.</p>
           {filter !== 'all' && <button type="button" className={styles.linkBtn} onClick={() => setFilter('all')}>Show all offers</button>}
