@@ -4,6 +4,8 @@ import { spendGamePoints, refundGamePoints } from '../lib/points'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import styles from './MiniGame.module.css'
+import TwitchAvatar from '../components/TwitchAvatar'
+import { useAvatars } from '../lib/avatars'
 import { parseBet, fmtTime, fmtDate, useCountdown, Spinner, Medal, LockIcon, ChevronIcon } from '../lib/miniGamesUtils'
 
 const PICK_COST     = 100
@@ -77,6 +79,8 @@ function HistoryList({ games, onSelect, twitchUser }) {
     load()
   }, [games])
 
+  const hav = useAvatars(Object.values(picksMap).flat().map(p => p.twitch_username))
+
   if (!games.length) return (
     <div className={styles.emptyState}>
       <div className={styles.emptyIcon}>
@@ -119,7 +123,7 @@ function HistoryList({ games, onSelect, twitchUser }) {
                     <path d="M12 17v4"/><path d="M8 21h8"/>
                     <path d="M6 9a6 6 0 0 0 12 0V3H6v6z"/>
                   </svg>
-                  <span>{p.twitch_username}</span>
+                  <TwitchAvatar name={p.twitch_username} map={hav} size={16} /><span>{p.twitch_username}</span>
                   {p.win_amount > 0 && (
                     <span className={styles.histWinAmt}>€{parseBet(p.win_amount).toFixed(2)}</span>
                   )}
@@ -165,6 +169,7 @@ export default function MiniGame({ huntId = null, embedded = false }) {
   const [toast,   setToast]   = useState(null)
   const [showHistory, setShowHistory] = useState(false)
   const toastRef = useRef(null)
+  const av = useAvatars(picks.map(p => p.twitch_username))
 
   const twitchUser = profile?.twitch_username || user?.user_metadata?.name || null
   const { points, setPoints, loading: ptsLoading, refresh: refreshPoints } =
@@ -602,7 +607,7 @@ export default function MiniGame({ huntId = null, embedded = false }) {
                           <div className={styles.podiumMedal}><Medal pos={i + 1} size={22} /></div>
                           {entry?.slot?.image_url && <img src={entry.slot.image_url} alt="" className={styles.podiumImg} />}
                           <div className={styles.podiumSlot}>{entry?.slot?.name || '—'}</div>
-                          <div className={styles.podiumUser}>{p.twitch_username}</div>
+                          <div className={styles.podiumUser}><TwitchAvatar name={p.twitch_username} map={av} size={18} /> {p.twitch_username}</div>
                           {p.points_awarded > 0 && <div className={styles.podiumPts}>+{p.points_awarded.toLocaleString('en-GB')} pts</div>}
                           <div className={styles.podiumReason}>{['Biggest Win', 'Best Multi', 'Top 3'][i]}</div>
                         </div>
@@ -668,7 +673,7 @@ export default function MiniGame({ huntId = null, embedded = false }) {
                                 </div>
                               )}
                               <div className={`${styles.cardOwnerPill} ${isMine ? styles.cardOwnerMine : ''}`}>
-                                <LockIcon size={9} />
+                                <TwitchAvatar name={pick.twitch_username} map={av} size={16} />
                                 {pick.twitch_username}
                               </div>
                             </div>
@@ -683,7 +688,7 @@ export default function MiniGame({ huntId = null, embedded = false }) {
 
                         <div className={styles.cardFooter}>
                           <p className={styles.cardName}>{entry.slot?.name || '—'}</p>
-                          {isTaken && <span className={`${styles.cardOwner} ${isMine ? styles.cardOwnerYou : ''}`}>{pick.twitch_username}</span>}
+                          {isTaken && <span className={`${styles.cardOwner} ${isMine ? styles.cardOwnerYou : ''}`}><TwitchAvatar name={pick.twitch_username} map={av} size={14} /> {pick.twitch_username}</span>}
                           {isRevealed && payment != null
                             ? <div className={styles.cardWinRow}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
@@ -746,7 +751,7 @@ export default function MiniGame({ huntId = null, embedded = false }) {
                                   : <div className={styles.sidebarImgFallback}/>
                                 }
                                 <div className={styles.sidebarInfo}>
-                                  <div className={`${styles.sidebarUser} ${isMe ? styles.sidebarUserMe : ''}`}>{p.twitch_username}</div>
+                                  <div className={`${styles.sidebarUser} ${isMe ? styles.sidebarUserMe : ''}`}><TwitchAvatar name={p.twitch_username} map={av} size={20} /> {p.twitch_username}</div>
                                   <div className={styles.sidebarSlot}>{entry?.slot?.name || '—'}</div>
                                 </div>
                               </div>

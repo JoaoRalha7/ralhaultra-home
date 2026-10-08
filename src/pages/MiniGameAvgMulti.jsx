@@ -4,6 +4,8 @@ import { spendGamePoints, refundGamePoints } from '../lib/points'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import styles from './MiniGame.module.css'
+import TwitchAvatar from '../components/TwitchAvatar'
+import { useAvatars } from '../lib/avatars'
 import avgStyles from './MiniGameAvgMulti.module.css'
 import {
   parseBet, fmtTime, fmtDate, useCountdown,
@@ -34,6 +36,8 @@ function AvgHistoryList({ games, onSelect, twitchUser }) {
     }
     load()
   }, [games])
+
+  const hav = useAvatars(Object.values(entriesMap).flat().map(e => e.twitch_username))
 
   if (!games.length) return (
     <div className={styles.emptyState}>
@@ -66,7 +70,7 @@ function AvgHistoryList({ games, onSelect, twitchUser }) {
               {winners.slice(0, 3).map((e, wi) => (
                 <div key={e.twitch_username} className={styles.histWinnerPill}>
                   <Medal pos={wi+1} size={10} />
-                  <span>{e.twitch_username}</span>
+                  <TwitchAvatar name={e.twitch_username} map={hav} size={16} /><span>{e.twitch_username}</span>
                   {e.gap != null && <span className={styles.histWinAmt}>±{parseBet(e.gap).toFixed(1)}x</span>}
                 </div>
               ))}
@@ -273,6 +277,7 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
     setSubmitting(false)
   }
 
+  const av = useAvatars(entries.map(e => e.twitch_username))
   const myEntry         = entries.find(e => e.twitch_username?.toLowerCase() === twitchUser?.toLowerCase())
   const gameNum         = games.length - idx
   const totalPtsAwarded = (game?.points_1st || 0) + (game?.points_2nd || 0) + (game?.points_3rd || 0)
@@ -505,7 +510,7 @@ export default function MiniGameAvgMulti({ huntId = null, compact = false }) {
                               {e.rank ? <Medal pos={e.rank} size={13} /> : <span className={styles.sidebarDot}/>}
                             </span>
                             <div className={styles.sidebarInfo}>
-                              <div className={`${styles.sidebarUser} ${isMe ? styles.sidebarUserMe : ''}`}>{e.twitch_username}</div>
+                              <div className={`${styles.sidebarUser} ${isMe ? styles.sidebarUserMe : ''}`}><TwitchAvatar name={e.twitch_username} map={av} size={20} /> {e.twitch_username}</div>
                               <div className={styles.sidebarSlot}>
                                 {bucket ? `${bucket.id}: ${bucket.label}` : `${parseBet(e.guess).toFixed(1)}x`}
                               </div>

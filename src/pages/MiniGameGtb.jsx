@@ -4,6 +4,8 @@ import { spendGamePoints, refundGamePoints } from '../lib/points'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import styles from './MiniGame.module.css'
+import TwitchAvatar from '../components/TwitchAvatar'
+import { useAvatars } from '../lib/avatars'
 import { parseBet, fmtTime, fmtDate, useCountdown, Spinner, Medal, LockIcon, ChevronIcon } from '../lib/miniGamesUtils'
 
 const GTB_COST      = 100
@@ -30,6 +32,8 @@ function GtbHistoryList({ games, onSelect, twitchUser }) {
     }
     load()
   }, [games])
+
+  const hav = useAvatars(Object.values(entriesMap).flat().map(e => e.twitch_username))
 
   if (!games.length) return (
     <div className={styles.emptyState}>
@@ -64,7 +68,7 @@ function GtbHistoryList({ games, onSelect, twitchUser }) {
               {winners.slice(0, 3).map((e, wi) => (
                 <div key={e.twitch_username} className={styles.histWinnerPill}>
                   <Medal pos={wi+1} size={10} />
-                  <span>{e.twitch_username}</span>
+                  <TwitchAvatar name={e.twitch_username} map={hav} size={16} /><span>{e.twitch_username}</span>
                   {e.gap != null && <span className={styles.histWinAmt}>±€{parseBet(e.gap).toFixed(2)}</span>}
                 </div>
               ))}

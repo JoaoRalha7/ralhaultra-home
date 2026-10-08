@@ -669,7 +669,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
             <div className={x.pickSum}>
               <div className={x.pickStats}>
                 <span><b>{g?.count ?? 0}</b> picks so far</span>
-                {st === 'finished' && g?.winner && <span>Winner <b>{g.winner.twitch_username}</b></span>}
+                {st === 'finished' && g?.winner && <span style={{display:'inline-flex',alignItems:'center',gap:5}}>Winner {pickAv[(g.winner.twitch_username||'').toLowerCase()] ? <img src={pickAv[(g.winner.twitch_username||'').toLowerCase()]} alt="" referrerPolicy="no-referrer" style={{width:16,height:16,borderRadius:'50%',objectFit:'cover'}} /> : null}<b>{g.winner.twitch_username}</b></span>}
               </div>
               <button className={x.pickBtn} onClick={() => setPickOpen(true)}>
                 {st === 'open' ? 'Pick your slot' : st === 'closed' ? 'See picks' : 'See results'}
