@@ -2,6 +2,7 @@ import ProvablyFair from '../components/ProvablyFair'
 import LiveStats from '../components/LiveStats'
 import { recordStat } from '../lib/liveStats'
 import OriginalsBelow from '../components/OriginalsBelow'
+import BetModal from '../components/BetModal'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
@@ -198,10 +199,14 @@ export function UserAv({ name, src, size = 26, ring }) {
 }
 
 export function HistoryStrip({ items }) {
+  const [open, setOpen] = useState(null)
   if (!items.length) return <div className={styles.hist} />
   return (
     <div className={styles.hist} aria-label="Recent rounds">
-      {items.map((h, i) => <span key={i} className={`${styles.hChip} ${styles['h_' + h.tone]}`} title={h.title}>{h.label}</span>)}
+      {items.map((h, i) => h.round
+        ? <button key={i} type="button" onClick={() => setOpen(h)} className={`${styles.hChip} ${styles['h_' + h.tone]}`} style={{ cursor: 'pointer', font: 'inherit', fontWeight: 700 }} title={h.title}>{h.label}</button>
+        : <span key={i} className={`${styles.hChip} ${styles['h_' + h.tone]}`} title={h.title}>{h.label}</span>)}
+      {open && <BetModal item={open} onClose={() => setOpen(null)} />}
     </div>
   )
 }
@@ -237,6 +242,7 @@ function errText(d) {
 export function useCasino(game) {
   const { user, profile } = useAuth()
   const twitchUser = profile?.twitch_username || user?.user_metadata?.name || null
+  const twitchRef = useRef(twitchUser); twitchRef.current = twitchUser
   const avatar = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null
   const { points, setPoints, refresh } = useStreamElementsPoints(twitchUser)
   const [round, setRound] = useState(null)
@@ -274,6 +280,7 @@ export function useCasino(game) {
         : game === 'blackjack'
           ? { tone: win ? 'win' : push ? 'push' : 'lose', label: win ? 'Win' : push ? 'Push' : 'Loss', title: `${win ? '+' : push ? '' : '-'}${fmt(Math.abs(r.payout - r.bet))} pts` }
           : { tone: r.cashedAt ? 'win' : 'lose', label: `${(r.cashedAt || r.crashAt || 1).toFixed(2)}x`, title: r.cashedAt ? `Cashed out, +${fmt(r.payout - r.bet)} pts` : 'Crashed' }
+    item.round = r; item.game = game; item.by = twitchRef.current; item.at = Date.now()
     setHistory((h) => {
       const next = [item, ...h].slice(0, 40)
       try { localStorage.setItem(hkey, JSON.stringify(next)) } catch { /* ignore */ }
