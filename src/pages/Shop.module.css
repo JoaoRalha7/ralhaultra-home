@@ -19,7 +19,7 @@
 .top { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; align-items: center; gap: 28px; padding: 18px 28px 18px 18px; margin-bottom: 14px; border-radius: 20px; overflow: hidden; position: relative;
   border: 1px solid color-mix(in srgb, var(--c) 45%, var(--line));
   background: radial-gradient(40% 160% at 0% 50%, color-mix(in srgb, var(--c) 38%, transparent), transparent 70%), linear-gradient(135deg, #131a2b, #0e131c); }
-.topArt { display: grid; place-items: center; height: 130px; }
+.topArt { position: relative; display: grid; place-items: center; height: 130px; }
 .topArt img { max-width: 100%; max-height: 130px; object-fit: contain; filter: drop-shadow(0 16px 24px rgba(0,0,0,.55)); }
 .topText { min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .topTags { display: flex; gap: 8px; flex-wrap: wrap; }

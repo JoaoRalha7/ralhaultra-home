@@ -262,7 +262,7 @@ export default function Shop() {
       {featured && (
         <article className={styles.top} style={{ '--c': featured.color || '#f5c542' }}>
           <div className={styles.topArt}>
-            {featured.image_url ? <img src={featured.image_url} alt="" /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
+            {featured.image_url ? <ProductSpin src={featured.image_url} seed={featured.id} /> : <span className={styles.initial}>{featured.name?.[0]}</span>}
           </div>
           <div className={styles.topText}>
             <div className={styles.topTags}>
