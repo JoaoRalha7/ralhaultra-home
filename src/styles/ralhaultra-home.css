@@ -874,7 +874,7 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .app.collapsed .liveTag{position:absolute;top:6px;right:8px;margin:0;padding:0;border:0;background:transparent;font-size:0;gap:0}
 @media (prefers-reduced-motion:reduce){.liveTag i{animation:none}}
 
-.liveDotOnly{margin-left:auto;width:9px;height:9px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.25);animation:liveBlink 1.4s ease-in-out infinite}
+.liveDotOnly{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#ef4444;animation:liveBlink 1.4s ease-in-out infinite}
 .app.collapsed .liveDotOnly{position:absolute;top:8px;right:10px;margin:0}
 .dropItem{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:10px;border:0;background:transparent;color:inherit;font:700 14px "DM Sans",sans-serif;text-align:left;cursor:pointer}
 .dropItem:hover{background:var(--panel2)}
