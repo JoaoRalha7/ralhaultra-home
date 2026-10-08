@@ -547,16 +547,18 @@ async function jpState(env, sbH, now) {
 
 // ── New economy casino rules (only when ECONOMY_SOURCE=supabase) ──────────────────
 // No payout ceiling per round: every game is capped at 1000x the bet instead, and the max bet of each
-// game is risk_cap / its top multiplier (at most 500), so one round can never reach the cheapest shop prize.
+// game is risk_cap / its top multiplier (at most ECON_BET_CEIL), so one round can never reach the cheapest shop prize.
 const ECON_RISK_CAP = 100000
 const ECON_MAX_MULT = 1000
+const ECON_BET_CEIL = 2000     // highest bet any Original allows (only low-multiplier games get there; the rest stay risk-capped)
+const ECON_CRASH_MAX = 1000
 const econOn = () => !!ECON && ECON.ECONOMY_SOURCE === 'supabase'
-const jpMax = () => (econOn() ? 500 : JP.maxDeposit)    // jackpot deposit limit (new economy: same as the other games)
-const jpTotal = () => (econOn() ? 2500 : JP.maxTotal)
+const jpMax = () => (econOn() ? 1000 : JP.maxDeposit)    // jackpot deposit limit (new economy: same as the other games)
+const jpTotal = () => (econOn() ? 5000 : JP.maxTotal)
 const payCap = (bet) => (econOn() ? Math.floor(bet * ECON_MAX_MULT) : CASINO.maxPayout)
 function econMaxBet(game, body) {
   if (!econOn()) return CASINO.maxBet
-  if (game === 'crash') return 500 // crash: fixed 500 (the 1000x cap still applies)
+  if (game === 'crash') return ECON_CRASH_MAX // crash: fixed (the 1000x cap still applies)
   let top = 2
   try {
     if (game === 'crash') top = CASINO.crashCap
@@ -567,7 +569,7 @@ function econMaxBet(game, body) {
     else if (game === 'blackjack') top = 4
   } catch { top = ECON_MAX_MULT }
   top = Math.min(ECON_MAX_MULT, Math.max(2, top))
-  return Math.max(CASINO.minBet, Math.min(500, Math.floor(ECON_RISK_CAP / top)))
+  return Math.max(CASINO.minBet, Math.min(ECON_BET_CEIL, Math.floor(ECON_RISK_CAP / top)))
 }
 
 // Hourly VIP refresh and Monday weekly cashback (only with the new economy). Both SQL functions are idempotent.
