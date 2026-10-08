@@ -87,14 +87,18 @@ function DatePick({ value, onChange }) {
             ) : <span key={i} />)}
           </div>
           <div className={styles.dpTime}>
-            <div className={styles.dpTimeBox}>
-              <select value={hh} onChange={(e) => setTime(+e.target.value, mm)} aria-label="Hora">
-                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{pad(h)}</option>)}
-              </select>
-              <span>:</span>
-              <select value={mm - (mm % 5)} onChange={(e) => setTime(hh, +e.target.value)} aria-label="Minutos">
-                {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <option key={m} value={m}>{pad(m)}</option>)}
-              </select>
+            <div className={styles.dpCols}>
+              <div className={styles.dpCol} role="listbox" aria-label="Hora" ref={(el) => el && (el.scrollTop = Math.max(0, hh * 30 - 60))}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <button key={h} type="button" role="option" aria-selected={h === hh} className={h === hh ? styles.dpColOn : ''} onClick={() => setTime(h, mm)}>{pad(h)}</button>
+                ))}
+              </div>
+              <span className={styles.dpColon}>:</span>
+              <div className={styles.dpCol} role="listbox" aria-label="Minutos">
+                {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
+                  <button key={m} type="button" role="option" aria-selected={m === mm - (mm % 5)} className={m === mm - (mm % 5) ? styles.dpColOn : ''} onClick={() => setTime(hh, m)}>{pad(m)}</button>
+                ))}
+              </div>
             </div>
             <div className={styles.dpQuick}>
               {TIMES.map((t) => {

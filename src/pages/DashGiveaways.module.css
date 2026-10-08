@@ -127,3 +127,15 @@
 .dpQuick button:hover { color: #fff; border-color: #343845; }
 .dpQuick .dpQOn, .dpQuick .dpQOn:hover { background: var(--c-lite); border-color: var(--c-lite); color: #0a0b0e; }
 .dpDone { height: 40px; border-radius: 11px; border: 0; background: var(--c-lite); color: #0a0b0e; font: 800 13px "DM Sans", sans-serif; cursor: pointer; }
+.dpTimeBox select option { background: #0d0f14; color: #eef1f7; }
+
+.dpCols { display: flex; align-items: center; gap: 4px; }
+.dpColon { color: var(--c-mute); font-weight: 800; }
+.dpCol { width: 54px; height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px; border-radius: 10px; background: var(--c-in); border: 1px solid var(--c-line); scrollbar-width: thin; scrollbar-color: #2a2e38 transparent; }
+.dpCol::-webkit-scrollbar { display: block; width: 4px; }
+.dpCol::-webkit-scrollbar-thumb { background: #2a2e38; border-radius: 4px; }
+.dpCol button { flex: none; height: 28px; border-radius: 7px; border: 0; background: transparent; color: #c9ced9; font: 800 14px "Bricolage Grotesque", sans-serif; cursor: pointer; font-variant-numeric: tabular-nums; }
+.dpCol button:hover { background: #1c1f27; color: #fff; }
+.dpCol .dpColOn, .dpCol .dpColOn:hover { background: var(--c-lite); color: #0a0b0e; }
+.dpQuick { flex-direction: column; flex: 1; align-items: stretch; }
+.dpQuick button { height: 26px; }
