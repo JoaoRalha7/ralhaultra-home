@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Medal, RANK_NAMES, RANK_COLORS } from '../components/Medal'
 import { workerGet } from '../lib/vip'
-import { workerPost } from '../lib/points'
+import { workerPost, WORKER } from '../lib/points'
 import styles from './Profile.module.css'
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-US')
@@ -87,6 +87,15 @@ export default function Profile() {
   const [tab, setTab] = useState('profile')
   const [vip, setVip] = useState(null)
   const [stats, setStats] = useState(null)
+  const [followed, setFollowed] = useState(null)
+  const uname = profile?.twitch_username
+
+  useEffect(() => {
+    if (!uname) return
+    let off = false
+    fetch(`${WORKER}/player?u=${encodeURIComponent(uname.toLowerCase())}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!off && d?.followedAt) setFollowed(d.followedAt) }).catch(() => {})
+    return () => { off = true }
+  }, [uname])
 
   useEffect(() => {
     if (!user) return
@@ -127,6 +136,7 @@ export default function Profile() {
           <h1>@{name}</h1>
           <em style={{ color: RANK_COLORS[lvl], background: RANK_COLORS[lvl] + '2e' }}>{RANK_NAMES[lvl]}</em>
           {since && <small>Joined {since}</small>}
+          {followed && <small>Following since {new Date(followed).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</small>}
         </div>
         <nav className={styles.panel + ' ' + styles.nav}>
           <button className={tab === 'profile' ? styles.navOn : ''} onClick={() => setTab('profile')}>
