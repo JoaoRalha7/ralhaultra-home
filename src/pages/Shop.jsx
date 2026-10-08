@@ -78,6 +78,9 @@ function ProductSpin({ src, seed }) {
   )
 }
 
+// Info button + modal with the full description: off for now (set to true to bring it back).
+const SHOW_INFO = false
+
 // ── Info modal: the full product description (the card only shows two lines) ─────
 function InfoModal({ product, onClose, label, canRedeem, onRedeem }) {
   useEffect(() => {
@@ -145,7 +148,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
         {product.description && (
           <div className={styles.descRow}>
             <p className={styles.desc}>{product.description}</p>
-            <button type="button" className={styles.infoBtn} onClick={() => setInfo(true)} aria-label={`More about ${product.name}`} title="More info">i</button>
+            {SHOW_INFO && <button type="button" className={styles.infoBtn} onClick={() => setInfo(true)} aria-label={`More about ${product.name}`} title="More info">i</button>}
           </div>
         )}
         {info && <InfoModal product={product} onClose={() => setInfo(false)} canRedeem={!disabled} onRedeem={onRedeem} label={outOfStock ? 'Sold out' : !loggedIn ? 'Log in to redeem' : canAfford ? 'Redeem' : 'Not enough points'} />}
