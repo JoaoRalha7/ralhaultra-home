@@ -75,7 +75,7 @@ export default function Mines() {
   const shaking = useFlag(g.shake)
   const k = r?.revealed?.length || 0
   const m = active || done ? r.mines : mines
-  useEffect(() => () => { alive.current = false; stop.current = true }, [])
+  useEffect(() => { alive.current = true; return () => { alive.current = false; stop.current = true } }, [])
   useEffect(() => { setPicks((p) => p.slice(0, 25 - mines)) }, [mines])
 
   const reveal = (i) => {
