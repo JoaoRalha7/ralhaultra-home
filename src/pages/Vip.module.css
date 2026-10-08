@@ -93,3 +93,13 @@
 .perk span{color:var(--mute);font-size:13px;line-height:1.45}
 
 @media(max-width:900px){.hero{grid-template-columns:1fr;padding:22px}.how{grid-template-columns:1fr}}
+
+.faq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.faqCol{display:flex;flex-direction:column;gap:12px}
+.faqItem{border-radius:14px;border:1px solid var(--line);background:var(--panel);transition:border-color .2s}
+.faqItem:hover,.faqOpen{border-color:#34406a}
+.faqItem button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 20px;border:0;background:transparent;color:var(--text);font:700 15px "DM Sans",sans-serif;text-align:left;cursor:pointer}
+.faqItem button svg{flex:none;color:var(--mute);transition:transform .2s}
+.faqOpen button svg{transform:rotate(180deg)}
+.faqItem p{margin:0;padding:0 20px 18px;color:var(--mute);font-size:14px;line-height:1.55}
+@media(max-width:760px){.faq{grid-template-columns:1fr}}

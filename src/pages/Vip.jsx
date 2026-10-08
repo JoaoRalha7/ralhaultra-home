@@ -71,6 +71,47 @@ function RankCard({ l, me }) {
   )
 }
 
+
+function Faq({ levels }) {
+  const [open, setOpen] = useState(null)
+  const f = (n) => Number(n || 0).toLocaleString('en-US')
+  const top = levels[levels.length - 1]
+  const items = [
+    ['How do I rank up?', 'You need two things at once: enough points wagered in the Originals and enough hours watched. Both bars in your rewards must be full to reach the next rank.'],
+    ['How is my progress percentage calculated?', 'It is the average of your wagered progress and your hours progress toward the next rank. Each one is capped at 100%, so having lots of wager but few hours will not fill the bar.'],
+    ['Do wagered points go down when I win?', 'No. Every bet you place counts toward your wager, win or lose, and the total never goes down.'],
+    ['What is the level-up reward?', 'A one-time bonus for each rank you reach. Open your rewards and press Claim. Each rank can be claimed once per person.'],
+    ['How does the daily boost work?', 'Your daily reward is increased by a percentage based on your rank, from +5% at Bronze up to +' + (top?.daily_boost_pct ?? 25) + '% at ' + (top?.name || 'Diamond') + '. It stacks on top of your streak.'],
+    ['What is the watch bonus?', 'Extra points per minute while the stream is live. It adds to your sub multiplier, and the total is capped at 2.5x.'],
+    ['How does cashback work?', 'Every Monday at 03:30 UTC you get a percentage of your net losses from the previous week. If you won more than you lost, there is nothing to pay back. The weekly cap is 50,000 points.'],
+    ['Why is my rank not updating?', 'Ranks refresh every hour and right after you place a bet. If it still looks wrong, reload the page and check that you are logged in with Twitch.'],
+    ['Do ranks change my odds?', 'Never. Ranks only reward time and activity. Every game is provably fair.'],
+    ['Where can I read every rule?', 'On the Site Rules page, with all the details about points, limits, vouchers and fair play.'],
+  ]
+  const cols = [items.filter((_, i) => i % 2 === 0), items.filter((_, i) => i % 2 === 1)]
+  return (
+    <>
+      <h2 className={styles.h2}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ verticalAlign: '-3px', marginRight: 8 }}><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" /></svg>Frequently asked</h2>
+      <div className={styles.faq}>
+        {cols.map((col, c) => (
+          <div key={c} className={styles.faqCol}>
+            {col.map(([q, a]) => (
+              <div key={q} className={`${styles.faqItem} ${open === q ? styles.faqOpen : ''}`}>
+                <button type="button" aria-expanded={open === q} onClick={() => setOpen(open === q ? null : q)}>
+                  <span>{q}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                {open === q && <p>{a}</p>}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <p className={styles.note} style={{ marginTop: 14 }}><a href="/rules" style={{ color: 'var(--acc2)' }}>Read the full Site Rules</a></p>
+    </>
+  )
+}
+
 export default function Vip() {
   const { user, signInWithTwitch } = useAuth()
   const { data, error, reload } = useVip()
@@ -117,6 +158,8 @@ export default function Vip() {
           <div key={t} className={styles.howCard}><span>{i + 1}</span><b>{t}</b><p>{d}</p></div>
         ))}
       </div>
+
+      {levels.length > 0 && <Faq levels={levels} />}
 
       {modal && me && levels.length > 0 && <RewardsModal levels={levels} me={me} tab={modal} setTab={setModal} onClose={() => setModal(null)} />}
     </div>
