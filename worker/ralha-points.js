@@ -298,6 +298,20 @@ async function saveAvatar(env, sbH, who) {
   try { await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${who.id}&avatar_url=is.null`, { method: 'PATCH', headers: { ...sbH, 'Prefer': 'return=minimal' }, body: JSON.stringify({ avatar_url: who.avatar }) }) } catch { /* optional */ }
 }
 
+// Broadcaster user token for the followers endpoint: refreshed from TWITCH_REFRESH_TOKEN (needs TWITCH_CLIENT_SECRET), or a fixed TWITCH_BROADCASTER_TOKEN
+let TW_TOK = null
+async function twitchUserToken(env) {
+  if (TW_TOK && Date.now() < TW_TOK.exp) return TW_TOK.token
+  if (env.TWITCH_REFRESH_TOKEN && env.TWITCH_CLIENT_SECRET) {
+    try {
+      const r = await fetch('https://id.twitch.tv/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: env.TWITCH_REFRESH_TOKEN, client_id: env.TWITCH_CLIENT_ID, client_secret: env.TWITCH_CLIENT_SECRET }) })
+      const d = r.ok ? await r.json() : null
+      if (d?.access_token) { TW_TOK = { token: d.access_token, exp: Date.now() + Math.max(60, (d.expires_in || 3600) - 300) * 1000 }; return TW_TOK.token }
+    } catch { /* fall through */ }
+  }
+  return env.TWITCH_BROADCASTER_TOKEN || null
+}
+
 // Crash multiplier helpers
 const crashAtMs = (m) => Math.log(m) / CASINO.crashRate
 const crashMultAt = (ms) => Math.floor(Math.exp(CASINO.crashRate * Math.max(0, ms)) * 100) / 100
@@ -1935,8 +1949,10 @@ export default {
         let followedAt = null
         try {
           const tid = bal[0]?.twitch_id
-          if (tid && env.TWITCH_CLIENT_ID && env.TWITCH_BROADCASTER_ID && env.TWITCH_BROADCASTER_TOKEN) {
-            const fr = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${encodeURIComponent(env.TWITCH_BROADCASTER_ID)}&user_id=${encodeURIComponent(tid)}`, { headers: { 'Client-Id': env.TWITCH_CLIENT_ID, Authorization: `Bearer ${env.TWITCH_BROADCASTER_TOKEN}` } })
+          const bid = env.TWITCH_BROADCASTER_ID || '216681327'
+          const tok = tid && env.TWITCH_CLIENT_ID ? await twitchUserToken(env) : null
+          if (tok) {
+            const fr = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${encodeURIComponent(bid)}&user_id=${encodeURIComponent(tid)}`, { headers: { 'Client-Id': env.TWITCH_CLIENT_ID, Authorization: `Bearer ${tok}` } })
             if (fr.ok) followedAt = (await fr.json())?.data?.[0]?.followed_at || null
           }
         } catch { /* follow date is optional */ }
