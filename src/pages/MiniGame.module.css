@@ -1302,3 +1302,17 @@
 .costBanner{font-size:13px}
 .costBalance{padding:4px 12px}
 .costBalance strong{font-size:13px}
+
+/* ══ Pick & Win v5: dense tiles ══ */
+.grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.card{border-radius:10px}
+.cardImgWrap{aspect-ratio:1/1}
+.cardNum{top:4px;left:4px;font-size:9px;padding:1px 6px}
+.cardSuperBadge{top:4px;right:4px;font-size:8px;padding:1px 5px}
+.cardFooter{padding:6px 7px 7px;gap:1px}
+.cardName{font-size:11px;font-weight:700}
+.cardBet,.cardWin{font-size:10px}
+.cardWinRow svg{display:none}
+.cardPickable:hover{transform:translateY(-2px)}
+.cardCta{display:none}
+.statusBar{height:44px}
