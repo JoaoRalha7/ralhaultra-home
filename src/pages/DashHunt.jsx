@@ -1392,9 +1392,9 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
   const [panelReady,  setPanelReady]  = useState(false)
   const [dbError,     setDbError]     = useState(null)
   const [duration,    setDuration]    = useState(180)
-  const [pts1,        setPts1]        = useState(500)
-  const [pts2,        setPts2]        = useState(300)
-  const [pts3,        setPts3]        = useState(100)
+  const [pts1,        setPts1]        = useState(1000)   // AVG: single prize pool, split between everyone in the winning range
+  const [pts2,        setPts2]        = useState(0)
+  const [pts3,        setPts3]        = useState(0)
   const [actualAvg,   setActualAvg]   = useState('')
 
 
@@ -1451,7 +1451,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
   const openGame = async () => {
     setLoading(true)
     const closesAt = new Date(Date.now() + duration * 1000).toISOString()
-    const fields = { status: 'open', closes_at: closesAt, duration_secs: duration, points_1st: pts1, points_2nd: pts2, points_3rd: pts3 }
+    const fields = { status: 'open', closes_at: closesAt, duration_secs: duration, points_1st: pts1, points_2nd: 0, points_3rd: 0 }
     if (game) {
       await supabaseDash.from('avg_multi_games').update(fields).eq('id', game.id)
     } else {
@@ -1565,6 +1565,20 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
         )}
       </div>
 
+      {(() => {
+        const pool = (game?.points_1st || 0) + (game?.points_2nd || 0) + (game?.points_3rd || 0)
+        const ref  = isFinished ? Number(game?.result_avg) : Number(calcedAvg)
+        const wb   = ref ? getBucket(ref) : null
+        if (!game || !pool) return null
+        const inWin = wb ? entries.filter(e => (e.bucket || getBucket(parseBet(e.guess))?.id) === wb.id) : []
+        return (
+          <div className={styles.pickCollected} style={{flexWrap:'wrap'}}>
+            <span>Pool <strong>{pool} pts</strong></span>
+            {wb && <span> · {isFinished ? 'winning' : 'leading'} range <strong>{wb.label}</strong> · {inWin.length} {inWin.length === 1 ? 'player' : 'players'}{inWin.length ? <> · <strong>{Math.floor(pool / inWin.length)} pts each</strong></> : ' · nobody yet'}</span>}
+          </div>
+        )
+      })()}
+
       {showConfig && (
         <div className={styles.pickConfigWrap}>
           <div className={styles.pickConfigLabel}>Duration</div>
@@ -1575,25 +1589,12 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
               </button>
             ))}
           </div>
-          <div className={styles.pickConfigLabel} style={{marginTop:6}}>Points per place</div>
+          <div className={styles.pickConfigLabel} style={{marginTop:6}}>Prize pool (split equally by everyone in the winning range)</div>
           <div className={styles.pickPtsRow}>
-            {[
-              { label: '1st', color: '#fbbf24', val: pts1, set: setPts1 },
-              { label: '2nd', color: '#94a3b8', val: pts2, set: setPts2 },
-              { label: '3rd', color: '#cd7c54', val: pts3, set: setPts3 },
-            ].map(({ label, color, val, set }) => (
-              <div key={label} className={styles.pickPtsField}>
-                <span className={styles.pickPtsLabel}>
-                  <svg width='11' height='11' viewBox='0 0 24 24' fill='none' stroke={color} strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round'>
-                    <path d='M6 9H4a2 2 0 0 1-2-2V5h4'/><path d='M18 9h2a2 2 0 0 0 2-2V5h-4'/>
-                    <path d='M12 17v4'/><path d='M8 21h8'/>
-                    <path d='M6 9a6 6 0 0 0 12 0V3H6v6z'/>
-                  </svg>
-                  {label}
-                </span>
-                <input className={styles.pickPtsInput} type='number' min='0' step='50' value={val} onChange={e => set(Number(e.target.value))} />
-              </div>
-            ))}
+            <div className={styles.pickPtsField}>
+              <span className={styles.pickPtsLabel}>Pool</span>
+              <input className={styles.pickPtsInput} type='number' min='0' step='100' value={pts1} onChange={e => setPts1(Number(e.target.value))} />
+            </div>
           </div>
           <div className={styles.pickConfigBtns}>
             <button className={styles.pickBtnGreen} onClick={openGame} disabled={loading}>{loading ? '...' : 'Confirm'}</button>
@@ -1684,12 +1685,13 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
                   )}
                   <div className={styles.liveRowInfo}>
                     <div className={styles.liveRowUser}>{e.twitch_username}</div>
-                    {e.bucket && <div style={{fontSize:9, color:'rgba(232,238,252,.3)'}}>{e.bucket}: {AVG_BUCKETS.find(b=>b.id===e.bucket)?.label}</div>}
+                    {e.bucket && <div style={{fontSize:9, color:'rgba(232,238,252,.3)'}}>{AVG_BUCKETS.find(b=>b.id===e.bucket)?.label}</div>}
                   </div>
                 </div>
                 <div className={styles.liveRowRight}>
-                  <span className={styles.liveRowMulti}>{parseBet(e.guess).toFixed(1)}x</span>
-                  {e.gap != null && <span className={styles.liveRowWin}>±{e.gap.toFixed(1)}x</span>}
+                  {e.points_awarded > 0
+                    ? <span className={styles.liveRowWin}>+{e.points_awarded} pts</span>
+                    : <span className={styles.liveRowMulti}>{AVG_BUCKETS.find(b=>b.id===e.bucket)?.label || parseBet(e.guess).toFixed(1) + 'x'}</span>}
                 </div>
               </div>
             )
@@ -1707,7 +1709,7 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
         <div className={styles.awardModalBackdrop} onClick={e => { if (e.target===e.currentTarget) setShowPreview(false) }}>
           <div className={styles.awardModal}>
             <div className={styles.awardModalTitle}>Award Avg Multi</div>
-            <p className={styles.awardModalSub}>Enter the actual average multiplier.</p>
+            <p className={styles.awardModalSub}>Enter the actual average multiplier. Only players in the matching range win.</p>
 
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
               <span style={{fontSize:12,color:'rgba(232,238,252,.45)',flexShrink:0}}>Actual avg</span>
