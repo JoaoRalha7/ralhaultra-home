@@ -1422,7 +1422,16 @@ export default {
 
         // 5. Pontos baseados no streak (índice 0-6)
         const streakIndex  = newStreak - 1
-        const DAILY_POINTS = econOn() ? 10000 + 1000 * Math.min(Math.max(streakIndex, 0), 6) : (STREAK_POINTS[streakIndex] ?? 50)
+        let DAILY_POINTS = econOn() ? 10000 + 1000 * Math.min(Math.max(streakIndex, 0), 6) : (STREAK_POINTS[streakIndex] ?? 50)
+        if (econOn()) { // VIP rank boost (%)
+          try {
+            const br = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(username.toLowerCase())}&select=level`, { headers: sbHeaders })
+            const lvl = Number((await br.json())?.[0]?.level) || 0
+            const lr = await fetch(`${env.SUPABASE_URL}/rest/v1/vip_levels?level=eq.${lvl}&select=daily_boost_pct`, { headers: sbHeaders })
+            const pct = Number((await lr.json())?.[0]?.daily_boost_pct) || 0
+            DAILY_POINTS = Math.floor(DAILY_POINTS * (100 + pct) / 100)
+          } catch { /* no boost */ }
+        }
 
         // 6. Claim atómico ANTES de pagar: só um pedido consegue mudar last_daily_claim (impede duplo claim em paralelo)
         const cutoff = new Date(Date.now() - 86400000).toISOString()
@@ -1660,6 +1669,22 @@ export default {
         return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
       }
 
+      // ── POST /vip/claim — one-time level-up reward ──
+      if (pathname === '/vip/claim' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who?.username) return json({ error: 'unauthorized' }, 401)
+        const body = await request.json().catch(() => ({}))
+        const level = parseInt(body.level, 10)
+        if (!Number.isInteger(level)) return json({ error: 'invalid_level' }, 400)
+        const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/claim_levelup`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: who.username, p_level: level }) })
+        if (!r.ok) {
+          const t = await r.text()
+          const e = ['not_reached', 'no_reward', 'already_claimed'].find((k) => t.includes(k))
+          return json({ error: e || 'failed' }, e ? 400 : 502)
+        }
+        return json({ ok: true, balance: Number(await r.json()) })
+      }
+
       // ── POST /voucher/redeem ──
       if (pathname === '/voucher/redeem' && request.method === 'POST') {
         const who = await getUser(request, env, sbHeaders)
@@ -1771,7 +1796,7 @@ export default {
 
       // ── GET /vip — ranks (public) + my progress and cashback estimate (when logged in) ──
       if (pathname === '/vip' && request.method === 'GET') {
-        const lv = await fetch(`${env.SUPABASE_URL}/rest/v1/vip_levels?select=level,name,min_wagered,min_watch_hours,bonus_mult,cashback_pct&order=level.asc`, { headers: sbHeaders })
+        const lv = await fetch(`${env.SUPABASE_URL}/rest/v1/vip_levels?select=level,name,min_wagered,min_watch_hours,bonus_mult,cashback_pct,levelup_reward,daily_boost_pct&order=level.asc`, { headers: sbHeaders })
         const levels = lv.ok ? await lv.json() : []
         let me = null
         const who = await getUser(request, env, sbHeaders)
@@ -1801,7 +1826,12 @@ export default {
             weekLoss: loss, cashbackPct: pct, cashbackCap: cap,
             cashbackEst: Math.min(Math.floor(loss * pct / 100), cap),
             nextPayoutMs: next.getTime() - now.getTime(),
+            claimed: [],
           }
+          try {
+            const cr = await fetch(`${env.SUPABASE_URL}/rest/v1/vip_level_claims?username=eq.${encodeURIComponent(u)}&select=level`, { headers: sbHeaders })
+            if (cr.ok) me.claimed = (await cr.json()).map((x) => x.level)
+          } catch { /* optional */ }
         }
         return json({ levels, me })
       }
@@ -1818,7 +1848,7 @@ export default {
           get(`casino_games?username=ilike.${u}&status=eq.done&select=game,bet,payout,updated_at&order=updated_at.desc&limit=5000`),
           get(`crash_bets?username=ilike.${u}&select=bet,cashed_at,created_at&order=created_at.desc&limit=5000`),
           get(`shop_redeems?twitch_username=ilike.${u}&select=cost_at_redeem,created_at,status,shop_products(name)&order=created_at.desc&limit=100`),
-          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.daily*)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
+          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.vip_levelup*,reason.like.daily*)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
         ])
         let wins = 0, losses = 0
         const acts = []
@@ -1835,7 +1865,7 @@ export default {
         for (const r of redeems) acts.push({ kind: 'shop', title: `Shop: ${r.shop_products?.name || 'Reward'}`, at: r.created_at, value: -(Number(r.cost_at_redeem) || 0), status: String(r.status || 'pending').toUpperCase() })
         for (const t of tx) {
           const rs = String(t.reason)
-          const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : 'Daily reward'
+          const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : rs.startsWith('vip_levelup') ? 'Level-up reward' : 'Daily reward'
           acts.push({ kind: 'rewards', title, at: t.created_at, value: Number(t.delta) || 0, status: 'AWARDED' })
         }
         const counts = { all: acts.length, games: 0, shop: 0, rewards: 0 }

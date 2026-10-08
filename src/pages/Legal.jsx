@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import styles from './Legal.module.css'
+import { WORKER } from '../lib/points'
 
 const Svg = ({ children }) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
@@ -70,6 +71,75 @@ const DOCS = {
     note: { icon: 'help', node: <>Questions about a rule or a decision? Reach out through our Discord server.</> },
   },
 }
+
+const n = (v) => Number(v || 0).toLocaleString('en-US')
+const L = ({ items }) => <ul style={{ margin: '8px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>{items.map((i, k) => <li key={k}>{i}</li>)}</ul>
+
+// Detailed rules. Numbers come from the live VIP table so this page never goes out of date.
+function richRules(levels) {
+  const rows = levels.length ? levels : []
+  return [
+    ['The basics', <>
+      <p>Points are virtual and have no cash value. You earn them by watching the stream, claiming rewards and playing, and you spend them in the Originals games, mini-games and the shop. Everything is calculated on our servers, never in your browser.</p>
+    </>],
+    ['How you earn points', <>
+      <p>There are four ways to earn points:</p>
+      <L items={[
+        <><b>Watchtime:</b> you earn points every minute while the stream is live and you are in chat. Subscribers earn a higher multiplier, and your VIP rank adds a bonus on top (total multiplier is capped at 2.5x).</>,
+        <><b>Daily reward:</b> claim once every 24 hours. The reward grows with your streak (day 1 to day 7) and is boosted by your VIP rank. Miss a day and the streak restarts.</>,
+        <><b>Daily wheel:</b> a free spin with random prizes, once per cycle.</>,
+        <><b>Vouchers, giveaways and level-up rewards:</b> codes shared on stream or Discord, prizes, and the one-time bonus when you reach a new rank.</>,
+      ]} />
+    </>],
+    ['VIP ranks', <>
+      <p>Your rank depends on two things at the same time: how many points you have wagered in the Originals games and how many hours you have watched. You need <b>both</b> to reach the next rank. Wagered points count every bet you place, win or lose, and they never go down. Your rank is checked every hour and also right after you bet, so it updates fast.</p>
+      <div style={{ overflowX: 'auto', marginTop: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 560 }}>
+          <thead><tr style={{ textAlign: 'left', opacity: .7 }}>{['Rank', 'Wagered', 'Hours', 'Watch bonus', 'Cashback', 'Daily boost', 'Level-up reward'].map((h) => <th key={h} style={{ padding: '6px 8px' }}>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((l) => (
+            <tr key={l.level} style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+              <td style={{ padding: '8px', fontWeight: 700 }}>{l.name}</td>
+              <td style={{ padding: '8px' }}>{n(l.min_wagered)}</td>
+              <td style={{ padding: '8px' }}>{l.min_watch_hours}h</td>
+              <td style={{ padding: '8px' }}>{Number(l.bonus_mult) ? `+${Number(l.bonus_mult)}x` : '-'}</td>
+              <td style={{ padding: '8px' }}>{Number(l.cashback_pct)}%</td>
+              <td style={{ padding: '8px' }}>{Number(l.daily_boost_pct) ? `+${l.daily_boost_pct}%` : '-'}</td>
+              <td style={{ padding: '8px' }}>{Number(l.levelup_reward) ? n(l.levelup_reward) : '-'}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+      <p style={{ marginTop: 12 }}>Ranks never change the odds of any game. They only reward time and activity.</p>
+    </>],
+    ['Level-up rewards', <>
+      <p>Each rank above Member has a one-time reward. Open your rewards (menu, then VIP) and press <b>Claim</b>. Each rank can be claimed only once per person, even if your rank changes later. If you skip several ranks, you can claim every one you have reached.</p>
+    </>],
+    ['Weekly cashback', <>
+      <p>Every Monday at 03:30 UTC we pay you back a percentage of your <b>net losses</b> from the previous week (Monday to Sunday). Net loss means total bet minus total paid out. If you won more than you lost, there is no cashback, and wins reduce it. The percentage depends on your rank, and the payout has a weekly cap of 50,000 points. You can follow your estimate live in the Cashback tab of your rewards.</p>
+    </>],
+    ['Bets and limits', <>
+      <p>The minimum bet is 10 points. The maximum bet is shown next to the bet field in every game and is never above 500 points (the Jackpot has its own limits: up to 500 per deposit and 2,500 in total per round). Some settings, such as high-risk modes with big multipliers, lower the maximum. Each round also has a maximum payout. If you type a bigger amount, or press 2x past the limit, it is set to the maximum automatically.</p>
+    </>],
+    ['Provably fair', <>
+      <p>Every Originals game is provably fair. Before you play, we publish a hash of our secret seed. Your client seed and a round counter are combined with it to produce each result, and the seed is revealed afterwards, so you can check that nothing was changed. Your recent rounds and their fair data are in your profile.</p>
+    </>],
+    ['Mini-games', <>
+      <p>The viewer mini-games (Pick &amp; Win, Guess the Balance, Average Multi) cost 100 points per entry, charged when you enter. Entries are only open while the round is open. Prizes are given by the streamer after the round ends.</p>
+    </>],
+    ['Vouchers', <>
+      <p>Voucher codes give a set amount of points. Each code can be used <b>once per person</b>, may have a limited number of total uses and may expire. Enter them in your profile, in the Vouchers tab. Sharing or reselling codes is not allowed.</p>
+    </>],
+    ['Shop and giveaways', <>
+      <p>Shop items have limited stock and are reserved the moment you buy. Some items are delivered by the streamer, so their status stays <i>pending</i> until fulfilled. If something goes wrong, points are refunded, never double-charged. Giveaway winners are drawn on stream or by the site, and prizes not claimed in time may be re-drawn.</p>
+    </>],
+    ['Fair use and bans', <>
+      <p>One account per person. Bots, scripts, exploits, multi-accounting, tampering with the site (including opening developer tools to change data) and any attempt to manipulate points, games or the leaderboard are not allowed. We can remove points, reset balances or ban accounts, and our decisions are final. All movements are logged and audited.</p>
+    </>],
+    ['Be respectful, 18+', <>
+      <p>Harassment, hate speech, spam and promotion of other communities are not tolerated on stream, Discord or the site. The community is for adults only (18+). Gambling can be addictive: play responsibly and only with money you can afford to lose.</p>
+    </>],
+  ]
+}
 const ORDER = ['terms', 'privacy', 'cookies', 'rules']
 const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
@@ -77,7 +147,13 @@ export default function Legal() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const tab = ORDER.find(k => pathname.includes(k)) || 'terms'
-  const doc = DOCS[tab]
+  const [levels, setLevels] = useState([])
+  useEffect(() => {
+    let alive = true
+    fetch(`${WORKER}/vip`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (alive && d?.levels) setLevels(d.levels) }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+  const doc = useMemo(() => (tab === 'rules' ? { ...DOCS.rules, intro: 'Everything explained in detail: points, VIP, cashback, limits and fair play.', sections: richRules(levels) } : DOCS[tab]), [tab, levels])
   const [active, setActive] = useState(null)
 
   const ids = useMemo(() => doc.sections.map(([t]) => slug(t)), [doc])
@@ -136,7 +212,7 @@ export default function Legal() {
               <span className={styles.num}>{i + 1}</span>
               <div>
                 <h3>{t}</h3>
-                <p>{p}</p>
+                {typeof p === 'string' ? <p>{p}</p> : p}
                 {doc.table && t === 'Cookies We Use' && (
                   <div className={styles.cookieTable}>
                     {doc.table.map(c => (

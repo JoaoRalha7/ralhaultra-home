@@ -61,6 +61,8 @@ function RankCard({ l, me }) {
         <li>{l.min_watch_hours ? `${l.min_watch_hours}h watched` : 'Join the chat'}</li>
         <li>{Number(l.bonus_mult) ? `+${Number(l.bonus_mult)}x watch bonus` : 'Base watch rate'}</li>
         <li>{Number(l.cashback_pct)}% weekly cashback</li>
+        {Number(l.daily_boost_pct) > 0 && <li>+{l.daily_boost_pct}% daily reward</li>}
+        {Number(l.levelup_reward) > 0 && <li>{fmt(l.levelup_reward)} pts level-up reward</li>}
       </ul>
       <span className={`${styles.tag} ${state === 'current' ? styles.tagCur : state === 'done' ? styles.tagDone : ''}`}>
         {state === 'current' ? 'Current' : state === 'done' ? <><Check />Unlocked</> : <><Lock />Locked</>}

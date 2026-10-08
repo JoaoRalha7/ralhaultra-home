@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Medal } from './Medal'
 import { workerGet } from '../lib/vip'
+import { workerPost } from '../lib/points'
 import styles from '../pages/Vip.module.css'
 
 export const fmt = (n) => Number(n || 0).toLocaleString('en-US')
@@ -41,6 +42,18 @@ export function progressOf(levels, me) {
 
 export function RewardsModal({ levels, me, tab, setTab, onClose }) {
   const { cur, next, hours, pct } = progressOf(levels, me)
+  const [claimed, setClaimed] = useState(() => new Set(me.claimed || []))
+  const [busy, setBusy] = useState(null)
+  const [msg, setMsg] = useState('')
+  useEffect(() => { setClaimed(new Set(me.claimed || [])) }, [me.claimed])
+  const claim = async (lv) => {
+    if (busy) return
+    setBusy(lv); setMsg('')
+    const r = await workerPost('/vip/claim', { level: lv })
+    setBusy(null)
+    if (r.ok || r.data?.error === 'already_claimed') { setClaimed((c) => new Set(c).add(lv)); if (r.ok) setMsg('Reward claimed!') }
+    else setMsg('Could not claim right now. Try again.')
+  }
   useEffect(() => {
     const k = (e) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', k)
@@ -71,7 +84,8 @@ export function RewardsModal({ levels, me, tab, setTab, onClose }) {
                 </div>
                 {next && <><Bar label="Points wagered" value={me.wagered} max={Number(next.min_wagered)} /><Bar label="Hours watched" value={hours} max={next.min_watch_hours} suffix="h" gold /></>}
               </div>
-              <div className={styles.listHead}>Ranks and perks</div>
+              {msg && <p className={styles.note}>{msg}</p>}
+              <div className={styles.listHead}>Ranks and level-up rewards</div>
               <div className={styles.list}>
                 {levels.map((l) => {
                   const st = l.level < me.level ? 'done' : l.level === me.level ? 'cur' : 'lock'
@@ -79,6 +93,13 @@ export function RewardsModal({ levels, me, tab, setTab, onClose }) {
                     <div key={l.level} className={`${styles.row} ${st === 'cur' ? styles.rowCur : ''} ${st === 'lock' ? styles.rowLock : ''}`}>
                       <Medal level={l.level} size={28} />
                       <div className={styles.rowName}>{l.name} <small>{Number(l.bonus_mult) ? `· +${Number(l.bonus_mult)}x ` : '· '}{Number(l.cashback_pct)}% cashback</small></div>
+                      {l.level > 0 && Number(l.levelup_reward) > 0 && (
+                        st === 'lock'
+                          ? <small className={styles.lockTxt}><Lock />{fmt(l.levelup_reward)}</small>
+                          : claimed.has(l.level)
+                            ? <small className={styles.okTxt}><Check />Claimed</small>
+                            : <button className={styles.pill} style={{ border: 0, cursor: 'pointer' }} disabled={busy === l.level} onClick={() => claim(l.level)}>{busy === l.level ? '...' : `Claim ${fmt(l.levelup_reward)}`}</button>
+                      )}
                       {st === 'cur' ? <span className={styles.pill}>Current</span> : st === 'done' ? <span className={styles.okTxt}><Check />Unlocked</span> : <span className={styles.lockTxt}><Lock />Locked</span>}
                     </div>
                   )
@@ -105,6 +126,8 @@ export function RewardsModal({ levels, me, tab, setTab, onClose }) {
           {tab === 'perks' && (
             <div className={styles.list}>
               {[
+                ['Level-up reward', 'Each time you reach a new rank you can claim a one-time bonus. Claim it in the Progress tab.'],
+                ['Daily boost', `Your daily reward is boosted by your rank${cur.daily_boost_pct ? ` (currently +${cur.daily_boost_pct}%)` : ' (starts at Bronze)'}.`],
                 ['Watch bonus', 'Earn more points per hour while the stream is live. Stacks with your sub multiplier.'],
                 ['Weekly cashback', 'A share of your net casino losses comes back every Monday, up to the weekly cap.'],
                 ['Higher payouts, same rules', 'Ranks never change the odds. They only reward time and activity.'],
