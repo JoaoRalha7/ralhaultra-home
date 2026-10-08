@@ -95,3 +95,35 @@
 .seg .segOn, .seg .segOn:hover { background: var(--c-lite); color: #0a0b0e; }
 .chips .chipOn, .chips .chipOn:hover { background: var(--c-lite); border-color: var(--c-lite); color: #0a0b0e; }
 .tabs .tabOn, .tabs .tabOn:hover { background: var(--c-lite); border-color: var(--c-lite); color: #0a0b0e; }
+
+/* date picker */
+.dp { position: relative; }
+.dpBtn { width: 100%; height: 44px; border-radius: 12px; border: 1px solid var(--c-line); background: var(--c-in); color: #fff; padding: 0 14px; display: flex; align-items: center; gap: 10px; font: 700 14px "DM Sans", sans-serif; cursor: pointer; text-align: left; transition: border-color .12s; }
+.dpBtn:hover { border-color: #343845; }
+.dpBtnOpen { border-color: var(--c-lite); }
+.dpBtn svg { color: var(--c-mute); flex: none; }
+.dpBtn span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: capitalize; }
+.dpBtn .dpPh { color: #3a3f4b; font-weight: 500; text-transform: none; }
+.dpBtn em { font-style: normal; font-size: 12px; font-weight: 700; color: var(--c-mute); flex: none; }
+.dpBtn em.dpBad { color: #f87171; }
+.dpPop { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: min(320px, calc(100vw - 40px)); padding: 14px; border-radius: 16px; background: #0d0f14; border: 1px solid #2a2e38; box-shadow: 0 24px 60px rgba(0,0,0,.7); display: flex; flex-direction: column; gap: 12px; }
+.dpHead { display: flex; align-items: center; justify-content: space-between; }
+.dpHead b { font: 800 15px "Bricolage Grotesque", sans-serif; }
+.dpHead button { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--c-line); background: var(--c-in); color: var(--c-mute); display: grid; place-items: center; cursor: pointer; }
+.dpHead button:hover:not(:disabled) { color: #fff; border-color: #343845; }
+.dpHead button:disabled { opacity: .3; cursor: default; }
+.dpGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.dpW { text-align: center; font-size: 11px; font-weight: 700; color: #4a4f5c; padding: 2px 0 4px; }
+.dpD { aspect-ratio: 1; border-radius: 9px; border: 0; background: transparent; color: #c9ced9; font: 700 13px "DM Sans", sans-serif; cursor: pointer; font-variant-numeric: tabular-nums; transition: background .1s; }
+.dpD:hover:not(:disabled) { background: #1c1f27; color: #fff; }
+.dpD:disabled { color: #2f3340; cursor: default; }
+.dpToday { box-shadow: inset 0 0 0 1px #343845; }
+.dpD.dpOn, .dpD.dpOn:hover { background: var(--c-lite); color: #0a0b0e; }
+.dpTime { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--c-line); }
+.dpTimeBox { display: flex; align-items: center; gap: 4px; padding: 0 6px; height: 36px; border-radius: 10px; background: var(--c-in); border: 1px solid var(--c-line); color: var(--c-mute); font-weight: 800; }
+.dpTimeBox select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: #fff; font: 800 15px "Bricolage Grotesque", sans-serif; padding: 0 4px; cursor: pointer; outline: 0; color-scheme: dark; font-variant-numeric: tabular-nums; }
+.dpQuick { display: flex; gap: 6px; flex: 1; justify-content: flex-end; }
+.dpQuick button { height: 30px; padding: 0 9px; border-radius: 8px; border: 1px solid var(--c-line); background: var(--c-in); color: var(--c-mute); font: 700 12px "DM Sans", sans-serif; cursor: pointer; font-variant-numeric: tabular-nums; }
+.dpQuick button:hover { color: #fff; border-color: #343845; }
+.dpQuick .dpQOn, .dpQuick .dpQOn:hover { background: var(--c-lite); border-color: var(--c-lite); color: #0a0b0e; }
+.dpDone { height: 40px; border-radius: 11px; border: 0; background: var(--c-lite); color: #0a0b0e; font: 800 13px "DM Sans", sans-serif; cursor: pointer; }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import styles from './DashGiveaways.module.css'
 
@@ -15,6 +15,99 @@ const left = (end) => {
   const m = Math.floor(ms / 60000)
   const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mi = m % 60
   return d > 0 ? `${d}d ${h}h` : `${h}h ${pad(mi)}m`
+}
+
+const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const WEEK = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D']
+const TIMES = ['18:00', '20:00', '22:00', '00:00']
+const parseLocal = (v) => (v ? new Date(v) : null)
+const same = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+
+function DatePick({ value, onChange }) {
+  const cur = parseLocal(value)
+  const [open, setOpen] = useState(false)
+  const [view, setView] = useState(() => { const d = cur || new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
+  const box = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const out = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false) }
+    const esc = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', out)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('mousedown', out); document.removeEventListener('keydown', esc) }
+  }, [open])
+
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const first = new Date(view.getFullYear(), view.getMonth(), 1)
+  const offset = (first.getDay() + 6) % 7 // segunda = 0
+  const days = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate()
+  const cells = [...Array(offset).fill(null), ...Array.from({ length: days }, (_, i) => new Date(view.getFullYear(), view.getMonth(), i + 1))]
+
+  const hh = cur ? cur.getHours() : 22
+  const mm = cur ? cur.getMinutes() : 0
+  const emit = (d) => onChange(toLocalInput(d))
+  const pickDay = (d) => { const n = new Date(d); n.setHours(hh, mm, 0, 0); emit(n) }
+  const setTime = (h, m) => {
+    const n = cur ? new Date(cur) : new Date(today.getTime() + 86400000)
+    n.setHours(h, m, 0, 0); emit(n)
+  }
+  const prevOk = new Date(view.getFullYear(), view.getMonth(), 0) >= today
+
+  const label = cur
+    ? `${cur.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })} · ${pad(cur.getHours())}:${pad(cur.getMinutes())}`
+    : 'Escolher data e hora'
+  const hint = cur ? (cur <= new Date() ? 'Já passou' : `Daqui a ${left(cur)}`) : null
+
+  return (
+    <div className={styles.dp} ref={box}>
+      <button type="button" className={`${styles.dpBtn} ${open ? styles.dpBtnOpen : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+        <span className={cur ? '' : styles.dpPh}>{label}</span>
+        {hint && <em className={cur <= new Date() ? styles.dpBad : ''}>{hint}</em>}
+      </button>
+
+      {open && (
+        <div className={styles.dpPop}>
+          <div className={styles.dpHead}>
+            <button type="button" aria-label="Mês anterior" disabled={!prevOk} onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1))}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
+            <b>{MONTHS[view.getMonth()]} {view.getFullYear()}</b>
+            <button type="button" aria-label="Mês seguinte" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1))}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+            </button>
+          </div>
+          <div className={styles.dpGrid}>
+            {WEEK.map((w, i) => <span key={i} className={styles.dpW}>{w}</span>)}
+            {cells.map((d, i) => d ? (
+              <button key={i} type="button" disabled={d < today}
+                className={`${styles.dpD} ${cur && same(d, cur) ? styles.dpOn : ''} ${same(d, today) ? styles.dpToday : ''}`}
+                onClick={() => pickDay(d)}>{d.getDate()}</button>
+            ) : <span key={i} />)}
+          </div>
+          <div className={styles.dpTime}>
+            <div className={styles.dpTimeBox}>
+              <select value={hh} onChange={(e) => setTime(+e.target.value, mm)} aria-label="Hora">
+                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{pad(h)}</option>)}
+              </select>
+              <span>:</span>
+              <select value={mm - (mm % 5)} onChange={(e) => setTime(hh, +e.target.value)} aria-label="Minutos">
+                {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <option key={m} value={m}>{pad(m)}</option>)}
+              </select>
+            </div>
+            <div className={styles.dpQuick}>
+              {TIMES.map((t) => {
+                const [h, m] = t.split(':').map(Number)
+                return <button key={t} type="button" className={hh === h && mm === m ? styles.dpQOn : ''} onClick={() => setTime(h, m)}>{t}</button>
+              })}
+            </div>
+          </div>
+          <button type="button" className={styles.dpDone} onClick={() => setOpen(false)}>Confirmar</button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function DashGiveaways() {
@@ -136,7 +229,7 @@ export default function DashGiveaways() {
                 <button key={h} type="button" className={dur === h ? styles.chipOn : ''} onClick={() => setDuration(h)}>{l}</button>
               ))}
             </div>
-            <input type="datetime-local" value={f.ends_at} onChange={(e) => { setDur(null); set('ends_at')(e) }} />
+            <DatePick value={f.ends_at} onChange={(v) => { setDur(null); setF((s) => ({ ...s, ends_at: v })) }} />
           </div>
 
           <div className={styles.fld}><span>Custo do bilhete (pts)</span>
