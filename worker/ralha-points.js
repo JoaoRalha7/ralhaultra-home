@@ -696,35 +696,39 @@ export default {
       }
 
       // ── POST /admin/import-se ─────────────────────────────────────────────────
-      // Streamer only. Copies every StreamElements balance into point_balances (idempotent: re-run it
-      // right before the cutover and only the difference is applied). ?mult=N scales old -> new economy,
-      // ?dry=1 only counts and shows the top 5 without writing.
+      // Streamer only. Copies StreamElements balances into point_balances, in slices (a Worker call is
+      // limited to ~50 subrequests). Call it repeatedly with ?offset=<next> until "next" is null.
+      // Idempotent: re-run it right before the cutover and only the difference is applied.
+      // ?mult=N scales old -> new economy, ?dry=1 only counts and does not write.
       if (pathname === '/admin/import-se' && request.method === 'POST') {
         const who = await getUser(request, env, sbHeaders)
         if (!who || !ADMIN_IDS.includes(who.id)) return json({ error: 'unauthorized' }, 401)
         const mult = Number(searchParams.get('mult') || '1')
         const dry = searchParams.get('dry') === '1'
+        let offset = Math.max(parseInt(searchParams.get('offset') || '0', 10) || 0, 0)
         if (!(mult > 0)) return json({ error: 'invalid mult' }, 400)
 
-        const all = []
-        const PAGE = 100
-        for (let offset = 0; offset < 50000; offset += PAGE) {
-          const r = await _fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/top?limit=${PAGE}&offset=${offset}`, { headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } })
-          if (!r.ok) return json({ error: `SE API erro ${r.status}`, detail: await r.text(), fetched: all.length }, 502)
+        const rows = []
+        let next = offset
+        let done = false
+        for (let i = 0; i < 20; i++) { // 20 SE pages per call
+          const r = await _fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/top?limit=1000&offset=${next}`, { headers: { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json' } })
+          if (!r.ok) return json({ error: `SE API erro ${r.status}`, detail: await r.text(), next }, 502)
           const users = (await r.json()).users ?? []
-          for (const u of users) all.push({ username: String(u.username).toLowerCase(), points: Number(u.points) || 0 })
-          if (users.length < PAGE) break
+          if (!users.length) { done = true; break }
+          for (const u of users) rows.push({ username: String(u.username).toLowerCase(), points: Number(u.points) || 0 })
+          next += users.length
         }
-        const total = all.reduce((s, u) => s + u.points, 0)
-        if (dry) return json({ ok: true, dry: true, users: all.length, totalPointsOld: total, mult, top5: all.slice(0, 5) })
-
+        const total = rows.reduce((s, u) => s + u.points, 0)
         let written = 0
-        for (let i = 0; i < all.length; i += 500) {
-          const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/import_se_balances`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_rows: all.slice(i, i + 500), p_mult: mult }) })
-          if (!r.ok) return json({ error: 'import failed', detail: await r.text(), written }, 502)
-          written += Number(await r.json())
+        if (!dry) {
+          for (let i = 0; i < rows.length; i += 1000) { // <= 20 batches
+            const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/import_se_balances`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_rows: rows.slice(i, i + 1000), p_mult: mult }) })
+            if (!r.ok) return json({ error: 'import failed', detail: await r.text(), written, next: offset }, 502)
+            written += Number(await r.json())
+          }
         }
-        return json({ ok: true, users: all.length, written, totalPointsOld: total, mult })
+        return json({ ok: true, dry, users: rows.length, written, totalPointsOld: total, mult, from: offset, next: done ? null : next, top5: offset === 0 ? rows.slice(0, 5) : undefined })
       }
 
       // ── POST /jackpot/state | /jackpot/deposit ────────────────────────────────────
