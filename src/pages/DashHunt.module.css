@@ -1253,3 +1253,12 @@
 .awardModalUser { color: #c9ced9; }
 .awardModalPts { color: #f5c542; font-size: 13px; }
 .pickPanelTitle { display: none; }
+
+/* slot swap (lupa) */
+.hxLupa { width: 30px; height: 30px; flex: none; margin-left: auto; border-radius: 9px; border: 1px solid transparent; background: transparent; color: #4a4f5c; display: grid; place-items: center; cursor: pointer; transition: .12s; }
+.hxRow:hover .hxLupa { border-color: var(--c-line); background: var(--c-panel); color: var(--c-mute); }
+.hxRow .hxLupa:hover { color: #fff; border-color: #343845; }
+.hxSwap { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--c-lite); background: var(--c-panel); color: var(--c-mute); }
+.hxSwap input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: #fff; font: 700 14px "DM Sans", sans-serif; }
+.hxSwap input::placeholder { color: #4a4f5c; font-weight: 500; }
+.hxSwap .hxResults { top: calc(100% + 6px); }

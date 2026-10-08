@@ -867,7 +867,23 @@ function StatsPanel({ hunt, entries, mode, balanceEnd, onBalanceEndChange, onSav
 }
 
 // ── Slot Row ───────────────────────────────────────────────
-function SlotRow({ entry, index, mode, current, onUpdateBet, onUpdatePayment, onToggleSuper, onDelete }) {
+function SlotRow({ entry, index, mode, current, allSlots, usedIds, onChangeSlot, onUpdateBet, onUpdatePayment, onToggleSuper, onDelete }) {
+  const [swap, setSwap] = useState(false)
+  const [q, setQ] = useState('')
+  const results = (() => {
+    const t = q.trim().toLowerCase()
+    if (!swap || !t) return []
+    return allSlots
+      .filter(sl => sl.id !== entry.slot_id && !usedIds.has(sl.id) && (sl.name.toLowerCase().includes(t) || (sl.provider || '').toLowerCase().includes(t)))
+      .sort((a, b) => {
+        const as = a.name.toLowerCase().startsWith(t), bs = b.name.toLowerCase().startsWith(t)
+        return as && !bs ? -1 : !as && bs ? 1 : 0
+      })
+      .slice(0, 8)
+  })()
+  const pick = (sl) => { setSwap(false); setQ(''); onChangeSlot(entry.id, sl) }
+  const close = () => { setSwap(false); setQ('') }
+
   const bet = parseBet(entry.bet)
   const multi = bet > 0 && entry.payment != null && entry.opened ? parseBet(entry.payment) / bet : null
   const won = multi !== null && multi >= 100
@@ -879,10 +895,36 @@ function SlotRow({ entry, index, mode, current, onUpdateBet, onUpdatePayment, on
       <div className={styles.hxSlot}>
         <span className={styles.hxIdx}>#{index}</span>
         <img src={entry.slot?.image_url || ''} alt="" className={styles.hxCover} onError={e => e.target.style.opacity = '.2'} />
-        <div className={styles.hxNameWrap}>
-          <div className={styles.hxName}>{entry.slot?.name || '—'}</div>
-          <div className={styles.hxProv}>{entry.slot?.provider || ''}</div>
-        </div>
+        {swap ? (
+          <div className={styles.hxSwap}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={entry.slot?.name || 'Trocar slot…'}
+              onKeyDown={e => { if (e.key === 'Escape') close(); if (e.key === 'Enter' && results[0]) pick(results[0]) }}
+              onBlur={() => setTimeout(close, 150)} />
+            {results.length > 0 && (
+              <ul className={styles.hxResults}>
+                {results.map(sl => (
+                  <li key={sl.id} onMouseDown={e => e.preventDefault()} onClick={() => pick(sl)}>
+                    <img src={sl.image_url || ''} alt="" onError={e => e.target.style.opacity = '.2'} />
+                    <div><b>{sl.name}</b>{sl.provider && <small>{sl.provider}</small>}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className={styles.hxNameWrap}>
+              <div className={styles.hxName}>{entry.slot?.name || '—'}</div>
+              <div className={styles.hxProv}>{entry.slot?.provider || ''}</div>
+            </div>
+            {mode === 'hunting' && (
+              <button className={styles.hxLupa} aria-label="Trocar slot" title="Trocar slot" onClick={() => setSwap(true)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       {mode === 'hunting' ? (
@@ -1870,6 +1912,11 @@ export default function DashHunt() {
     setSearch('')
   }
 
+  const handleChangeSlot = async (id, slot) => {
+    const { error } = await supabaseDash.from('bonus_entries').update({ slot_id: slot.id }).eq('id', id)
+    if (!error) setEntries(prev => prev.map(e => e.id === id ? { ...e, slot_id: slot.id, slot } : e))
+  }
+
   const handleUpdateBet = async (id, val) => {
     const bet = val !== '' ? parseFloat(val) : null
     await supabaseDash.from('bonus_entries').update({ bet }).eq('id', id)
@@ -1935,6 +1982,7 @@ export default function DashHunt() {
   }
 
   const nextEntry = entries.find(e => !e.opened) || null
+  const usedIds = new Set(entries.map(e => e.slot_id))
 
   if (view === 'history') return <HistoryView onBack={() => setView('main')} onReopen={handleReopen} />
 
@@ -2000,6 +2048,7 @@ export default function DashHunt() {
                 ? <p className={styles.hxEmpty}>Pesquisa uma slot acima para adicionar</p>
                 : entries.map((e, i) => (
                     <SlotRow key={e.id} entry={e} index={i + 1} mode={mode} current={mode === 'opening' && nextEntry?.id === e.id}
+                      allSlots={allSlots} usedIds={usedIds} onChangeSlot={handleChangeSlot}
                       onUpdateBet={handleUpdateBet} onUpdatePayment={handleUpdatePayment}
                       onToggleSuper={handleToggleSuper} onDelete={handleDelete} />
                   ))}
