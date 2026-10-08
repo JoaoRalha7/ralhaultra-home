@@ -1,435 +1,337 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { adminPoints } from '../lib/points'
 import styles from './DashShop.module.css'
 
+const CATS = [['digital', 'Digital'], ['interact', 'Interact'], ['merch', 'Merch']]
+const COSTS = [1000, 5000, 25000, 100000]
+const STATUS_LABELS = { pending: 'Pendente', done: 'Entregue', rejected: 'Rejeitado' }
+const EMPTY = { id: null, name: '', description: '', category: 'digital', cost: '', stock: '', image_url: '', active: true, color: '#3b82f6' }
 
-function fmtDate(d) {
-  if (!d) return '—'
+const fmt = (n) => String(Math.round(Number(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0')
+
+function ago(d) {
+  const s = Math.max(0, (Date.now() - new Date(d).getTime()) / 1000)
+  if (s < 60) return 'agora'
+  if (s < 3600) return `há ${Math.floor(s / 60)} min`
+  if (s < 86400) return `há ${Math.floor(s / 3600)} h`
   const dt = new Date(d)
-  return dt.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    + ' ' + dt.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+  return dt.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' }) + ' ' +
+    dt.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
 }
 
-const STATUS_LABELS = { pending: 'Pendente', done: 'Entregue', rejected: 'Rejeitado' }
-const STATUS_COLORS = { pending: '#f5a623', done: '#21d16e', rejected: '#f04f4f' }
+const I = {
+  edit:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>,
+  trash: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>,
+  check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7"/></svg>,
+  up:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>,
+}
 
-const EMPTY_PRODUCT = { name: '', description: '', category: 'digital', cost: '', stock: '', color: '#3b82f6', active: true, image_url: '' }
+function Thumb({ url, name, cls }) {
+  return (
+    <div className={cls}>
+      {url ? <img src={url} alt="" /> : <span>{name?.[0]?.toUpperCase() || '?'}</span>}
+    </div>
+  )
+}
 
-// ── Upload de imagem ──────────────────────────────────────────────────────────
-function ImageUpload({ currentUrl, onUpload, onRemove }) {
-  const inputRef = useRef(null)
-  const [uploading, setUploading] = useState(false)
-  const [preview, setPreview]     = useState(currentUrl || '')
+// ── Painel: criar / editar produto ────────────────────────────────────────────
+function ProductForm({ product, onSaved, onCancel }) {
+  const [f, setF] = useState(EMPTY)
+  const [saving, setSaving] = useState(false)
+  const [upl, setUpl] = useState(false)
+  const fileRef = useRef(null)
+  const isEdit = !!f.id
+  const set = (k, v) => setF(x => ({ ...x, [k]: v }))
 
-  const handleFile = async (e) => {
+  useEffect(() => { setF(product ? { ...EMPTY, ...product, cost: String(product.cost ?? ''), stock: String(product.stock ?? ''), image_url: product.image_url || '', description: product.description || '' } : EMPTY) }, [product])
+
+  const upload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const localUrl = URL.createObjectURL(file)
-    setPreview(localUrl)
-    setUploading(true)
-    const ext      = file.name.split('.').pop()
-    const filename = `product-${Date.now()}.${ext}`
-    const { data, error } = await supabase.storage
-      .from('shop-images')
-      .upload(filename, file, { upsert: true, contentType: file.type })
-    setUploading(false)
-    if (error) { console.error('Upload error:', error); setPreview(currentUrl || ''); return }
-    const { data: { publicUrl } } = supabase.storage.from('shop-images').getPublicUrl(data.path)
-    setPreview(publicUrl)
-    onUpload(publicUrl)
+    setUpl(true)
+    const ext = file.name.split('.').pop()
+    const { data, error } = await supabase.storage.from('shop-images')
+      .upload(`product-${Date.now()}.${ext}`, file, { upsert: true, contentType: file.type })
+    setUpl(false)
+    if (fileRef.current) fileRef.current.value = ''
+    if (error) { console.error('Upload error:', error); return }
+    set('image_url', supabase.storage.from('shop-images').getPublicUrl(data.path).data.publicUrl)
   }
 
-  const handleRemove = () => {
-    setPreview('')
-    onRemove()
-    if (inputRef.current) inputRef.current.value = ''
-  }
+  const ok = f.name.trim() && f.cost !== '' && f.stock !== ''
 
-  return (
-    <div className={styles.imageUpload}>
-      {preview ? (
-        <div className={styles.imagePreview}>
-          <img src={preview} alt="Preview" className={styles.imagePreviewImg} />
-          <button className={styles.imageRemoveBtn} onClick={handleRemove} type="button" title="Remover imagem">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-      ) : (
-        <button className={styles.imagePickBtn} onClick={() => inputRef.current?.click()} type="button" disabled={uploading}>
-          {uploading ? (
-            <><svg className={styles.spin} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>A carregar…</>
-          ) : (
-            <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Fazer upload</>
-          )}
-        </button>
-      )}
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-    </div>
-  )
-}
-
-// ── Modal de produto ──────────────────────────────────────────────────────────
-function ProductModal({ product, onSave, onClose }) {
-  const [form,   setForm]   = useState(product || EMPTY_PRODUCT)
-  const [saving, setSaving] = useState(false)
-  const isNew = !product?.id
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  const handleSave = async () => {
-    if (!form.name || !form.cost || form.stock === '') return
+  const save = async () => {
+    if (!ok) return
     setSaving(true)
     const payload = {
-      name: form.name, description: form.description, category: form.category,
-      cost: Number(form.cost), stock: Number(form.stock),
-      color: form.color || '#3b82f6', active: form.active,
-      image_url: form.image_url || null,
+      name: f.name.trim(), description: f.description, category: f.category,
+      cost: Number(f.cost), stock: Number(f.stock),
+      color: f.color || '#3b82f6', active: f.active, image_url: f.image_url || null,
     }
-    let error
-    if (isNew) { ({ error } = await supabase.from('shop_products').insert(payload)) }
-    else { ({ error } = await supabase.from('shop_products').update(payload).eq('id', form.id)) }
+    const { error } = isEdit
+      ? await supabase.from('shop_products').update(payload).eq('id', f.id)
+      : await supabase.from('shop_products').insert(payload)
     setSaving(false)
-    if (!error) onSave()
+    if (!error) { setF(EMPTY); onSaved() }
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
-        <h2 className={styles.modalTitle}>{isNew ? 'Novo produto' : 'Editar produto'}</h2>
-        <div className={styles.formGrid}>
-          <label className={styles.formLabel}>
-            Nome
-            <input className={styles.input} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nome do produto" />
-          </label>
-          <label className={styles.formLabel}>
-            Categoria
-            <select className={styles.input} value={form.category} onChange={e => set('category', e.target.value)}>
-              <option value="digital">Digital</option>
-              <option value="interact">Interact</option>
-              <option value="merch">Merch</option>
-            </select>
-          </label>
-          <label className={styles.formLabel}>
-            Custo (pts)
-            <input className={styles.input} type="number" min="0" value={form.cost} onChange={e => set('cost', e.target.value)} placeholder="Ex: 15000" />
-          </label>
-          <label className={styles.formLabel}>
-            Stock
-            <input className={styles.input} type="number" min="0" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="Ex: 5" />
-          </label>
-          <label className={styles.formLabel}>
-            Cor de fundo (sem imagem)
-            <div className={styles.colorRow}>
-              <input className={styles.colorPicker} type="color" value={form.color} onChange={e => set('color', e.target.value)} />
-              <input className={styles.input} value={form.color} onChange={e => set('color', e.target.value)} placeholder="#3b82f6" />
-            </div>
-          </label>
-          <label className={styles.formLabel}>
-            Imagem do produto
-            <ImageUpload currentUrl={form.image_url} onUpload={url => set('image_url', url)} onRemove={() => set('image_url', '')} />
-          </label>
-          <label className={`${styles.formLabel} ${styles.formLabelFull}`}>
-            Descrição
-            <textarea className={styles.textarea} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Descrição do produto…" rows={3} />
-          </label>
-          <label className={`${styles.formLabel} ${styles.formLabelFull} ${styles.toggleRow}`}>
-            <span>Produto activo</span>
-            <button className={`${styles.toggle} ${form.active ? styles.toggleOn : ''}`} onClick={() => set('active', !form.active)} type="button">
-              <span className={styles.toggleThumb} />
-            </button>
-          </label>
-        </div>
-        <div className={styles.modalActions}>
-          <button className={styles.cancelBtn} onClick={onClose} disabled={saving}>Cancelar</button>
-          <button className={styles.confirmBtn} onClick={handleSave} disabled={saving}>{saving ? 'A guardar…' : 'Guardar'}</button>
-        </div>
-      </div>
-    </div>
-  )
-}
+    <div className={styles.panel}>
+      <div className={styles.panelTitle}>{isEdit ? 'Editar produto' : 'Novo produto'}</div>
 
-// ── Tab Produtos ──────────────────────────────────────────────────────────────
-function TabProdutos() {
-  const [products, setProducts] = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [modal,    setModal]    = useState(null)
+      <label className={styles.fld}><span>Nome</span>
+        <input value={f.name} onChange={e => set('name', e.target.value)} placeholder="Ex: Cargo VIP Discord" />
+      </label>
 
-  const load = () => {
-    setLoading(true)
-    supabase.from('shop_products').select('*').order('id')
-      .then(({ data }) => { setProducts(data || []); setLoading(false) })
-  }
-  useEffect(() => { load() }, [])
-
-  const handleDelete = async (id) => {
-    if (!confirm('Apagar este produto?')) return
-    await supabase.from('shop_products').delete().eq('id', id)
-    load()
-  }
-
-  const handleToggleActive = async (product) => {
-    await supabase.from('shop_products').update({ active: !product.active }).eq('id', product.id)
-    load()
-  }
-
-  return (
-    <div className={styles.tabContent}>
-      <div className={styles.tabHeader}>
-        <span className={styles.tabCount}>{products.length} produtos</span>
-        <button className={styles.addBtn} onClick={() => setModal('new')}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo produto
-        </button>
-      </div>
-      {loading ? (
-        <div className={styles.loading}><svg className={styles.spin} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
-      ) : (
-        <div className={styles.prodTable}>
-          <div className={styles.prodTableHead}>
-            <span>Produto</span><span>Categoria</span><span>Custo</span><span>Stock</span><span>Estado</span><span>Ações</span>
-          </div>
-          {products.map(p => (
-            <div key={p.id} className={styles.prodRow}>
-              <div className={styles.prodName}>
-                <div className={styles.prodThumb} style={{ '--card-color': p.color }}>
-                  {p.image_url
-                    ? <img src={p.image_url} alt={p.name} className={styles.prodThumbImg} />
-                    : <span className={styles.prodThumbPlaceholder}>{p.name?.[0]?.toUpperCase() || '?'}</span>
-                  }
-                </div>
-                <span>{p.name}</span>
-              </div>
-              <span className={styles.pill}>{p.category}</span>
-              <span className={styles.cost}>{Number(p.cost).toLocaleString('pt-PT')} pts</span>
-              <span className={`${styles.stock} ${p.stock === 0 ? styles.stockEmpty : ''}`}>
-                {p.stock === 0 ? 'Esgotado' : `${p.stock} un.`}
-              </span>
-              <button className={`${styles.statusToggle} ${p.active ? styles.statusActive : styles.statusInactive}`} onClick={() => handleToggleActive(p)}>
-                {p.active ? 'Activo' : 'Inactivo'}
-              </button>
-              <div className={styles.actions}>
-                <button className={styles.actionBtn} onClick={() => setModal(p)} title="Editar">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={() => handleDelete(p.id)} title="Apagar">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                </button>
-              </div>
-            </div>
+      <div className={styles.fld}><span>Categoria</span>
+        <div className={styles.seg3}>
+          {CATS.map(([k, l]) => (
+            <button key={k} type="button" className={f.category === k ? styles.segOn : ''} onClick={() => set('category', k)}>{l}</button>
           ))}
         </div>
-      )}
-      {modal && (
-        <ProductModal product={modal === 'new' ? null : modal} onSave={() => { setModal(null); load() }} onClose={() => setModal(null)} />
-      )}
+      </div>
+
+      <div className={styles.fld}><span>Custo (pontos)</span>
+        <div className={styles.chips}>
+          {COSTS.map(c => (
+            <button key={c} type="button" className={Number(f.cost) === c ? styles.chipOn : ''} onClick={() => set('cost', String(c))}>{fmt(c)}</button>
+          ))}
+        </div>
+        <input type="number" min="0" value={f.cost} onChange={e => set('cost', e.target.value)} placeholder="Outro valor" />
+      </div>
+
+      <div className={styles.two}>
+        <label className={styles.fld}><span>Stock</span>
+          <input type="number" min="0" value={f.stock} onChange={e => set('stock', e.target.value)} placeholder="Ex: 10" />
+        </label>
+        <div className={styles.fld}><span>Imagem</span>
+          <div className={styles.imgRow}>
+            <input value={f.image_url} onChange={e => set('image_url', e.target.value)} placeholder="URL" />
+            <button type="button" className={styles.upBtn} onClick={() => fileRef.current?.click()} disabled={upl} aria-label="Fazer upload">{I.up}</button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={upload} />
+          </div>
+        </div>
+      </div>
+
+      <label className={styles.fld}><span>Descrição</span>
+        <input value={f.description} onChange={e => set('description', e.target.value)} placeholder="Opcional" />
+      </label>
+
+      <button className={styles.cta} onClick={save} disabled={!ok || saving}>
+        {saving ? 'A guardar…' : isEdit ? 'Guardar alterações' : 'Criar produto'}
+      </button>
+      {isEdit && <button className={styles.ghost} type="button" onClick={() => { setF(EMPTY); onCancel() }}>Cancelar edição</button>}
     </div>
   )
 }
 
-// ── Tab Resgates ──────────────────────────────────────────────────────────────
-function TabResgates() {
-  const [redeems, setRedeems] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filter,  setFilter]  = useState('pending')
-  const [notes,   setNotes]   = useState({})
-  const [saving,  setSaving]  = useState({})
-  const [toast,   setToast]   = useState(null)
+// ── Lista de produtos ─────────────────────────────────────────────────────────
+function ProductList({ products, loading, onEdit, onToggle, onDelete, editingId }) {
+  if (loading) return <p className={styles.empty}>A carregar…</p>
+  if (!products.length) return <p className={styles.empty}>Ainda não há produtos. Cria o primeiro à esquerda.</p>
+  return products.map(p => {
+    const out = Number(p.stock) === 0
+    return (
+      <div key={p.id} className={`${styles.item} ${!p.active ? styles.itemOff : ''} ${editingId === p.id ? styles.itemEdit : ''}`}>
+        <Thumb url={p.image_url} name={p.name} cls={styles.thumb} />
+        <div className={styles.itemMain}>
+          <div className={styles.itemName}><span>{p.name}</span><em className={styles.tag}>{p.category}</em></div>
+          {p.description && <div className={styles.itemSub}>{p.description}</div>}
+        </div>
+        <div className={styles.val}><b className={styles.gold}>{fmt(p.cost)}</b><small>pontos</small></div>
+        <div className={styles.val}>
+          {out ? <b className={styles.red}>Esgotado</b> : <b>{fmt(p.stock)} un.</b>}
+          <small>{out ? '0 un.' : 'stock'}</small>
+        </div>
+        <button className={`${styles.tg} ${p.active ? styles.tgOn : ''}`} onClick={() => onToggle(p)} aria-label={p.active ? 'Desativar' : 'Ativar'} aria-pressed={p.active} />
+        <button className={styles.ib} onClick={() => onEdit(p)} aria-label="Editar">{I.edit}</button>
+        <button className={`${styles.ib} ${styles.ibDel}`} onClick={() => onDelete(p)} aria-label="Apagar">{I.trash}</button>
+      </div>
+    )
+  })
+}
 
-  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500) }
+// ── Lista de resgates ─────────────────────────────────────────────────────────
+function RedeemList({ redeems, loading, filter, onStatus, busy }) {
+  const [notes, setNotes] = useState({})
+  const rows = redeems.filter(r => filter === 'all' || r.status === filter)
+  if (loading) return <p className={styles.empty}>A carregar…</p>
+  if (!rows.length) return <p className={styles.empty}>Nenhum resgate aqui.</p>
 
-  const load = () => {
-    setLoading(true)
-    let q = supabase.from('shop_redeems').select('*, shop_products(name, image_url, color)').order('created_at', { ascending: false })
-    if (filter !== 'all') q = q.eq('status', filter)
-    q.then(({ data }) => { setRedeems(data || []); setLoading(false) })
+  const pend = rows.filter(r => r.status === 'pending')
+  const rest = rows.filter(r => r.status !== 'pending')
+
+  const one = (r) => {
+    const p = r.status === 'pending'
+    return (
+      <div key={r.id} className={`${styles.item} ${!p ? styles.itemDim : ''}`}>
+        <Thumb url={r.shop_products?.image_url} name={r.shop_products?.name} cls={styles.thumb} />
+        <div className={styles.itemMain}>
+          <div className={styles.itemName}><span>{r.shop_products?.name || `Produto #${r.product_id}`}</span></div>
+          <div className={styles.itemSub}>
+            <b>{r.twitch_username}</b> · {ago(r.created_at)}
+            {(r.points_refunded || r.stock_refunded) && ' · devolvido'}
+            {!p && r.admin_notes ? ` · ${r.admin_notes}` : ''}
+          </div>
+        </div>
+        {p && (
+          <input className={styles.note} placeholder="Notas (opcional)" value={notes[r.id] ?? r.admin_notes ?? ''}
+            onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))} />
+        )}
+        <div className={styles.val}><b className={styles.gold}>{fmt(r.cost_at_redeem)}</b><small>pontos</small></div>
+        <span className={`${styles.st} ${styles['st_' + r.status]}`}>{STATUS_LABELS[r.status]}</span>
+        {p && (
+          <>
+            <button className={styles.ghostSm} disabled={busy[r.id]} onClick={() => onStatus(r, 'rejected', notes[r.id])}>Rejeitar</button>
+            <button className={styles.primary} disabled={busy[r.id]} onClick={() => onStatus(r, 'done', notes[r.id])}>{I.check}Entregar</button>
+          </>
+        )}
+        {r.status === 'done' && (
+          <button className={styles.ghostSm} disabled={busy[r.id]} onClick={() => onStatus(r, 'rejected', r.admin_notes)}>Rejeitar</button>
+        )}
+      </div>
+    )
   }
-  useEffect(() => { load() }, [filter])
 
-  const handleStatus = async (redeem, newStatus) => {
-    setSaving(s => ({ ...s, [redeem.id]: true }))
+  return (
+    <>
+      {pend.map(one)}
+      {pend.length > 0 && rest.length > 0 && <div className={styles.divLbl}>Anteriores</div>}
+      {rest.map(one)}
+    </>
+  )
+}
 
-    const shouldRefundPoints = newStatus === 'rejected' && !redeem.points_refunded
-    const shouldRefundStock  = newStatus === 'rejected' && !redeem.stock_refunded
+// ── Página ────────────────────────────────────────────────────────────────────
+export default function DashShop() {
+  const [tab, setTab]           = useState('produtos')
+  const [filter, setFilter]     = useState('pending')
+  const [products, setProducts] = useState([])
+  const [redeems, setRedeems]   = useState([])
+  const [loadP, setLoadP]       = useState(true)
+  const [loadR, setLoadR]       = useState(true)
+  const [editing, setEditing]   = useState(null)
+  const [busy, setBusy]         = useState({})
+  const [toast, setToast]       = useState(null)
 
-    // 1. Devolver pontos (só 1 vez)
-    if (shouldRefundPoints) {
+  const flash = (msg, err) => { setToast({ msg, err }); setTimeout(() => setToast(null), 3500) }
+
+  const loadProducts = useCallback(() => {
+    supabase.from('shop_products').select('*').order('id')
+      .then(({ data }) => { setProducts(data || []); setLoadP(false) })
+  }, [])
+  const loadRedeems = useCallback(() => {
+    supabase.from('shop_redeems').select('*, shop_products(name, image_url, color)')
+      .order('created_at', { ascending: false }).limit(500)
+      .then(({ data }) => { setRedeems(data || []); setLoadR(false) })
+  }, [])
+  useEffect(() => { loadProducts(); loadRedeems() }, [loadProducts, loadRedeems])
+
+  const stats = useMemo(() => {
+    const m = new Date(); m.setDate(1); m.setHours(0, 0, 0, 0)
+    const month = redeems.filter(r => new Date(r.created_at) >= m)
+    return {
+      pending: redeems.filter(r => r.status === 'pending').length,
+      month: month.length,
+      spent: month.filter(r => r.status !== 'rejected').reduce((s, r) => s + Number(r.cost_at_redeem || 0), 0),
+      counts: {
+        all: redeems.length,
+        pending: redeems.filter(r => r.status === 'pending').length,
+        done: redeems.filter(r => r.status === 'done').length,
+        rejected: redeems.filter(r => r.status === 'rejected').length,
+      },
+    }
+  }, [redeems])
+
+  const toggle = async (p) => {
+    await supabase.from('shop_products').update({ active: !p.active }).eq('id', p.id)
+    loadProducts()
+  }
+  const del = async (p) => {
+    if (!confirm(`Apagar "${p.name}"?`)) return
+    await supabase.from('shop_products').delete().eq('id', p.id)
+    if (editing?.id === p.id) setEditing(null)
+    loadProducts()
+  }
+
+  const handleStatus = async (redeem, newStatus, noteVal) => {
+    setBusy(s => ({ ...s, [redeem.id]: true }))
+    const refundPts   = newStatus === 'rejected' && !redeem.points_refunded
+    const refundStock = newStatus === 'rejected' && !redeem.stock_refunded
+
+    if (refundPts) {
       try {
         const res = await adminPoints(redeem.twitch_username, redeem.cost_at_redeem)
-        const data = res.data
-        if (!res.ok) {
-          showToast(`Erro ao devolver pontos: ${data.error}`, 'error')
-          setSaving(s => ({ ...s, [redeem.id]: false }))
-          return
-        }
+        if (!res.ok) { flash(`Erro ao devolver pontos: ${res.data?.error || ''}`, true); setBusy(s => ({ ...s, [redeem.id]: false })); return }
       } catch {
-        showToast('Erro de ligação ao devolver pontos.', 'error')
-        setSaving(s => ({ ...s, [redeem.id]: false }))
-        return
+        flash('Erro de ligação ao devolver pontos.', true); setBusy(s => ({ ...s, [redeem.id]: false })); return
       }
     }
-
-    // 2. Devolver stock (só 1 vez)
-    if (shouldRefundStock && redeem.product_id) {
-      const { data: prod } = await supabase
-        .from('shop_products')
-        .select('stock')
-        .eq('id', redeem.product_id)
-        .single()
-
-      if (prod) {
-        await supabase
-          .from('shop_products')
-          .update({ stock: prod.stock + 1 })
-          .eq('id', redeem.product_id)
-      }
+    if (refundStock && redeem.product_id) {
+      const { data: prod } = await supabase.from('shop_products').select('stock').eq('id', redeem.product_id).single()
+      if (prod) await supabase.from('shop_products').update({ stock: prod.stock + 1 }).eq('id', redeem.product_id)
     }
-
-    // 3. Atualizar status do resgate
     await supabase.from('shop_redeems').update({
-      status:          newStatus,
-      admin_notes:     notes[redeem.id] ?? redeem.admin_notes ?? '',
-      confirmed_at:    newStatus === 'done' ? new Date().toISOString() : null,
-      points_refunded: shouldRefundPoints ? true : redeem.points_refunded,
-      stock_refunded:  shouldRefundStock  ? true : redeem.stock_refunded,
+      status: newStatus,
+      admin_notes: noteVal ?? redeem.admin_notes ?? '',
+      confirmed_at: newStatus === 'done' ? new Date().toISOString() : null,
+      points_refunded: refundPts ? true : redeem.points_refunded,
+      stock_refunded: refundStock ? true : redeem.stock_refunded,
     }).eq('id', redeem.id)
 
-    if (shouldRefundPoints || shouldRefundStock) {
+    if (refundPts || refundStock) {
       const parts = []
-      if (shouldRefundPoints) parts.push(`${redeem.cost_at_redeem.toLocaleString('pt-PT')} pts`)
-      if (shouldRefundStock)  parts.push('stock')
-      showToast(`Rejeitado · ${parts.join(' e ')} devolvidos`, 'success')
+      if (refundPts) parts.push(`${fmt(redeem.cost_at_redeem)} pts`)
+      if (refundStock) parts.push('stock')
+      flash(`Rejeitado · ${parts.join(' e ')} devolvidos`)
     }
-
-    setSaving(s => ({ ...s, [redeem.id]: false }))
-    load()
+    setBusy(s => ({ ...s, [redeem.id]: false }))
+    loadRedeems(); loadProducts()
   }
 
-  const pending = redeems.filter(r => r.status === 'pending').length
-
-  return (
-    <div className={styles.tabContent}>
-      <div className={styles.tabHeader}>
-        <div className={styles.filterTabs}>
-          {['all', 'pending', 'done', 'rejected'].map(s => (
-            <button key={s} className={`${styles.filterTab} ${filter === s ? styles.filterTabActive : ''}`} onClick={() => setFilter(s)}>
-              {s === 'all' ? 'Todos' : STATUS_LABELS[s]}
-              {s === 'pending' && pending > 0 && <span className={styles.badge}>{pending}</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-      {loading ? (
-        <div className={styles.loading}><svg className={styles.spin} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
-      ) : redeems.length === 0 ? (
-        <div className={styles.empty}>Nenhum resgate encontrado.</div>
-      ) : (
-        <div className={styles.redeemList}>
-          {redeems.map(r => (
-            <div key={r.id} className={`${styles.redeemCard} ${styles['redeemCard_' + r.status]}`}>
-              <div className={styles.redeemTop}>
-                <div className={styles.redeemInfo}>
-                  <div className={styles.redeemThumb} style={{ '--card-color': r.shop_products?.color || '#3b82f6' }}>
-                    {r.shop_products?.image_url
-                      ? <img src={r.shop_products.image_url} alt="" className={styles.redeemThumbImg} />
-                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-                    }
-                  </div>
-                  <div>
-                    <div className={styles.redeemProduct}>{r.shop_products?.name || `Produto #${r.product_id}`}</div>
-                    <div className={styles.redeemMeta}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
-                      <span>{r.twitch_username}</span>
-                      <span className={styles.sep}>·</span>
-                      <span>{Number(r.cost_at_redeem).toLocaleString('pt-PT')} pts</span>
-                      <span className={styles.sep}>·</span>
-                      <span>{fmtDate(r.created_at)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.badgeGroup}>
-                  <span className={styles.statusBadge} style={{ background: STATUS_COLORS[r.status] + '22', color: STATUS_COLORS[r.status], borderColor: STATUS_COLORS[r.status] + '44' }}>
-                    {STATUS_LABELS[r.status]}
-                  </span>
-                  {(r.points_refunded || r.stock_refunded) && (
-                    <span className={styles.refundedBadge}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-                      {r.points_refunded && r.stock_refunded ? 'pts + stock devolvidos' : r.points_refunded ? 'pts devolvidos' : 'stock devolvido'}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className={styles.redeemBottom}>
-                <input className={styles.notesInput} placeholder="Notas admin (opcional)…" value={notes[r.id] ?? r.admin_notes ?? ''} onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))} />
-                <div className={styles.redeemActions}>
-                  {r.status === 'pending' && (
-                    <button className={styles.doneBtn} onClick={() => handleStatus(r, 'done')} disabled={saving[r.id]}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>Entregar
-                    </button>
-                  )}
-                  {r.status === 'pending' && (
-                    <button className={styles.rejectBtn} onClick={() => handleStatus(r, 'rejected')} disabled={saving[r.id]}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      Rejeitar + devolver pts e stock
-                    </button>
-                  )}
-                  {r.status === 'done' && (
-                    <button className={styles.rejectBtn} onClick={() => handleStatus(r, 'rejected')} disabled={saving[r.id]}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      {r.points_refunded && r.stock_refunded
-                        ? 'Rejeitar'
-                        : r.points_refunded
-                          ? 'Rejeitar + devolver stock'
-                          : r.stock_refunded
-                            ? 'Rejeitar + devolver pts'
-                            : 'Rejeitar + devolver pts e stock'
-                      }
-                    </button>
-                  )}
-
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {toast && (
-        <div className={`${styles.toast} ${styles['toast_' + toast.type]}`}>
-          {toast.type === 'success'
-            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-          }
-          {toast.msg}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── DashShop principal ────────────────────────────────────────────────────────
-export default function DashShop() {
-  const [tab, setTab] = useState('produtos')
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            Loja
-          </h1>
-          <p className={styles.sub}>Gerir produtos e resgates</p>
+      <div>
+        <h1 className={styles.title}>Loja</h1>
+        <p className={styles.sub}>Cria produtos e gere os resgates dos viewers. Os produtos são pagos com pontos.</p>
+      </div>
+
+      <div className={styles.stats}>
+        <div className={styles.stat}><small>Pendentes</small><b className={stats.pending ? styles.gold : ''}>{stats.pending}</b></div>
+        <div className={styles.stat}><small>Resgates (mês)</small><b>{stats.month}</b></div>
+        <div className={styles.stat}><small>Pontos gastos</small><b>{fmt(stats.spent)}</b></div>
+        <div className={styles.stat}><small>Produtos</small><b>{products.length}</b></div>
+      </div>
+
+      <div className={styles.layout}>
+        {tab === 'produtos' && (
+          <ProductForm product={editing} onSaved={() => { setEditing(null); loadProducts() }} onCancel={() => setEditing(null)} />
+        )}
+
+        <div className={styles.stage}>
+          <div className={styles.tabs}>
+            <button className={tab === 'produtos' ? styles.tabOn : ''} onClick={() => setTab('produtos')}>Produtos<i>{products.length}</i></button>
+            <button className={tab === 'resgates' ? styles.tabOn : ''} onClick={() => setTab('resgates')}>
+              Resgates<i className={stats.pending && tab !== 'resgates' ? styles.gold : ''} style={stats.pending && tab !== 'resgates' ? { opacity: 1 } : undefined}>{stats.pending}</i>
+            </button>
+            {tab === 'resgates' && (
+              <>
+                <span className={styles.vsep} />
+                {[['pending', 'Pendentes'], ['done', 'Entregues'], ['rejected', 'Rejeitados'], ['all', 'Todos']].map(([k, l]) => (
+                  <button key={k} className={filter === k ? styles.subOn : ''} onClick={() => setFilter(k)}>{l}<i>{stats.counts[k]}</i></button>
+                ))}
+              </>
+            )}
+          </div>
+
+          {tab === 'produtos'
+            ? <ProductList products={products} loading={loadP} editingId={editing?.id} onEdit={setEditing} onToggle={toggle} onDelete={del} />
+            : <RedeemList redeems={redeems} loading={loadR} filter={filter} onStatus={handleStatus} busy={busy} />}
         </div>
       </div>
-      <div className={styles.tabs}>
-        <button className={`${styles.tab} ${tab === 'produtos' ? styles.tabActive : ''}`} onClick={() => setTab('produtos')}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          Produtos
-        </button>
-        <button className={`${styles.tab} ${tab === 'resgates' ? styles.tabActive : ''}`} onClick={() => setTab('resgates')}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-          Resgates
-        </button>
-      </div>
-      {tab === 'produtos' ? <TabProdutos /> : <TabResgates />}
+
+      {toast && <div className={`${styles.toast} ${toast.err ? styles.err : ''}`}>{toast.msg}</div>}
     </div>
   )
 }
