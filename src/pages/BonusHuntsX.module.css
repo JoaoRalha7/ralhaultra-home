@@ -407,3 +407,16 @@
 .featured .fTitle{font-size:clamp(26px,3vw,36px)}
 .dProfit .fBW{grid-template-columns:1fr;gap:8px;margin-top:10px}
 @media(max-width:900px){.fBW{grid-template-columns:1fr}}
+
+/* table: header aligned with its column now that PROVIDER is gone */
+.tbl th:nth-child(n+3) { text-align: right !important; }
+.tbl th:nth-child(2) { text-align: left !important; }
+
+/* hunt detail: best (left) and worst (right) share the width */
+.dProfit .fBW { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dProfit .fBest { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "img name mult" "img win mult"; column-gap: 10px; row-gap: 2px; align-items: center; padding: 10px 12px; }
+.dProfit .fBest > svg { display: none; }
+.dProfit .fBest > img { grid-area: img; }
+.dProfit .fBest > b { grid-area: name; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dProfit .fBest > strong { grid-area: mult; font-size: 26px; }
+.dProfit .fBest > span { grid-area: win; font-size: 14px; }
