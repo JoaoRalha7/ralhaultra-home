@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth'
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints'
 import { supabase } from '../lib/supabase'
 import { workerPost } from '../lib/points'
+import { workerGet } from '../lib/vip'
+import { Medal, RANK_NAMES, RANK_COLORS } from '../components/Medal'
 import styles from './Shop.module.css'
 
 const SE_WORKER_URL = import.meta.env.VITE_SE_WORKER_URL || 'https://ralha-points.jppralha.workers.dev'
@@ -114,7 +116,7 @@ function InfoModal({ product, onClose, label, canRedeem, onRedeem }) {
   )
 }
 
-function ShopCard({ product, userPoints, onRedeem }) {
+function ShopCard({ product, userPoints, myLevel, onRedeem }) {
   const unlimited  = product.stock == null
   const outOfStock = product.stock === 0
   const lowStock   = !unlimited && product.stock > 0 && product.stock <= 5
@@ -122,8 +124,10 @@ function ShopCard({ product, userPoints, onRedeem }) {
   const canAfford  = loggedIn && userPoints >= product.cost
   const missing    = loggedIn ? Math.max(0, product.cost - userPoints) : product.cost
   const pct        = loggedIn ? Math.min(100, (userPoints / product.cost) * 100) : 0
-  const disabled   = outOfStock || !canAfford
-  const locked     = outOfStock || (loggedIn && !canAfford)
+  const minVip     = Number(product.min_vip_level) || 0
+  const vipLocked  = minVip > 0 && loggedIn && (myLevel ?? 0) < minVip
+  const disabled   = outOfStock || !canAfford || vipLocked
+  const locked     = outOfStock || vipLocked || (loggedIn && !canAfford)
   const rar        = rarityOf(product.cost)
   const [info, setInfo] = useState(false)
 
@@ -138,6 +142,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
         <span className={styles.tags}>
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
+          {minVip > 0 && <span className={styles.vipTag} style={{ '--vc': RANK_COLORS[minVip] }}><Medal level={minVip} size={16} />{RANK_NAMES[minVip]}+</span>}
         </span>
         {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Gone</span>}
         {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
@@ -160,7 +165,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
               <b>{fmt(product.cost)}</b>
               <span>pts</span>
             </div>
-            {!outOfStock && loggedIn && <small className={styles.note2}>{canAfford ? 'You can afford this' : `${fmt(missing)} pts to go`}</small>}
+            {!outOfStock && loggedIn && <small className={styles.note2}>{vipLocked ? `VIP ${RANK_NAMES[minVip]} required` : canAfford ? 'You can afford this' : `${fmt(missing)} pts to go`}</small>}
           </div>
 
           {!outOfStock && loggedIn && (
@@ -168,7 +173,7 @@ function ShopCard({ product, userPoints, onRedeem }) {
           )}
 
           <button className={styles.btn} onClick={() => !disabled && onRedeem(product)} disabled={disabled}>
-            {outOfStock ? 'Sold out' : !loggedIn ? 'Log in to redeem' : canAfford ? 'Redeem' : 'Not enough points'}
+            {outOfStock ? 'Sold out' : !loggedIn ? 'Log in to redeem' : vipLocked ? `Requires ${RANK_NAMES[minVip]} VIP` : canAfford ? 'Redeem' : 'Not enough points'}
           </button>
         </div>
       </div>
@@ -224,6 +229,12 @@ export default function Shop() {
   const [confirmProduct, setConfirmProduct] = useState(null)
   const [redeeming,      setRedeeming]      = useState(false)
   const [toast,          setToast]          = useState(null)
+  const [myLevel,        setMyLevel]        = useState(null)
+
+  useEffect(() => {
+    if (!user) { setMyLevel(null); return }
+    workerGet('/vip').then((d) => setMyLevel(d?.me?.level ?? 0))
+  }, [user])
 
   useEffect(() => {
     const load = () => supabase.from('shop_products').select('*').eq('active', true).order('id')
@@ -311,6 +322,7 @@ export default function Shop() {
           <div className={styles.topText}>
             <div className={styles.topTags}>
               <span className={`${styles.rar} ${styles['rar_' + rarityOf(featured.cost).id]}`}>Top prize</span>
+              {(featured.min_vip_level || 0) > 0 && <span className={styles.vipTag} style={{ '--vc': RANK_COLORS[featured.min_vip_level] }}><Medal level={featured.min_vip_level} size={16} />{RANK_NAMES[featured.min_vip_level]}+</span>}
               {featured.stock != null && featured.stock <= 5 && <span className={styles.limited}>Only {featured.stock} left</span>}
             </div>
             <h2>{featured.name}</h2>
@@ -324,8 +336,8 @@ export default function Shop() {
                 <small>{fmt(featured.cost - points)} pts to go</small>
               </div>
             )}
-            <button className={styles.topBtn} disabled={points === null || points < featured.cost} onClick={() => handleRedeem(featured)}>
-              {points === null ? 'Log in to redeem' : points >= featured.cost ? 'Redeem' : 'Locked'}
+            <button className={styles.topBtn} disabled={points === null || points < featured.cost || ((featured.min_vip_level || 0) > (myLevel ?? 0))} onClick={() => handleRedeem(featured)}>
+              {points === null ? 'Log in to redeem' : (featured.min_vip_level || 0) > (myLevel ?? 0) ? `Requires ${RANK_NAMES[featured.min_vip_level]} VIP` : points >= featured.cost ? 'Redeem' : 'Locked'}
             </button>
           </div>
         </article>
@@ -364,7 +376,7 @@ export default function Shop() {
       ) : (
         <div className={styles.grid}>
           {filtered.map(product => (
-            <ShopCard key={product.id} product={product} userPoints={points} onRedeem={handleRedeem} />
+            <ShopCard key={product.id} product={product} userPoints={points} myLevel={myLevel} onRedeem={handleRedeem} />
           ))}
         </div>
       )}

@@ -1605,10 +1605,15 @@ export default {
         const { productId } = await request.json()
         if (!productId) return json({ error: 'productId é obrigatório' }, 400)
 
-        const prodRes = await fetch(
-          `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&select=id,stock,active,cost`,
+        let prodRes = await fetch(
+          `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&select=id,stock,active,cost,min_vip_level`,
           { headers: sbHeaders }
         )
+        if (!prodRes.ok) // min_vip_level not created yet (supabase/shop_vip.sql)
+          prodRes = await fetch(
+            `${env.SUPABASE_URL}/rest/v1/shop_products?id=eq.${encodeURIComponent(productId)}&select=id,stock,active,cost`,
+            { headers: sbHeaders }
+          )
         if (!prodRes.ok)
           return json({ error: 'Não foi possível verificar o produto.' }, 502)
 
@@ -1620,6 +1625,14 @@ export default {
         if (product.stock <= 0) return json({ error: 'Produto sem stock.' }, 400)
         const cost = product.cost
         if (!Number.isInteger(cost) || cost <= 0) return json({ error: 'Produto sem preço válido.' }, 400)
+        // VIP-only products: the level is checked here, never trusted from the browser
+        const minVip = Number(product.min_vip_level) || 0
+        if (minVip > 0) {
+          await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: username }) }).catch(() => {})
+          const lr = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(username)}&select=level`, { headers: sbHeaders })
+          const myLvl = lr.ok ? Number((await lr.json())?.[0]?.level) || 0 : 0
+          if (myLvl < minVip) return json({ error: `Este produto requer VIP ${['Member', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'][minVip] || minVip} ou superior.` }, 403)
+        }
 
         const checkRes = await fetch(
           `https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/${username.toLowerCase()}`,

@@ -6,7 +6,7 @@ import styles from './DashShop.module.css'
 const CATS = [['digital', 'Digital'], ['interact', 'Interact'], ['merch', 'Merch']]
 const COSTS = [1000, 5000, 25000, 100000]
 const STATUS_LABELS = { pending: 'Pendente', done: 'Entregue', rejected: 'Rejeitado' }
-const EMPTY = { id: null, name: '', description: '', category: 'digital', cost: '', stock: '', image_url: '', active: true, color: '#3b82f6' }
+const EMPTY = { id: null, name: '', description: '', category: 'digital', cost: '', stock: '', image_url: '', active: true, color: '#3b82f6', min_vip_level: 0 }
 
 const fmt = (n) => String(Math.round(Number(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0')
 
@@ -68,6 +68,7 @@ function ProductForm({ product, onSaved, onCancel }) {
       name: f.name.trim(), description: f.description, category: f.category,
       cost: Number(f.cost), stock: Number(f.stock),
       color: f.color || '#3b82f6', active: f.active, image_url: f.image_url || null,
+      min_vip_level: Number(f.min_vip_level) || 0,
     }
     const { error } = isEdit
       ? await supabase.from('shop_products').update(payload).eq('id', f.id)
@@ -116,6 +117,12 @@ function ProductForm({ product, onSaved, onCancel }) {
 
       <label className={styles.fld}><span>Descrição</span>
         <input value={f.description} onChange={e => set('description', e.target.value)} placeholder="Opcional" />
+      </label>
+
+      <label className={styles.fld}><span>VIP mínimo</span>
+        <select value={f.min_vip_level ?? 0} onChange={e => set('min_vip_level', Number(e.target.value))} style={{ height: 44, borderRadius: 12, padding: '0 14px', background: 'var(--c-in)', color: '#fff', border: '1px solid var(--c-line)', font: '700 14px "DM Sans", sans-serif', colorScheme: 'dark' }}>
+          {['Todos', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].map((n, i) => <option key={i} value={i}>{i === 0 ? 'Todos os níveis' : `${n} ou superior`}</option>)}
+        </select>
       </label>
 
       <button className={styles.cta} onClick={save} disabled={!ok || saving}>
