@@ -1889,15 +1889,20 @@ export default {
       if (pathname === '/players' && request.method === 'GET') {
         const q = (searchParams.get('q') || '').toLowerCase().trim().replace(/^@/, '')
         if (!/^[a-z0-9_]{1,30}$/.test(q)) return json({ players: [] })
-        const r = await fetch(`${env.SUPABASE_URL}/rest/v1/profiles?twitch_username=ilike.${q}*&select=twitch_username,avatar_url&order=twitch_username.asc&limit=8`, { headers: sbHeaders })
-        const rows = r.ok ? await r.json() : []
-        const names = rows.map((x) => String(x.twitch_username || '').toLowerCase()).filter((n) => /^[a-z0-9_]{1,30}$/.test(n))
-        const lv = {}
-        if (names.length) {
-          const b = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=in.(${names.join(',')})&select=username,level`, { headers: sbHeaders })
-          if (b.ok) for (const x of await b.json()) lv[x.username] = Number(x.level) || 0
+        const gj = async (u) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${u}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
+        const [prof, bals] = await Promise.all([
+          gj(`profiles?twitch_username=ilike.${q}*&select=twitch_username,avatar_url&order=twitch_username.asc&limit=8`),
+          gj(`point_balances?username=ilike.${q}*&select=username,level&order=username.asc&limit=8`),
+        ])
+        const lv = {}, av = {}, seen = new Set(), out = []
+        for (const x of bals) if (x.username) lv[String(x.username).toLowerCase()] = Number(x.level) || 0
+        for (const x of prof) if (x.twitch_username) av[String(x.twitch_username).toLowerCase()] = x.avatar_url || null
+        for (const n of [...Object.keys(av), ...Object.keys(lv)]) {
+          if (seen.has(n) || !/^[a-z0-9_]{1,30}$/.test(n)) continue
+          seen.add(n); out.push({ username: n, avatar: av[n] || null, level: lv[n] ?? 0 })
         }
-        return json({ players: rows.filter((x) => x.twitch_username).map((x) => ({ username: String(x.twitch_username).toLowerCase(), avatar: x.avatar_url || null, level: lv[String(x.twitch_username).toLowerCase()] ?? 0 })) })
+        out.sort((x, y) => x.username.localeCompare(y.username))
+        return json({ players: out.slice(0, 8) })
       }
 
       // ── GET /player?u=name — public player card (originals stats only; never balance or private data) ──
