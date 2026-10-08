@@ -5,12 +5,12 @@ const KEY = 'casino-live-stats'
 let items = []
 try { items = JSON.parse(localStorage.getItem(KEY)) || [] } catch { items = [] }
 const subs = new Set()
-const emit = () => { try { localStorage.setItem(KEY, JSON.stringify(items.slice(-600))) } catch { /* ignore */ } subs.forEach((f) => f()) }
+const emit = () => { try { localStorage.setItem(KEY, JSON.stringify(items)) } catch { /* ignore */ } subs.forEach((f) => f()) }
 
 export function recordStat(game, id, bet, payout) {
   const k = `${game}:${id}`
   if (id == null || items.some((x) => x.k === k)) return
-  items = [...items, { k, game, bet: Number(bet) || 0, payout: Number(payout) || 0, t: Date.now() }].slice(-600)
+  items = [...items, { k, game, bet: Number(bet) || 0, payout: Number(payout) || 0, t: Date.now() }]
   emit()
 }
 export function resetStats() { items = []; emit() }

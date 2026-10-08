@@ -66,7 +66,7 @@ function Money({ label, value, setValue, disabled, min }) {
         <i className={styles.coin} aria-hidden="true" />
         <input type="number" inputMode="numeric" min={min} value={value} disabled={disabled} placeholder="0"
           onChange={(e) => setValue(e.target.value === '' ? '' : Math.min(MAX_BET, Math.max(0, Math.floor(Number(e.target.value)))))}
-          onBlur={() => setValue(min === 0 && !clamp(value) ? '' : set(value))} />
+          onBlur={() => { if (min === 0 && !clamp(value)) setValue(''); else set(value) }} />
         <button type="button" disabled={disabled} onClick={() => set((Number(value) || 0) / 2)}>1/2</button>
         <button type="button" disabled={disabled} onClick={() => set((Number(value) || min || MIN_BET) * 2)}>2x</button>
       </div>
