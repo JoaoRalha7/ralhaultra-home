@@ -1428,7 +1428,7 @@ export default {
 
         // 5. Pontos baseados no streak (índice 0-6)
         const streakIndex  = newStreak - 1
-        let DAILY_POINTS = econOn() ? 10000 + 1000 * Math.min(Math.max(streakIndex, 0), 6) : (STREAK_POINTS[streakIndex] ?? 50)
+        let DAILY_POINTS = STREAK_POINTS[streakIndex] ?? 50
         if (econOn()) { // VIP rank boost (%)
           try {
             const br = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(username.toLowerCase())}&select=level`, { headers: sbHeaders })
