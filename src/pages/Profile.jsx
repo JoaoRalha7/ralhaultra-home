@@ -122,7 +122,7 @@ export default function Profile() {
   const lvl = me?.level || 0
   const next = levels.find((l) => l.level === lvl + 1)
   const hours = me ? (me.vipMinutes ?? me.minutes) / 60 : 0
-  const pct = next ? Math.round(((Math.min(1, me.wagered / next.min_wagered) + Math.min(1, hours / next.min_watch_hours)) / 2) * 100) : 100
+  const pct = next ? Math.round(((Math.min(1, (me?.wagered || 0) / (next.min_wagered || 1)) + Math.min(1, hours / (next.min_watch_hours || 1))) / 2) * 100) : 100
   const since = user.created_at ? new Date(user.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
 
   return (
@@ -160,7 +160,7 @@ export default function Profile() {
                 </div>
                 <div className={styles.track}><i style={{ width: `${me ? pct : 0}%` }} /></div>
                 {me && next && <div className={styles.rankSub}>
-                  <span>Wagered <b>{fmt(me.wagered)}</b> / {fmt(next.min_wagered)}</span>
+                  <span>Wagered <b>{fmt(me?.wagered || 0)}</b> / {fmt(next.min_wagered)}</span>
                   <span>Watched <b>{Math.floor(hours)}h</b> / {next.min_watch_hours}h</span>
                 </div>}
               </div>
