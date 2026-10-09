@@ -928,3 +928,7 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
   .top .logout.login{grid-column:3;justify-self:end}
 }
 @media (max-width:340px){.top .pts .coin{display:none}.top .pts{padding:0 8px;font-size:12px}.top .logo .logoImg{height:19px}.topR .bell,.topR .bellwrap .bell{width:34px;height:34px}.topR{gap:4px}}
+
+/* carousels keep their own stacking context so cards (z-index up to 10) never paint over the sticky top bar (z-index 5) */
+.cover,.stage3d{isolation:isolate}
+.top{z-index:30}

@@ -253,9 +253,8 @@ export default function Shop() {
   }, [])
 
   useEffect(() => {
-    const load = () => supabase.from('shop_redeems').select('id, twitch_username, created_at, shop_products(name, image_url)')
-      .order('created_at', { ascending: false }).limit(5)
-      .then(({ data, error }) => { if (!error && data) setRecent(data) })
+    const load = () => supabase.rpc('recent_shop_redeems', { lim: 5 })
+      .then(({ data, error }) => { if (!error && Array.isArray(data)) setRecent(data) })
     load()
     const id = setInterval(() => { if (!document.hidden) load() }, 15000)
     return () => clearInterval(id)

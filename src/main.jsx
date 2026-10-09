@@ -6,6 +6,15 @@ import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './hooks/useAuth';
 
+// After a new deploy, an open tab may ask for a page chunk that no longer exists: reload once to pick up the new build.
+window.addEventListener('vite:preloadError', () => {
+  try {
+    if (sessionStorage.getItem('chunk-reload')) return;
+    sessionStorage.setItem('chunk-reload', '1');
+  } catch { /* ignore */ }
+  window.location.reload();
+});
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>

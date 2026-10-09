@@ -1,48 +1,48 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import AuthCallback from './pages/AuthCallback';
-import BonusHunts from './pages/BonusHunts';
-import Blackjack from './pages/Blackjack';
-import Crash from './pages/Crash';
-import Keno from './pages/Keno';
-import Plinko from './pages/Plinko';
-import Roulette from './pages/Roulette';
-import Jackpot from './pages/Jackpot';
-import Originals from './pages/Originals';
-import Dashboard from './pages/Dashboard';
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const BonusHunts = lazy(() => import('./pages/BonusHunts'));
+const Blackjack = lazy(() => import('./pages/Blackjack'));
+const Crash = lazy(() => import('./pages/Crash'));
+const Keno = lazy(() => import('./pages/Keno'));
+const Plinko = lazy(() => import('./pages/Plinko'));
+const Roulette = lazy(() => import('./pages/Roulette'));
+const Jackpot = lazy(() => import('./pages/Jackpot'));
+const Originals = lazy(() => import('./pages/Originals'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 import Home from './pages/Home';
-import Legal from './pages/Legal';
-import Leaderboard from './pages/Leaderboard';
-import Vip from './pages/Vip';
-import Profile from './pages/Profile';
+const Legal = lazy(() => import('./pages/Legal'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Vip = lazy(() => import('./pages/Vip'));
+const Profile = lazy(() => import('./pages/Profile'));
 import DevToolsGuard from './components/DevToolsGuard';
-import MiniGame from './pages/MiniGame';
-import Mines from './pages/Mines';
-import MiniGameAvgMulti from './pages/MiniGameAvgMulti';
-import MiniGameGtb from './pages/MiniGameGtb';
-import MiniGamesLanding from './pages/MiniGamesLanding';
-import Offers from './pages/Offers';
-import Community from './pages/Community';
-import Placeholder from './pages/Placeholder';
-import Shop from './pages/Shop';
-import Giveaways from './pages/Giveaways';
-import Slots from './pages/Slots';
-import Stats from './pages/Stats';
-import Stream from './pages/Stream';
-import Torneios from './pages/Torneios';
+const MiniGame = lazy(() => import('./pages/MiniGame'));
+const Mines = lazy(() => import('./pages/Mines'));
+const MiniGameAvgMulti = lazy(() => import('./pages/MiniGameAvgMulti'));
+const MiniGameGtb = lazy(() => import('./pages/MiniGameGtb'));
+const MiniGamesLanding = lazy(() => import('./pages/MiniGamesLanding'));
+const Offers = lazy(() => import('./pages/Offers'));
+const Community = lazy(() => import('./pages/Community'));
+const Placeholder = lazy(() => import('./pages/Placeholder'));
+const Shop = lazy(() => import('./pages/Shop'));
+const Giveaways = lazy(() => import('./pages/Giveaways'));
+const Slots = lazy(() => import('./pages/Slots'));
+const Stats = lazy(() => import('./pages/Stats'));
+const Stream = lazy(() => import('./pages/Stream'));
+const Torneios = lazy(() => import('./pages/Torneios'));
 
-import BracketOverlay from './overlay/BracketOverlay';
-import ChatBox from './overlay/ChatBox';
-import OverlayBarra from './overlay/Barra';
-import OverlayHunting from './overlay/Hunting';
-import OverlayOpening from './overlay/Opening';
-import OverlayOverlay from './overlay/Overlay';
-import OverlaySlotStats from './overlay/SlotStats';
-import PickOverlay from './overlay/PickOverlay';
-import MinigamePlaying from './overlay/Minigameplaying';
-import OverlaySlotStatsH from './overlay/SlotStatsHorizontal';
-import TorneioOverlay from './overlay/Torneiooverlay';
+const BracketOverlay = lazy(() => import('./overlay/BracketOverlay'));
+const ChatBox = lazy(() => import('./overlay/ChatBox'));
+const OverlayBarra = lazy(() => import('./overlay/Barra'));
+const OverlayHunting = lazy(() => import('./overlay/Hunting'));
+const OverlayOpening = lazy(() => import('./overlay/Opening'));
+const OverlayOverlay = lazy(() => import('./overlay/Overlay'));
+const OverlaySlotStats = lazy(() => import('./overlay/SlotStats'));
+const PickOverlay = lazy(() => import('./overlay/PickOverlay'));
+const MinigamePlaying = lazy(() => import('./overlay/Minigameplaying'));
+const OverlaySlotStatsH = lazy(() => import('./overlay/SlotStatsHorizontal'));
+const TorneioOverlay = lazy(() => import('./overlay/Torneiooverlay'));
 
 // OBS overlays: transparent page, no layout, no age check.
 function Overlay({ page = false, children }) {
@@ -79,6 +79,7 @@ export default function App() {
   return (
     <>
     <DevToolsGuard />
+    <Suspense fallback={null}>
     <Routes>
       <Route path="auth/callback" element={<AuthCallback />} />
       <Route path="dashboard/*" element={<Dashboard />} />
@@ -131,6 +132,7 @@ export default function App() {
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Route>
     </Routes>
+    </Suspense>
     </>
   );
 }

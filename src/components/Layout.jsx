@@ -1,6 +1,6 @@
 import { PlayerModalHost } from './PlayerModal';
 import SearchBox from './SearchBox';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Icon, IconSprite } from './Icon';
 import AccountSetupOverlay from './AccountSetupOverlay';
@@ -318,7 +318,7 @@ export default function Layout() {
         </aside>
 
         <main>
-          <Outlet />
+          <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><Outlet /></Suspense>
           <Footer />
         </main>
       </div>

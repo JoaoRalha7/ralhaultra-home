@@ -327,7 +327,7 @@ export default function Home() {
       const empty = { redeems: [] };
       const [workerRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
         fetch(`${SE_WORKER_URL}/redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
-        supabase.from('shop_redeems').select('*, shop_products(name)').order('created_at', { ascending: false }).limit(10),
+        supabase.rpc('recent_shop_redeems', { lim: 10 }),
         fetch(`${SE_WORKER_URL}/daily-redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
         fetch(`${SE_WORKER_URL}/casino-feed?limit=10`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
         supabaseDash.from('picks').select('twitch_username, cost_paid, picked_at, points_awarded, rank, awarded_at').order('picked_at', { ascending: false }).limit(10),
