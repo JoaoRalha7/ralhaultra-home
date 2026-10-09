@@ -3,6 +3,9 @@
 .ring { width: 84px; height: 84px; border-radius: 50%; padding: 3px; background: conic-gradient(from 200deg, #3b82f6, #22e07a, #3b82f6); display: grid; place-items: center; flex: none; }
 .ring img, .ring span { width: 78px; height: 78px; border-radius: 50%; border: 3px solid #0b0d12; background: #1b2238; object-fit: cover; display: grid; place-items: center; font: 800 30px "Bricolage Grotesque", sans-serif; color: #fff; box-sizing: border-box; }
 .eyebrow { margin-top: 18px; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #7b8190; }
+.brand { margin: 8px 0 0; line-height: 0; }
+.brand img { height: 46px; width: auto; max-width: 100%; display: block; }
+.name { margin-top: 10px; font: 800 20px/1.1 "Bricolage Grotesque", sans-serif; letter-spacing: -.02em; color: #cfe1ff; overflow-wrap: anywhere; text-align: center; }
 .title { margin: 4px 0 0; font: 800 32px/1.08 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; text-align: center; overflow-wrap: anywhere; }
 .text { margin: 10px 0 0; font-size: 14px; line-height: 1.5; color: #9aa1b0; text-align: center; max-width: 330px; }
 .level { margin-top: 22px; width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1px solid #263a66; background: linear-gradient(135deg, rgba(59,130,246,.16), rgba(59,130,246,.04)); }

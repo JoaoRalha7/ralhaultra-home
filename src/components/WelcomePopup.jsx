@@ -39,7 +39,8 @@ export default function WelcomePopup({ onClose, first }) {
             : <span>{String(name).slice(0, 1).toUpperCase()}</span>}
         </div>
         <div className={styles.eyebrow}>{first ? 'Welcome to' : 'Welcome back to'}</div>
-        <h1 className={styles.title}>JRALHA, {name}</h1>
+        <h1 className={styles.brand}><img src="/assets/logo-jralha-beta.png" alt="JRALHA Beta" /></h1>
+        <div className={styles.name}>{name}</div>
         <p className={styles.text}>{first ? 'Your account is ready. Watch the stream, play the games and climb the VIP levels.' : 'Good to see you again. Here is where you stand in the VIP levels.'}</p>
 
         <div className={styles.level}>

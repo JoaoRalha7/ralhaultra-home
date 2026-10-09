@@ -884,5 +884,5 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .lsxFull{grid-template-columns:minmax(0,1fr)}
 
 /* brand image in the top bar */
-.logo .logoImg{display:block;height:40px;width:auto;max-width:100%}
-@media (max-width:820px){.logo .logoImg{height:32px}}
+.logo .logoImg{display:block;height:32px;width:auto;max-width:100%}
+@media (max-width:820px){.logo .logoImg{height:26px}}
