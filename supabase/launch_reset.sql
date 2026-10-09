@@ -1,4 +1,4 @@
--- LAUNCH RESET. Run the SAME file in BOTH Supabase projects (main zyzjvbpveriwsxhpheoh, then dash vsqxaxaxdvvwrvjookbm).
+-- LAUNCH RESET (everybody at 0 points + voucher code LAUNCH50K worth 50,000, once per person). Run the SAME file in BOTH Supabase projects (main zyzjvbpveriwsxhpheoh, then dash vsqxaxaxdvvwrvjookbm).
 -- Every table it wipes is copied first into schema backup_launch (not exposed by the API), so nothing is lost.
 -- Missing tables are skipped. Runs as ONE transaction: if anything fails, nothing changes.
 -- Kept untouched: casinos, slots, shop_products (the catalog; redeem history IS wiped), vip_levels, vouchers, bot_*, giveaway_state, admins, economy_config, casino_seeds, se_import*.
@@ -35,19 +35,22 @@ begin
     create table if not exists backup_launch.auth_users_created as select id, created_at from auth.users;
 
     update public.point_balances
-       set balance = 50000, watch_minutes = 0, wagered_total = 0, level = 0, created_at = now(), updated_at = now();
+       set balance = 0, watch_minutes = 0, wagered_total = 0, level = 0, created_at = now(), updated_at = now();
     begin update public.point_balances set vip_watch_base = 0; exception when undefined_column then null; end;
-
-    insert into public.point_transactions (username, delta, balance_after, reason)
-    select username, 50000, 50000, 'admin:Launch bonus' from public.point_balances;
 
     -- daily reward + streak back to zero, "joined" = today
     begin update public.profiles set last_daily_claim = null, streak_count = 0, streak_last_day = null; exception when undefined_column then null; end;
     begin update public.profiles set created_at = now(); exception when undefined_column then null; end;
     update auth.users set created_at = now();
 
-    -- voucher codes become usable again
-    begin update public.vouchers set uses = 0; exception when undefined_table or undefined_column then null; end;
+    -- everybody starts at 0; the 50k comes from ONE shared code, once per person (inactive players never claim it)
+    -- old codes are switched off, the launch code is created. Change the code text here if you want another one.
+    begin
+      update public.vouchers set active = false;
+      insert into public.vouchers (code, points, max_uses, uses, active, expires_at)
+      values ('LAUNCH50K', 50000, 100000, 0, true, null)
+      on conflict (code) do update set points = 50000, max_uses = 100000, uses = 0, active = true, expires_at = null;
+    exception when undefined_table or undefined_column then null; end;
 
     -- log everybody out
     delete from auth.refresh_tokens;
