@@ -314,6 +314,41 @@ function SlotCard({ slot, badge, onClick }) {
   )
 }
 
+// ── search helpers ────────────────────────────────────────────────────────────
+const flat = (s) => norm(s).replace(/[^a-z0-9]+/g, ' ').trim()
+function lev1(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return false
+  const prev = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    let cur = [i]
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    for (let j = 0; j <= b.length; j++) prev[j] = cur[j]
+  }
+  return prev[b.length] <= max
+}
+function scoreSlot(slot, q, toks, fuzzy) {
+  const name = flat(slot.name), prov = flat(slot.provider || '')
+  const words = name.split(' ')
+  let total = 0
+  for (const t of toks) {
+    let best = 0
+    if (words.includes(t)) best = 3
+    else if (words.some(w => w.startsWith(t))) best = 2
+    else if (name.includes(t)) best = 1
+    else if (prov.includes(t)) best = 0.5
+    else if (fuzzy && t.length >= 4) {
+      const max = t.length >= 7 ? 2 : 1
+      if (words.some(w => lev1(t, w.slice(0, t.length + 1), max) || lev1(t, w, max))) best = 0.8
+    }
+    if (!best) return 0
+    total += best
+  }
+  if (name === q) total += 20
+  else if (name.startsWith(q)) total += 10
+  else if (name.includes(q)) total += 5
+  return total
+}
+
 // Hand-picked slots shown in the carousels when there are not enough bonus entries yet (matched by name).
 const FEATURED_TOP = ['Gates of Olympus', 'Sweet Bonanza', 'Sugar Rush', 'Big Bass Bonanza', 'Le Bandit', 'Money Train 4', 'Wanted Dead or a Wild', 'Fruit Party', 'The Dog House Megaways', 'Mental', 'Book of Dead', 'Reactoonz']
 const FEATURED_PLAYED = ['Sweet Bonanza', 'Gates of Olympus', 'Big Bass Splash', 'Sugar Rush', 'Wanted Dead or a Wild', 'The Dog House Megaways', 'Fruit Party', 'Le Bandit', 'Money Train 4', 'Mental', 'Starlight Princess', 'Book of Dead']
@@ -559,13 +594,22 @@ export default function Slots() {
 
   // New Slots — todas as slots da DB, mais recentes primeiro
   const newSlots = allSlotsDb.slice(0, 12)
-  // Search usa allSlotsDb
+  // Search usa allSlotsDb: ranked (exact > starts with > word starts > contains), every word must match,
+  // ignores accents / punctuation / word order, and forgives a typo when nothing matches exactly
   const filtered = (search || provFilter)
-    ? allSlotsDb.filter(s => {
-        const q = norm(search)
-        return (!q || norm(s.name).includes(q) || norm(s.provider || '').includes(q))
-            && (!provFilter || s.provider === provFilter)
-      })
+    ? (() => {
+        const pool = provFilter ? allSlotsDb.filter(s => s.provider === provFilter) : allSlotsDb
+        const q = flat(search)
+        if (!q) return pool
+        const toks = q.split(' ')
+        const rank = (fuzzy) => pool
+          .map(s => ({ s, sc: scoreSlot(s, q, toks, fuzzy) }))
+          .filter(x => x.sc > 0)
+          .sort((a, b) => b.sc - a.sc || a.s.name.length - b.s.name.length || a.s.name.localeCompare(b.s.name))
+          .map(x => x.s)
+        const exact = rank(false)
+        return exact.length ? exact : rank(true)
+      })()
     : null
 
   return (
