@@ -28,8 +28,8 @@ const VIDEO_FALLBACK = [
 
 const DAILY_LABELS = { wheel: 'Daily Wheel', 'daily wheel': 'Daily Wheel', claim: 'Daily Claim', 'daily claim': 'Daily Claim' };
 
-// Test: the Top points box next to Latest Streams / Clips (set to true to bring it back).
-const SHOW_TOP_POINTS = true;
+// The Top points box next to Latest Streams / Clips (set to true to bring it back).
+const SHOW_TOP_POINTS = false;
 
 const TABS = [
   { key: 'shop', label: 'Shop', icon: 'bag' },
@@ -227,6 +227,15 @@ function SectionHead({ icon, title, tag, count, showAll }) {
 
 export default function Home() {
   const live = useTwitchStatus();
+  // the live stream plays (muted) behind the hero card, only while live and never on phones/tablets
+  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1101px)').matches);
+  useEffect(() => {
+    const m = window.matchMedia('(min-width: 1101px)');
+    const f = () => setWide(m.matches);
+    m.addEventListener('change', f);
+    return () => m.removeEventListener('change', f);
+  }, []);
+  const showStream = live && wide;
   const [tab, setTab] = useState('shop');
   const [offers, setOffers] = useState(null);
   const offersBox = useRef(null);
@@ -412,7 +421,13 @@ export default function Home() {
   return (
     <>
       <section className="hero" aria-label="Featured">
-        <article className="hc a">
+        <article className={`hc a${showStream ? ' hasStream' : ''}`}>
+          {showStream && (
+            <div className="liveBg" aria-hidden="true">
+              <iframe title="Live stream" tabIndex={-1} loading="lazy" allow="autoplay"
+                src={`https://player.twitch.tv/?channel=jralha_&parent=${window.location.hostname}&muted=true&autoplay=true&controls=false&quality=480p30`} />
+            </div>
+          )}
           <h2>Ralha Community House</h2>
           <p>Bonus hunts, giveaways and slots, almost every day. Come hang out.</p>
           <div className="act">
