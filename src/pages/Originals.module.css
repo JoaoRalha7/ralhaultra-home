@@ -31,3 +31,4 @@
 @media (max-width: 1280px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } .art { width: 48px; height: 48px; } .body b { font-size: 14px; } .play { display: none; } }
 @media (max-width: 420px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .grid > :last-child:nth-child(odd) { grid-column: 1 / -1; } }

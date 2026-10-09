@@ -913,9 +913,10 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 /* Phone top bar v2: logo left, points in the exact middle, daily reward + bell + profile on the right with room to breathe */
 .topR{display:contents}
 @media (max-width:820px){
-  .top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:8px;padding:0 12px}
+  .top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr);align-items:center;column-gap:8px;padding:0 12px}
   .top .sp{display:none}
-  .top .logo{grid-column:1;justify-self:start;min-width:0}
+  .top>*{grid-row:1}
+  .top .logo{grid-column:1;justify-self:start;align-self:center;min-width:0;display:flex;align-items:center;height:100%;line-height:0}
   .top .logo .logoImg{height:22px}
   .top .pts{grid-column:2;justify-self:center;height:36px;padding:0 10px;font-size:13px;gap:6px;white-space:nowrap}
   .top .pts .coin{display:inline-block}
