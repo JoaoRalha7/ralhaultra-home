@@ -217,7 +217,7 @@ export default function Layout() {
           <button className="menu-btn" aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
             <Icon name="menu" />
           </button>
-          <Link className="logo" to="/">Ralha<b>Ultra</b><span className="beta">BETA</span></Link>
+          <Link className="logo" to="/" aria-label="JRALHA"><img className="logoImg" src="/assets/logo-jralha-beta.png" alt="JRALHA Beta" /></Link>
           <SearchBox />
           <div className="sp" />
           {points !== null && <div className="pts"><span className="coin" />{points.toLocaleString('pt-PT')}</div>}
