@@ -16,9 +16,11 @@ declare
     'giveaway_entries','giveaways',
     -- mini-games, hunts, tournaments (children first)
     'minigame_sessions','minigame_ranking','picks','pick_games','gtb_entries','gtb_games','avg_multi_entries','avg_multi_games',
-    'bonus_entries','bonus_hunts','tournaments','slot_stats'
+    'bonus_entries','bonus_hunts','tournaments','chill_results'
   ];
 begin
+  -- legacy blackjack tables (dash project): side bets first, then games
+  wipe := wipe || array(select tablename::text from pg_tables where schemaname = 'public' and tablename like 'blackjack\_%' order by tablename desc);
   foreach t in array wipe loop
     if to_regclass('public.' || t) is not null
        and (select c.relkind from pg_class c where c.oid = to_regclass('public.' || t)) = 'r' then
@@ -35,8 +37,9 @@ begin
     create table if not exists backup_launch.auth_users_created as select id, created_at from auth.users;
 
     update public.point_balances
-       set balance = 0, watch_minutes = 0, wagered_total = 0, level = 0, created_at = now(), updated_at = now();
-    begin update public.point_balances set vip_watch_base = 0; exception when undefined_column then null; end;
+       set balance = 0, wagered_total = 0, level = 0, created_at = now(), updated_at = now();
+    -- the imported watchtime stays; only the VIP progress (hours since reset) starts again from 0
+    begin update public.point_balances set vip_watch_base = watch_minutes; exception when undefined_column then null; end;
 
     -- daily reward + streak back to zero, "joined" = today
     begin update public.profiles set last_daily_claim = null, streak_count = 0, streak_last_day = null; exception when undefined_column then null; end;
