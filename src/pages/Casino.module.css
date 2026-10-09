@@ -627,3 +627,7 @@
   .page[data-game="jackpot"] .layout > section { order: -1; }
   .page .layout > aside { border-right: 0; }
 }
+
+/* Jackpot: with many players rows must keep their height (list scrolls instead of squashing) */
+.jpDock .lvList { grid-auto-rows: max-content; }
+.jpDock .jpRow { min-height: 50px; flex: none; }
