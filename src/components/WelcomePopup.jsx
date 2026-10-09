@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../hooks/useAuth'
 import { workerGet } from '../lib/vip'
+import { Medal, RANK_NAMES } from './Medal'
 import styles from './WelcomePopup.module.css'
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
@@ -44,10 +45,10 @@ export default function WelcomePopup({ onClose, first }) {
         <p className={styles.text}>{first ? 'Your account is ready. Watch the stream, play the games and climb the VIP levels.' : 'Good to see you again. Here is where you stand in the VIP levels.'}</p>
 
         <div className={styles.level}>
-          <svg width="46" height="46" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 4l16 6v12c0 10-6.500 17.500-16 22C14.500 39.500 8 32 8 22V10z" fill="#1d3b78" stroke="#5b9bff" strokeWidth="2" strokeLinejoin="round"/><path d="M24 15l2.600 5.300 5.800.8-4.200 4.100 1 5.800L24 28.200l-5.200 2.800 1-5.800-4.200-4.100 5.800-.8z" fill="#cfe1ff"/></svg>
+          <Medal level={lvl} size={52} />
           <div className={styles.lv}>
             <span>Your level</span>
-            <b>{cur?.name || 'Member'}</b>
+            <b>{cur?.name || RANK_NAMES[lvl] || 'Member'}</b>
           </div>
           <i>Level {lvl}</i>
         </div>
