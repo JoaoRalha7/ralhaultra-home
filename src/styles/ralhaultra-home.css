@@ -939,3 +939,16 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .hc.a .liveBg:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0d1424f2 0%,#101a2ecc 42%,#2563eb59 100%),linear-gradient(0deg,#0d1424cc,transparent 55%)}
 .hc.a.hasStream>*:not(.liveBg){position:relative;z-index:1}
 @keyframes liveIn{to{opacity:1}}
+
+/* Top Offers: shared row tracks (subgrid) so logo, bonus, chips, code and CTA line up across cards */
+@supports (grid-template-rows:subgrid){
+  .ocards>.oc2{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0;justify-items:center;align-items:start}
+  .oc2>.oLogo{grid-row:1}
+  .oc2>.oPill{grid-row:2}
+  .oc2>.oHero{grid-row:3;align-self:start}
+  .oc2>.oTear{grid-row:4;justify-self:center}
+  .oc2>.oChips{grid-row:5;width:100%;align-self:start}
+  .oc2>.oCode{grid-row:6;width:100%;align-self:start}
+  .oc2>.oSpacer{display:none}
+  .oc2>.oActions{grid-row:7;width:100%;align-self:end}
+}
