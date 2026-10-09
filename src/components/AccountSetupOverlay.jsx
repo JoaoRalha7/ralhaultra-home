@@ -62,6 +62,8 @@ function StepRow({ label, status, index }) {
 
 export default function AccountSetupOverlay() {
   const { setIsSettingUp, user, profile } = useAuth()
+  const pic = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null
+  const [picBad, setPicBad] = useState(false)
   const [statuses,  setStatuses]  = useState({ session: 'running', profile: 'idle', points: 'idle', done: 'idle' })
   const [completed, setCompleted] = useState(0)
   const [visible,   setVisible]   = useState(true)
@@ -131,10 +133,12 @@ export default function AccountSetupOverlay() {
         animation: 'setupFadeUp .4s ease both',
       }}>
 
-        {/* Logo */}
+        {/* Twitch picture of the person logging in; the site logo while it is not available */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 16, margin: '0 auto', background: 'linear-gradient(135deg, #1b2238, #10131d)', border: '1px solid rgba(255,255,255,.1)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
-            <img src="/assets/04.png" alt="RALHA" style={{ width: 46, height: 46, objectFit: 'contain' }} />
+          <div style={{ height: 60, minWidth: 60, padding: pic && !picBad ? 0 : '0 22px', borderRadius: 16, margin: '0 auto', display: 'inline-grid', placeItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg, #1b2238, #10131d)', border: '1px solid rgba(255,255,255,.1)' }}>
+            {pic && !picBad
+              ? <img src={pic} alt="" onError={() => setPicBad(true)} style={{ width: 60, height: 60, objectFit: 'cover', display: 'block' }} />
+              : <img src="/assets/logo-jralha-beta.png" alt="JRALHA Beta" style={{ height: 34, width: 'auto', objectFit: 'contain' }} />}
           </div>
         </div>
 
