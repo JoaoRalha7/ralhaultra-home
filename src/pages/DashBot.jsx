@@ -48,7 +48,9 @@ function Editor({ kind, row, onSave, onCancel, busy, error }) {
       {error && <p className={`${styles.msg} ${styles.err}`}>{error}</p>}
       <div className={styles.actions}>
         <button type="button" className={styles.ghost} onClick={onCancel}>Cancelar</button>
-        <button type="button" className={styles.primary} disabled={!ok || busy} onClick={() => onSave({ ...f, name: f.name.trim(), ...(isCmd ? { response: f.response.trim() } : { message: f.message.trim() }), global_cooldown: Number(f.global_cooldown) || 0, user_cooldown: Number(f.user_cooldown) || 0, interval_online: Number(f.interval_online) || 0, interval_offline: Number(f.interval_offline) || 0, min_lines: Number(f.min_lines) || 0 })}>{busy ? 'A guardar...' : 'Guardar'}</button>
+        <button type="button" className={styles.primary} disabled={!ok || busy} onClick={() => onSave(isCmd
+            ? { name: f.name.trim(), response: f.response.trim(), enabled: f.enabled, access: f.access, global_cooldown: Number(f.global_cooldown) || 0, user_cooldown: Number(f.user_cooldown) || 0 }
+            : { name: f.name.trim(), message: f.message.trim(), enabled: f.enabled, interval_online: Number(f.interval_online) || 0, interval_offline: Number(f.interval_offline) || 0, min_lines: Number(f.min_lines) || 0 })}>{busy ? 'A guardar...' : 'Guardar'}</button>
       </div>
     </div>
   )
@@ -77,7 +79,7 @@ export default function DashBot() {
 
   const save = async (row) => {
     setBusy(true); setErr('')
-    const { id, created_at, ...payload } = row
+    const payload = row
     const q = editing.id ? supabase.from(table).update(payload).eq('id', editing.id) : supabase.from(table).insert(payload)
     const { error } = await q
     setBusy(false)
