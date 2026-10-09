@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { adminPoints } from '../lib/points'
 import DashVouchers from './DashVouchers'
 import styles from './DashGiveaways.module.css'
 
-const EMPTY = { prize: '', title: '', description: '', kind: 'giveaway', ends_at: '', image_url: '', ticket_cost: '0', max_tickets: '' }
+const EMPTY = { prize: '', title: '', description: '', kind: 'giveaway', ends_at: '', image_url: '', ticket_cost: '0', max_tickets: '', prize_points: '' }
 const DURATIONS = [['1 h', 1], ['24 h', 24], ['7 dias', 168], ['30 dias', 720]]
 const COSTS = [['Grátis', '0'], ['100', '100'], ['500', '500'], ['1000', '1000']]
 const fmtDate = (d) => new Date(d).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -126,7 +127,8 @@ export default function DashGiveaways() {
   const [, tick] = useState(0)
   const say = (text, err) => { setMsg({ text, err }); setTimeout(() => setMsg(null), 3500) }
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
-  const ok = f.prize.trim() && f.title.trim() && f.ends_at
+  const pp = Math.max(0, parseInt(f.prize_points, 10) || 0)
+  const ok = (f.prize.trim() || pp > 0) && f.title.trim() && f.ends_at
 
   const load = useCallback(async () => {
     const [g, e] = await Promise.all([
@@ -149,7 +151,7 @@ export default function DashGiveaways() {
     e.preventDefault()
     if (!ok) return
     const { error } = await supabase.from('giveaways').insert({
-      prize: f.prize.trim(), title: f.title.trim(), description: f.description.trim() || null, kind: f.kind,
+      prize: f.prize.trim() || `${pp.toLocaleString('en-GB')} points`, title: f.title.trim(), ...(pp > 0 ? { prize_points: pp } : {}), description: f.description.trim() || null, kind: f.kind,
       ends_at: new Date(f.ends_at).toISOString(), image_url: f.image_url.trim() || null,
       ticket_cost: Math.max(0, parseInt(f.ticket_cost, 10) || 0), max_tickets: parseInt(f.max_tickets, 10) || null,
     })
@@ -160,10 +162,17 @@ export default function DashGiveaways() {
   const draw = async (g) => {
     const pool = entries.filter((x) => x.giveaway_id === g.id).flatMap((x) => Array(x.tickets || 1).fill(x))
     if (!pool.length) return say('Sem participantes.', true)
+    if (g.winner) return say('Este sorteio já tem vencedor.', true)
     const w = pool[pick(pool.length)].twitch_username
     const { error } = await supabase.from('giveaways').update({ winner: w, status: 'ended' }).eq('id', g.id)
     if (error) return say(error.message, true)
-    say(`Vencedor: ${w}`); load()
+    const pts = Number(g.prize_points) || 0
+    if (pts > 0) { // points prize: pay the winner right away
+      const r = await adminPoints(String(w).toLowerCase(), pts)
+      if (r.ok) { await supabase.from('giveaways').update({ paid: true }).eq('id', g.id); say(`Vencedor: ${w} (+${pts.toLocaleString('en-GB')} pontos pagos)`) }
+      else say(`Vencedor: ${w}, mas falhou pagar os pontos (${r.data?.error || 'erro'}). Paga na aba Pontos.`, true)
+    } else say(`Vencedor: ${w}`)
+    load()
   }
 
   const end = async (g) => {
@@ -233,7 +242,9 @@ export default function DashGiveaways() {
           </div>
 
           <label className={styles.fld}><span>Prémio</span>
-            <input placeholder="ex: PS5 + GTA VI" value={f.prize} onChange={set('prize')} /></label>
+            <input placeholder="ex: PS5 + GTA VI (ou deixa vazio se for só pontos)" value={f.prize} onChange={set('prize')} /></label>
+          <label className={styles.fld}><span>Pontos de prémio (opcional)</span>
+            <input type="number" min="0" placeholder="ex: 50000 (o vencedor recebe ao sortear)" value={f.prize_points} onChange={set('prize_points')} /></label>
           <label className={styles.fld}><span>Título</span>
             <input placeholder="ex: Sorteio de outubro" value={f.title} onChange={set('title')} /></label>
 

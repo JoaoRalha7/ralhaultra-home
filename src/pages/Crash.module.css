@@ -68,3 +68,4 @@
 .pop hr { width: 54%; margin: 9px auto; border: 0; height: 1px; background: rgba(255,255,255,.14); }
 .pop span { display: flex; align-items: center; justify-content: center; gap: 7px; color: #fff; font: 700 14px "DM Sans", sans-serif; }
 @keyframes popIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } }
+@media (max-width: 700px) { .stage { min-height: 300px; padding: 12px 14px 14px; } .mult { font-size: clamp(44px, 16vw, 64px); } }

@@ -109,3 +109,8 @@
 .hLB { left: -10px; bottom: -10px; width: 15px; height: 15px; z-index: 4; }
 .mchip { position: relative; z-index: 5; pointer-events: none; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 999px; border: 2px dashed rgba(255,255,255,.75); background: #f59e0b; color: #fff; font: 800 10px "DM Sans", sans-serif; }
 .mchip.won { background: #22ff7a; color: #08130d; }
+@media (max-width: 700px) {
+  .stage { min-height: 0; padding-inline: 12px; }
+  .tableBox { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
+  .tbl { flex: none; min-width: 640px; }
+}

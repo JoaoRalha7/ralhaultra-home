@@ -617,3 +617,13 @@
 .page[data-game="jackpot"] .jpInnerEdge { stroke: #2a2e3b; }
 .page[data-game="jackpot"] .jpOuterEdge { stroke: #2a2e3b; }
 .page[data-game="jackpot"] .jpHotNum { color: #f87171 !important; }
+
+/* ── Phones and tablets: always one column; the game comes first for crash, plinko and jackpot ── */
+@media (max-width: 1000px) {
+  .page .layout, .page .layout:has(> .lvDock) { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; height: auto; }
+  .page .layout > * { grid-column: 1 !important; grid-row: auto !important; }
+  .page[data-game="crash"] .layout > section,
+  .page[data-game="plinko"] .layout > section,
+  .page[data-game="jackpot"] .layout > section { order: -1; }
+  .page .layout > aside { border-right: 0; }
+}

@@ -900,3 +900,12 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
   .app:not(.collapsed)>aside{bottom:calc(62px + env(safe-area-inset-bottom,0px))}
   .scrim{bottom:calc(62px + env(safe-area-inset-bottom,0px))}
 }
+
+/* Phone top bar (logged in): same height for every control, tighter spacing so it never gets crowded */
+@media (max-width:820px){
+  .top{gap:6px;padding:0 10px}
+  .top .pts{height:36px;padding:0 9px;font-size:12.5px;gap:6px;min-width:0}
+  .top .bell{width:36px;height:36px;border-radius:10px;flex:none}
+  .top .bell svg{width:18px;height:18px}
+}
+@media (max-width:480px){.top .pts .coin{display:none}}
