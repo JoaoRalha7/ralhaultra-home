@@ -233,47 +233,49 @@ export default function Layout() {
           <SearchBox />
           <div className="sp" />
           {points !== null && <div className="pts"><span className="coin" />{points.toLocaleString('pt-PT')}</div>}
-          {user && (
-            <button className={`bell${dailyReady ? ' dailyReady' : ''}`} aria-label={dailyReady ? 'Daily rewards - ready to claim' : 'Daily rewards'} title={dailyReady ? 'Rewards ready to claim!' : 'Daily rewards'} onClick={() => setDailyOpen(true)}><Icon name="gift" />{dailyReady && <b className="dailyDot" />}</button>
-          )}
-          <div className="bellwrap">
-            <button className="bell" aria-label="Notifications" aria-expanded={bellOpen} onClick={() => setBellOpen((v) => !v)}>
-              <Icon name="bell" />
-              {notifCount > 0 && <i>{notifCount}</i>}
-            </button>
-            {bellOpen && (
-              <div className="drop" role="menu">
-                {notifCount === 0 ? (
-                  <p className="dropEmpty">You are all caught up.</p>
-                ) : (
-                  <>
-                    {user && dailyReady && (
-                      <button type="button" className="dropItem" onClick={() => { setBellOpen(false); setDailyOpen(true); }}>Daily reward ready<span className="chip">Claim</span></button>
-                    )}
-                    {claimable.map((l) => (
-                      <button type="button" key={l.level} className="dropItem" onClick={() => { setBellOpen(false); setRewardsOpen(true); }}>Rank reward: {l.name}<span className="chip">+{Number(l.levelup_reward).toLocaleString('en-US')}</span></button>
-                    ))}
-                    {live.map(({ name, view, huntId }) => (
-                      <Link key={view} to="/bonus-hunts" state={{ huntId, view }} onClick={() => setBellOpen(false)}>{name} open<span className="chip">Live</span></Link>
-                    ))}
-                  </>
-                )}
-              </div>
+          <div className="topR">
+            {user && (
+              <button className={`bell${dailyReady ? ' dailyReady' : ''}`} aria-label={dailyReady ? 'Daily rewards - ready to claim' : 'Daily rewards'} title={dailyReady ? 'Rewards ready to claim!' : 'Daily rewards'} onClick={() => setDailyOpen(true)}><Icon name="gift" />{dailyReady && <b className="dailyDot" />}</button>
+            )}
+            <div className="bellwrap">
+              <button className="bell" aria-label="Notifications" aria-expanded={bellOpen} onClick={() => setBellOpen((v) => !v)}>
+                <Icon name="bell" />
+                {notifCount > 0 && <i>{notifCount}</i>}
+              </button>
+              {bellOpen && (
+                <div className="drop" role="menu">
+                  {notifCount === 0 ? (
+                    <p className="dropEmpty">You are all caught up.</p>
+                  ) : (
+                    <>
+                      {user && dailyReady && (
+                        <button type="button" className="dropItem" onClick={() => { setBellOpen(false); setDailyOpen(true); }}>Daily reward ready<span className="chip">Claim</span></button>
+                      )}
+                      {claimable.map((l) => (
+                        <button type="button" key={l.level} className="dropItem" onClick={() => { setBellOpen(false); setRewardsOpen(true); }}>Rank reward: {l.name}<span className="chip">+{Number(l.levelup_reward).toLocaleString('en-US')}</span></button>
+                      ))}
+                      {live.map(({ name, view, huntId }) => (
+                        <Link key={view} to="/bonus-hunts" state={{ huntId, view }} onClick={() => setBellOpen(false)}>{name} open<span className="chip">Live</span></Link>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            {isAdmin() && <button className="pill adminBtn" onClick={() => setAdminOpen(true)}>Admin</button>}
+            {user ? (
+              <>
+                <UserMenu
+                  src={profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
+                  name={profile?.twitch_username || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Account'}
+                  userId={user.id}
+                  onLogout={signOut}
+                />
+              </>
+            ) : (
+              <button className="logout login" onClick={() => setLoginOpen(true)}>Login</button>
             )}
           </div>
-          {isAdmin() && <button className="pill adminBtn" onClick={() => setAdminOpen(true)}>Admin</button>}
-          {user ? (
-            <>
-              <UserMenu
-                src={profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
-                name={profile?.twitch_username || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Account'}
-                userId={user.id}
-                onLogout={signOut}
-              />
-            </>
-          ) : (
-            <button className="logout login" onClick={() => setLoginOpen(true)}>Login</button>
-          )}
         </header>
 
         {open && <div className="scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
