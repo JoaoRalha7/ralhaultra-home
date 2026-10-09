@@ -722,6 +722,42 @@ export default {
         return json({ ok: true, newPoints: data.newAmount ?? data.points ?? null })
       }
 
+      // ── POST /admin/points-all ────────────────────────────────────────────────
+      // Streamer only: give or take points from EVERYBODY (new economy: one SQL call; StreamElements: bulk edit).
+      // ?count=1 only counts the members. Balances never go below 0.
+      if (pathname === '/admin/points-all' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who || !ADMIN_IDS.includes(who.id)) return json({ error: 'unauthorized' }, 401)
+        const body = await request.json().catch(() => ({}))
+        const n = parseInt(body.amount, 10)
+        if (!Number.isInteger(n) || n === 0 || Math.abs(n) > 1000000) return json({ error: 'amount inválido (1 a 1 000 000)' }, 400)
+        const reason = String(body.reason || 'admin_all').slice(0, 60)
+        if (econOn()) {
+          const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/admin_add_points_all`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_delta: n, p_reason: 'admin_all:' + reason }) })
+          if (!r.ok) return json({ error: 'db error (corre o admin_points_all.sql?)', detail: (await r.text()).slice(0, 300) }, 502)
+          return json({ ok: true, changed: Number(await r.json()) || 0 })
+        }
+        // StreamElements: every viewer from the leaderboard, then bulk "add" in slices of 1000
+        const seH = { 'Authorization': `Bearer ${env.SE_JWT}`, 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        const users = []
+        for (let off = 0, i = 0; i < 12; i++) {
+          const r = await _fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}/top?limit=1000&offset=${off}`, { headers: seH })
+          if (!r.ok) return json({ error: `SE API erro ${r.status}` }, 502)
+          const page = (await r.json()).users ?? []
+          if (!page.length) break
+          users.push(...page); off += page.length
+          if (page.length < 1000) break
+        }
+        let changed = 0
+        for (let i = 0; i < users.length; i += 1000) {
+          const slice = users.slice(i, i + 1000).map((u) => ({ username: u.username, current: n < 0 ? Math.max(0, Number(u.points) + n) : Number(u.points) + n }))
+          const r = await _fetch(`https://api.streamelements.com/kappa/v2/points/${env.SE_CHANNEL_ID}`, { method: 'PUT', headers: seH, body: JSON.stringify({ mode: 'set', users: slice }) })
+          if (!r.ok) return json({ error: `SE bulk erro ${r.status}`, changed, detail: (await r.text()).slice(0, 200) }, 502)
+          changed += slice.length
+        }
+        return json({ ok: true, changed })
+      }
+
       // ── POST /admin/import-se ─────────────────────────────────────────────────
       // Streamer only. Copies StreamElements balances into point_balances, in slices (a Worker call is
       // limited to ~50 subrequests). Call it repeatedly with ?offset=<next> until "next" is null.
