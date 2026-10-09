@@ -37,13 +37,13 @@
 .closeBtn:hover { color: #fff; background: rgba(255,255,255,.1); }
 
 .logoWrap {
-  width: 60px; height: 60px; border-radius: 16px;
+  height: 60px; padding: 0 22px; border-radius: 16px;
   background: linear-gradient(135deg, #1b2238, #10131d);
   border: 1px solid rgba(255,255,255,.1);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.logo { width: 46px; height: 46px; object-fit: contain; }
+.logo { height: 34px; width: auto; object-fit: contain; }
 
 .title { margin: 18px 0 0; font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: #fff; text-align: center; }
 .sub { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: rgba(255,255,255,.5); text-align: center; max-width: 320px; }

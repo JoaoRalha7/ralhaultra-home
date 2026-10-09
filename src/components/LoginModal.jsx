@@ -36,7 +36,7 @@ export default function LoginModal({ onClose }) {
 
         {/* Logo */}
         <div className={styles.logoWrap}>
-          <img src="/assets/04.png" alt="RALHA" className={styles.logo} />
+          <img src="/assets/logo-jralha-beta.png" alt="JRALHA Beta" className={styles.logo} />
         </div>
 
         {/* Title */}
