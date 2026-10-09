@@ -141,6 +141,7 @@ export default function Roulette() {
     if (!g.user) return
     const opp = ROULETTE.opposite[type]
     if (opp && bets.some((b) => b.type === opp)) { g.setErr(`You can't bet on both ${type} and ${opp}`); return }
+    if ((type === 'dozen' || type === 'column') && !bets.some((b) => b.type === type && b.value === value) && bets.filter((b) => b.type === type).length >= 2) { g.setErr(`You can only bet on 2 ${type === 'dozen' ? 'dozens' : 'columns'}, not all 3`); return }
     if (total + chip > MAX_BET) { g.setErr(`Max total bet is ${fmt(MAX_BET)}`); return }
     setBets((prev) => {
       const i = prev.findIndex((b) => b.type === type && (b.value ?? null) === value)

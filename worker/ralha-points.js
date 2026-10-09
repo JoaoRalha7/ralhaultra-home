@@ -1015,6 +1015,7 @@ export default {
             rBets = Array.isArray(body.bets) ? body.bets.map((b) => ({ type: b?.type, value: b?.value == null ? null : b?.type === 'multi' ? String(b.value) : Number(b.value), amount: Number(b?.amount) })) : []
             if (!rBets.length || rBets.length > ROULETTE.maxBets || !rBets.every((b) => validBet(b) && b.amount >= CASINO.minBet && b.amount <= econMaxBet('roulette', body))) return json({ error: 'invalid bets' }, 400)
             if (rBets.some((b) => ROULETTE.opposite[b.type] && rBets.some((o) => o.type === ROULETTE.opposite[b.type])) || new Set(rBets.map((b) => b.type + ':' + b.value)).size !== rBets.length) return json({ error: 'invalid bets' }, 400) // no red+black / odd+even / low+high, no duplicate spots
+            if (rBets.filter((b) => b.type === 'dozen').length > 2 || rBets.filter((b) => b.type === 'column').length > 2) return json({ error: 'invalid bets' }, 400) // never all 3 dozens or all 3 columns
             body.bet = rBets.reduce((a, b) => a + b.amount, 0)
           }
           const bet = parseInt(body.bet, 10)
