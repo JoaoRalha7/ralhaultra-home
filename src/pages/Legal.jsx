@@ -76,8 +76,11 @@ const n = (v) => Number(v || 0).toLocaleString('en-US')
 const L = ({ items }) => <ul style={{ margin: '8px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>{items.map((i, k) => <li key={k}>{i}</li>)}</ul>
 
 // Detailed rules. Numbers come from the live VIP table so this page never goes out of date.
-function richRules(levels) {
+function richRules(levels, watch) {
   const rows = levels.length ? levels : []
+  const base = Number(watch?.perHour) || 6000, cap = Number(watch?.cap) || 2.5
+  const subs = watch?.subMult || { 0: 1, 1: 1.5, 2: 1.75, 3: 2 }
+  const perHour = (sub, bonus) => Math.round(base * Math.min(cap, Number(subs[sub] ?? 1) + Number(bonus || 0)))
   return [
     ['The basics', <>
       <p>Points are virtual and have no cash value. You earn them by watching the stream, claiming rewards and playing, and you spend them in the Originals games, mini-games and the shop. Everything is calculated on our servers, never in your browser.</p>
@@ -85,11 +88,26 @@ function richRules(levels) {
     ['How you earn points', <>
       <p>There are four ways to earn points:</p>
       <L items={[
-        <><b>Watchtime:</b> you earn points every minute while the stream is live and you are in chat. Subscribers earn a higher multiplier, and your VIP rank adds a bonus on top (total multiplier is capped at 2.5x).</>,
+        <><b>Watchtime:</b> you earn points every minute while the stream is live and you are in chat. Subscribers earn a higher multiplier, and your VIP rank adds a bonus on top (total multiplier is capped at {cap}x). See the table below for the exact points per hour.</>,
         <><b>Daily reward:</b> claim once every 24 hours. The reward grows with your streak (day 1 to day 7) and is boosted by your VIP rank. Miss a day and the streak restarts.</>,
         <><b>Daily wheel:</b> a free spin with random prizes, once per cycle.</>,
         <><b>Vouchers, giveaways and level-up rewards:</b> codes shared on stream or Discord, prizes, and the one-time bonus when you reach a new rank.</>,
       ]} />
+      {rows.length > 0 && (
+        <div style={{ overflowX: 'auto', marginTop: 14 }}>
+          <p style={{ margin: '0 0 8px' }}><b>Watchtime points per hour</b> ({n(Math.round(base / 60))} per minute for a non-subscriber at the base rate)</p>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 480 }}>
+            <thead><tr style={{ textAlign: 'left', opacity: .7 }}>{['Rank', 'Viewer', 'Sub Tier 1', 'Sub Tier 2', 'Sub Tier 3'].map((h) => <th key={h} style={{ padding: '6px 8px' }}>{h}</th>)}</tr></thead>
+            <tbody>{rows.map((l) => (
+              <tr key={l.level} style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+                <td style={{ padding: '8px', fontWeight: 700 }}>{l.name}</td>
+                {[0, 1, 2, 3].map((st) => <td key={st} style={{ padding: '8px' }}>{n(perHour(st, l.bonus_mult))}</td>)}
+              </tr>
+            ))}</tbody>
+          </table>
+          <p style={{ margin: '8px 0 0', opacity: .7, fontSize: 13 }}>Only while the stream is live and you are in chat. Base rate {n(base)} points per hour; the multiplier (sub tier + rank bonus) never goes above {cap}x.</p>
+        </div>
+      )}
     </>],
     ['VIP ranks', <>
       <p>Your rank depends on two things at the same time: how many points you have wagered in the Originals games and how many hours you have watched. You need <b>both</b> to reach the next rank. Wagered points count every bet you place, win or lose, and they never go down. Your rank is checked every hour and also right after you bet, so it updates fast.</p>
@@ -149,12 +167,13 @@ export default function Legal() {
   const { pathname } = useLocation()
   const tab = ORDER.find(k => pathname.includes(k)) || 'terms'
   const [levels, setLevels] = useState([])
+  const [watch, setWatch] = useState(null)
   useEffect(() => {
     let alive = true
-    fetch(`${WORKER}/vip`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (alive && d?.levels) setLevels(d.levels) }).catch(() => {})
+    fetch(`${WORKER}/vip`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!alive) return; if (d?.levels) setLevels(d.levels); if (d?.watch) setWatch(d.watch) }).catch(() => {})
     return () => { alive = false }
   }, [])
-  const doc = useMemo(() => (tab === 'rules' ? { ...DOCS.rules, intro: 'Everything explained in detail: points, VIP, cashback, limits and fair play.', sections: richRules(levels) } : DOCS[tab]), [tab, levels])
+  const doc = useMemo(() => (tab === 'rules' ? { ...DOCS.rules, intro: 'Everything explained in detail: points, VIP, cashback, limits and fair play.', sections: richRules(levels, watch) } : DOCS[tab]), [tab, levels, watch])
   const [active, setActive] = useState(null)
 
   const ids = useMemo(() => doc.sections.map(([t]) => slug(t)), [doc])

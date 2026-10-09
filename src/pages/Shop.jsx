@@ -142,8 +142,8 @@ function ShopCard({ product, userPoints, myLevel, onRedeem }) {
           : <span className={styles.initial}>{product.name?.[0]?.toUpperCase() || '?'}</span>}
         <span className={styles.tags}>
           <span className={`${styles.rar} ${styles['rar_' + rar.id]}`}>{rar.label}</span>
-          {minVip > 0 && <span className={styles.vipTag} style={{ '--vc': RANK_COLORS[minVip] }}><Medal level={minVip} size={16} />{RANK_NAMES[minVip]}+</span>}
         </span>
+        {minVip > 0 && <span className={`${styles.vipTag} ${styles.vipTagCorner}`} style={{ '--vc': RANK_COLORS[minVip] }}><Medal level={minVip} size={16} />{RANK_NAMES[minVip]}+</span>}
         {outOfStock && <span className={`${styles.stock} ${styles.stockOut}`}>Gone</span>}
         {lowStock && <span className={`${styles.stock} ${styles.stockLow}`}>Only {product.stock} left</span>}
       </div>

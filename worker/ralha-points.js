@@ -1907,7 +1907,16 @@ export default {
             if (cr.ok) me.claimed = (await cr.json()).map((x) => x.level)
           } catch { /* optional */ }
         }
-        return json({ levels, me })
+        // public watch-points settings for the Rules page (base per hour, sub multipliers, cap)
+        let watch = null
+        try {
+          const cr = await fetch(`${env.SUPABASE_URL}/rest/v1/economy_config?key=in.(watch_points_per_hour,sub_mult,mult_cap)&select=key,value`, { headers: sbHeaders })
+          if (cr.ok) {
+            const m = Object.fromEntries((await cr.json()).map((x) => [x.key, x.value]))
+            watch = { perHour: Number(m.watch_points_per_hour) || 6000, subMult: m.sub_mult || { 0: 1, 1: 1.5, 2: 1.75, 3: 2 }, cap: Number(m.mult_cap) || 2.5 }
+          }
+        } catch { /* optional */ }
+        return json({ levels, me, watch })
       }
 
       // ── GET /profile — stats + activity for the logged-in user ──
