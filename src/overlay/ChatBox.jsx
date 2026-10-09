@@ -273,6 +273,9 @@ function Roulette({ participants, onDone }) {
 }
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
+const WIDE = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('layout') === 'wide'
+const BASE_W = WIDE ? 450 : 290
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Sora:wght@700;800&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -304,6 +307,14 @@ html, body { background: transparent !important; overflow: hidden; width: 100%; 
 .chat-header { background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; }
 .line-cyan   { width: 3px; height: 14px; background: #34d399; border-radius: 2px; }
 .line-yellow { width: 3px; height: 14px; background: #fbbf24; border-radius: 2px; }
+
+/* ── wide variant (?layout=wide) ── */
+.sidebar.wide { width: 450px; }
+.sidebar.wide .chat-header, .sidebar.wide .events-section { display: none; }
+.sidebar.wide .chat-msgs { padding: 14px 0; }
+.sidebar.wide .msg { padding: 5px 20px; font-size: 19px; line-height: 1.45; }
+.sidebar.wide .msg-badge { width: 22px; height: 22px; }
+.sidebar.wide .emote { height: 28px; width: auto; }
 
 /* ── chat ── */
 .chat-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
@@ -544,7 +555,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     const update = () => {
-      const scale = Math.min(window.innerWidth / 290, window.innerHeight / 750)
+      const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / 750)
       document.documentElement.style.setProperty('--scale', scale)
     }
     update(); window.addEventListener('resize', update)
@@ -562,7 +573,7 @@ export default function Sidebar() {
     <>
       <style>{CSS}</style>
       <div className="root-wrap">
-        <div className="sidebar">
+        <div className={'sidebar' + (WIDE ? ' wide' : '')}>
 
           {/* ── CHAT ── */}
           <div className="chat-section">
