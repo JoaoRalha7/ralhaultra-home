@@ -1963,11 +1963,12 @@ export default {
         const kind = searchParams.get('kind') || 'all'
         const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1)
         const get = async (q) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${q}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
-        const [games, crash, redeems, tx] = await Promise.all([
+        const [games, crash, redeems, tx, wt] = await Promise.all([
           get(`casino_games?username=ilike.${u}&status=eq.done&select=game,bet,payout,updated_at&order=updated_at.desc&limit=5000`),
           get(`crash_bets?username=ilike.${u}&select=bet,cashed_at,created_at&order=created_at.desc&limit=5000`),
           get(`shop_redeems?twitch_username=ilike.${u}&select=cost_at_redeem,created_at,status,shop_products(name)&order=created_at.desc&limit=100`),
-          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.vip_levelup*,reason.like.daily*)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
+          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.vip_levelup*,reason.like.daily*,reason.like.admin*,reason.eq.se_import)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
+          get(`point_transactions?username=eq.${u}&reason=eq.watchtime&select=delta,created_at&order=created_at.desc&limit=5000`),
         ])
         let wins = 0, losses = 0
         const acts = []
@@ -1984,9 +1985,22 @@ export default {
         for (const r of redeems) acts.push({ kind: 'shop', title: r.shop_products?.name || 'Reward', at: r.created_at, value: -(Number(r.cost_at_redeem) || 0), status: String(r.status || 'pending').toUpperCase() })
         for (const t of tx) {
           const rs = String(t.reason)
-          const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : rs.startsWith('vip_levelup') ? 'Level-up reward' : 'Daily reward'
-          acts.push({ kind: 'rewards', title, at: t.created_at, value: Number(t.delta) || 0, status: 'AWARDED' })
+          const note = rs.includes(':') ? rs.slice(rs.indexOf(':') + 1).trim() : ''
+          const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : rs.startsWith('vip_levelup') ? 'Level-up reward'
+            : rs.startsWith('admin') ? (note && note !== 'admin_all' ? `Bonus: ${note}` : 'Bonus from Ralha') : rs === 'se_import' ? 'Imported from StreamElements' : 'Daily reward'
+          const v = Number(t.delta) || 0
+          acts.push({ kind: 'rewards', title, at: t.created_at, value: v, status: v < 0 ? 'ADJUSTED' : 'AWARDED' })
         }
+        // one row per live session (watchtime ticks every minute; a gap over 30 min starts a new session)
+        const ticks = wt.slice().reverse()
+        let cur = null
+        const flush = () => { if (cur) acts.push({ kind: 'rewards', title: 'Points from Stream Session', at: cur.at, value: cur.sum, status: 'AWARDED' }) }
+        for (const t of ticks) {
+          const ms = Date.parse(t.created_at)
+          if (cur && ms - cur.last <= 30 * 60000) { cur.sum += Number(t.delta) || 0; cur.at = t.created_at; cur.last = ms }
+          else { flush(); cur = { sum: Number(t.delta) || 0, at: t.created_at, last: ms } }
+        }
+        flush()
         const counts = { all: acts.length, games: 0, shop: 0, rewards: 0 }
         for (const a of acts) counts[a.kind]++
         const list = acts.filter((a) => kind === 'all' || a.kind === kind).sort((a, b) => (a.at < b.at ? 1 : -1))
