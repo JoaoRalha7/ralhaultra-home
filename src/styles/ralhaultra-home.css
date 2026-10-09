@@ -957,3 +957,20 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oc2>.oActions .oClaim{margin:0 !important;height:48px}
 .oc2>.oActions .oMore{width:48px;height:48px}
 .oc2>.oSpacer{display:none}
+
+/* Top Offers: slightly smaller cards */
+.ocards{grid-template-columns:repeat(3,minmax(0,300px));gap:18px}
+@media (max-width:1100px){.ocards{grid-template-columns:repeat(2,minmax(0,300px))}}
+@media (max-width:700px){.ocards{grid-template-columns:minmax(0,320px)}}
+.oc2{padding:24px 14px 12px}
+.oLogo{height:40px;margin-bottom:10px}
+.oLogo img{max-height:40px;max-width:170px}
+.oBig{font-size:clamp(38px,3.6vw,50px)}
+.oBig.txt{font-size:clamp(24px,2.3vw,30px)}
+.oRest{font-size:13px}
+.oChip{padding:8px 3px 7px}
+.oChip b{font-size:11.5px}
+.oc2>.oCode{min-height:44px;margin-top:10px}
+.oc2>.oActions{margin-top:12px}
+.oc2>.oActions .oClaim{height:44px}
+.oc2>.oActions .oMore{width:44px;height:44px}
