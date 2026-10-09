@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Confetti, HistoryStrip, Page, fmt, playSfx, useCasino, useFlag, MIN_BET, MAX_BET, useMaxBet, MaxBet } from './CasinoShared'
 import shared from './Casino.module.css'
 import styles from './Blackjack.module.css'
@@ -47,6 +47,9 @@ const dTotal = (cards) => {
   while (t > 21 && a-- > 0) t -= 10
   return t
 }
+
+// live "9 / 19" style total for a partial hand
+const dTotalLive = (cards) => showTotal(cards, dTotal(cards), true)
 
 const clamp = (v) => Math.max(0, Math.min(MAX_BET, Math.floor(Number(v)) || 0))
 const IC = {
@@ -99,6 +102,27 @@ export default function Blackjack() {
     T.push(setTimeout(() => { setFin(rid); g.release() }, end))
     return () => T.forEach(clearTimeout)
   }, [rid, rdone, dlen]) // eslint-disable-line react-hooks/exhaustive-deps
+  // the total beside a hand only counts a card once it has landed and turned over (never before the flip)
+  const [vis, setVis] = useState({}) // hand index -> number of cards already counted
+  const lastRid = useRef(null)
+  const sig = r ? r.hands.map((h) => h.cards.length).join(',') : ''
+  useEffect(() => {
+    if (!r) { lastRid.current = null; setVis({}); return }
+    const opening = lastRid.current !== r.id
+    lastRid.current = r.id
+    const T = []
+    setVis((prev) => {
+      const base = opening ? {} : { ...prev }
+      r.hands.forEach((h, hi) => { if ((base[hi] ?? 0) > h.cards.length) base[hi] = h.cards.length })
+      return base
+    })
+    r.hands.forEach((h, hi) => {
+      const len = h.cards.length
+      const d = opening ? (len <= 2 ? first(hi, len - 1) + 830 : 850) : 850
+      T.push(setTimeout(() => setVis((v) => (v[hi] === len ? v : { ...v, [hi]: len })), d))
+    })
+    return () => T.forEach(clearTimeout)
+  }, [r?.id, sig]) // eslint-disable-line react-hooks/exhaustive-deps
   const shown = done && fin === r.id // results visible
   const waiting = done && !shown
   const act = (a, extra) => { playSfx('click'); g.hold.current = true; g.act(a, extra) }
@@ -181,7 +205,7 @@ export default function Blackjack() {
                       {res ? (
                         <span className={`${styles.fpill} ${styles['f_' + tone]}`}><i>{showTotal(h.cards, h.total, !h.done)}</i><em>{res[0]}</em></span>
                       ) : (
-                        <span className={`${styles.pill} ${on ? styles.pillOn : ''}`}>{showTotal(h.cards, h.total, !h.done)}</span>
+                        <span className={`${styles.pill} ${on ? styles.pillOn : ''}`} style={(vis[hi] ?? 0) === 0 ? { visibility: 'hidden' } : undefined}>{(vis[hi] ?? 0) >= h.cards.length ? showTotal(h.cards, h.total, !h.done) : dTotalLive(h.cards.slice(0, vis[hi] ?? 0))}</span>
                       )}
                       {h.doubled && <small className={styles.tag}>DOUBLE</small>}
                     </div>

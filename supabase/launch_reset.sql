@@ -1,7 +1,7 @@
 -- LAUNCH RESET. Run the SAME file in BOTH Supabase projects (main zyzjvbpveriwsxhpheoh, then dash vsqxaxaxdvvwrvjookbm).
 -- Every table it wipes is copied first into schema backup_launch (not exposed by the API), so nothing is lost.
 -- Missing tables are skipped. Runs as ONE transaction: if anything fails, nothing changes.
--- Kept untouched: casinos, slots, shop_products, vip_levels, vouchers, giveaways, bot_*, admins, economy_config, casino_seeds, se_import*.
+-- Kept untouched: casinos, slots, shop_products (the catalog; redeem history IS wiped), vip_levels, vouchers, bot_*, giveaway_state, admins, economy_config, casino_seeds, se_import*.
 
 create schema if not exists backup_launch;
 
@@ -12,6 +12,8 @@ declare
     -- points, VIP, casino originals (main project)
     'point_transactions','points_ledger','casino_games','crash_bets','crash_rounds','jackpot_entries','jackpot_rounds',
     'mines_games','vip_level_claims','voucher_redemptions','shop_redeems','daily_redeems',
+    -- giveaways: all history and entries
+    'giveaway_entries','giveaways',
     -- mini-games, hunts, tournaments (children first)
     'minigame_sessions','minigame_ranking','picks','pick_games','gtb_entries','gtb_games','avg_multi_entries','avg_multi_games',
     'bonus_entries','bonus_hunts','tournaments','slot_stats'
