@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
       .select('*')
       .eq('id', userId)
       .maybeSingle()
-    if (data) { setProfile(data); return }
+    if (data && data.twitch_username) { setProfile(data); return }
     // logged in but no profile row (the callback's one-shot insert can fail): create it now from the Twitch data
     const meta = u?.user_metadata || {}
     const row = {
@@ -30,7 +30,8 @@ export function AuthProvider({ children }) {
     }
     if (!row.twitch_username) return
     const { error } = await supabase.from('profiles').upsert(row, { onConflict: 'id' })
-    if (!error) setProfile(row)
+    if (!error) setProfile({ ...(data || {}), ...row })
+    else if (data) setProfile(data)
   }
 
   useEffect(() => {
