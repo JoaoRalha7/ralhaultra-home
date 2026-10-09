@@ -8,8 +8,8 @@ import styles from './WelcomePopup.module.css'
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 const pct = (a, b) => (b > 0 ? Math.max(3, Math.min(100, Math.round((a / b) * 100))) : 100)
 
-// Shown once, right after the "Setting up your account" screen, the first time a person logs in.
-export default function WelcomePopup({ onClose }) {
+// Shown right after the "Setting up your account" screen, on every login (`first` = the very first one).
+export default function WelcomePopup({ onClose, first }) {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const [vip, setVip] = useState(null)
@@ -38,9 +38,9 @@ export default function WelcomePopup({ onClose }) {
             ? <img src={pic} alt="" onError={() => setPicBad(true)} />
             : <span>{String(name).slice(0, 1).toUpperCase()}</span>}
         </div>
-        <div className={styles.eyebrow}>Welcome to</div>
+        <div className={styles.eyebrow}>{first ? 'Welcome to' : 'Welcome back to'}</div>
         <h1 className={styles.title}>JRALHA, {name}</h1>
-        <p className={styles.text}>Your account is ready. Watch the stream, play the games and climb the VIP levels.</p>
+        <p className={styles.text}>{first ? 'Your account is ready. Watch the stream, play the games and climb the VIP levels.' : 'Good to see you again. Here is where you stand in the VIP levels.'}</p>
 
         <div className={styles.level}>
           <svg width="46" height="46" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 4l16 6v12c0 10-6.500 17.500-16 22C14.500 39.500 8 32 8 22V10z" fill="#1d3b78" stroke="#5b9bff" strokeWidth="2" strokeLinejoin="round"/><path d="M24 15l2.600 5.300 5.800.8-4.200 4.100 1 5.800L24 28.200l-5.200 2.800 1-5.800-4.200-4.100 5.800-.8z" fill="#cfe1ff"/></svg>

@@ -66,14 +66,15 @@ export default function Layout() {
   const { points, setPoints, refresh } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name, { poll: 10000 });
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
-  // welcome popup: right after the "Setting up your account" screen, only the first time this person ever logs in
+  // welcome popup: right after the "Setting up your account" screen, on every login (the first one says "Welcome to", the next ones "Welcome back")
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [welcomeFirst, setWelcomeFirst] = useState(false);
   const wasSettingUp = useRef(false);
   useEffect(() => {
     if (isSettingUp) { wasSettingUp.current = true; return; }
     if (!wasSettingUp.current || !user) return;
     wasSettingUp.current = false;
-    workerPost('/welcome').then(({ ok, data }) => { if (ok && data?.first) setWelcomeOpen(true); }).catch(() => {});
+    workerPost('/welcome').then(({ ok, data }) => { setWelcomeFirst(!!(ok && data?.first)); setWelcomeOpen(true); }).catch(() => setWelcomeOpen(true));
   }, [isSettingUp, user]);
   const [dailyOpen, setDailyOpen] = useState(false);
   const [dailyReady, setDailyReady] = useState(false);
@@ -319,7 +320,7 @@ export default function Layout() {
       {dailyOpen && <DailyRewardsModal onClose={() => setDailyOpen(false)} onPointsUpdate={() => refresh?.()} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
       {isSettingUp && <AccountSetupOverlay />}
-      {welcomeOpen && <WelcomePopup onClose={() => setWelcomeOpen(false)} />}
+      {welcomeOpen && <WelcomePopup first={welcomeFirst} onClose={() => setWelcomeOpen(false)} />}
     </>
   );
 }
