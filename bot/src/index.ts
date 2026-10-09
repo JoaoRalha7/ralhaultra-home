@@ -43,15 +43,77 @@ async function main() {
   const broadcaster = await api.users.getUserByName(CHANNEL)
   if (!broadcaster) throw new Error(`Channel ${CHANNEL} not found`)
 
+  // ---- helpers ----
+  const getChatters = async () =>
+    (await api.asUser(botId, (c) => c.chat.getChattersPaginated(broadcaster.id).getAll())).filter((c) => c.userId !== botId)
+  let isLive = false
+  const checkLive = async () => { try { isLive = !!(await api.streams.getStreamByUserName(CHANNEL)) } catch { /* keep last value */ } }
+  await checkLive()
+  setInterval(checkLive, 60_000)
+
+  // ---- custom commands + timers (edited in the dashboard, tab "Bot") ----
+  type CustomCmd = { name: string; response: string; enabled: boolean; global_cooldown: number; user_cooldown: number; access: string }
+  type CustomTimer = { id: number; name: string; message: string; enabled: boolean; interval_online: number; interval_offline: number; min_lines: number }
+  let customCmds = new Map<string, CustomCmd>()
+  let customTimers: CustomTimer[] = []
+  const loadCustom = async () => {
+    const [c, t] = await Promise.all([sb.from('bot_commands').select('*').eq('enabled', true), sb.from('bot_timers').select('*').eq('enabled', true)])
+    if (!c.error && c.data) customCmds = new Map((c.data as CustomCmd[]).map((x) => [x.name.toLowerCase(), x]))
+    if (!t.error && t.data) customTimers = t.data as CustomTimer[]
+  }
+  await loadCustom()
+  setInterval(loadCustom, 30_000)
+  const lastGlobal = new Map<string, number>()
+  const lastUser = new Map<string, number>()
+
+  // timers: post when enough minutes AND chat lines have passed (the lines rule keeps it quiet in an empty chat)
+  const timerLast = new Map<number, number>()
+  const timerLines = new Map<number, number>()
+  setInterval(async () => {
+    for (const t of customTimers) {
+      const mins = isLive ? t.interval_online : t.interval_offline
+      if (!(mins > 0)) continue
+      if (!timerLast.has(t.id)) { timerLast.set(t.id, Date.now()); continue }
+      if (Date.now() - (timerLast.get(t.id) ?? 0) < mins * 60_000) continue
+      if ((timerLines.get(t.id) ?? 0) < t.min_lines) continue
+      timerLast.set(t.id, Date.now())
+      timerLines.set(t.id, 0)
+      try { await chat.say(CHANNEL, t.message) } catch (e) { console.error('timer failed', (e as Error).message) }
+    }
+  }, 15_000)
+
   // ---- commands ----
+  const BUILTIN = new Set(['points', 'pontos', 'watchtime', 'level', 'nivel', 'addpoints', 'addpontos', 'top'])
   const cooldown = new Map<string, number>()
   chat.onMessage(async (channel, user, text, msg) => {
-    if (msg.userInfo.userId === botId || !text.startsWith('!')) return
+    if (msg.userInfo.userId === botId) return
+    for (const t of customTimers) timerLines.set(t.id, (timerLines.get(t.id) ?? 0) + 1)
+    if (!text.startsWith('!')) return
     const cmd = text.slice(1).split(/\s+/)[0].toLowerCase()
+    const name = user.toLowerCase()
+
+    if (!BUILTIN.has(cmd)) {
+      const c = customCmds.get(cmd)
+      if (!c) return
+      const ui = msg.userInfo
+      const allowed = c.access === 'everyone' || ui.isBroadcaster
+        || (c.access === 'sub' && (ui.isSubscriber || ui.isMod || ui.isVip))
+        || (c.access === 'vip' && (ui.isVip || ui.isMod))
+        || (c.access === 'mod' && ui.isMod)
+      if (!allowed) return
+      const now = Date.now()
+      if (now - (lastGlobal.get(cmd) ?? 0) < c.global_cooldown * 1000) return
+      if (now - (lastUser.get(`${cmd}:${name}`) ?? 0) < c.user_cooldown * 1000) return
+      lastGlobal.set(cmd, now); lastUser.set(`${cmd}:${name}`, now)
+      const args = text.trim().split(/\s+/).slice(1).join(' ')
+      const touser = (args.split(/\s+/)[0] || user).replace(/^@/, '')
+      await chat.say(channel, c.response.replace(/\{user\}/gi, user).replace(/\{touser\}/gi, touser).replace(/\{args\}/gi, args).slice(0, 480))
+      return
+    }
+
     const key = `${user}:${cmd}`
     if (Date.now() - (cooldown.get(key) ?? 0) < 5000) return
     cooldown.set(key, Date.now())
-    const name = user.toLowerCase()
 
     if (cmd === 'points' || cmd === 'pontos') {
       const { data } = await sb.from('point_balances').select('balance').eq('username', name).maybeSingle()
@@ -84,8 +146,10 @@ async function main() {
       }
       const note = rest.join(' ').slice(0, 50)
       if (who.toLowerCase() === 'all') {
-        const { data, error } = await sb.rpc('admin_add_points_all', { p_delta: n, p_reason: 'admin_all:' + (note || 'admin_all') })
-        await chat.say(channel, error ? `@${user} erro: ${error.message}` : `${n > 0 ? 'Foram dados' : 'Foram retirados'} ${fmt(Math.abs(n))} pontos a ${fmt(Number(data ?? 0))} pessoas!`)
+        // only the people in the chat right now (the dashboard tab "Pontos" is the one that reaches every member)
+        const here = (await getChatters()).map((c) => c.userName.toLowerCase())
+        const { data, error } = await sb.rpc('admin_add_points_users', { p_users: here, p_delta: n, p_reason: 'admin_all:' + (note || 'admin_all') })
+        await chat.say(channel, error ? `@${user} erro: ${error.message}` : `${n > 0 ? 'Foram dados' : 'Foram retirados'} ${fmt(Math.abs(n))} pontos a ${fmt(Number(data ?? 0))} pessoas no chat!`)
       } else {
         const target = who.replace(/^@/, '').toLowerCase()
         const { data, error } = await sb.rpc('add_points', { p_username: target, p_delta: n, p_reason: 'admin:' + (note || 'admin') })
@@ -154,7 +218,7 @@ async function main() {
     try {
       const stream = await api.streams.getStreamByUserName(CHANNEL)
       if (!stream) return
-      const chatters = (await api.asUser(botId, (c) => c.chat.getChattersPaginated(broadcaster.id).getAll())).filter((c) => c.userId !== botId)
+      const chatters = await getChatters()
       const eligible = await isEligible(chatters.map((c) => c.userId))
       const rows = chatters.map((c) => ({ username: c.userName, twitch_id: c.userId, sub_tier: subTier.get(c.userId) ?? 0, eligible: eligible.has(c.userId) }))
       for (let i = 0; i < rows.length; i += 500) {

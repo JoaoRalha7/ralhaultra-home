@@ -17,6 +17,7 @@ import DashGiveaway from './DashGiveaway'
 import DashGiveaways from './DashGiveaways'
 import DashMinigame from './Dashminigame'
 import DashPontos from './DashPontos'
+import DashBot from './DashBot'
 
 
 const DASHBOARD_ID = 'aa9660ca-4c53-4d4d-b81b-b3d231660420'
@@ -72,6 +73,10 @@ const NAV = [
   {
     to: '/dashboard/pontos', accent: 'amber', label: 'Pontos',
     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4.5"/></svg>,
+  },
+  {
+    to: '/dashboard/bot', accent: 'blue', label: 'Bot',
+    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><path d="M9 14h.01M15 14h.01"/></svg>,
   },
   {
     to: '/dashboard/shop', accent: 'green', label: 'Loja',
@@ -234,6 +239,7 @@ export default function Dashboard() {
           <Route path="minigame" element={<DashMinigame />} />
           <Route path="shop"     element={<DashShop />} />
           <Route path="pontos"   element={<DashPontos />} />
+          <Route path="bot"      element={<DashBot />} />
           <Route index          element={<DashHome state={state} />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
