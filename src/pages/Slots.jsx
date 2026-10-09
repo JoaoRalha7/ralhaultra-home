@@ -314,6 +314,10 @@ function SlotCard({ slot, badge, onClick }) {
   )
 }
 
+// Hand-picked slots shown in the carousels when there are not enough bonus entries yet (matched by name).
+const FEATURED_TOP = ['Gates of Olympus', 'Sweet Bonanza', 'Sugar Rush', 'Big Bass Bonanza', 'Le Bandit', 'Money Train 4', 'Wanted Dead or a Wild', 'Fruit Party', 'The Dog House Megaways', 'Mental', 'Book of Dead', 'Reactoonz']
+const FEATURED_PLAYED = ['Sweet Bonanza', 'Gates of Olympus', 'Big Bass Splash', 'Sugar Rush', 'Wanted Dead or a Wild', 'The Dog House Megaways', 'Fruit Party', 'Le Bandit', 'Money Train 4', 'Mental', 'Starlight Princess', 'Book of Dead']
+
 // ── 3D ring carousel ──────────────────────────────────────────────────────────
 function CoverSection({ icon, title, count, slots, badge, loading, onSlotClick, avgs, plays }) {
   const n = slots.length
@@ -487,10 +491,12 @@ export default function Slots() {
       avgMultipliers[id] = multiSums[id] / multiCounts[id]
     })
 
-    if (!usedIds.size) { setLoading(false); return }
-
-    const { data: slots } = await supabaseDash.from('slots').select('*').in('id', [...usedIds]).order('name')
-    const slotData = slots || []
+    // no entries yet: still load the whole catalogue (search, New Slots and the featured picks keep working)
+    let slotData = []
+    if (usedIds.size) {
+      const { data: slots } = await supabaseDash.from('slots').select('*').in('id', [...usedIds]).order('name')
+      slotData = slots || []
+    }
     setAllSlots(slotData)
     setPlayCounts(counts)
     setAvgMultipliers(avgMultipliers)
@@ -535,6 +541,22 @@ export default function Slots() {
     .sort((a, b) => (playCounts[b.id] || 0) - (playCounts[a.id] || 0))
     .slice(0, 12)
 
+  // Featured picks keep the Top / Most played carousels filled while there are few (or no) bonus entries:
+  // real data always comes first, the picks only complete the ring up to 12.
+  const pickFeatured = (names, real) => {
+    const out = [...real]
+    const have = new Set(out.map(x => x.id))
+    for (const nm of names) {
+      if (out.length >= 12) break
+      const q = norm(nm)
+      const hit = allSlotsDb.find(x => norm(x.name) === q) || allSlotsDb.find(x => norm(x.name).includes(q))
+      if (hit && !have.has(hit.id)) { out.push(hit); have.add(hit.id) }
+    }
+    return out
+  }
+  const topShown  = pickFeatured(FEATURED_TOP, topSlots)
+  const playedShown = pickFeatured(FEATURED_PLAYED, mostPlayed.filter(s => (playCounts[s.id] || 0) > 0))
+
   // New Slots — todas as slots da DB, mais recentes primeiro
   const newSlots = allSlotsDb.slice(0, 12)
   // Search usa allSlotsDb
@@ -572,8 +594,8 @@ export default function Slots() {
             <CoverSection avgs={avgMultipliers} plays={playCounts} 
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
               title="Top Slots"   
-              count={topSlots.length}   
-              slots={topSlots}   
+              count={topShown.length}   
+              slots={topShown}   
               badge="TOP" 
               loading={loading} 
               onSlotClick={setSelected} 
@@ -581,8 +603,8 @@ export default function Slots() {
             <CoverSection avgs={avgMultipliers} plays={playCounts} 
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
               title="Most played" 
-              count={mostPlayed.length} 
-              slots={mostPlayed}             
+              count={playedShown.length} 
+              slots={playedShown}             
               loading={loading} 
               onSlotClick={setSelected} 
             />
