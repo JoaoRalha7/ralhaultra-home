@@ -309,7 +309,7 @@ html, body { background: transparent !important; overflow: hidden; width: 100%; 
 .line-yellow { width: 3px; height: 14px; background: #fbbf24; border-radius: 2px; }
 
 /* ── wide variant (?layout=wide) ── */
-.sidebar.wide { width: 600px; }
+.sidebar.wide { width: 600px; height: var(--h, 750px); }
 .sidebar.wide .chat-header, .sidebar.wide .events-section { display: none; }
 .sidebar.wide .chat-msgs { padding: 14px 0; }
 .sidebar.wide .msg { padding: 6px 24px; font-size: 22px; line-height: 1.45; }
@@ -555,8 +555,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     const update = () => {
-      const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / 750)
+      const scale = WIDE ? window.innerWidth / BASE_W : Math.min(window.innerWidth / BASE_W, window.innerHeight / 750)
       document.documentElement.style.setProperty('--scale', scale)
+      document.documentElement.style.setProperty('--h', WIDE ? (window.innerHeight / scale) + 'px' : '750px')
     }
     update(); window.addEventListener('resize', update)
     return () => window.removeEventListener('resize', update)
