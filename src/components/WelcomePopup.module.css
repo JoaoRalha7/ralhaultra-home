@@ -1,0 +1,24 @@
+.back { position: fixed; inset: 0; z-index: 9990; display: grid; place-items: center; padding: 16px; background: rgba(4,5,8,.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fade .25s ease both; }
+.card { width: 100%; max-width: 440px; box-sizing: border-box; padding: 34px 32px 26px; border-radius: 26px; border: 1px solid #232733; background: linear-gradient(180deg, #11141b 0%, #0b0d12 100%); box-shadow: 0 30px 80px rgba(0,0,0,.6); display: flex; flex-direction: column; align-items: center; color: #eef1f7; font-family: "DM Sans", system-ui, sans-serif; animation: up .35s ease both; max-height: calc(100vh - 32px); overflow-y: auto; }
+.ring { width: 84px; height: 84px; border-radius: 50%; padding: 3px; background: conic-gradient(from 200deg, #3b82f6, #22e07a, #3b82f6); display: grid; place-items: center; flex: none; }
+.ring img, .ring span { width: 78px; height: 78px; border-radius: 50%; border: 3px solid #0b0d12; background: #1b2238; object-fit: cover; display: grid; place-items: center; font: 800 30px "Bricolage Grotesque", sans-serif; color: #fff; box-sizing: border-box; }
+.eyebrow { margin-top: 18px; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #7b8190; }
+.title { margin: 4px 0 0; font: 800 32px/1.08 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; text-align: center; overflow-wrap: anywhere; }
+.text { margin: 10px 0 0; font-size: 14px; line-height: 1.5; color: #9aa1b0; text-align: center; max-width: 330px; }
+.level { margin-top: 22px; width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1px solid #263a66; background: linear-gradient(135deg, rgba(59,130,246,.16), rgba(59,130,246,.04)); }
+.level svg { flex: none; }
+.lv { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
+.lv span { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #7da6ff; }
+.lv b { font: 800 22px "Bricolage Grotesque", sans-serif; letter-spacing: -.02em; }
+.level i { font-style: normal; font-size: 12px; font-weight: 700; color: #9fc0ff; background: rgba(59,130,246,.18); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+.bars { margin-top: 14px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.barHead { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 700; color: #7b8190; }
+.bar { height: 6px; border-radius: 999px; background: #1c1f27; overflow: hidden; }
+.bar div { height: 100%; background: #3b82f6; border-radius: 999px; }
+.green div { background: #22e07a; }
+.go { margin-top: 24px; width: 100%; height: 50px; border: 0; border-radius: 14px; background: #eef1f7; color: #0b0e14; font: 800 15px "DM Sans", sans-serif; cursor: pointer; }
+.go:hover { filter: brightness(.95); }
+.link { margin-top: 12px; border: 0; background: none; font: 600 13px "DM Sans", sans-serif; color: #7b8190; cursor: pointer; }
+.link:hover { color: #eef1f7; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes up { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }

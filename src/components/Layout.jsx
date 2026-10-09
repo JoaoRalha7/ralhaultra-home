@@ -1,9 +1,11 @@
 import { PlayerModalHost } from './PlayerModal';
 import SearchBox from './SearchBox';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Icon, IconSprite } from './Icon';
 import AccountSetupOverlay from './AccountSetupOverlay';
+import WelcomePopup from './WelcomePopup';
+import { workerPost } from '../lib/points';
 import AdminPanel from './AdminPanel';
 import AgeVerification from './AgeVerification';
 import DailyRewardsModal from './DailyRewardsModal';
@@ -64,6 +66,15 @@ export default function Layout() {
   const { points, setPoints, refresh } = useStreamElementsPoints(profile?.twitch_username || user?.user_metadata?.full_name, { poll: 10000 });
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
+  // welcome popup: right after the "Setting up your account" screen, only the first time this person ever logs in
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const wasSettingUp = useRef(false);
+  useEffect(() => {
+    if (isSettingUp) { wasSettingUp.current = true; return; }
+    if (!wasSettingUp.current || !user) return;
+    wasSettingUp.current = false;
+    workerPost('/welcome').then(({ ok, data }) => { if (ok && data?.first) setWelcomeOpen(true); }).catch(() => {});
+  }, [isSettingUp, user]);
   const [dailyOpen, setDailyOpen] = useState(false);
   const [dailyReady, setDailyReady] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -308,6 +319,7 @@ export default function Layout() {
       {dailyOpen && <DailyRewardsModal onClose={() => setDailyOpen(false)} onPointsUpdate={() => refresh?.()} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
       {isSettingUp && <AccountSetupOverlay />}
+      {welcomeOpen && <WelcomePopup onClose={() => setWelcomeOpen(false)} />}
     </>
   );
 }

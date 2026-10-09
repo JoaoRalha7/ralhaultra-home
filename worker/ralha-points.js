@@ -1834,6 +1834,27 @@ export default {
       }
 
       // ── GET /vip — ranks (public) + my progress and cashback estimate (when logged in) ──
+      // ── POST /welcome — true only the first time this player ever logs in (flag lives in point_balances.welcomed, supabase/welcome.sql) ──
+      if (pathname === '/welcome' && request.method === 'POST') {
+        const who = await getUser(request, env, sbHeaders)
+        if (!who?.username) return json({ error: 'unauthorized' }, 401)
+        const un = encodeURIComponent(who.username)
+        let first = false
+        try {
+          const r = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${un}&welcomed=eq.false`, { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify({ welcomed: true }) })
+          if (!r.ok) return json({ first: false }) // column missing: never show
+          first = (await r.json()).length > 0
+          if (!first) { // brand new player, no balance row yet
+            const e = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${un}&select=username`, { headers: sbHeaders })
+            if (e.ok && !(await e.json()).length) {
+              const ins = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?on_conflict=username`, { method: 'POST', headers: { ...sbHeaders, 'Prefer': 'resolution=ignore-duplicates,return=representation' }, body: JSON.stringify({ username: who.username, welcomed: true }) })
+              first = ins.ok && (await ins.json()).length > 0
+            }
+          }
+        } catch { /* optional */ }
+        return json({ first })
+      }
+
       if (pathname === '/vip' && request.method === 'GET') {
         const lv = await fetch(`${env.SUPABASE_URL}/rest/v1/vip_levels?select=level,name,min_wagered,min_watch_hours,bonus_mult,cashback_pct,levelup_reward,daily_boost_pct&order=level.asc`, { headers: sbHeaders })
         const levels = lv.ok ? await lv.json() : []
