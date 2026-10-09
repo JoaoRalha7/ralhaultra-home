@@ -61,7 +61,7 @@ export default function DashPontos() {
     <div className={styles.page}>
       <div>
         <h1 className={styles.title}>Pontos</h1>
-        <p className={styles.sub}>Adicionar ou retirar pontos a um jogador, ou a todos os membros.</p>
+        <p className={styles.sub}>Adicionar ou retirar pontos a um jogador, ou a todos os membros com login no site.</p>
       </div>
 
       <div className={styles.cols}>
@@ -83,7 +83,7 @@ export default function DashPontos() {
         </section>
 
         <section className={styles.panel}>
-          <div className={styles.panelTitle}>Todos os membros</div>
+          <div className={styles.panelTitle}>Todos os membros com login</div>
           <label className={styles.fld}><span>Pontos para cada um</span>
             <input type="number" min="1" value={allAmt} onChange={(e) => { setAllAmt(e.target.value); setAsk(null) }} placeholder="ex: 500" />
           </label>

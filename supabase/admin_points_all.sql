@@ -1,4 +1,4 @@
--- Give (or take) points to EVERYBODY at once. Run in the MAIN project. Safe to run more than once.
+-- Give (or take) points to EVERYBODY WHO HAS LOGGED IN to the site (has a profile) at once; chat-only viewers are left out. Run in the MAIN project. Safe to run more than once.
 -- Balances never go below 0: when taking points, someone with less than the amount simply goes to 0.
 -- Returns how many balances really changed. Every change is logged in point_transactions.
 create or replace function public.admin_add_points_all(p_delta bigint, p_reason text default 'admin_all')
@@ -10,7 +10,10 @@ as $$
 declare n integer;
 begin
   if p_delta is null or p_delta = 0 then return 0; end if;
-  with old as (select username, balance from point_balances),
+  with old as (
+    select b.username, b.balance from point_balances b
+     where exists (select 1 from profiles p where lower(p.twitch_username) = b.username)
+  ),
   upd as (
     update point_balances b
        set balance = greatest(old.balance + p_delta, 0), updated_at = now()
