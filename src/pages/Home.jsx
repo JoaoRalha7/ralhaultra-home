@@ -334,8 +334,8 @@ export default function Home() {
   const loadActivity = useCallback(async () => {
     try {
       const empty = { redeems: [] };
-      const [workerRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
-        fetch(`${SE_WORKER_URL}/redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
+      const [gwRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
+        supabase.from('giveaway_entries').select('twitch_username, tickets, cost_paid, created_at').order('created_at', { ascending: false }).limit(10),
         supabase.rpc('recent_shop_redeems', { lim: 10 }),
         fetch(`${SE_WORKER_URL}/daily-redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
         fetch(`${SE_WORKER_URL}/casino-feed?limit=10`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
@@ -344,11 +344,10 @@ export default function Home() {
         supabaseDash.from('avg_multi_entries').select('twitch_username, cost_paid, created_at, rank, points_awarded, awarded_at').order('created_at', { ascending: false }).limit(10),
       ]);
       const shopData = shopRes.data || [];
-      const minute = (d) => (d ? new Date(d).toISOString().slice(0, 16) : '');
-      const shopKeys = new Set(shopData.map((r) => `${(r.twitch_username || '').toLowerCase()}|${minute(r.created_at)}`));
-      const giveaways = (workerRes.redeems || workerRes.data || [])
-        .filter((it) => !shopKeys.has(`${(it.username || '').toLowerCase()}|${minute(it.created_at)}`))
-        .map((it) => ({ ...it, _type: 'giveaway', action: it.action || it.item }));
+      const giveaways = (gwRes.data || []).map((r) => ({
+        _type: 'giveaway', action: 'Giveaway Participation', username: r.twitch_username,
+        created_at: r.created_at, points: -(r.cost_paid || 0), status: 'ENTERED',
+      }));
       const shop = shopData.map((r) => ({
         _type: 'shop', action: r.shop_products?.name || 'Redeem', username: r.twitch_username,
         created_at: r.created_at, points: -(r.cost_at_redeem || 0), status: r.status,
