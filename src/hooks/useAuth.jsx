@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
       avatar_url: meta.avatar_url || meta.picture || '',
       updated_at: new Date().toISOString(),
     }
-    if (!row.twitch_username) return
+    if (!row.twitch_username) { if (data) setProfile(data); return }
     const { error } = await supabase.from('profiles').upsert(row, { onConflict: 'id' })
     if (!error) setProfile({ ...(data || {}), ...row })
     else if (data) setProfile(data)
