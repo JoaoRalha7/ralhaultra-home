@@ -476,6 +476,21 @@ export default function Slots() {
   const [search,     setSearch]     = useState(() => new URLSearchParams(window.location.search).get('q') || '')
   const [provFilter, setProvFilter] = useState('')
   const [selected,   setSelected]   = useState(null)
+  const [extraHits,  setExtraHits]  = useState([]) // slots found by asking the database directly while searching
+
+  // Safety net: besides the loaded catalogue, ask the database for the longest word typed, so a slot can never be missing
+  useEffect(() => {
+    const term = flat(search).split(' ').sort((a, b) => b.length - a.length)[0]
+    if (!term || term.length < 3) { setExtraHits([]); return }
+    let alive = true
+    const t = setTimeout(async () => {
+      const { data } = await supabaseDash.from('slots')
+        .select('id, name, provider, image_url, rtp, max_win, volatility, release_date, created_at')
+        .ilike('name', `%${term}%`).limit(200)
+      if (alive) setExtraHits(data || [])
+    }, 250)
+    return () => { alive = false; clearTimeout(t) }
+  }, [search])
 
   // Auto-open slot se vier do Stats popover
   useEffect(() => {
@@ -546,12 +561,15 @@ export default function Slots() {
         .from('slots')
         .select('id, name, provider, image_url, rtp, max_win, volatility, release_date, created_at')
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false }) // tie-breaker: many slots share the same created_at, without it pages skip/repeat rows
         .range(from, from + PAGE_SIZE - 1)
       if (error || !batch?.length) { hasMore = false; break }
       allDbSlots = [...allDbSlots, ...batch]
       if (batch.length < PAGE_SIZE) hasMore = false
       else from += PAGE_SIZE
     }
+    const seenIds = new Set()
+    allDbSlots = allDbSlots.filter(x => (seenIds.has(x.id) ? false : (seenIds.add(x.id), true)))
     setAllSlotsDb(allDbSlots)
 
     // Provider list de TODAS as slots
@@ -598,7 +616,9 @@ export default function Slots() {
   // ignores accents / punctuation / word order, and forgives a typo when nothing matches exactly
   const filtered = (search || provFilter)
     ? (() => {
-        const pool = provFilter ? allSlotsDb.filter(s => s.provider === provFilter) : allSlotsDb
+        const seen = new Set(allSlotsDb.map(x => x.id))
+        const merged = [...allSlotsDb, ...extraHits.filter(x => !seen.has(x.id))]
+        const pool = provFilter ? merged.filter(s => s.provider === provFilter) : merged
         const q = flat(search)
         if (!q) return pool
         const toks = q.split(' ')
