@@ -277,6 +277,13 @@ export default function Layout() {
         </header>
 
         {open && <div className="scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
+        <nav className="mnav" aria-label="Main navigation">
+          <button type="button" className={open ? 'on' : ''} aria-expanded={open} onClick={() => setOpen((v) => !v)}><Icon name="menu" /><span>Menu</span></button>
+          <NavLink to="/leaderboard"><Icon name="trophy" /><span>Leaderboard</span></NavLink>
+          <NavLink to="/offers"><Icon name="tag" /><span>Casinos</span></NavLink>
+          <NavLink to="/shop"><Icon name="bag" /><span>Shop</span></NavLink>
+          <NavLink to="/giveaways"><Icon name="gift" /><span>Giveaways</span></NavLink>
+        </nav>
         <aside>
           {NAV_GROUPS.map((group) => (
             <div className="grp" key={group.label}>
