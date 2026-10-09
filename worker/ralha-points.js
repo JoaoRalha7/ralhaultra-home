@@ -598,7 +598,7 @@ export default {
   },
   async fetch(request, env) {
     const origin    = request.headers.get('Origin') || ''
-    const isAllowed = ALLOWED_ORIGINS.includes(origin)
+    const isAllowed = ALLOWED_ORIGINS.includes(origin) || /^https:\/\/([a-z0-9-]+\.)+pages\.dev$/.test(origin) // pages.dev = Cloudflare preview deployments; remove this after launch if previews are no longer used
 
     const corsHeaders = {
       'Access-Control-Allow-Origin': isAllowed ? origin : 'https://jralha.com',
