@@ -13,19 +13,30 @@ export function AuthProvider({ children }) {
     return false
   })
 
-  async function fetchProfile(userId) {
+  async function fetchProfile(userId, u) {
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
-    if (data) setProfile(data)
+      .maybeSingle()
+    if (data) { setProfile(data); return }
+    // logged in but no profile row (the callback's one-shot insert can fail): create it now from the Twitch data
+    const meta = u?.user_metadata || {}
+    const row = {
+      id: userId,
+      twitch_username: meta.name || meta.preferred_username || meta.full_name || '',
+      avatar_url: meta.avatar_url || meta.picture || '',
+      updated_at: new Date().toISOString(),
+    }
+    if (!row.twitch_username) return
+    const { error } = await supabase.from('profiles').upsert(row, { onConflict: 'id' })
+    if (!error) setProfile(row)
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) fetchProfile(session.user.id, session.user)
       setLoading(false)
     })
 
@@ -33,7 +44,7 @@ export function AuthProvider({ children }) {
       async (_event, session) => {
         setUser(session?.user ?? null)
         if (session?.user) {
-          fetchProfile(session.user.id)
+          fetchProfile(session.user.id, session.user)
         } else {
           setProfile(null)
         }
