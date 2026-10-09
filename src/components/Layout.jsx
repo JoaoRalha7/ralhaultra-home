@@ -15,7 +15,6 @@ import UserMenu from './UserMenu';
 import RewardsPanel from './RewardsModal';
 import { workerGet } from '../lib/vip';
 import LiveVotePopup from './LiveVotePopup';
-import JackpotToasts from './JackpotToasts';
 import { useAuth } from '../hooks/useAuth';
 import { useStreamElementsPoints } from '../hooks/useStreamElementsPoints';
 import { supabase, supabaseDash } from '../lib/supabase';
@@ -324,7 +323,6 @@ export default function Layout() {
         </main>
       </div>
 
-      <JackpotToasts me={(profile?.twitch_username || '').toLowerCase()} active={!!user && location.pathname !== '/jackpot'} />
       {votePop && live.length > 0 && <LiveVotePopup games={live} onGo={goVote} onClose={closeVote} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       <RewardsPanel open={rewardsOpen} onClose={() => setRewardsOpen(false)} />

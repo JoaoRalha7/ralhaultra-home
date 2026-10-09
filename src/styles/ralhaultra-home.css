@@ -977,22 +977,3 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 .oc2>.oActions .oClaim{height:44px}
 .oc2>.oActions .oMore{width:44px;height:44px}
 
-/* Jackpot join notifications (site-wide) */
-.jtStack{position:fixed;right:16px;top:72px;z-index:850;display:grid;gap:10px;width:min(340px,calc(100vw - 32px));pointer-events:none}
-.jt{pointer-events:auto;position:relative;overflow:hidden;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px 14px 14px;border-radius:16px;background:linear-gradient(90deg,#f973161f,#0d1119 60%);border:1px solid #f9731666;box-shadow:0 18px 40px -18px #000;animation:jtIn .35s cubic-bezier(.2,.9,.3,1) both}
-.jt:before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:#f97316}
-@keyframes jtIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
-.jtAv{position:relative;width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#3b82f6;border:2px solid #f97316;font-weight:800;color:#fff}
-.jtAv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.jtTxt{min-width:0}
-.jtK{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#f97316}
-.jtN{margin-top:2px;font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jtN span{color:#9aa4ba;font-weight:500}
-.jtS{margin-top:2px;font-size:12px;color:#8d96ab}
-.jtS b{color:#fbbf24}
-.jtGo{padding:8px 14px;border:0;border-radius:10px;background:#f97316;color:#1a0d02;font-weight:800;font-size:12px;letter-spacing:.04em;cursor:pointer}
-.jtGo:hover{filter:brightness(1.08)}
-.jtBar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:#f97316;transform-origin:left;animation:jtLife 6s linear forwards}
-@keyframes jtLife{to{transform:scaleX(0)}}
-@media (max-width:700px){.jtStack{top:64px;right:12px}}
-@media (prefers-reduced-motion:reduce){.jt{animation:none}}
