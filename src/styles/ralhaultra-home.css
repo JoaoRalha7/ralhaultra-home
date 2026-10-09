@@ -935,7 +935,9 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 
 /* live stream playing behind the hero card */
 .hc.a .liveBg{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;container-type:size;pointer-events:none;background:#0b0f1a}
-.hc.a .liveBg iframe{position:absolute;left:50%;top:50%;width:max(100cqw,177.78cqh);height:max(56.25cqw,100cqh);transform:translate(-50%,-50%);border:0;pointer-events:none;opacity:0;animation:liveIn .8s .6s ease forwards}
+.hc.a .liveBg iframe{position:absolute;left:50%;top:50%;width:max(100cqw,177.78cqh);height:max(56.25cqw,100cqh);transform:translate(-50%,-50%);border:0;pointer-events:none;opacity:0}
+.hc.a .liveBg .liveHost{position:absolute;inset:0}
+.hc.a .liveBg.playing iframe{animation:liveIn .8s ease forwards}
 .hc.a .liveBg:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0d1424f2 0%,#101a2ecc 42%,#2563eb59 100%),linear-gradient(0deg,#0d1424cc,transparent 55%)}
 .hc.a.hasStream>*:not(.liveBg){position:relative;z-index:1}
 @keyframes liveIn{to{opacity:1}}

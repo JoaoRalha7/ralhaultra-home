@@ -116,6 +116,38 @@ function Coverflow({ label, items, fallback, onPlay }) {
   );
 }
 
+// Live stream behind the hero: only shown once Twitch is really playing (hides the mature-content gate).
+function LiveBg() {
+  const host = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    let dead = false;
+    let player = null;
+    const start = () => {
+      if (dead || !host.current || !window.Twitch?.Player) return;
+      player = new window.Twitch.Player(host.current, {
+        channel: 'jralha_', parent: [window.location.hostname], muted: true, autoplay: true, controls: false, width: '100%', height: '100%',
+      });
+      player.addEventListener(window.Twitch.Player.PLAYING, () => { if (!dead) setPlaying(true); });
+      player.addEventListener(window.Twitch.Player.OFFLINE, () => { if (!dead) setPlaying(false); });
+    };
+    if (window.Twitch?.Player) start();
+    else {
+      let sc = document.querySelector('script[data-twitch-embed]');
+      if (!sc) {
+        sc = document.createElement('script');
+        sc.src = 'https://embed.twitch.tv/embed/v1.js';
+        sc.async = true;
+        sc.dataset.twitchEmbed = '1';
+        document.head.appendChild(sc);
+      }
+      sc.addEventListener('load', start);
+    }
+    return () => { dead = true; };
+  }, []);
+  return <div className={`liveBg${playing ? ' playing' : ''}`} aria-hidden="true"><div ref={host} className="liveHost" /></div>;
+}
+
 function cleanAction(it) {
   if (it._type === 'daily') {
     const raw = (it.action || '').replace(/\s*[–—-].+$/, '').trim();
@@ -422,10 +454,7 @@ export default function Home() {
       <section className="hero" aria-label="Featured">
         <article className={`hc a${showStream ? ' hasStream' : ''}`}>
           {showStream && (
-            <div className="liveBg" aria-hidden="true">
-              <iframe title="Live stream" tabIndex={-1} loading="lazy" allow="autoplay"
-                src={`https://player.twitch.tv/?channel=jralha_&parent=${window.location.hostname}&muted=true&autoplay=true&controls=false&quality=480p30`} />
-            </div>
+            <LiveBg />
           )}
           <h2>Ralha Community House</h2>
           <p>Bonus hunts, giveaways and slots, almost every day. Come hang out.</p>
