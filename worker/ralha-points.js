@@ -1900,7 +1900,7 @@ export default {
           get(`casino_games?username=ilike.${u}&status=eq.done&select=game,bet,payout,updated_at&order=updated_at.desc&limit=5000`),
           get(`crash_bets?username=ilike.${u}&select=bet,cashed_at,created_at&order=created_at.desc&limit=5000`),
           get(`shop_redeems?twitch_username=ilike.${u}&select=cost_at_redeem,created_at,status,shop_products(name)&order=created_at.desc&limit=100`),
-          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.vip_levelup*,reason.like.daily*,reason.like.admin*,reason.eq.se_import)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
+          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.vip_levelup*,reason.like.daily*,reason.like.admin*,reason.like.chat*,reason.eq.se_import)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
           get(`point_transactions?username=eq.${u}&reason=eq.watchtime&select=delta,created_at&order=created_at.desc&limit=5000`),
         ])
         let wins = 0, losses = 0
@@ -1920,7 +1920,7 @@ export default {
           const rs = String(t.reason)
           const note = rs.includes(':') ? rs.slice(rs.indexOf(':') + 1).trim() : ''
           const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : rs.startsWith('vip_levelup') ? 'Level-up reward'
-            : rs.startsWith('admin') ? (note && note !== 'admin_all' ? `Bonus: ${note}` : 'Bonus from Ralha') : rs === 'se_import' ? 'Imported from StreamElements' : 'Daily reward'
+            : rs.startsWith('chat') ? (note ? `Stream Points: ${note}` : 'Stream Points') : rs.startsWith('admin') ? (note && note !== 'admin_all' && note !== 'admin' ? `Bonus: ${note}` : 'Bonus from Ralha') : rs === 'se_import' ? 'Imported from StreamElements' : 'Daily reward'
           const v = Number(t.delta) || 0
           acts.push({ kind: 'rewards', title, at: t.created_at, value: v, status: v < 0 ? 'ADJUSTED' : 'AWARDED' })
         }

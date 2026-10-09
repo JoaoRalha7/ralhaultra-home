@@ -148,11 +148,11 @@ async function main() {
       if (who.toLowerCase() === 'all') {
         // only the people in the chat right now (the dashboard tab "Pontos" is the one that reaches every member)
         const here = (await getChatters()).map((c) => c.userName.toLowerCase())
-        const { data, error } = await sb.rpc('admin_add_points_users', { p_users: here, p_delta: n, p_reason: 'admin_all:' + (note || 'admin_all') })
+        const { data, error } = await sb.rpc('admin_add_points_users', { p_users: here, p_delta: n, p_reason: note ? 'chat:' + note : 'chat' })
         await chat.say(channel, error ? `@${user} erro: ${error.message}` : `${n > 0 ? 'Foram dados' : 'Foram retirados'} ${fmt(Math.abs(n))} pontos a ${fmt(Number(data ?? 0))} pessoas no chat!`)
       } else {
         const target = who.replace(/^@/, '').toLowerCase()
-        const { data, error } = await sb.rpc('add_points', { p_username: target, p_delta: n, p_reason: 'admin:' + (note || 'admin') })
+        const { data, error } = await sb.rpc('add_points', { p_username: target, p_delta: n, p_reason: note ? 'chat:' + note : 'chat' })
         await chat.say(channel, error ? `@${user} erro: ${error.message}` : `${target}: ${n > 0 ? '+' : ''}${fmt(n)} pontos (saldo ${fmt(Number(data ?? 0))}).`)
       }
     } else if (cmd === 'top') {
