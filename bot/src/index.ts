@@ -73,24 +73,6 @@ async function main() {
       let msg = `@${user} nível ${cur?.name ?? 'Member'} | ${fmt(Number(me?.wagered_total ?? 0))} apostados | ${hrs}h de stream`
       if (next) msg += ` | próximo: ${next.name} (${fmt(Number(next.min_wagered))} apostados e ${next.min_watch_hours}h)`
       await chat.say(channel, msg)
-    } else if (cmd === 'addpoints' || cmd === 'addpontos') {
-      // mods and broadcaster only:  !addpoints all 500 [motivo]   |   !addpoints nome 500 [motivo]  (negative takes away)
-      if (!msg.userInfo.isBroadcaster && !msg.userInfo.isMod) return
-      const [, who, amt, ...rest] = text.trim().split(/\s+/)
-      const n = Math.trunc(Number(amt))
-      if (!who || !Number.isFinite(n) || n === 0 || Math.abs(n) > 1_000_000) {
-        await chat.say(channel, `@${user} uso: !addpoints all|nome quantia [motivo]`)
-        return
-      }
-      const note = rest.join(' ').slice(0, 50)
-      if (who.toLowerCase() === 'all') {
-        const { data, error } = await sb.rpc('admin_add_points_all', { p_delta: n, p_reason: 'admin_all:' + (note || 'admin_all') })
-        await chat.say(channel, error ? `@${user} erro: ${error.message}` : `${n > 0 ? 'Foram dados' : 'Foram retirados'} ${fmt(Math.abs(n))} pontos a ${fmt(Number(data ?? 0))} pessoas!`)
-      } else {
-        const target = who.replace(/^@/, '').toLowerCase()
-        const { data, error } = await sb.rpc('add_points', { p_username: target, p_delta: n, p_reason: 'admin:' + (note || 'admin') })
-        await chat.say(channel, error ? `@${user} erro: ${error.message}` : `${target}: ${n > 0 ? '+' : ''}${fmt(n)} pontos (saldo ${fmt(Number(data ?? 0))}).`)
-      }
     } else if (cmd === 'top') {
       const { data } = await sb.from('point_balances').select('username,balance').order('balance', { ascending: false }).limit(5)
       const line = (data ?? []).map((r, i) => `${i + 1}. ${r.username} (${fmt(Number(r.balance))})`).join(' | ')
