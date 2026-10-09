@@ -952,3 +952,8 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
   .oc2>.oSpacer{display:none}
   .oc2>.oActions{grid-row:7;width:100%;align-self:end}
 }
+.oc2>.oCode{margin-top:12px;min-height:48px}
+.oc2>.oActions{margin-top:14px;align-items:center}
+.oc2>.oActions .oClaim{margin:0 !important;height:48px}
+.oc2>.oActions .oMore{width:48px;height:48px}
+.oc2>.oSpacer{display:none}
