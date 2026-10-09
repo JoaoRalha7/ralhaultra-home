@@ -82,7 +82,7 @@ const OVERLAYS = [
   {
     key:     'chatboxWide',
     label:   'Chat Wide + Giveaway',
-    sub:     'Chat largo (450px) com texto grande e sorteio',
+    sub:     'Chat largo (600px) com texto grande e sorteio',
     url:     `${BASE_URL}/overlay/chatbox?layout=wide`,
     accent:  'amber',
     icon: (

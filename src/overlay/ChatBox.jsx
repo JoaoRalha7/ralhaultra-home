@@ -274,7 +274,7 @@ function Roulette({ participants, onDone }) {
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const WIDE = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('layout') === 'wide'
-const BASE_W = WIDE ? 450 : 290
+const BASE_W = WIDE ? 600 : 290
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Sora:wght@700;800&display=swap');
@@ -309,12 +309,12 @@ html, body { background: transparent !important; overflow: hidden; width: 100%; 
 .line-yellow { width: 3px; height: 14px; background: #fbbf24; border-radius: 2px; }
 
 /* ── wide variant (?layout=wide) ── */
-.sidebar.wide { width: 450px; }
+.sidebar.wide { width: 600px; }
 .sidebar.wide .chat-header, .sidebar.wide .events-section { display: none; }
 .sidebar.wide .chat-msgs { padding: 14px 0; }
-.sidebar.wide .msg { padding: 5px 20px; font-size: 19px; line-height: 1.45; }
-.sidebar.wide .msg-badge { width: 22px; height: 22px; }
-.sidebar.wide .emote { height: 28px; width: auto; }
+.sidebar.wide .msg { padding: 6px 24px; font-size: 22px; line-height: 1.45; }
+.sidebar.wide .msg-badge { width: 26px; height: 26px; }
+.sidebar.wide .emote { height: 32px; width: auto; }
 
 /* ── chat ── */
 .chat-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
