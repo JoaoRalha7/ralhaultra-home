@@ -98,7 +98,7 @@ export default function DashPontos() {
             </div>
           ) : (
             <div className={styles.confirm}>
-              <p>{ask.sign > 0 ? 'Dar' : 'Retirar'} <b>{fmt(nAll)}</b> pts {ask.sign > 0 ? 'a' : 'de'} <b>todos</b> os membros? Isto não se desfaz com um clique.</p>
+              <p>{ask.sign > 0 ? 'Dar' : 'Retirar'} <b>{fmt(nAll)}</b> pts {ask.sign > 0 ? 'a' : 'de'} <b>todos</b> os membros com login no site? Isto não se desfaz com um clique.</p>
               <div className={styles.two}>
                 <button type="button" className={styles.cancel} onClick={() => setAsk(null)} disabled={allBusy}>Cancelar</button>
                 <button type="button" className={ask.sign > 0 ? styles.add : styles.sub2} onClick={applyAll} disabled={allBusy}>{allBusy ? 'A aplicar…' : 'Confirmar'}</button>
