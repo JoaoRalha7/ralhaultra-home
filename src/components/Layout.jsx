@@ -226,7 +226,7 @@ export default function Layout() {
     const seenIds = () => { try { return JSON.parse(localStorage.getItem('ru-gw-seen') || '[]'); } catch { return []; } };
     const load = async () => {
       if (document.visibilityState !== 'visible') return;
-      const { data } = await supabase.from('giveaways').select('id, title, prize, winner, ends_at').not('winner', 'is', null).order('ends_at', { ascending: false }).limit(30);
+      const { data } = await supabase.from('giveaways').select('id, title, prize, prize_points, winner, ends_at').not('winner', 'is', null).order('ends_at', { ascending: false }).limit(30);
       if (off) return;
       const seen = seenIds();
       const cut = Date.now() - 30 * 86400000;
@@ -278,7 +278,7 @@ export default function Layout() {
                       )}
                       {wins.map((g) => (
                         <Link key={g.id} to="/giveaways" className="dropItem winItem" onClick={() => openWin(g)}>
-                          <span>You won: {g.prize || g.title}<small>Open ticket on discord to redeem!</small></span><span className="chip">Winner</span>
+                          <span>You won: {g.prize || g.title}<small>{Number(g.prize_points) > 0 ? 'Points were added to your balance.' : 'Open ticket on discord to redeem!'}</small></span><span className="chip">Winner</span>
                         </Link>
                       ))}
                       {claimable.map((l) => (
