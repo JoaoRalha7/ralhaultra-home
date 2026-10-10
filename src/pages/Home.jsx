@@ -366,8 +366,9 @@ export default function Home() {
   const loadActivity = useCallback(async () => {
     try {
       const empty = { redeems: [] };
-      const [gwRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
+      const [gwRes, voucherRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
         supabase.from('giveaway_entries').select('twitch_username, tickets, cost_paid, created_at').order('created_at', { ascending: false }).limit(10),
+        supabase.rpc('recent_voucher_redeems', { lim: 10 }),
         supabase.rpc('recent_shop_redeems', { lim: 10 }),
         fetch(`${SE_WORKER_URL}/daily-redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
         fetch(`${SE_WORKER_URL}/casino-feed?limit=10`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
@@ -379,6 +380,10 @@ export default function Home() {
       const giveaways = (gwRes.data || []).map((r) => ({
         _type: 'giveaway', action: 'Giveaway Participation', username: r.twitch_username,
         created_at: r.created_at, points: -(r.cost_paid || 0), status: 'ENTERED',
+      }));
+      const vouchers = (Array.isArray(voucherRes.data) ? voucherRes.data : []).map((r) => ({
+        _type: 'voucher', action: 'Voucher Redeem', username: r.username,
+        created_at: r.created_at, points: r.points || 0, status: 'AWARDED',
       }));
       const shop = shopData.map((r) => ({
         _type: 'shop', action: r.shop_products?.name || 'Redeem', username: r.twitch_username,
@@ -398,7 +403,7 @@ export default function Home() {
       const byDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
       applyActivity({
         shop: shop.sort(byDate).slice(0, 7),
-        giveaways: giveaways.sort(byDate).slice(0, 7),
+        giveaways: [...giveaways, ...vouchers].sort(byDate).slice(0, 7),
         games: games.sort(byDate).slice(0, 7),
       });
     } catch (e) {
