@@ -137,3 +137,7 @@
 @media (max-width:760px){.top{grid-template-columns:1fr}.topSide{min-width:0}}
 @media (max-width:520px){.card{display:flex}}
 .card{height:100%}
+
+/* card image: show it whole (no cropping), centered under the tags */
+.art{height:176px}
+.art img{object-fit:contain;padding:40px 18px 12px;filter:drop-shadow(0 12px 18px #0009)}
