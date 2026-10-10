@@ -26,6 +26,9 @@ const VIDEO_FALLBACK = [
   { id: 'f4', title: 'New record in Portugal', tone: 'v5' },
 ];
 
+// The featured offer popup is shown once per site visit (a reload or reopening the site shows it again).
+let featuredDismissed = false;
+
 const DAILY_LABELS = { wheel: 'Daily Wheel', 'daily wheel': 'Daily Wheel', claim: 'Daily Claim', 'daily claim': 'Daily Claim' };
 
 // The Top points box next to Latest Streams / Clips (set to true to bring it back).
@@ -306,7 +309,7 @@ export default function Home() {
   // Featured offer popup, shown every time Home loads
   useEffect(() => {
     supabase.from('casinos').select('*').eq('is_active', true).eq('is_featured', true).limit(1).maybeSingle()
-      .then(({ data }) => { if (data) { setFeaturedCasino(data); setShowFeatured(true); } })
+      .then(({ data }) => { if (data) { setFeaturedCasino(data); if (!featuredDismissed) setShowFeatured(true); } })
       .catch(() => {});
   }, []);
 
@@ -598,7 +601,7 @@ export default function Home() {
         <InfoModal casino={selectedCasino} methodsBySlug={methodsBySlug} onClose={() => setSelectedCasino(null)} onRedirect={handleRedirect} />
       )}
       {showFeatured && featuredCasino && (
-        <FeaturedOfferModal casino={featuredCasino} onClose={() => setShowFeatured(false)} onRedirect={handleRedirect} />
+        <FeaturedOfferModal casino={featuredCasino} onClose={() => { featuredDismissed = true; setShowFeatured(false); }} onRedirect={handleRedirect} />
       )}
       {redirect && <RedirectModal url={redirect.url} promo={redirect.promo} onClose={() => setRedirect(null)} />}
       {player && <TwitchPlayerModal type={player.type} id={player.id} title={player.title} meta={player.meta} onClose={() => setPlayer(null)} />}
