@@ -217,7 +217,32 @@ export default function Layout() {
     navigate('/bonus-hunts', { state: { huntId: g.huntId, view: g.view } });
   };
 
-  const notifCount = live.length + claimable.length + (user && dailyReady ? 1 : 0);
+  // Giveaway wins: the winner sees it in the bell until they open it.
+  const meName = (profile?.twitch_username || '').toLowerCase();
+  const [wins, setWins] = useState([]);
+  useEffect(() => {
+    if (!user || !meName) { setWins([]); return undefined; }
+    let off = false;
+    const seenIds = () => { try { return JSON.parse(localStorage.getItem('ru-gw-seen') || '[]'); } catch { return []; } };
+    const load = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const { data } = await supabase.from('giveaways').select('id, title, prize, winner, ends_at').not('winner', 'is', null).order('ends_at', { ascending: false }).limit(30);
+      if (off) return;
+      const seen = seenIds();
+      const cut = Date.now() - 30 * 86400000;
+      setWins((data || []).filter((g) => String(g.winner).toLowerCase() === meName && !seen.includes(g.id) && new Date(g.ends_at).getTime() > cut));
+    };
+    load();
+    const t = setInterval(load, 90000);
+    return () => { off = true; clearInterval(t); };
+  }, [user, meName]);
+  const openWin = (g) => {
+    try { localStorage.setItem('ru-gw-seen', JSON.stringify([...JSON.parse(localStorage.getItem('ru-gw-seen') || '[]'), g.id].slice(-50))); } catch { /* storage unavailable */ }
+    setWins((l) => l.filter((x) => x.id !== g.id));
+    setBellOpen(false);
+  };
+
+  const notifCount = live.length + claimable.length + wins.length + (user && dailyReady ? 1 : 0);
 
   return (
     <>
@@ -251,6 +276,11 @@ export default function Layout() {
                       {user && dailyReady && (
                         <button type="button" className="dropItem" onClick={() => { setBellOpen(false); setDailyOpen(true); }}>Daily reward ready<span className="chip">Claim</span></button>
                       )}
+                      {wins.map((g) => (
+                        <Link key={g.id} to="/giveaways" className="dropItem winItem" onClick={() => openWin(g)}>
+                          <span>You won: {g.prize || g.title}<small>Open ticket on discord to redeem!</small></span><span className="chip">Winner</span>
+                        </Link>
+                      ))}
                       {claimable.map((l) => (
                         <button type="button" key={l.level} className="dropItem" onClick={() => { setBellOpen(false); setRewardsOpen(true); }}>Rank reward: {l.name}<span className="chip">+{Number(l.levelup_reward).toLocaleString('en-US')}</span></button>
                       ))}
