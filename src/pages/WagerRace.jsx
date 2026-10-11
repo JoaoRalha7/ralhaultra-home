@@ -13,6 +13,7 @@ const PRIZES = {
   monthly: { label: 'Monthly', reset: 'Resets on the 1st at 00:00', ladder: [125000, 62500, 25000, 12500, 6250], rest: 1875, restFrom: 6, restTo: 10 },
 }
 const PERIODS = ['daily', 'weekly', 'monthly']
+const PAGE_SIZE = 20, MAX_ROWS = 100 // the ranking shows the top 100, 20 per page
 const RANK_COLOR = ['#f5c542', '#b8c0d0', '#cd7f4f']
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 const prizeFor = (period, rank) => {
@@ -33,12 +34,13 @@ export default function WagerRace() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(false)
   const [now, setNow] = useState(Date.now())
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     let off = false
-    setData(null); setError(false)
+    setData(null); setError(false); setPage(1)
     const load = async () => {
-      const { data: d, error: e } = await supabase.rpc('wager_race', { p_period: period, p_limit: 20, p_user: me })
+      const { data: d, error: e } = await supabase.rpc('wager_race', { p_period: period, p_limit: MAX_ROWS, p_user: me })
       if (off) return
       if (e || !d) { setError(true); return }
       setError(false); setData(d)
@@ -51,10 +53,12 @@ export default function WagerRace() {
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id) }, [])
 
   const rows = data?.rows || []
-  const avmap = useAvatars(rows.map((r) => r.username).concat(data?.me ? [data.me.username] : []))
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const avmap = useAvatars(pageRows.map((r) => r.username).concat(data?.me ? [data.me.username] : []))
   const top = Number(rows[0]?.wagered) || 1
   const mine = data?.me
-  const inList = mine && rows.some((r) => r.username === mine.username)
+  const inList = mine && pageRows.some((r) => r.username === mine.username)
   const ahead = mine && mine.rank > 1 ? rows.find((r) => r.rank === mine.rank - 1) : null
   const t = data ? parts(new Date(data.ends_at).getTime() - now) : null
   const cfg = PRIZES[period]
@@ -89,8 +93,15 @@ export default function WagerRace() {
           {error && <div className={styles.empty}>Could not load the ranking. Try again in a moment.</div>}
           {!error && !data && <div className={styles.empty}>Loading...</div>}
           {data && !rows.length && <div className={styles.empty}>No bets yet in this period. Be the first to wager!</div>}
-          {rows.map((r) => <Row key={r.username} r={r} />)}
+          {pageRows.map((r) => <Row key={r.username} r={r} />)}
           {data && mine && !inList && (<><div className={styles.gap}>...</div><Row r={mine} /></>)}
+          {pages > 1 && (
+            <div className={styles.pagination}>
+              <button type="button" className={styles.pageBtn} onClick={() => setPage((x) => Math.max(1, x - 1))} disabled={page === 1} aria-label="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg></button>
+              {Array.from({ length: pages }, (_, i) => i + 1).map((n) => <button key={n} type="button" className={`${styles.pageBtn} ${n === page ? styles.pageBtnActive : ''}`} onClick={() => setPage(n)}>{n}</button>)}
+              <button type="button" className={styles.pageBtn} onClick={() => setPage((x) => Math.min(pages, x + 1))} disabled={page === pages} aria-label="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg></button>
+            </div>
+          )}
           <p className={styles.note}>Counts every point wagered on Originals (Mines, Blackjack, Keno, Plinko, Roulette, Crash and Jackpot), win or lose. Prizes are paid in points after each period ends. Updated every minute.</p>
         </div>
 

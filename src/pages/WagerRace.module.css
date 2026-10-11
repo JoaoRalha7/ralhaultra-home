@@ -47,3 +47,8 @@
 .mePrz>span{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px}
 .mePrz b,.meHint b,.kv b{line-height:1}
 .mePrz .coin,.meHint .coin,.kv .coin{margin:0;vertical-align:baseline}
+.pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px;flex-wrap:wrap}
+.pageBtn{min-width:38px;height:38px;padding:0 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--mute);font:700 13px "DM Sans",sans-serif;cursor:pointer;display:grid;place-items:center}
+.pageBtn:hover:not(:disabled){background:#17305f;border-color:var(--acc);color:#fff}
+.pageBtn:disabled{opacity:.3;cursor:default}
+.pageBtnActive{background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important}
