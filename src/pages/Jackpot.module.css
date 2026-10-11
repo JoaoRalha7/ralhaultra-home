@@ -59,3 +59,31 @@
 
 
 @keyframes popIn { from { opacity: 0; transform: translateX(-50%) scale(.7); } }
+
+/* View switch + horizontal (CS-style) strip */
+.viewSw { position: absolute; top: 14px; right: 16px; z-index: 5; display: flex; gap: 3px; padding: 3px; border-radius: 999px; background: #0a0c11; border: 1px solid #1c2029; }
+.viewSw button { height: 28px; padding: 0 12px; border-radius: 999px; border: 0; background: transparent; color: #8b92a5; font: 700 12px "DM Sans", sans-serif; cursor: pointer; }
+.viewSw button.on { background: #232733; color: #fff; }
+.hz { width: 100%; margin: auto 0; display: flex; flex-direction: column; gap: 14px; }
+.hzHead { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding-top: 26px; }
+.hzHead small { display: block; font: 700 11px "DM Sans", sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #8b92a5; }
+.hzPot { display: inline-flex; align-items: center; gap: 8px; font: 800 34px "Bricolage Grotesque", sans-serif; color: #fbbf24; }
+.hzRight { text-align: right; color: #8b92a5; font-size: 12px; }
+.hzClock { display: block; font: 800 34px "Bricolage Grotesque", sans-serif; color: #fff; }
+.hzHot { color: #fb7185; }
+.hzWinner { display: block; font: 800 24px "Bricolage Grotesque", sans-serif; color: #fff; }
+.hzReel { position: relative; height: 128px; overflow: hidden; border-radius: 16px; background: #07090e; border: 1px solid #1c2029; padding: 6px; }
+.hzReel::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, #07090e, transparent 9%, transparent 91%, #07090e); }
+.hzMark { position: absolute; z-index: 4; left: 50%; top: 0; bottom: 0; width: 3px; transform: translateX(-50%); background: #fbbf24; box-shadow: 0 0 16px #fbbf24; }
+.hzMark::before { content: ""; position: absolute; top: 0; left: -6px; border: 7px solid transparent; border-top-color: #fbbf24; }
+.hzRow { display: flex; gap: 4px; height: 100%; will-change: transform; }
+.hzTile { position: relative; flex: none; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 0 4px; border-radius: 11px; overflow: hidden; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 34%, #0b0f17), color-mix(in srgb, var(--c) 14%, #0b0f17)); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); transition: opacity .4s, box-shadow .4s; }
+.hzTile::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--c); }
+.hzTile b { max-width: 100%; padding: 0 4px; font: 700 12px "DM Sans", sans-serif; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hzTile small { font: 700 11px "DM Sans", sans-serif; color: #dbe2f0; }
+.hzDim { opacity: .35; }
+.hzWin { box-shadow: 0 0 0 2px #fbbf24, 0 0 28px -4px #fbbf24; }
+.hzEmpty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #64708a; font-size: 13px; }
+.hzProg { height: 4px; border-radius: 99px; background: #11151e; overflow: hidden; }
+.hzProg i { display: block; height: 100%; background: linear-gradient(90deg, #f97316, #fbbf24); transition: width .25s linear; }
+@media (max-width: 700px) { .hzPot, .hzClock { font-size: 26px; } .hzReel { height: 108px; } .viewSw { top: 10px; right: 10px; } }

@@ -87,6 +87,80 @@ function Wheel({ players, pot, rot, ms, avatars, progress, mode, winIdx, childre
   )
 }
 
+
+const STRIP_K = 9      // copies of the pot laid side by side
+const STRIP_TARGET = 6 // copy the strip stops on
+const MIN_TILE = 52
+const GAP = 4
+
+// Horizontal view: tiles as wide as each player's chance, repeated, stopping on the drawn ticket.
+function Strip({ players, pot, avatars, mode, winIdx, settled, ms, ticket, progress, header }) {
+  const box = useRef(null)
+  const [W, setW] = useState(0)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return undefined
+    const set = () => setW(el.clientWidth)
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const n = players.length
+  const base = Math.max(W - 12 - GAP * n, 200)
+  const tiles = players.map((p) => ({ w: Math.max((p.amount / (pot || 1)) * base, MIN_TILE) }))
+  // tiny players are widened to MIN_TILE: take that space back from the big ones so one pot fits the view
+  const over = tiles.reduce((a, t) => a + t.w, 0) - base
+  if (over > 0) {
+    const big = tiles.filter((t) => t.w > MIN_TILE)
+    const room = big.reduce((a, t) => a + (t.w - MIN_TILE), 0)
+    if (room > 0) big.forEach((t) => { t.w -= Math.min(over, room) * ((t.w - MIN_TILE) / room) })
+  }
+  let x = 0
+  tiles.forEach((t) => { t.left = x; x += t.w + GAP })
+  const Wc = x || 1
+
+  let tx = (W - Wc) / 2 - 3 * Wc
+  if (settled && ticket != null && winIdx >= 0 && tiles[winIdx]) {
+    let cum = 0
+    for (let i = 0; i < winIdx; i++) cum += players[i].amount
+    const share = players[winIdx].amount / (pot || 1)
+    const frac = Math.max(0.03, Math.min(0.97, share ? (ticket - cum / pot) / share : 0.5))
+    tx = -(STRIP_TARGET * Wc + tiles[winIdx].left + frac * tiles[winIdx].w - W / 2)
+  }
+
+  return (
+    <div className={J.hz}>
+      <div className={J.hzHead}>{header}</div>
+      <div className={J.hzReel} ref={box}>
+        <i className={J.hzMark} aria-hidden="true" />
+        {n === 0 ? (
+          <p className={J.hzEmpty}>Nobody has joined yet. Be the first.</p>
+        ) : (
+          <div className={J.hzRow} style={{ transform: `translateX(${tx}px)`, transition: settled && ms ? `transform ${ms}ms cubic-bezier(.1,.6,.08,1)` : 'none' }}>
+            {Array.from({ length: STRIP_K }, (_, k) => players.map((p, i) => {
+              const url = avatars?.[p.u.toLowerCase()]
+              const c = colorOf(i)
+              const dim = mode === 'result' && !(k === STRIP_TARGET && i === winIdx)
+              const win = mode === 'result' && k === STRIP_TARGET && i === winIdx
+              const wide = tiles[i].w >= 76
+              return (
+                <div key={`${k}-${p.u}`} className={`${J.hzTile} ${dim ? J.hzDim : ''} ${win ? J.hzWin : ''}`} style={{ width: tiles[i].w, '--c': c }} title={`${p.u} - ${fmt(p.amount)} pts (${fmtPct(pctOf(p.amount, pot))})`}>
+                  <UserAv name={p.u} src={url} size={wide ? 38 : 30} ring={c} />
+                  {wide && <b>{p.u}</b>}
+                  <small>{fmtPct(pctOf(p.amount, pot))}</small>
+                </div>
+              )
+            }))}
+          </div>
+        )}
+      </div>
+      <div className={J.hzProg} aria-hidden="true"><i style={{ width: `${mode === 'counting' ? Math.max(0, Math.min(1, progress)) * 100 : 0}%` }} /></div>
+    </div>
+  )
+}
+
 export default function Jackpot() {
   const g = useCasino('jackpot')
   const [amount, setAmount] = useState(100)
@@ -98,6 +172,8 @@ export default function Jackpot() {
   const [busy, setBusy] = useState(false)
   const [wheel, setWheel] = useState({ seq: 0, rot: 0, ms: 0 })
   const [shown, setShown] = useState(null) // seq whose result banner is visible
+  const [view, setView] = useState(() => { try { return localStorage.getItem('jp-view') === 'strip' ? 'strip' : 'wheel' } catch { return 'wheel' } })
+  const pickView = (v) => { setView(v); try { localStorage.setItem('jp-view', v) } catch { /* storage unavailable */ } }
   const R = useRef({})
   const spun = useRef(0)
   const me = (g.twitchUser || '').toLowerCase()
@@ -240,7 +316,32 @@ export default function Jackpot() {
         </aside>
 
         <section className={`${styles.stage} ${styles.jpStage}`}>
-          <Wheel players={players} pot={pot} avatars={avs} progress={left != null && cfg ? left / cfg.roundMs : 0} mode={phase === 'result' ? 'result' : phase} winIdx={winIdx} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
+          <div className={J.viewSw} role="tablist" aria-label="Jackpot view">
+            <button type="button" role="tab" aria-selected={view === 'wheel'} className={view === 'wheel' ? J.on : ''} onClick={() => pickView('wheel')}>Wheel</button>
+            <button type="button" role="tab" aria-selected={view === 'strip'} className={view === 'strip' ? J.on : ''} onClick={() => pickView('strip')}>Horizontal</button>
+          </div>
+          {view === 'wheel' ? (
+            <Wheel players={players} pot={pot} avatars={avs} progress={left != null && cfg ? left / cfg.roundMs : 0} mode={phase === 'result' ? 'result' : phase} winIdx={winIdx} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
+          ) : (
+            <Strip
+              players={players} pot={pot} avatars={avs} mode={phase === 'result' ? 'result' : phase}
+              winIdx={r?.done && r.winner ? players.findIndex((p) => p.u === r.winner.u) : -1}
+              settled={!!r?.done && wheel.seq === r?.seq && wheel.rot !== 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}
+              ticket={r?.winner?.ticket} progress={left != null && cfg ? left / cfg.roundMs : 0}
+              header={(
+                <>
+                  <div><small>{phase === 'result' ? 'Winner' : 'Current pot'}</small><b className={J.hzPot}><Coin s={20} />{fmt(phase === 'result' ? winner.payout : pot)}</b></div>
+                  <div className={J.hzRight}>
+                    {phase === 'waiting' && <span>{players.length < 2 ? 'Timer starts when a second player joins' : ''}</span>}
+                    {phase === 'counting' && <><small>Drawing in</small><b className={`${J.hzClock} ${hot ? J.hzHot : ''}`}>{clock(left)}</b></>}
+                    {phase === 'drawing' && <><small>Drawing</small><b className={J.hzClock}>...</b></>}
+                    {phase === 'spinning' && <><small>Good luck</small><b className={J.hzClock}>&nbsp;</b></>}
+                    {phase === 'result' && <><small>wins</small><b className={J.hzWinner}>{winner.u}</b></>}
+                  </div>
+                </>
+              )}
+            />
+          )}
 
           {winner && winner.u === me && mine && (
             <div className={J.pop} role="status" key={r.seq}>
