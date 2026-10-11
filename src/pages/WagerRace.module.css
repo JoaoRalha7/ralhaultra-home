@@ -92,5 +92,5 @@
 .stack i{width:56px;height:12px;border-radius:50%;margin-top:-6px;background:linear-gradient(180deg,#fde68a,#f5c542 60%,#b8860b);box-shadow:0 3px 0 #8a640f,0 0 12px #f5c54233}
 .act{width:220px;min-width:0}
 .act b{display:flex;align-items:center;gap:8px;font:800 22px "Bricolage Grotesque",sans-serif;margin-top:2px;font-variant-numeric:tabular-nums}
-.act em{display:block;font-style:normal;color:#5fd38d;font-size:11px;margin:2px 0 4px;min-height:14px}
+.act em{display:block;font:700 12px "Bricolage Grotesque",sans-serif;font-variant-numeric:tabular-nums;font-style:normal;color:#5fd38d;margin:2px 0 4px;min-height:14px}
 @media (max-width:900px){.rside{width:100%}.act{flex:1}}
