@@ -120,10 +120,6 @@ export default function WagerRace() {
           </div>
         </div>
         <div className={styles.rside}>
-          <div className={styles.pool}>
-            <div className={styles.stack} aria-hidden="true"><i /><i /><i /><i /><i /></div>
-            <div><small>PRIZE POOL</small><b>{fmt(pool)}</b></div>
-          </div>
           <div className={styles.act}>
             <small>TOTAL WAGERED</small>
             <b><i className={styles.coin} />{fmt(data?.total)}</b>
