@@ -192,3 +192,39 @@ begin
 end;
 $$;
 grant execute on function public.wager_race_activity(text) to anon, authenticated;
+
+-- History: final top 10 of a past period. p_offset 1 = the previous period, 2 = the one before, and so on.
+-- Only periods that were paid exist. Public and read-only.
+create or replace function public.wager_race_past(p_period text, p_offset int default 1)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  now_l timestamp := now() at time zone 'Europe/Lisbon';
+  cur_l timestamp; s_l timestamp; e_l timestamp;
+  s timestamptz; e timestamptz;
+  k int := least(greatest(coalesce(p_offset, 1), 1), 400);
+begin
+  if p_period = 'daily' then
+    cur_l := date_trunc('day', now_l); s_l := cur_l - (k * interval '1 day'); e_l := s_l + interval '1 day';
+  elsif p_period = 'weekly' then
+    cur_l := date_trunc('week', now_l); s_l := cur_l - (k * interval '7 days'); e_l := s_l + interval '7 days';
+  elsif p_period = 'monthly' then
+    cur_l := date_trunc('month', now_l); s_l := cur_l - (k * interval '1 month'); e_l := s_l + interval '1 month';
+  else
+    raise exception 'bad period';
+  end if;
+  s := s_l at time zone 'Europe/Lisbon';
+  e := e_l at time zone 'Europe/Lisbon';
+  return json_build_object(
+    'starts_at', s,
+    'ends_at', e,
+    'rows', coalesce((select json_agg(json_build_object('rank', rank, 'username', username, 'wagered', wagered, 'prize', prize) order by rank)
+                      from wager_race_prizes where period = p_period and starts_at = s), '[]'::json),
+    'has_older', exists(select 1 from wager_race_prizes where period = p_period and starts_at < s)
+  );
+end;
+$$;
+grant execute on function public.wager_race_past(text, int) to anon, authenticated;
