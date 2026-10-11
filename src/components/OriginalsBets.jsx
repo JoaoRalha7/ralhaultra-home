@@ -112,7 +112,7 @@ export default function OriginalsBets() {
               <span className={`${styles.date} ${styles.mute}`}>{when(b.updated_at)}</span>
               <span className={styles.r}>{fmt(b.bet)} <i className="coin" /></span>
               <span className={`${styles.r} ${styles.mul} ${styles.mute}`}>{mult(b.bet, b.payout)}</span>
-              <span className={`${styles.r} ${profit > 0 ? styles.win : profit < 0 ? styles.loss : ''}`}>{profit > 0 ? '+' : ''}{fmt(profit)} <i className="coin" /></span>
+              <span className={`${styles.r} ${profit > 0 ? styles.win : profit < 0 ? styles.loss : ''}`}>{tab === 'top' ? fmt(b.payout) : `${profit > 0 ? '+' : ''}${fmt(profit)}`} <i className="coin" /></span>
             </div>
           )
         })}
