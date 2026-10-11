@@ -2041,11 +2041,13 @@ export default {
           for (let i = 0; i < seqs.length; i += 150) {
             for (const r of await get(`jackpot_rounds?seq=in.(${seqs.slice(i, i + 150).join(',')})&status=eq.done&select=seq,winner_name,payout`)) done.set(r.seq, r)
           }
-          for (const e of ents) {
-            const r = done.get(e.seq)
+          const stake = new Map() // a player can top up the same pot: one bet per round, all entries summed
+          for (const e of ents) stake.set(e.seq, (stake.get(e.seq) || 0) + (Number(e.amount) || 0))
+          for (const [seq, amount] of stake) {
+            const r = done.get(seq)
             if (!r) continue
             jpN++
-            add('jackpot', Number(e.amount) || 0, String(r.winner_name || '').toLowerCase() === name ? Number(r.payout) || 0 : 0)
+            add('jackpot', amount, String(r.winner_name || '').toLowerCase() === name ? Number(r.payout) || 0 : 0)
           }
         } catch { /* jackpot stats are optional */ }
         // follow date from Twitch (optional: needs TWITCH_CLIENT_ID, TWITCH_BROADCASTER_ID and TWITCH_BROADCASTER_TOKEN with the moderator:read:followers scope)
