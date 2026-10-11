@@ -68,8 +68,10 @@
 .flag{position:absolute;right:6px;top:-4px;width:130px;height:130px;opacity:.9;pointer-events:none}
 .howBox{margin-bottom:14px;padding:14px 18px;border-radius:14px;background:#0e1219;border:1px solid #1a2030}
 .howBox p{margin:0 0 10px;color:#aab4cf;font-size:13px;line-height:1.5}
-.howPz{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--mute);font-size:12px;font-weight:700}
-.howPz b{display:inline-flex;align-items:center;gap:5px;color:var(--yellow);margin-left:4px}
+.howPz{display:flex;flex-wrap:wrap;gap:8px 22px;color:var(--mute);font-size:12px;font-weight:700}
+.howPz>span{display:inline-flex;align-items:center;gap:8px;line-height:1}
+.howPz b{display:inline-flex;align-items:center;gap:6px;color:var(--yellow);line-height:1}
+.howPz .coin{margin:0;vertical-align:baseline}
 .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
 .sc{padding:11px 16px;border-radius:12px;background:#0e1219;border:1px solid #1a2030;min-width:0}
 .sc small{display:block;color:var(--mute);font-size:10px;font-weight:800;letter-spacing:.1em}
