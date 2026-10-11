@@ -60,7 +60,7 @@ const ERR = {
 let audioCtx = null
 const isMuted = () => { try { return localStorage.getItem('casino-mute') === '1' } catch { return false } }
 const NOTES = {
-  click: [[520, .05]], card: [[320, .05]], gem: [[660, .07], [990, .1]], cash: [[880, .07], [1175, .14]],
+  click: [[520, .05]], tick: [[1100, .022]], card: [[320, .05]], gem: [[660, .07], [990, .1]], cash: [[880, .07], [1175, .14]],
   win: [[523, .09], [659, .09], [784, .09], [1047, .22]], lose: [[300, .13], [220, .24]], boom: [[120, .4, 'sawtooth']],
 }
 export function playSfx(name) {

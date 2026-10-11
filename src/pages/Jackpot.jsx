@@ -33,8 +33,28 @@ const clock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${M
 const BULBS = Array.from({ length: 32 }, (_, i) => i)
 const TICKS = Array.from({ length: 60 }, (_, i) => i)
 
-function Wheel({ players, pot, rot, ms, avatars, progress, mode, winIdx, children }) {
+function Wheel({ players, pot, rot, ms, wind, avatars, progress, mode, winIdx, children }) {
   let acc = 0
+  const gRef = useRef(null), ptrRef = useRef(null)
+  // pointer flick + tick sound every time a segment border passes under the pointer
+  useEffect(() => {
+    if (!ms || wind || !gRef.current || !pot) return
+    const bounds = []; let a = 0
+    for (const p of players) { a += p.amount; bounds.push(a / pot * 360) }
+    const idxAt = (deg) => { const d = ((-deg % 360) + 360) % 360; let i = 0; while (i < bounds.length - 1 && d >= bounds[i]) i++; return i }
+    const angle = () => { const m = getComputedStyle(gRef.current).transform; if (!m || m === 'none') return 0; const v = m.match(/matrix\(([^)]+)\)/); if (!v) return 0; const [x, y] = v[1].split(',').map(Number); return Math.atan2(y, x) * 180 / Math.PI }
+    let raf = 0, last = idxAt(angle()), lastT = 0
+    const loop = () => {
+      const i = idxAt(angle()), now = performance.now()
+      if (i !== last) {
+        last = i
+        if (now - lastT > 55) { lastT = now; playSfx('tick'); try { ptrRef.current?.animate([{ transform: 'rotate(-18deg)' }, { transform: 'rotate(0deg)' }], { duration: 140, easing: 'ease-out' }) } catch { /* optional */ } }
+      }
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [ms, wind, players, pot])
   return (
     <div className={`${styles.jpWheelWrap} ${styles['jpm_' + mode]}`}>
       <svg viewBox="-20 -20 340 340" className={styles.jpWheel} role="img" aria-label="Jackpot wheel">
@@ -55,7 +75,7 @@ function Wheel({ players, pot, rot, ms, avatars, progress, mode, winIdx, childre
         {mode === 'counting' && <circle cx={C} cy={C} r={RR} className={styles.jpProg} strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - Math.max(0, Math.min(1, progress)))} transform={`rotate(-90 ${C} ${C})`} />}
         {mode === 'waiting' && <circle cx={C} cy={C} r={RR} className={styles.jpIdle} />}
 
-        <g style={{ transformOrigin: `${C}px ${C}px`, transform: `rotate(${rot}deg)`, transition: ms ? `transform ${ms}ms cubic-bezier(.1,.6,.08,1)` : 'none' }}>
+        <g ref={gRef} style={{ transformOrigin: `${C}px ${C}px`, transform: `rotate(${rot}deg)`, transition: ms ? `transform ${ms}ms ${wind ? 'cubic-bezier(.3,0,.4,1)' : 'cubic-bezier(.12,.62,.06,1)'}` : 'none' }}>
           {players.length ? players.map((p, i) => {
             const a0 = (acc / pot) * 360; acc += p.amount; const a1 = (acc / pot) * 360
             const mid = (a0 + a1) / 2, [x, y] = pt(mid, 116), url = avatars?.[p.u.toLowerCase()]
@@ -79,7 +99,7 @@ function Wheel({ players, pot, rot, ms, avatars, progress, mode, winIdx, childre
         <circle cx={C} cy={C} r={RI} className={styles.jpInnerEdge} />
         <circle cx={C} cy={C} r={RI - 1} fill="url(#jpHub)" />
         <circle cx={C} cy={C} r={RO} fill="url(#jpSheen)" pointerEvents="none" />
-        <path d={`M${C} ${C - RR + 22} l12 -26 q-12 -9 -24 0z`} className={styles.jpPointer} />
+        <path ref={ptrRef} d={`M${C} ${C - RR + 22} l12 -26 q-12 -9 -24 0z`} className={styles.jpPointer} style={{ transformOrigin: `${C}px ${C - RR - 4}px` }} />
         <circle cx={C} cy={C - RR + 2} r="3" fill="#fff7d6" />
       </svg>
       <div className={styles.jpCenter}>{children}</div>
@@ -170,12 +190,13 @@ export default function Jackpot() {
   const [now, setNow] = useState(Date.now())
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
-  const [wheel, setWheel] = useState({ seq: 0, rot: 0, ms: 0 })
+  const [wheel, setWheel] = useState({ seq: 0, rot: 0, ms: 0, wind: false })
   const [shown, setShown] = useState(null) // seq whose result banner is visible
   const [view, setView] = useState(() => { try { return localStorage.getItem('jp-view') === 'strip' ? 'strip' : 'wheel' } catch { return 'wheel' } })
   const pickView = (v) => { setView(v); try { localStorage.setItem('jp-view', v) } catch { /* storage unavailable */ } }
   const R = useRef({})
   const spun = useRef(0)
+  const windT = useRef(null)
   const me = (g.twitchUser || '').toLowerCase()
   const avs = { ...(data?.avatars || {}), ...(me && g.avatar ? { [me]: g.avatar } : {}) }
 
@@ -229,7 +250,7 @@ export default function Jackpot() {
   // wheel: reset for a new pot, spin to the drawn ticket when the winner is known
   useEffect(() => {
     if (!r) return
-    const turns = 360 * 7
+    const turns = 360 * 9
     if (!r.done) {
       setWheel((w) => (w.seq === r.seq && w.rot === 0 ? w : { seq: r.seq, rot: 0, ms: 0 }))
       return
@@ -242,7 +263,10 @@ export default function Jackpot() {
     if (R.current.mine) holdPointsPulls(true)
     playSfx('card')
     setWheel({ seq: r.seq, rot: 0, ms: 0 })
-    requestAnimationFrame(() => requestAnimationFrame(() => setWheel({ seq: r.seq, rot: final, ms: Math.max(1500, cfg.spinMs - elapsed) })))
+    // short wind-up backwards, then the long decelerating spin
+    const total = Math.max(1500, cfg.spinMs - elapsed), WIND = 420
+    requestAnimationFrame(() => requestAnimationFrame(() => setWheel({ seq: r.seq, rot: -14, ms: WIND, wind: true })))
+    windT.current = setTimeout(() => setWheel({ seq: r.seq, rot: final, ms: total - WIND, wind: false }), WIND + 60)
   }, [r?.seq, r?.done]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // result banner once the spin is over: sound, confetti, balance
@@ -321,12 +345,12 @@ export default function Jackpot() {
             <button type="button" role="tab" aria-selected={view === 'strip'} className={view === 'strip' ? J.on : ''} onClick={() => pickView('strip')}>Horizontal</button>
           </div>
           {view === 'wheel' ? (
-            <Wheel players={players} pot={pot} avatars={avs} progress={left != null && cfg ? left / cfg.roundMs : 0} mode={phase === 'result' ? 'result' : phase} winIdx={winIdx} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}>{center}</Wheel>
+            <Wheel players={players} pot={pot} avatars={avs} progress={left != null && cfg ? left / cfg.roundMs : 0} mode={phase === 'result' ? 'result' : phase} winIdx={winIdx} rot={wheel.seq === r?.seq ? wheel.rot : 0} ms={wheel.seq === r?.seq ? wheel.ms : 0} wind={wheel.seq === r?.seq && wheel.wind}>{center}</Wheel>
           ) : (
             <Strip
               players={players} pot={pot} avatars={avs} mode={phase === 'result' ? 'result' : phase}
               winIdx={r?.done && r.winner ? players.findIndex((p) => p.u === r.winner.u) : -1}
-              settled={!!r?.done && wheel.seq === r?.seq && wheel.rot !== 0} ms={wheel.seq === r?.seq ? wheel.ms : 0}
+              settled={!!r?.done && wheel.seq === r?.seq && wheel.rot !== 0 && !wheel.wind} ms={wheel.seq === r?.seq ? wheel.ms : 0}
               ticket={r?.winner?.ticket} progress={left != null && cfg ? left / cfg.roundMs : 0}
               header={(
                 <>
