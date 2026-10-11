@@ -6,8 +6,8 @@ import TwitchAvatar from './TwitchAvatar'
 import { Icon } from './Icon'
 import s from './PlayerModal.module.css'
 
-const GAME_NAME = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash', keno: 'Keno', plinko: 'Plinko', roulette: 'Roulette' }
-const GAME_ICON = { mines: 'mines', blackjack: 'cards', crash: 'crash', keno: 'keno', plinko: 'plinko', roulette: 'roulette' }
+const GAME_NAME = { mines: 'Mines', blackjack: 'Blackjack', crash: 'Crash', keno: 'Keno', plinko: 'Plinko', roulette: 'Roulette', jackpot: 'Jackpot' }
+const GAME_ICON = { mines: 'mines', blackjack: 'cards', crash: 'crash', keno: 'keno', plinko: 'plinko', roulette: 'roulette', jackpot: 'roulette' }
 const fmt = (n) => Number(n || 0).toLocaleString('en-GB')
 
 // open from anywhere: openPlayer('name')

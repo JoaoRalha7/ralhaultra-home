@@ -2032,6 +2032,22 @@ export default {
         }
         for (const g of games) add(g.game, Number(g.bet) || 0, Number(g.payout) || 0)
         for (const c of crash) { const bet = Number(c.bet) || 0; add('crash', bet, c.cashed_at ? Math.floor(bet * Number(c.cashed_at)) : 0) }
+        // jackpot: every entry of a finished round counts as a bet; the winner gets the round payout
+        let jpN = 0
+        try {
+          const ents = await get(`jackpot_entries?username=eq.${name}&select=seq,amount&limit=3000`)
+          const seqs = [...new Set(ents.map((e) => e.seq))]
+          const done = new Map()
+          for (let i = 0; i < seqs.length; i += 150) {
+            for (const r of await get(`jackpot_rounds?seq=in.(${seqs.slice(i, i + 150).join(',')})&status=eq.done&select=seq,winner_name,payout`)) done.set(r.seq, r)
+          }
+          for (const e of ents) {
+            const r = done.get(e.seq)
+            if (!r) continue
+            jpN++
+            add('jackpot', Number(e.amount) || 0, String(r.winner_name || '').toLowerCase() === name ? Number(r.payout) || 0 : 0)
+          }
+        } catch { /* jackpot stats are optional */ }
         // follow date from Twitch (optional: needs TWITCH_CLIENT_ID, TWITCH_BROADCASTER_ID and TWITCH_BROADCASTER_TOKEN with the moderator:read:followers scope)
         let followedAt = null, followWhy = null
         try {
@@ -2055,7 +2071,7 @@ export default {
         const data = {
           ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt, followWhy,
           joined: joinedAt, registered: !!pid || !!prof[0] || games.length > 0 || crash.length > 0, avatar: pAvatar || null,
-          stats: { bets: games.length + crash.length, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
+          stats: { bets: games.length + crash.length + jpN, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
         }
         if (PLAYER_CACHE.size > 300) PLAYER_CACHE.clear()
