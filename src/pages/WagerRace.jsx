@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { useAvatars } from '../lib/avatars'
@@ -93,7 +93,15 @@ export default function WagerRace() {
           {error && <div className={styles.empty}>Could not load the ranking. Try again in a moment.</div>}
           {!error && !data && <div className={styles.empty}>Loading...</div>}
           {data && !rows.length && <div className={styles.empty}>No bets yet in this period. Be the first to wager!</div>}
-          {pageRows.map((r) => <Row key={r.username} r={r} />)}
+          {pageRows.map((r) => {
+            const prev = rows[rows.indexOf(r) - 1]
+            return (
+              <Fragment key={r.username}>
+                {prev && prev.rank <= 10 && r.rank > 10 && <div className={styles.cut}><span>Prize zone ends here, top 10 win points</span></div>}
+                <Row r={r} />
+              </Fragment>
+            )
+          })}
           {data && mine && !inList && (<><div className={styles.gap}>...</div><Row r={mine} /></>)}
           {pages > 1 && (
             <div className={styles.pagination}>

@@ -52,3 +52,6 @@
 .pageBtn:hover:not(:disabled){background:#17305f;border-color:var(--acc);color:#fff}
 .pageBtn:disabled{opacity:.3;cursor:default}
 .pageBtnActive{background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important}
+
+.cut{display:flex;align-items:center;gap:12px;margin:14px 0 12px;color:#f5c542;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.cut::before,.cut::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#f5c54266,transparent)}

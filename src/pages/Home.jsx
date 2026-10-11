@@ -373,10 +373,11 @@ export default function Home() {
   const loadActivity = useCallback(async () => {
     try {
       const empty = { redeems: [] };
-      const [gwRes, voucherRes, raceRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
+      const [gwRes, voucherRes, raceRes, gwWinRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
         supabase.from('giveaway_entries').select('twitch_username, tickets, cost_paid, created_at').order('created_at', { ascending: false }).limit(10),
         supabase.rpc('recent_voucher_redeems', { lim: 10 }),
         supabase.rpc('recent_wager_prizes', { lim: 10 }),
+        supabase.from('giveaways').select('title, prize, prize_points, winner, ends_at').not('winner', 'is', null).order('ends_at', { ascending: false }).limit(10),
         supabase.rpc('recent_shop_redeems', { lim: 10 }),
         fetch(`${SE_WORKER_URL}/daily-redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
         fetch(`${SE_WORKER_URL}/casino-feed?limit=10`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
@@ -397,6 +398,10 @@ export default function Home() {
         _type: 'voucher', action: `Wager Race ${String(r.period).charAt(0).toUpperCase()}${String(r.period).slice(1)} #${r.rank}`, username: r.username,
         created_at: r.created_at, points: r.points || 0, status: 'AWARDED',
       }));
+      const winners = (gwWinRes.data || []).filter((g) => new Date(g.ends_at).getTime() <= Date.now()).map((g) => ({
+        _type: 'giveaway', action: `Giveaway Winner - ${g.title}`, username: g.winner,
+        created_at: g.ends_at, points: Number(g.prize_points) || 0, prize: Number(g.prize_points) > 0 ? '' : g.prize, status: 'AWARDED',
+      }));
       const shop = shopData.map((r) => ({
         _type: 'shop', action: r.shop_products?.name || 'Redeem', username: r.twitch_username,
         created_at: r.created_at, points: -(r.cost_at_redeem || 0), status: r.status,
@@ -415,7 +420,7 @@ export default function Home() {
       const byDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
       applyActivity({
         shop: shop.sort(byDate).slice(0, 7),
-        giveaways: [...giveaways, ...vouchers, ...race].sort(byDate).slice(0, 7),
+        giveaways: [...giveaways, ...winners, ...vouchers, ...race].sort(byDate).slice(0, 7),
         games: games.sort(byDate).slice(0, 7),
       });
     } catch (e) {
@@ -598,7 +603,7 @@ export default function Home() {
                 <span className="rd"><i />{cleanAction(r)}</span>
                 <b style={r.username ? { cursor: 'pointer' } : undefined} onClick={r.username ? () => openPlayer(r.username) : undefined}><RankName name={r.username || '-'} level={r.username ? rankOf(r.username) : undefined} /></b>
                 <span className="dt">{new Date(r.created_at).toLocaleString('pt-PT')}</span>
-                <span className={`val${pts > 0 ? ' pos' : ''}`}>{pts > 0 ? '+' : pts < 0 ? '-' : ''} {Math.abs(pts).toLocaleString('pt-PT')} PTS <span className="coin" /></span>
+                <span className={`val${pts > 0 || r.prize ? ' pos' : ''}`}>{r.prize ? r.prize : pts > 0 ? '+' : pts < 0 ? '-' : ''} {r.prize ? '' : `${Math.abs(pts).toLocaleString('pt-PT')} PTS `}{r.prize ? null : <span className="coin" />}</span>
                 <span className={`stt ${st}`}>{st}</span>
               </div>
             );
