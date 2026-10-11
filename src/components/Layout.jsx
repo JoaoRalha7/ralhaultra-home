@@ -243,7 +243,32 @@ export default function Layout() {
     setBellOpen(false);
   };
 
-  const notifCount = live.length + claimable.length + wins.length + (user && dailyReady ? 1 : 0);
+  // Wager Race prizes: shown in the bell until the player opens them.
+  const [racePz, setRacePz] = useState([]);
+  useEffect(() => {
+    if (!user || !meName) { setRacePz([]); return undefined; }
+    let off = false;
+    const seenIds = () => { try { return JSON.parse(localStorage.getItem('ru-wr-seen') || '[]'); } catch { return []; } };
+    const load = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const { data } = await supabase.rpc('recent_wager_prizes', { lim: 50 });
+      if (off || !Array.isArray(data)) return;
+      const seen = seenIds();
+      const cut = Date.now() - 7 * 86400000;
+      setRacePz(data.map((r) => ({ ...r, key: `${r.period}|${r.created_at}|${r.rank}` }))
+        .filter((r) => String(r.username).toLowerCase() === meName && !seen.includes(r.key) && new Date(r.created_at).getTime() > cut));
+    };
+    load();
+    const t = setInterval(load, 90000);
+    return () => { off = true; clearInterval(t); };
+  }, [user, meName]);
+  const openRace = (r) => {
+    try { localStorage.setItem('ru-wr-seen', JSON.stringify([...JSON.parse(localStorage.getItem('ru-wr-seen') || '[]'), r.key].slice(-50))); } catch { /* storage unavailable */ }
+    setRacePz((l) => l.filter((x) => x.key !== r.key));
+    setBellOpen(false);
+  };
+
+  const notifCount = live.length + claimable.length + wins.length + racePz.length + (user && dailyReady ? 1 : 0);
 
   return (
     <>
@@ -280,6 +305,11 @@ export default function Layout() {
                       {wins.map((g) => (
                         <Link key={g.id} to="/giveaways" className="dropItem winItem" onClick={() => openWin(g)}>
                           <span>You won: {g.prize || g.title}<small>{Number(g.prize_points) > 0 ? 'Points were added to your balance.' : 'Open ticket on discord to redeem!'}</small></span><span className="chip">Winner</span>
+                        </Link>
+                      ))}
+                      {racePz.map((r) => (
+                        <Link key={r.key} to="/wager-race" className="dropItem winItem" onClick={() => openRace(r)}>
+                          <span>Wager Race {String(r.period).charAt(0).toUpperCase() + String(r.period).slice(1)} #{r.rank}<small>Prize added to your balance.</small></span><span className="chip">+{Number(r.points).toLocaleString('en-US')}</span>
                         </Link>
                       ))}
                       {claimable.map((l) => (

@@ -1939,7 +1939,7 @@ export default {
           get(`casino_games?username=ilike.${u}&status=eq.done&select=game,bet,payout,updated_at&order=updated_at.desc&limit=5000`),
           get(`crash_bets?username=ilike.${u}&select=bet,cashed_at,created_at&order=created_at.desc&limit=5000`),
           get(`shop_redeems?twitch_username=ilike.${u}&select=cost_at_redeem,created_at,status,shop_products(name)&order=created_at.desc&limit=100`),
-          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.vip_levelup*,reason.like.daily*,reason.like.admin*,reason.like.chat*,reason.eq.se_import)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
+          get(`point_transactions?username=eq.${u}&or=(reason.like.cashback:*,reason.like.voucher:*,reason.like.vip_levelup*,reason.like.daily*,reason.like.admin*,reason.like.chat*,reason.like.wagerrace:*,reason.eq.se_import)&select=delta,reason,created_at&order=created_at.desc&limit=100`),
           get(`point_transactions?username=eq.${u}&reason=eq.watchtime&select=delta,created_at&order=created_at.desc&limit=5000`),
         ])
         let wins = 0, losses = 0
