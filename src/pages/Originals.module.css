@@ -32,3 +32,12 @@
 @media (max-width: 700px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } .art { width: 48px; height: 48px; } .body b { font-size: 14px; } .play { display: none; } }
 @media (max-width: 420px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .grid > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
+
+.race{display:flex;align-items:center;gap:16px;margin:18px 0 8px;padding:16px 20px;border-radius:16px;text-decoration:none;color:#fff;border:1px solid #f5c54255;background:radial-gradient(60% 220% at 0% 50%,#f5c54226,transparent 70%),#0e1219;transition:border-color .15s,transform .15s}
+.race:hover{border-color:#f5c542;transform:translateY(-1px)}
+.raceIco{width:48px;height:48px;flex:none;border-radius:14px;display:grid;place-items:center;background:#f5c54222;color:#f5c542}
+.raceTx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.raceTx b{font:800 18px "Bricolage Grotesque",sans-serif}
+.raceTx small{color:#8d96ab;font-size:13px}
+@media (max-width:640px){.race{flex-wrap:wrap}}
+.race .play{position:static;background:#f5c542;color:#1a1405;font-weight:800}

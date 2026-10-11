@@ -22,7 +22,7 @@ import { supabase, supabaseDash } from '../lib/supabase';
 
 const NAV_GROUPS = [
   { label: 'Discover', items: [['home', 'Home', '/', 'blue'], ['tag', 'Casinos & Offers', '/offers', 'green'], ['trophy', 'Leaderboard', '/leaderboard', 'gold']] },
-  { label: 'Rewards', items: [['crown', 'VIP', '/vip', 'gold'], ['spark', 'Wager Race', '/wager-race', 'orange'], ['gift', 'Giveaways & Raffles', '/giveaways', 'pink'], ['bag', 'Shop', '/shop', 'violet']] },
+  { label: 'Rewards', items: [['crown', 'VIP', '/vip', 'gold'], ['gift', 'Giveaways & Raffles', '/giveaways', 'pink'], ['bag', 'Shop', '/shop', 'violet']] },
   { label: 'Casino', items: [['originals', 'Originals', '/originals', 'orange']] },
   {
     label: 'Stream',
@@ -45,9 +45,10 @@ const ORIGINAL_GAMES = [
   ['plinko', 'Plinko', '/plinko', '#22d3ee'],
   ['roulette', 'Roulette', '/roulette', '#e11d48'],
   ['jackpot', 'Jackpot', '/jackpot', '#f97316'],
+  ['spark', 'Wager Race', '/wager-race', '#f5c542'],
 ];
 
-const ORIGINAL_PATHS = ['/originals', '/mines', '/blackjack', '/crash', '/keno', '/plinko', '/roulette', '/jackpot'];
+const ORIGINAL_PATHS = ['/originals', '/mines', '/blackjack', '/crash', '/keno', '/plinko', '/roulette', '/jackpot', '/wager-race'];
 
 const GAMES = [
   ['pick_games', 'Pick & Win', 'pick'],

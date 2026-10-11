@@ -33,6 +33,11 @@ export default function Originals() {
           </Link>
         ))}
       </div>
+      <Link to="/wager-race" className={styles.race}>
+        <span className={styles.raceIco} aria-hidden="true"><Icon name="trophy" size={26} /></span>
+        <span className={styles.raceTx}><b>Wager Race</b><small>Wager points on Originals and climb the Daily, Weekly and Monthly rankings to win points.</small></span>
+        <span className={styles.play}>View race<Icon name="right" size={14} /></span>
+      </Link>
       <OriginalsBets />
     </div>
   )
