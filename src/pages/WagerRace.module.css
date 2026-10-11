@@ -1,14 +1,7 @@
 .page{--acc:#3b82f6;--acc2:#93c5fd;--yellow:#f5c542;--panel:#131720;--line:#252b3a;--mute:#8d96ab;--text:#eef1f7;padding:4px 0 60px;color:var(--text);font-family:"DM Sans",system-ui,sans-serif}
-.header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-.title{font:800 clamp(30px,4vw,46px)/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;margin:0}
-.sub{margin:8px 0 0;color:var(--mute);font-size:14px}
-.tabs{display:flex;gap:4px;padding:4px;border-radius:999px;background:#0a0d14;border:1px solid var(--line)}
-.tabs button{border:0;background:none;color:var(--mute);font:700 13px "DM Sans",sans-serif;padding:9px 20px;border-radius:999px;cursor:pointer}
-.tabs button.on{background:#252b3a;color:#fff}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
-.th{display:grid;grid-template-columns:52px 1fr 170px;padding:0 14px;margin-bottom:6px;color:var(--mute);font-size:10px;letter-spacing:.12em;font-weight:800}
+.th{display:grid;grid-template-columns:52px 1fr 170px 120px;padding:0 14px;margin-bottom:6px;color:var(--mute);font-size:10px;letter-spacing:.12em;font-weight:800}
 .r{text-align:right}
-.row{display:grid;grid-template-columns:52px 1fr 170px;align-items:center;height:50px;padding:0 14px;margin-bottom:6px;border-radius:12px;border:1px solid #1a2030;cursor:pointer;
+.row{display:grid;grid-template-columns:52px 1fr 170px 120px;align-items:center;height:50px;padding:0 14px;margin-bottom:6px;border-radius:12px;border:1px solid #1a2030;cursor:pointer;
   background:linear-gradient(90deg,rgba(59,130,246,.15) var(--p),#0e1219 var(--p));transition:border-color .15s}
 .row:hover{border-color:#3b82f666}
 .row.me{border-color:var(--acc);box-shadow:inset 0 0 0 1px #3b82f655}
@@ -33,7 +26,7 @@
 .pool b{color:var(--text)}
 .mebox{background:linear-gradient(135deg,#142046,#0d1430);border-color:#2a3f8f}
 .note{margin-top:14px;color:var(--mute);font-size:12px;line-height:1.5}
-@media (max-width:900px){.grid{grid-template-columns:1fr}.side{position:static;order:-1}.th,.row{grid-template-columns:40px 1fr 120px}}
+
 .mebox.lead{border-color:#f5c54299;background:radial-gradient(80% 140% at 0% 0%,#f5c54226,transparent 60%),linear-gradient(135deg,#142046,#0d1430)}
 .meTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.meTop small{margin:0}
 .badge{display:inline-flex;gap:5px;align-items:center;color:#f5c542;background:#2a2108;border:1px solid #6b5412;border-radius:99px;padding:3px 10px 3px 8px;font-size:10px;font-weight:800;letter-spacing:.1em}
@@ -55,3 +48,38 @@
 
 .cut{display:flex;align-items:center;gap:12px;margin:14px 0 12px;color:#f5c542;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
 .cut::before,.cut::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#f5c54266,transparent)}
+
+/* hero (blue + gold) */
+.hero{position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:24px 28px;border-radius:18px;border:1px solid #3b82f6aa;margin-bottom:14px;background:radial-gradient(120% 140% at 85% 0%,#1d3a7888,transparent 60%),linear-gradient(135deg,#131c36,#0e1426)}
+.ttl{display:flex;align-items:baseline;gap:12px;font-style:italic;font-weight:900;font-family:"Bricolage Grotesque",sans-serif}
+.ttl em{font-style:italic;font-size:clamp(28px,3.4vw,40px);color:#f5c542}.ttl span{font-size:clamp(22px,2.8vw,32px);color:#fff}
+.ul{height:3px;width:240px;max-width:100%;margin:6px 0 16px;border-radius:3px;background:linear-gradient(90deg,#3b82f6,transparent)}
+.tabs{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tabs button{border:0;background:none;color:#8ea0c8;font:700 13px "DM Sans",sans-serif;padding:9px 16px;border-radius:9px;cursor:pointer}
+.tabs button.on{background:#3b82f6;color:#fff}
+.tabs .howBtn{margin-left:8px;background:#ffffff14;border:1px solid #ffffff22;color:#fff}
+.tabs .howBtn.howOn{background:#ffffff26}
+.hr{position:relative;z-index:1;text-align:center;margin-right:130px}
+.hr small{display:block;font-style:italic;font-weight:800;letter-spacing:.08em;color:#9db6ee;font-size:12px}
+.cds{display:flex;gap:8px;margin-top:8px}
+.cb{width:58px;padding:9px 0;border-radius:9px;border:1px solid #3b82f6;background:linear-gradient(180deg,#3b82f633,#0003);text-align:center}
+.cb b{display:block;font:900 22px "Bricolage Grotesque",sans-serif;font-style:italic;font-variant-numeric:tabular-nums}
+.cb small{display:block;font-size:9px;font-weight:800;color:#9db6ee;letter-spacing:.06em;margin-top:2px}
+.flag{position:absolute;right:6px;top:-4px;width:130px;height:130px;opacity:.9;pointer-events:none}
+.howBox{margin-bottom:14px;padding:14px 18px;border-radius:14px;background:#0e1219;border:1px solid #1a2030}
+.howBox p{margin:0 0 10px;color:#aab4cf;font-size:13px;line-height:1.5}
+.howPz{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--mute);font-size:12px;font-weight:700}
+.howPz b{display:inline-flex;align-items:center;gap:5px;color:var(--yellow);margin-left:4px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.sc{padding:11px 16px;border-radius:12px;background:#0e1219;border:1px solid #1a2030;min-width:0}
+.sc small{display:block;color:var(--mute);font-size:10px;font-weight:800;letter-spacing:.1em}
+.sc b{display:flex;align-items:center;gap:7px;font:800 20px "Bricolage Grotesque",sans-serif;margin-top:3px;white-space:nowrap}
+.sc b em{font:500 11px "DM Sans",sans-serif;font-style:normal;color:#9aa6c0}
+.sc b.gold{color:var(--yellow)}
+.scMe{border-color:var(--acc);background:#13203f}
+.scMe.lead{border-color:#f5c54299;background:radial-gradient(80% 140% at 0% 0%,#f5c54226,transparent 60%),#13203f}
+.md{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;border:1.5px solid var(--c);color:var(--c);font:800 12px "DM Sans",sans-serif;background:#0003}
+.row.topr{background:linear-gradient(90deg,rgba(245,197,66,.16) var(--p),#0e1219 var(--p))}
+.rw{display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums;text-shadow:0 0 14px #f5c54255}
+.rw em{font-style:normal;color:#4a5570;text-shadow:none}
+@media (max-width:900px){.hr{margin-right:0}.flag{display:none}.strip{grid-template-columns:1fr 1fr}.th,.row{grid-template-columns:40px 1fr 110px 80px}}
