@@ -43,3 +43,7 @@
 .meBar{height:8px;border-radius:99px;background:#0a1230;margin:8px 0}.meBar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#3b82f6,#f5c542);transition:width .4s}
 .meHint,.meTx{color:#aab4cf;font-size:12px;font-weight:500;font-style:normal}.meHint b{display:inline-flex;align-items:center;gap:5px;color:#fff}
 .mePrz{margin-top:10px;display:flex;gap:7px;align-items:center;color:#f5c542;font-size:12px}.mePrz b{display:inline-flex;align-items:center;gap:5px;color:#fff}.mePrz b.gold{color:#f5c542}
+.meHint{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.mePrz>span{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px}
+.mePrz b,.meHint b,.kv b{line-height:1}
+.mePrz .coin,.meHint .coin,.kv .coin{margin:0;vertical-align:baseline}
