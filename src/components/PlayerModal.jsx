@@ -60,6 +60,7 @@ function PlayerModal({ name, onClose }) {
           <div className={s.who}>
             <TwitchAvatar name={name} map={d?.avatar ? { [name]: d.avatar } : { [name]: `https://unavatar.io/twitch/${encodeURIComponent(name)}?fallback=false` }} size={54} />
             <b>{name}</b>
+            {d?.registered && <span className={s.bal}><i className={s.coin} />{fmt(d.balance)}</span>}
           </div>
           {d?.registered && (
             <div className={s.meta}>

@@ -29,3 +29,5 @@
 .extra{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
 .extra span{display:flex;flex-direction:column;gap:5px}.extra small{color:#9aa3b2;font-size:12px}.extra b{font:800 15px "DM Sans",sans-serif}
 .modal{margin:auto}
+
+.bal{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font:800 17px "Bricolage Grotesque",sans-serif;color:#f5c542;white-space:nowrap}

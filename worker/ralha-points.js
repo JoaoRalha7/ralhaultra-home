@@ -2008,7 +2008,7 @@ export default {
         if (ck && Date.now() - ck.at < 20000) return json(ck.data)
         const get = async (q) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${q}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
         const [bal, prof, games, crash] = await Promise.all([
-          get(`point_balances?username=eq.${name}&select=level,created_at,wagered_total,watch_minutes,twitch_id&limit=1`),
+          get(`point_balances?username=eq.${name}&select=level,created_at,wagered_total,watch_minutes,twitch_id,balance&limit=1`),
           get(`profiles?twitch_username=ilike.${encodeURIComponent(name.replace(/_/g, '\\_'))}&select=id,avatar_url&limit=1`),
           get(`casino_games?username=eq.${name}&status=eq.done&select=game,bet,payout&limit=10000`),
           get(`crash_bets?username=eq.${name}&select=bet,cashed_at&limit=5000`),
@@ -2073,7 +2073,7 @@ export default {
           } else if (th && !followWhy) followWhy = 'twitch id not found'
         } catch { /* follow date is optional */ }
         const data = {
-          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, followedAt, followWhy,
+          ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, balance: Number(bal[0]?.balance) || 0, followedAt, followWhy,
           joined: joinedAt, registered: !!pid || !!prof[0] || games.length > 0 || crash.length > 0, avatar: pAvatar || null,
           stats: { bets: games.length + crash.length + jpN, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
