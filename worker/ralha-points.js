@@ -11,6 +11,16 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
 ]
 
+// Daily rewards reset at 00:00 Europe/Lisbon (not every 24h).
+const lisbonParts = (ms) => {
+  const f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const o = {}; for (const x of f.formatToParts(new Date(ms))) o[x.type] = x.value
+  return { day: `${o.year}-${o.month}-${o.day}`, sinceMid: ((Number(o.hour) % 24) * 3600 + Number(o.minute) * 60 + Number(o.second)) * 1000 }
+}
+const lisbonDay = (ms) => lisbonParts(ms).day
+const lisbonDayStartMs = (ms = Date.now()) => ms - lisbonParts(ms).sinceMid
+const msToLisbonReset = (ms = Date.now()) => Math.max(1000, 86400000 - lisbonParts(ms).sinceMid)
+
 const STREAK_POINTS = [50, 75, 100, 150, 200, 300, 500]
 
 // Server-side price list for mini-games (the browser never sends an amount).
@@ -1400,23 +1410,19 @@ export default {
 
         // 3. Verificar cooldown 24h (check rápido; o claim atómico mais abaixo é que impede duplos)
         if (profile.last_daily_claim) {
-          const diff = Date.now() - new Date(profile.last_daily_claim).getTime()
-          if (diff < 86400000)
-            return json({ error: 'already_claimed', nextClaimMs: Math.ceil(86400000 - diff) }, 400)
+          if (new Date(profile.last_daily_claim).getTime() >= lisbonDayStartMs())
+            return json({ error: 'already_claimed', nextClaimMs: msToLisbonReset() }, 400)
         }
 
         // 4. Calcular streak
-        const today        = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+        const today        = lisbonDay(Date.now()) // YYYY-MM-DD (Lisbon)
         const lastDay      = profile.streak_last_day || null
         const currentStreak = profile.streak_count || 0
 
         // Verificar se o último claim foi ontem (streak contínuo)
         let newStreak = 1
         if (lastDay) {
-          const last     = new Date(lastDay)
-          const now      = new Date()
-          last.setHours(0,0,0,0); now.setHours(0,0,0,0)
-          const diffDays = Math.round((now - last) / 86400000)
+          const diffDays = Math.round((Date.parse(today) - Date.parse(lastDay)) / 86400000)
           if (diffDays === 1) {
             // Ontem — streak continua
             newStreak = Math.min(currentStreak + 1, 7)
@@ -1440,7 +1446,7 @@ export default {
         }
 
         // 6. Claim atómico ANTES de pagar: só um pedido consegue mudar last_daily_claim (impede duplo claim em paralelo)
-        const cutoff = new Date(Date.now() - 86400000).toISOString()
+        const cutoff = new Date(lisbonDayStartMs()).toISOString()
         const claimRes = await fetch(
           `${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&or=(last_daily_claim.is.null,last_daily_claim.lt.${cutoff})`,
           {
@@ -1450,7 +1456,7 @@ export default {
           }
         )
         if (!claimRes.ok || !(await claimRes.json())?.length)
-          return json({ error: 'already_claimed', nextClaimMs: 86400000 }, 400)
+          return json({ error: 'already_claimed', nextClaimMs: msToLisbonReset() }, 400)
         const undoClaim = () => fetch(`${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
           method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
           body: JSON.stringify({ last_daily_claim: profile.last_daily_claim || null, streak_count: currentStreak, streak_last_day: lastDay }),
@@ -1508,9 +1514,8 @@ export default {
         const profile  = profiles?.[0]
 
         if (profile?.last_wheel_spin) {
-          const diff = Date.now() - new Date(profile.last_wheel_spin).getTime()
-          if (diff < 86400000)
-            return json({ error: 'already_spun', nextSpinMs: Math.ceil(86400000 - diff) }, 400)
+          if (new Date(profile.last_wheel_spin).getTime() >= lisbonDayStartMs())
+            return json({ error: 'already_spun', nextSpinMs: msToLisbonReset() }, 400)
         }
 
         // 3. Sortear prémio server-side
@@ -1529,13 +1534,13 @@ export default {
         for (const p of PRIZES) { rand -= p.weight; if (rand <= 0) { prize = p; break } }
 
         // 4. Claim atómico ANTES de pagar (impede girar várias vezes em paralelo)
-        const wCutoff = new Date(Date.now() - 86400000).toISOString()
+        const wCutoff = new Date(lisbonDayStartMs()).toISOString()
         const wClaim = await fetch(
           `${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&or=(last_wheel_spin.is.null,last_wheel_spin.lt.${wCutoff})`,
           { method: 'PATCH', headers: { ...sbHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify({ last_wheel_spin: new Date().toISOString() }) }
         )
         if (!wClaim.ok || !(await wClaim.json())?.length)
-          return json({ error: 'already_spun', nextSpinMs: 86400000 }, 400)
+          return json({ error: 'already_spun', nextSpinMs: msToLisbonReset() }, 400)
 
         // 5. Adicionar pontos
         const seRes = await fetch(

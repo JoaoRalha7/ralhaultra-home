@@ -1,3 +1,4 @@
+import { doneToday } from '../lib/lisbonDay';
 import { PlayerModalHost } from './PlayerModal';
 import SearchBox from './SearchBox';
 import { useEffect, useRef, useState, Suspense } from 'react';
@@ -125,7 +126,7 @@ export default function Layout() {
       supabase.from('profiles').select('last_daily_claim, last_wheel_spin').eq('id', user.id).single()
         .then(({ data }) => {
           if (!alive) return;
-          const ready = (t) => !t || Date.now() - new Date(t).getTime() >= 86400000;
+          const ready = (t) => !doneToday(t);
           setDailyReady(ready(data?.last_daily_claim) || ready(data?.last_wheel_spin));
         })
         .catch(() => alive && setDailyReady(false));

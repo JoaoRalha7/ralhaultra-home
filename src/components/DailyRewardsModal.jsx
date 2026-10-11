@@ -1,3 +1,4 @@
+import { doneToday, msToReset } from '../lib/lisbonDay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
@@ -249,11 +250,10 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
         setTodayPts(STREAK_DAYS[dayIdx].pts)
 
         if (data?.last_daily_claim) {
-          const diff = now - new Date(data.last_daily_claim).getTime()
-          if (diff < 86400000) { 
+          if (doneToday(data.last_daily_claim, now)) { 
             setClaimStatus('claimed')
-            claimTargetTime.current = now + (86400000 - diff)
-            setClaimCountdown(86400000 - diff) 
+            claimTargetTime.current = now + msToReset(now)
+            setClaimCountdown(msToReset(now)) 
           } else {
             setClaimStatus('ready')
           }
@@ -262,11 +262,10 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
         }
 
         if (data?.last_wheel_spin) {
-          const diff = now - new Date(data.last_wheel_spin).getTime()
-          if (diff < 86400000) { 
+          if (doneToday(data.last_wheel_spin, now)) { 
             setWheelStatus('claimed')
-            wheelTargetTime.current = now + (86400000 - diff)
-            setWheelCountdown(86400000 - diff) 
+            wheelTargetTime.current = now + msToReset(now)
+            setWheelCountdown(msToReset(now)) 
           } else {
             setWheelStatus('ready')
           }
@@ -327,7 +326,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
       setClaimResult(data.points)
       setClaimStatus('claimed')
       
-      const fullDay = 86400000
+      const fullDay = msToReset()
       claimTargetTime.current = Date.now() + fullDay
       setClaimCountdown(fullDay)
       
@@ -371,7 +370,7 @@ export default function DailyRewardsModal({ onClose, onPointsUpdate }) {
     setSpinning(false)
     setWheelStatus('claimed')
     
-    const fullDay = 86400000
+    const fullDay = msToReset()
     wheelTargetTime.current = Date.now() + fullDay
     setWheelCountdown(fullDay)
 
