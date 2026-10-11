@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import { Medal } from '../components/Medal'
+import { useRanks } from '../lib/ranks'
 import { useAvatars } from '../lib/avatars'
 import TwitchAvatar from '../components/TwitchAvatar'
 import { openPlayer } from '../components/PlayerModal'
@@ -58,6 +60,8 @@ export default function WagerRace() {
   const avmap = useAvatars(pageRows.map((r) => r.username).concat(data?.me ? [data.me.username] : []))
   const top = Number(rows[0]?.wagered) || 1
   const mine = data?.me
+  const rankOf = useRanks(pageRows.map((r) => r.username).concat(data?.me ? [data.me.username] : []))
+  const badge = (name, size) => { const l = rankOf(name); return l == null || !rankOf.isMember(name) ? null : <Medal level={l} size={size} /> }
   const inList = mine && pageRows.some((r) => r.username === mine.username)
   const ahead = mine && mine.rank > 1 ? rows.find((r) => r.rank === mine.rank - 1) : null
   const t = data ? parts(new Date(data.ends_at).getTime() - now) : null
@@ -69,7 +73,7 @@ export default function WagerRace() {
       <div role="button" tabIndex={0} className={`${styles.row} ${isMe ? styles.me : ''}`} style={{ '--p': `${Math.max(2, (Number(r.wagered) / top) * 100)}%` }}
         onClick={() => openPlayer(r.username)} onKeyDown={(e) => { if (e.key === 'Enter') openPlayer(r.username) }}>
         <span className={styles.rk} style={{ color: RANK_COLOR[r.rank - 1] || undefined }}>{r.rank}</span>
-        <span className={styles.pl}><TwitchAvatar name={r.username} map={avmap} size={30} className={styles.av} /><span className={styles.nm}>{r.username}</span>{isMe && <span className={styles.you}>YOU</span>}</span>
+        <span className={styles.pl}><TwitchAvatar name={r.username} map={avmap} size={30} className={styles.av} />{badge(r.username, 22)}<span className={styles.nm}>{r.username}</span>{isMe && <span className={styles.you}>YOU</span>}</span>
         <span className={`${styles.amt} ${styles.r}`}><i className={styles.coin} />{fmt(r.wagered)}</span>
       </div>
     )
