@@ -138,3 +138,57 @@ as $$
   ) x;
 $$;
 grant execute on function public.recent_wager_prizes(int) to anon, authenticated;
+
+-- Activity chart of the Wager Race hero: points wagered per time bucket of the current period (Lisbon time).
+-- daily = 1 hour buckets, weekly = 6 hour buckets, monthly = 1 day buckets. Public and read-only, no usernames.
+create or replace function public.wager_race_activity(p_period text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  now_l timestamp := now() at time zone 'Europe/Lisbon';
+  start_l timestamp; end_l timestamp;
+  s timestamptz; e timestamptz;
+  step int;
+  nb int;
+  cur int;
+  out json;
+begin
+  if p_period = 'daily' then
+    start_l := date_trunc('day', now_l); end_l := start_l + interval '1 day'; step := 3600;
+  elsif p_period = 'weekly' then
+    start_l := date_trunc('week', now_l); end_l := start_l + interval '7 days'; step := 21600;
+  elsif p_period = 'monthly' then
+    start_l := date_trunc('month', now_l); end_l := start_l + interval '1 month'; step := 86400;
+  else
+    raise exception 'bad period';
+  end if;
+  s := start_l at time zone 'Europe/Lisbon';
+  e := end_l at time zone 'Europe/Lisbon';
+  nb := ceil(extract(epoch from (e - s)) / step)::int;
+  cur := least(nb - 1, floor(extract(epoch from (now() - s)) / step)::int);
+
+  with w as (
+    select floor(extract(epoch from (created_at - s)) / step)::int as i, sum(bet)::bigint as amt
+    from (
+      select created_at, bet from casino_games where status = 'done' and created_at >= s and created_at < e and lower(username) not in ('nightbot','streamelements','wizebot','moobot','fossabot','streamlabs')
+      union all
+      select created_at, bet from crash_bets where created_at >= s and created_at < e and lower(username) not in ('nightbot','streamelements','wizebot','moobot','fossabot','streamlabs')
+      union all
+      select en.created_at, en.amount from jackpot_entries en
+        join jackpot_rounds r on r.seq = en.seq and r.status = 'done'
+        where en.created_at >= s and en.created_at < e and lower(en.username) not in ('nightbot','streamelements','wizebot','moobot','fossabot','streamlabs')
+    ) x
+    group by 1
+  )
+  select json_build_object(
+    'buckets', nb,
+    'current', cur,
+    'values', (select json_agg(coalesce(w.amt, 0) order by g.i) from generate_series(0, cur) g(i) left join w on w.i = g.i)
+  ) into out;
+  return out;
+end;
+$$;
+grant execute on function public.wager_race_activity(text) to anon, authenticated;

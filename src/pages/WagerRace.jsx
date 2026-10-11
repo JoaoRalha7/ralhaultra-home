@@ -39,15 +39,18 @@ export default function WagerRace() {
   const [now, setNow] = useState(Date.now())
   const [page, setPage] = useState(1)
   const [how, setHow] = useState(false)
+  const [act, setAct] = useState(null)
 
   useEffect(() => {
     let off = false
-    setData(null); setError(false); setPage(1)
+    setData(null); setError(false); setPage(1); setAct(null)
     const load = async () => {
       const { data: d, error: e } = await supabase.rpc('wager_race', { p_period: period, p_limit: MAX_ROWS, p_user: me })
       if (off) return
       if (e || !d) { setError(true); return }
       setError(false); setData(d)
+      const { data: a } = await supabase.rpc('wager_race_activity', { p_period: period })
+      if (!off && a && Array.isArray(a.values)) setAct(a)
     }
     load()
     const id = setInterval(load, 60000)
@@ -85,6 +88,17 @@ export default function WagerRace() {
   const pool = cfg.ladder.reduce((a, b) => a + b, 0) + cfg.rest * (cfg.restTo - cfg.restFrom + 1)
   const cdBox = (v, l) => <div className={styles.cb}><b>{String(v).padStart(2, '0')}</b><small>{l}</small></div>
   const myPrize = mine ? prizeFor(period, mine.rank) : 0
+  const chart = (() => {
+    if (!act || !act.values?.length) return null
+    let c = 0
+    const cum = act.values.map((v) => (c += Number(v) || 0))
+    const W = 220, H = 56, n = Math.max(2, act.buckets - 1), mx = Math.max(1, c)
+    const pts = cum.map((v, i) => [(i / n) * W, H - 3 - (v / mx) * (H - 8)])
+    const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
+    const last = pts[pts.length - 1]
+    const recent = Number(act.values[act.values.length - 1]) || 0
+    return { W, H, line, area: `${line} L${last[0].toFixed(1)} ${H} L0 ${H} Z`, last, recent }
+  })()
 
   return (
     <div className={styles.page}>
@@ -105,11 +119,24 @@ export default function WagerRace() {
             {cdBox(t ? t.d : 0, 'DAYS')}{cdBox(t ? t.h : 0, 'HOUR')}{cdBox(t ? t.m : 0, 'MIN')}{cdBox(t ? t.s : 0, 'SEC')}
           </div>
         </div>
-        <svg className={styles.flag} viewBox="0 0 120 120" aria-hidden="true">
-          <defs><pattern id="wrck" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#fff" /><rect x="12" y="12" width="12" height="12" fill="#fff" /><rect x="12" width="12" height="12" fill="#3b82f6" /><rect y="12" width="12" height="12" fill="#3b82f6" /></pattern></defs>
-          <rect x="14" y="6" width="3.5" height="112" rx="2" fill="#9aa6c0" />
-          <path d="M17 12 Q50 0 70 14 T112 12 V70 Q92 82 70 70 T17 72 Z" fill="url(#wrck)" opacity=".95" />
-        </svg>
+        <div className={styles.rside}>
+          <div className={styles.pool}>
+            <div className={styles.stack} aria-hidden="true"><i /><i /><i /><i /><i /></div>
+            <div><small>PRIZE POOL</small><b>{fmt(pool)}</b></div>
+          </div>
+          <div className={styles.act}>
+            <small>TOTAL WAGERED</small>
+            <b><i className={styles.coin} />{fmt(data?.total)}</b>
+            <em>{data ? `${fmt(data.players)} players${chart && chart.recent > 0 ? ` · +${short(chart.recent)} last ${period === 'daily' ? 'hour' : period === 'weekly' ? '6h' : 'day'}` : ''}` : ' '}</em>
+            {chart && (
+              <svg viewBox={`0 0 ${chart.W} ${chart.H}`} width="100%" height={chart.H} preserveAspectRatio="none" aria-hidden="true">
+                <defs><linearGradient id="wrsg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#3b82f6" stopOpacity=".5" /><stop offset="1" stopColor="#3b82f6" stopOpacity="0" /></linearGradient></defs>
+                <path d={chart.area} fill="url(#wrsg)" />
+                <path d={chart.line} fill="none" stroke="#6ea3ff" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+              </svg>
+            )}
+          </div>
+        </div>
       </div>
 
       {how && (
