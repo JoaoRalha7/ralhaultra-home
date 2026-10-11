@@ -1,3 +1,4 @@
+import { isBot } from '../lib/bots'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import TwitchAvatar from '../components/TwitchAvatar'
@@ -78,7 +79,7 @@ export default function Leaderboard() {
       const firstData  = await first.json()
       const firstBatch = firstData.users || []
       if (!firstData.hasMore || firstBatch.length < PAGE) {
-        setUsers(firstBatch); setLastUpdated(new Date()); setPage(1); return
+        setUsers(firstBatch.filter(u => !isBot(u))); setLastUpdated(new Date()); setPage(1); return
       }
       const offsets   = Array.from({ length: MAX_PAGES - 1 }, (_, i) => (i + 1) * PAGE)
       const responses = await Promise.all(
@@ -89,7 +90,7 @@ export default function Leaderboard() {
       )
       const all = [...firstBatch, ...responses.flatMap(d => d.users || [])]
         .filter((u, i, arr) => arr.findIndex(x => x.username === u.username) === i)
-      setUsers(all.filter(u => u.username))
+      setUsers(all.filter(u => u.username && !isBot(u)))
       setLastUpdated(new Date()); setPage(1)
     } catch (err) { setError(err.message) }
     finally { setLoading(false) }

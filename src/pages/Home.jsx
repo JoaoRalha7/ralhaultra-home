@@ -1,3 +1,4 @@
+import { isBot } from '../lib/bots'
 import { openPlayer } from '../components/PlayerModal'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -334,7 +335,7 @@ export default function Home() {
       });
     fetch(`${SE_WORKER_URL}/leaderboard?limit=5`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.users) setBoard(d.users); })
+      .then((d) => { if (d?.users) setBoard(d.users.filter((u) => !isBot(u)).slice(0, 5)); })
       .catch(() => {});
     fetch(`${STATUS_WORKER_URL}/clips?limit=8`)
       .then((r) => (r.ok ? r.json() : null))
@@ -351,14 +352,17 @@ export default function Home() {
     let dead = false;
     (async () => {
       const PAGE = 100;
+      let skipped = 0;
       for (let o = 0; o < 3000 && !dead; o += PAGE) {
         try {
           const r = await fetch(`${SE_WORKER_URL}/leaderboard?limit=${PAGE}&offset=${o}`);
           if (!r.ok) return;
           const d = await r.json();
-          const list = d.users || [];
+          const raw = d.users || [];
+          const list = raw.filter((u) => !isBot(u));
+          skipped += raw.length - list.length;
           const k = list.findIndex((u) => u.username?.toLowerCase() === me);
-          if (k >= 0) { if (!dead) setMine({ ...list[k], rank: o + k + 1 }); return; }
+          if (k >= 0) { if (!dead) setMine({ ...list[k], rank: o - skipped + k + 1 }); return; }
           if (!d.hasMore || list.length < PAGE) return;
         } catch { return; }
       }
