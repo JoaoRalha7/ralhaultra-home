@@ -206,6 +206,7 @@ declare
   cur_l timestamp; s_l timestamp; e_l timestamp;
   s timestamptz; e timestamptz;
   k int := least(greatest(coalesce(p_offset, 1), 1), 400);
+  tot bigint; plr int;
 begin
   if p_period = 'daily' then
     cur_l := date_trunc('day', now_l); s_l := cur_l - (k * interval '1 day'); e_l := s_l + interval '1 day';
@@ -218,9 +219,26 @@ begin
   end if;
   s := s_l at time zone 'Europe/Lisbon';
   e := e_l at time zone 'Europe/Lisbon';
+  select coalesce(sum(amt), 0)::bigint, count(*)::int into tot, plr from (
+    select lower(username) as u, sum(bet)::bigint as amt
+    from (
+      select username, bet from casino_games where status = 'done' and created_at >= s and created_at < e
+      union all
+      select username, bet from crash_bets where created_at >= s and created_at < e
+      union all
+      select en.username, en.amount from jackpot_entries en
+        join jackpot_rounds jr on jr.seq = en.seq and jr.status = 'done'
+        where en.created_at >= s and en.created_at < e
+    ) x
+    where lower(username) not in ('nightbot','streamelements','wizebot','moobot','fossabot','streamlabs')
+    group by lower(username)
+    having sum(bet) > 0
+  ) w;
   return json_build_object(
     'starts_at', s,
     'ends_at', e,
+    'total', tot,
+    'players', plr,
     'rows', coalesce((select json_agg(json_build_object('rank', rank, 'username', username, 'wagered', wagered, 'prize', prize) order by rank)
                       from wager_race_prizes where period = p_period and starts_at = s), '[]'::json),
     'has_older', exists(select 1 from wager_race_prizes where period = p_period and starts_at < s)

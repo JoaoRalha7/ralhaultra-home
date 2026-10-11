@@ -145,6 +145,15 @@ export default function WagerRace() {
             {cdBox(t ? t.d : 0, 'DAYS')}{cdBox(t ? t.h : 0, 'HOUR')}{cdBox(t ? t.m : 0, 'MIN')}{cdBox(t ? t.s : 0, 'SEC')}
           </div>
         </div>}
+        {!live && past && (
+          <div className={styles.rside}>
+            <div className={styles.act}>
+              <small>TOTAL WAGERED</small>
+              <b><i className={styles.coin} />{fmt(past.total)}</b>
+              <em>{fmt(past.players)} players</em>
+            </div>
+          </div>
+        )}
         {live && <div className={styles.rside}>
           <div className={styles.act}>
             <small>TOTAL WAGERED</small>
