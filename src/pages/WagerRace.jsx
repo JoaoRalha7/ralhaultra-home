@@ -8,9 +8,9 @@ import styles from './WagerRace.module.css'
 
 // Prizes in points by position. Edit here: the page and the prize ladder follow.
 const PRIZES = {
-  daily:   { label: 'Daily',   reset: 'Resets every day at 00:00', ladder: [5000, 2500, 1000, 500, 250], rest: 100, restFrom: 6, restTo: 10 },
+  daily:   { label: 'Daily',   reset: 'Resets every day at 00:00', ladder: [10000, 5000, 2000, 1000, 500], rest: 200, restFrom: 6, restTo: 10 },
   weekly:  { label: 'Weekly',  reset: 'Resets every Monday at 00:00', ladder: [50000, 25000, 10000, 5000, 2500], rest: 750, restFrom: 6, restTo: 10 },
-  monthly: { label: 'Monthly', reset: 'Resets on the 1st at 00:00', ladder: [250000, 125000, 50000, 25000, 12500], rest: 3750, restFrom: 6, restTo: 10 },
+  monthly: { label: 'Monthly', reset: 'Resets on the 1st at 00:00', ladder: [125000, 62500, 25000, 12500, 6250], rest: 1875, restFrom: 6, restTo: 10 },
 }
 const PERIODS = ['daily', 'weekly', 'monthly']
 const RANK_COLOR = ['#f5c542', '#b8c0d0', '#cd7f4f']
