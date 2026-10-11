@@ -105,15 +105,34 @@ export default function WagerRace() {
             <div className={styles.lad}><span>#{cfg.restFrom}-{cfg.restTo}</span><b><i className={styles.coin} />{fmt(cfg.rest)}</b></div>
             <div className={styles.pool}><span>Total pool</span><b>{fmt(cfg.ladder.reduce((a, b) => a + b, 0) + cfg.rest * (cfg.restTo - cfg.restFrom + 1))}</b></div>
           </div>
-          <div className={`${styles.box} ${styles.mebox}`}>
-            <small>YOU</small>
-            {!user ? <em>Log in to join the race.</em> : mine ? (
+          <div className={`${styles.box} ${styles.mebox} ${mine && mine.rank === 1 ? styles.lead : ''}`}>
+            <div className={styles.meTop}>
+              <small>YOU</small>
+              {mine && mine.rank === 1 && <span className={styles.badge}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z" /></svg>LEADING</span>}
+            </div>
+            {!user ? <em className={styles.meTx}>Log in to join the race.</em> : !mine ? <em className={styles.meTx}>No bets yet in this period. Place a bet on any Original to join.</em> : (
               <>
-                <b>#{mine.rank}</b>
-                <em>Wagered {fmt(mine.wagered)}{ahead ? ` · ${fmt(Number(ahead.wagered) - Number(mine.wagered) + 1)} more to pass #${ahead.rank}` : ' · you are leading!'}</em>
-                {prizeFor(period, mine.rank) > 0 && <em>Current prize: {fmt(prizeFor(period, mine.rank))} pts</em>}
+                <div className={styles.who}>
+                  <TwitchAvatar name={mine.username} map={avmap} size={44} className={styles.av} />
+                  <div><b className={styles.meRk}>#{mine.rank}</b><span className={styles.meNm}>{mine.username}</span></div>
+                </div>
+                <div className={styles.kv}><span>Wagered</span><b><i className={styles.coin} />{fmt(mine.wagered)}</b></div>
+                <div className={styles.meBar}><i style={{ width: `${mine.rank === 1 ? 100 : ahead ? Math.min(100, (Number(mine.wagered) / Math.max(1, Number(ahead.wagered))) * 100) : 0}%` }} /></div>
+                {mine.rank === 1 ? (
+                  rows[1] ? <div className={styles.meHint}>Lead over #2: <b><i className={styles.coin} />{fmt(Number(mine.wagered) - Number(rows[1].wagered))}</b></div> : <div className={styles.meHint}>You are the only one in the race so far.</div>
+                ) : ahead ? (
+                  <div className={styles.meHint}><b><i className={styles.coin} />{fmt(Number(ahead.wagered) - Number(mine.wagered) + 1)}</b> more to pass #{ahead.rank}</div>
+                ) : <div className={styles.meHint}>Keep wagering to climb the ranking.</div>}
+                {(prizeFor(period, mine.rank) > 0 || (ahead && prizeFor(period, ahead.rank) > 0)) && (
+                  <div className={styles.mePrz}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3" /></svg>
+                    {mine.rank === 1
+                      ? <span>Prize <b><i className={styles.coin} />{fmt(prizeFor(period, 1))}</b></span>
+                      : <span>Prize now <b><i className={styles.coin} />{fmt(prizeFor(period, mine.rank))}</b>{ahead && prizeFor(period, ahead.rank) > prizeFor(period, mine.rank) && <> · at #{ahead.rank} <b className={styles.gold}><i className={styles.coin} />{fmt(prizeFor(period, ahead.rank))}</b></>}</span>}
+                  </div>
+                )}
               </>
-            ) : <em>No bets yet in this period.</em>}
+            )}
           </div>
         </aside>
       </div>
