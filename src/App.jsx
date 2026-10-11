@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 import Home from './pages/Home';
 const Legal = lazy(() => import('./pages/Legal'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const WagerRace = lazy(() => import('./pages/WagerRace'));
 const Vip = lazy(() => import('./pages/Vip'));
 const Profile = lazy(() => import('./pages/Profile'));
 import DevToolsGuard from './components/DevToolsGuard';
@@ -100,6 +101,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="offers" element={<Offers />} />
         <Route path="leaderboard" element={<Leaderboard />} />
+        <Route path="wager-race" element={<WagerRace />} />
         <Route path="vip" element={<Vip />} />
         <Route path="profile" element={<Profile />} />
         <Route path="shop" element={<Shop />} />
