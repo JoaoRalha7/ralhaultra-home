@@ -148,10 +148,17 @@ export default function Crash() {
         const was = R.current.active
         if (crashAt && d.round.seq === prev.seq + 1) {
           setOver({ seq: prev.seq, crashAt, until: Date.now() + 3200, lost: was })
-          if (was) { g.cheer(-1); recordStat('crash', prev.seq, R.current.mine?.bet, 0); setCashed(null) }
+          if (was) { g.cheer(-1); setCashed(null) }
         }
         setPlaced(null)
-        if (R.current.me) loadMine()
+        if (R.current.me) {
+          loadMine()
+          // the server settles auto cash-outs, so the result of the round that just ended comes from it (win or loss)
+          workerPost('/crash/mine').then(({ ok, data: m }) => {
+            const b = ok && Array.isArray(m?.bets) ? m.bets.find((x) => x.seq === prev.seq) : null
+            if (b) recordStat('crash', b.seq, b.bet, b.cashedAt != null ? b.payout : 0)
+          }).catch(() => {})
+        }
       }
       setData(d)
     } catch { /* keep the last state, try again */ }
