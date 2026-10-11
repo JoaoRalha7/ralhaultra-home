@@ -102,7 +102,7 @@ export default function WagerRace() {
               <button type="button" className={styles.pageBtn} onClick={() => setPage((x) => Math.min(pages, x + 1))} disabled={page === pages} aria-label="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg></button>
             </div>
           )}
-          <p className={styles.note}>Counts every point wagered on Originals (Mines, Blackjack, Keno, Plinko, Roulette, Crash and Jackpot), win or lose. Prizes are paid in points after each period ends. Updated every minute.</p>
+          <p className={styles.note}>Counts every point wagered on Originals (Mines, Blackjack, Keno, Plinko, Roulette, Crash and Jackpot), win or lose. Top 10 prizes are paid automatically in points when each period ends. Updated every minute.</p>
         </div>
 
         <aside className={styles.side}>

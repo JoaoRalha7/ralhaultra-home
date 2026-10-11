@@ -373,9 +373,10 @@ export default function Home() {
   const loadActivity = useCallback(async () => {
     try {
       const empty = { redeems: [] };
-      const [gwRes, voucherRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
+      const [gwRes, voucherRes, raceRes, shopRes, dailyRes, casinoRes, picks, gtb, avg] = await Promise.all([
         supabase.from('giveaway_entries').select('twitch_username, tickets, cost_paid, created_at').order('created_at', { ascending: false }).limit(10),
         supabase.rpc('recent_voucher_redeems', { lim: 10 }),
+        supabase.rpc('recent_wager_prizes', { lim: 10 }),
         supabase.rpc('recent_shop_redeems', { lim: 10 }),
         fetch(`${SE_WORKER_URL}/daily-redeems?limit=10`).then((r) => (r.ok ? r.json() : empty)).catch(() => empty),
         fetch(`${SE_WORKER_URL}/casino-feed?limit=10`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
@@ -390,6 +391,10 @@ export default function Home() {
       }));
       const vouchers = (Array.isArray(voucherRes.data) ? voucherRes.data : []).map((r) => ({
         _type: 'voucher', action: 'Voucher Redeem', username: r.username,
+        created_at: r.created_at, points: r.points || 0, status: 'AWARDED',
+      }));
+      const race = (Array.isArray(raceRes.data) ? raceRes.data : []).map((r) => ({
+        _type: 'voucher', action: `Wager Race ${String(r.period).charAt(0).toUpperCase()}${String(r.period).slice(1)} #${r.rank}`, username: r.username,
         created_at: r.created_at, points: r.points || 0, status: 'AWARDED',
       }));
       const shop = shopData.map((r) => ({
@@ -410,7 +415,7 @@ export default function Home() {
       const byDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
       applyActivity({
         shop: shop.sort(byDate).slice(0, 7),
-        giveaways: [...giveaways, ...vouchers].sort(byDate).slice(0, 7),
+        giveaways: [...giveaways, ...vouchers, ...race].sort(byDate).slice(0, 7),
         games: games.sort(byDate).slice(0, 7),
       });
     } catch (e) {

@@ -604,6 +604,7 @@ export default {
       try { const now = Date.now(); const rounds = await clEnsure(env, sbHeaders, now); if (rounds[0]) await clSettle(env, sbHeaders, rounds[0], now) } catch (e) { console.error('cron crash', e.message) }
       try { await jpEnsure(env, sbHeaders, Date.now()) } catch (e) { console.error('cron jackpot', e.message) }
       try { if (econOn()) await econCron(env, sbHeaders, new Date(event.scheduledTime)) } catch (e) { console.error('cron economy', e.message) }
+      try { if (econOn()) { const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/wager_race_settle`, { method: 'POST', headers: sbHeaders, body: '{}' }); if (!r.ok) console.error('cron wager race', r.status, (await r.text()).slice(0, 200)) } } catch (e) { console.error('cron wager race', e.message) }
     })())
   },
   async fetch(request, env) {
@@ -1957,7 +1958,8 @@ export default {
         for (const t of tx) {
           const rs = String(t.reason)
           const note = rs.includes(':') ? rs.slice(rs.indexOf(':') + 1).trim() : ''
-          const title = rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : rs.startsWith('vip_levelup') ? 'Level-up reward'
+          const wr = rs.match(/^wagerrace:(daily|weekly|monthly)#(\d+)$/)
+          const title = wr ? `Wager Race ${wr[1][0].toUpperCase()}${wr[1].slice(1)} #${wr[2]}` : rs.startsWith('cashback:') ? 'Weekly cashback' : rs.startsWith('voucher:') ? `Voucher ${rs.slice(8)}` : rs.startsWith('vip_levelup') ? 'Level-up reward'
             : rs.startsWith('chat') ? (note ? `Stream Points: ${note}` : 'Stream Points') : rs.startsWith('admin') ? (note && note !== 'admin_all' && note !== 'admin' ? `Bonus: ${note}` : 'Bonus from Ralha') : rs === 'se_import' ? 'Imported from StreamElements' : 'Daily reward'
           const v = Number(t.delta) || 0
           acts.push({ kind: 'rewards', title, at: t.created_at, value: v, status: v < 0 ? 'ADJUSTED' : 'AWARDED' })
