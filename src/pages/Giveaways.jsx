@@ -24,6 +24,16 @@ const parts = (ms) => {
   const p = (n) => String(n).padStart(2, '0')
   return [['Days', p(Math.floor(s / 86400))], ['Hours', p(Math.floor((s % 86400) / 3600))], ['Min', p(Math.floor((s % 3600) / 60))], ['Sec', p(s % 60)]]
 }
+function WinAv({ name }) {
+  const [bad, setBad] = useState(false)
+  return (
+    <i className={styles.tkAv}>
+      {String(name || '?').slice(0, 1).toUpperCase()}
+      {!bad && <img src={`https://unavatar.io/twitch/${encodeURIComponent(String(name).toLowerCase())}?fallback=false`} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(true)} />}
+    </i>
+  )
+}
+
 const ago = (d) => {
   const m = Math.max(1, Math.round((Date.now() - new Date(d)) / 60000))
   if (m < 60) return `${m}m ago`
@@ -260,12 +270,11 @@ export default function Giveaways() {
       {tab === 'active' && done.some((g) => g.winner) && (
         <section className={styles.recent}>
           <h2>Recently drawn</h2>
-          <div className={styles.recentGrid}>
-            {done.filter((g) => g.winner).slice(0, 3).map((g) => (
-              <div key={g.id} className={styles.drawn}>
-                <Icon name="trophy" size={20} />
-                <div><b>{g.prize}</b><span>Winner {g.winner}</span></div>
-                <small>{ago(g.ends_at)}</small>
+          <div className={styles.ticker}>
+            {done.filter((g) => g.winner).slice(0, 8).map((g) => (
+              <div key={g.id} className={styles.tkItem}>
+                <WinAv name={g.winner} />
+                <span><b>{g.winner}</b> won <em>{g.prize}</em> &middot; {ago(g.ends_at).replace(' ago', '')}</span>
               </div>
             ))}
           </div>

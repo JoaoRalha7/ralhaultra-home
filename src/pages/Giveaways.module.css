@@ -141,3 +141,12 @@
 /* card image: show it whole (no cropping), same compact card height as before */
 .art{height:130px;position:relative}
 .art img{position:absolute;inset:0;box-sizing:border-box;width:100%;height:100%;object-fit:contain;padding:8px 60px;filter:drop-shadow(0 8px 12px #0009)}
+
+/* Recently drawn: slim winners ticker */
+.ticker{display:flex;gap:10px;overflow-x:auto;padding:10px;border-radius:14px;background:#0d1119;border:1px solid var(--line);scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent);mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.ticker::-webkit-scrollbar{display:none}
+.tkItem{flex:none;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:999px;background:#ffffff08;border:1px solid #ffffff10;font-size:13px;color:#aab2c5;white-space:nowrap}
+.tkItem b{color:#fff}
+.tkItem em{font-style:normal;color:#fbbf24;font-weight:800}
+.tkAv{position:relative;width:28px;height:28px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:none;background:#3b82f6;border:2px solid #fbbf24;font:800 11px "Rubik",sans-serif;font-style:normal;color:#fff}
+.tkAv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
