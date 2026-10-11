@@ -51,9 +51,9 @@ const TrophySVG = () => (
 )
 
 // Same gold round coin as the site header
-const CoinSVG = ({ size = 13 }) => (
+const CoinSVG = ({ size = 13, color }) => (
   <span aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', width: size, height: size, borderRadius: '50%', flex: 'none',
-    background: 'radial-gradient(circle at 35% 30%, #fde68a, #f5c542 55%, #b8860b)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.18)' }} />
+    background: color ? `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${color} 55%, #fff), ${color} 55%, color-mix(in srgb, ${color} 55%, #000))` : 'radial-gradient(circle at 35% 30%, #fde68a, #f5c542 55%, #b8860b)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.18)' }} />
 )
 
 export default function Leaderboard() {
@@ -223,7 +223,7 @@ export default function Leaderboard() {
                 </div>
                 <SlideText text={p.username} className={styles.podiumName} />
                 {lvlBadge(p.username, 26) && <span className={styles.podiumLvl}>{lvlBadge(p.username, 26)}</span>}
-                <div className={styles.podiumPoints}>{p.points?.toLocaleString('en-GB')} <CoinSVG size={15} /></div>
+                <div className={styles.podiumPoints}>{p.points?.toLocaleString('en-GB')} <CoinSVG size={15} color={col.bg} /></div>
                 <div className={styles.step}><span>{col.label}</span></div>
               </div>
             )
