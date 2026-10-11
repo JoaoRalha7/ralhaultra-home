@@ -1802,11 +1802,23 @@ export default {
         const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
         // ?sort=top: biggest single payouts (all time) instead of the latest rounds
         if (searchParams.get('sort') === 'top') {
+          // biggest profit (payout - bet) across the Originals, Crash and Jackpot
+          const pool = []
           const t = await fetch(
-            `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&payout=gt.0&select=id,username,game,bet,payout,updated_at&order=payout.desc&limit=${limit}`,
+            `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&payout=gt.0&select=id,username,game,bet,payout,updated_at&order=payout.desc&limit=200`,
             { headers: sbHeaders }
           )
-          return json({ rounds: t.ok ? await t.json() : [] })
+          if (t.ok) pool.push(...await t.json())
+          try {
+            const cb = await clSb(env, sbHeaders, `crash_bets?cashed_at=not.is.null&payout=gt.0&order=payout.desc&limit=100&select=username,bet,payout,created_at`)
+            if (cb.ok) pool.push(...(await cb.json()).map((b) => ({ username: b.username, game: 'crash', bet: b.bet, payout: b.payout, updated_at: b.created_at })))
+          } catch { /* top still works without crash */ }
+          try {
+            const jr = await jpSb(env, sbHeaders, `jackpot_rounds?status=eq.done&order=payout.desc&limit=50&select=winner_name,winner_amount,payout,end_ms`)
+            if (jr.ok) pool.push(...(await jr.json()).filter((x) => Number(x.end_ms) + JP.spinMs <= Date.now()).map((x) => ({ username: x.winner_name, game: 'jackpot', bet: x.winner_amount, payout: x.payout, updated_at: new Date(Number(x.end_ms) + JP.spinMs).toISOString() })))
+          } catch { /* top still works without jackpot */ }
+          const profit = (x) => (x.payout || 0) - (x.bet || 0)
+          return json({ rounds: pool.filter((x) => profit(x) > 0).sort((x, y) => profit(y) - profit(x)).slice(0, limit) })
         }
         const r = await fetch(
           `${env.SUPABASE_URL}/rest/v1/casino_games?status=eq.done&updated_at=lte.${new Date().toISOString()}&select=id,username,game,bet,payout,updated_at&order=updated_at.desc&limit=${Math.min(limit * 30, 300)}`,
