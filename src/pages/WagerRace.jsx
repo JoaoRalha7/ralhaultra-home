@@ -24,7 +24,8 @@ const prizeFor = (period, rank) => {
   if (rank >= p.restFrom && rank <= p.restTo) return p.rest
   return 0
 }
-const short = (n) => (n >= 1000000 ? `${n / 1000000}M` : n >= 1000 ? `${n / 1000}K` : String(n))
+const trim = (x, d) => String(Number(x.toFixed(d)))
+const short = (n) => (n >= 1000000 ? `${trim(n / 1000000, 2)}M` : n >= 1000 ? `${trim(n / 1000, 1)}K` : String(n))
 const parts = (ms) => {
   const s = Math.max(0, Math.floor(ms / 1000))
   return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 }
