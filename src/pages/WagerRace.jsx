@@ -92,8 +92,10 @@ export default function WagerRace() {
         <div className={styles.hl}>
           <div className={styles.ttl}><em>{short(pool)}</em><span>{cfg.label.toUpperCase()} RACE</span></div>
           <div className={styles.ul} />
-          <div className={styles.tabs} role="tablist">
-            {PERIODS.map((p) => <button key={p} type="button" role="tab" aria-selected={period === p} className={period === p ? styles.on : ''} onClick={() => setPeriod(p)}>{PRIZES[p].label}</button>)}
+          <div className={styles.tabRow}>
+            <div className={styles.tabs} role="tablist">
+              {PERIODS.map((p) => <button key={p} type="button" role="tab" aria-selected={period === p} className={period === p ? styles.on : ''} onClick={() => setPeriod(p)}>{PRIZES[p].label}</button>)}
+            </div>
             <button type="button" className={`${styles.howBtn} ${how ? styles.howOn : ''}`} onClick={() => setHow((v) => !v)}>How it works</button>
           </div>
         </div>
