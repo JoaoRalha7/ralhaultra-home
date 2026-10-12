@@ -611,7 +611,9 @@ export default function Slots() {
   const playedShown = pickFeatured(FEATURED_PLAYED, mostPlayed.filter(s => (playCounts[s.id] || 0) > 0))
 
   // New Slots — todas as slots da DB, mais recentes primeiro
-  const newSlots = allSlotsDb.slice(0, 12)
+  // only these providers (matched loosely: "Hacksaw Gaming", "Pragmatic Play", "Nolimit City", "No Limit City"...)
+  const NEW_PROVIDERS = ['hacksaw', 'pragmatic', 'nolimit']
+  const newSlots = allSlotsDb.filter((x) => { const p = String(x.provider || '').toLowerCase().replace(/[^a-z]/g, ''); return NEW_PROVIDERS.some((k) => p.includes(k)) }).slice(0, 12)
   // Search usa allSlotsDb: ranked (exact > starts with > word starts > contains), every word must match,
   // ignores accents / punctuation / word order, and forgives a typo when nothing matches exactly
   const filtered = (search || provFilter)
