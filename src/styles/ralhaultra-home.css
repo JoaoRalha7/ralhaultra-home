@@ -944,21 +944,21 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 
 /* Top Offers: shared row tracks (subgrid) so logo, bonus, chips, code and CTA line up across cards */
 @supports (grid-template-rows:subgrid){
-  .ocWrap:not(.slide) .ocards>.oc2{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0;justify-items:center;align-items:start}
-  .ocWrap:not(.slide) .oc2>.oLogo{grid-row:1}
-  .ocWrap:not(.slide) .oc2>.oPill{grid-row:2}
-  .ocWrap:not(.slide) .oc2>.oHero{grid-row:3;align-self:start}
-  .ocWrap:not(.slide) .oc2>.oTear{grid-row:4;justify-self:center}
-  .ocWrap:not(.slide) .oc2>.oChips{grid-row:5;width:100%;align-self:start}
-  .ocWrap:not(.slide) .oc2>.oCode{grid-row:6;width:100%;align-self:start}
-  .ocWrap:not(.slide) .oc2>.oSpacer{display:none}
-  .ocWrap:not(.slide) .oc2>.oActions{grid-row:7;width:100%;align-self:end}
+  .ocWrap .ocards>.oc2{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0;justify-items:center;align-items:start}
+  .ocWrap .oc2>.oLogo{grid-row:1}
+  .ocWrap .oc2>.oPill{grid-row:2}
+  .ocWrap .oc2>.oHero{grid-row:3;align-self:start}
+  .ocWrap .oc2>.oTear{grid-row:4;justify-self:center}
+  .ocWrap .oc2>.oChips{grid-row:5;width:100%;align-self:start}
+  .ocWrap .oc2>.oCode{grid-row:6;width:100%;align-self:start}
+  .ocWrap .oc2>.oSpacer{display:none}
+  .ocWrap .oc2>.oActions{grid-row:7;width:100%;align-self:end}
 }
 .oc2>.oCode{margin-top:12px;min-height:48px}
 .oc2>.oActions{margin-top:14px;align-items:center}
 .oc2>.oActions .oClaim{margin:0 !important;height:48px}
 .oc2>.oActions .oMore{width:48px;height:48px}
-.ocWrap:not(.slide) .oc2>.oSpacer{display:none}
+.ocWrap .oc2>.oSpacer{display:none}
 
 /* Top Offers: slightly smaller cards */
 .ocards{grid-template-columns:repeat(3,minmax(0,300px));gap:18px}
@@ -979,3 +979,10 @@ aside .nav.on .ico{background:var(--t);color:#0b0e14;box-shadow:0 4px 14px color
 
 .winItem{display:flex;align-items:center;justify-content:space-between;gap:10px;text-decoration:none}
 .winItem small{display:block;margin-top:2px;font-size:11px;font-weight:600;color:#8d96ab}
+
+/* Top Offers carousel: grid columns so the subgrid rows still line up across cards */
+@supports (grid-template-rows:subgrid){
+  .ocWrap.slide .ocards{display:grid;grid-template-columns:none;grid-template-rows:repeat(7,auto);grid-auto-flow:column;grid-auto-columns:calc((100% - 32px) / 3);gap:0 16px;align-items:stretch}
+  @media (max-width:1100px){.ocWrap.slide .ocards{grid-auto-columns:calc((100% - 16px) / 2)}}
+  @media (max-width:700px){.ocWrap.slide .ocards{grid-auto-columns:86%}}
+}
