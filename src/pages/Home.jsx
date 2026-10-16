@@ -430,11 +430,7 @@ export default function Home() {
 
   useEffect(() => {
     loadActivity();
-    const ch = supabase
-      .channel('home-activity')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shop_redeems' }, () => loadActivity())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'daily_redeems' }, () => loadActivity())
-      .subscribe();
+    // no realtime channel here: it kept the database polling for every visitor; the 20 s refresh below is enough
     // casino rounds have no public realtime (RLS), so poll the light endpoint; full refresh less often
     const live = setInterval(async () => {
       if (document.hidden) return;
@@ -449,7 +445,7 @@ export default function Home() {
       } catch { /* ignore */ }
     }, 4000);
     const full = setInterval(() => { if (!document.hidden) loadActivity(); }, 20000);
-    return () => { supabase.removeChannel(ch); clearInterval(live); clearInterval(full); };
+    return () => { clearInterval(live); clearInterval(full); };
   }, [loadActivity, applyActivity]);
 
   const claim = (o) => {
