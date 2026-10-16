@@ -42,6 +42,10 @@ const fetch = (url, init) => {
   }
   return _fetch(url, init)
 }
+// Tiny per-isolate memo: absorbs the polling (feed, leaderboard, VIP refresh) so the database is hit once per TTL, not once per viewer.
+const MEMO = new Map()
+const memoGet = (k) => { const h = MEMO.get(k); return h && h.exp > Date.now() ? h.v : undefined }
+const memoSet = (k, v, ttlMs) => { if (MEMO.size > 400) MEMO.clear(); MEMO.set(k, { v, exp: Date.now() + ttlMs }) }
 const econJson = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } })
 async function econPoints(env, rest, init) {
   const sb = { 'Content-Type': 'application/json', 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}` }
@@ -51,10 +55,15 @@ async function econPoints(env, rest, init) {
       const q = new URLSearchParams(rest.split('?')[1] || '')
       const limit = Math.min(parseInt(q.get('limit') || '100', 10), 1000)
       const offset = Math.max(parseInt(q.get('offset') || '0', 10), 0)
+      const mk = `top:${limit}:${offset}`
+      const hit = memoGet(mk)
+      if (hit) return econJson(hit)
       const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?select=username,balance&order=balance.desc,username.asc&limit=${limit}&offset=${offset}`, { headers: sb })
       if (!r.ok) return econJson({ error: 'db error' }, 502)
       const rows = await r.json()
-      return econJson({ users: rows.map((x) => ({ username: x.username, points: Number(x.balance) })) })
+      const out = { users: rows.map((x) => ({ username: x.username, points: Number(x.balance) })) }
+      memoSet(mk, out, 20000)
+      return econJson(out)
     }
     const [user, amountStr] = rest.split('/')
     const username = decodeURIComponent(user).toLowerCase()
@@ -1604,7 +1613,7 @@ export default {
         // VIP-only products: the level is checked here, never trusted from the browser
         const minVip = Number(product.min_vip_level) || 0
         if (minVip > 0) {
-          await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: username }) }).catch(() => {})
+          if (!memoGet('vip:' + username)) { memoSet('vip:' + username, 1, 60000); await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: username }) }).catch(() => {}) }
           const lr = await fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${encodeURIComponent(username)}&select=level`, { headers: sbHeaders })
           const myLvl = lr.ok ? Number((await lr.json())?.[0]?.level) || 0 : 0
           if (myLvl < minVip) return json({ error: `Este produto requer VIP ${['Member', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'][minVip] || minVip} ou superior.` }, 403)
@@ -1800,6 +1809,10 @@ export default {
 
       // ── GET /casino-feed (public: finished rounds only, no game state) ────────
       if (pathname === '/casino-feed') {
+        const feedKey = 'cf:' + searchParams.toString()
+        const feedHit = memoGet(feedKey)
+        if (feedHit) return json(feedHit)
+        const feedOut = await (async () => {
         const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
         // ?sort=top: biggest single payouts (all time) instead of the latest rounds
         if (searchParams.get('sort') === 'top') {
@@ -1849,6 +1862,9 @@ export default {
         } catch { /* feed still works without jackpot */ }
         if (extra.length) return json({ rounds: [...rows, ...extra].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, limit) })
         return json({ rounds: rows })
+        })()
+        if (feedOut.ok) { try { memoSet(feedKey, await feedOut.clone().json(), searchParams.get('sort') === 'top' ? 60000 : 4000) } catch { /* not cached */ } }
+        return feedOut
       }
 
       // ── GET /vip — ranks (public) + my progress and cashback estimate (when logged in) ──
@@ -1880,7 +1896,7 @@ export default {
         const who = await getUser(request, env, sbHeaders)
         if (who?.username) {
           const u = who.username
-          await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: u }) }).catch(() => {})
+          if (!memoGet('vip:' + u)) { memoSet('vip:' + u, 1, 60000); await _fetch(`${env.SUPABASE_URL}/rest/v1/rpc/refresh_vip_user`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: u }) }).catch(() => {}) }
           const now = new Date()
           const wk = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
           wk.setUTCDate(wk.getUTCDate() - ((wk.getUTCDay() + 6) % 7)) // this Monday 00:00 UTC
