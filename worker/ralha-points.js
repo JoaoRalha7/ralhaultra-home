@@ -2023,12 +2023,15 @@ export default {
         const ck = PLAYER_CACHE.get(name)
         if (ck && Date.now() - ck.at < 20000) return json(ck.data)
         const get = async (q) => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${q}`, { headers: sbHeaders }); return r.ok ? await r.json() : [] } catch { return [] } }
-        const [bal, prof, games, crash] = await Promise.all([
+        // exact totals come from SQL (a plain select is capped at 1000 rows by the API)
+        const stats = async () => { try { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/player_stats`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: name }) }); return r.ok ? await r.json() : [] } catch { return [] } }
+        const [bal, prof, aggRows] = await Promise.all([
           get(`point_balances?username=eq.${name}&select=level,created_at,wagered_total,watch_minutes,twitch_id,balance&limit=1`),
           get(`profiles?twitch_username=ilike.${encodeURIComponent(name.replace(/_/g, '\\_'))}&select=id,avatar_url&limit=1`),
-          get(`casino_games?username=eq.${name}&status=eq.done&select=game,bet,payout&limit=10000`),
-          get(`crash_bets?username=eq.${name}&select=bet,cashed_at&limit=5000`),
+          stats(),
         ])
+        const games = aggRows.filter((x) => x.game !== 'crash')
+        const crash = aggRows.filter((x) => x.game === 'crash')
         if (!bal[0] && !prof[0] && !games.length && !crash.length) return json({ error: 'not found' }, 404)
         // real signup date (first login) comes from the auth user; if the profile name does not match, use the account that placed the bets
         let joinedAt = null, pid = prof[0]?.id || null, pAvatar = prof[0]?.avatar_url || null
@@ -2048,8 +2051,11 @@ export default {
           const g = per[game] || (per[game] = { game, bets: 0, wagered: 0, profit: 0 })
           g.bets++; g.wagered += bet; g.profit += pay - bet
         }
-        for (const g of games) add(g.game, Number(g.bet) || 0, Number(g.payout) || 0)
-        for (const c of crash) { const bet = Number(c.bet) || 0; add('crash', bet, c.cashed_at ? Math.floor(bet * Number(c.cashed_at)) : 0) }
+        for (const x of aggRows) {
+          wagered += Number(x.wagered) || 0; wins += Number(x.wins) || 0; losses += Number(x.losses) || 0
+          bestWin = Math.max(bestWin, Number(x.best_win) || 0); bestMult = Math.max(bestMult, Number(x.best_mult) || 0)
+          per[x.game] = { game: x.game, bets: Number(x.bets) || 0, wagered: Number(x.wagered) || 0, profit: Number(x.profit) || 0 }
+        }
         // jackpot: every entry of a finished round counts as a bet; the winner gets the round payout
         let jpN = 0
         try {
@@ -2091,7 +2097,7 @@ export default {
         const data = {
           ok: true, username: name, level: Number(bal[0]?.level) || 0, watchMinutes: Number(bal[0]?.watch_minutes) || 0, balance: Number(bal[0]?.balance) || 0, followedAt, followWhy,
           joined: joinedAt, registered: !!pid || !!prof[0] || games.length > 0 || crash.length > 0, avatar: pAvatar || null,
-          stats: { bets: games.length + crash.length + jpN, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
+          stats: { bets: aggRows.reduce((n, x) => n + (Number(x.bets) || 0), 0) + jpN, wins, losses, wagered, bestWin, bestMult: Math.round(bestMult * 100) / 100 },
           games: Object.values(per).sort((a, b) => b.bets - a.bets),
         }
         if (PLAYER_CACHE.size > 300) PLAYER_CACHE.clear()
