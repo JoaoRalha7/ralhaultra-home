@@ -470,6 +470,22 @@ export default function Sidebar() {
         const lines = String(e.data).split('\r\n').filter(Boolean)
         for (const line of lines) {
           if (line.includes('PING')) { ws.send('PONG :tmi.twitch.tv'); continue }
+          // ── mensagem apagada / timeout / ban / clear chat ──
+          if (line.includes(' CLEARMSG ')) {
+            const t = line.match(/target-msg-id=([^;\s]+)/)
+            if (t) { seenIds.current.add(t[1]); setChatMsgs(prev => prev.filter(m => m.id !== t[1])) }
+            continue
+          }
+          if (line.includes(' CLEARCHAT ')) {
+            const who = line.match(/ CLEARCHAT #[^ ]+ :(\S+)/)
+            if (who) {
+              const u = who[1].toLowerCase()
+              setChatMsgs(prev => prev.filter(m => (m.username || '').toLowerCase() !== u))
+            } else {
+              setChatMsgs([])
+            }
+            continue
+          }
           const match = line.match(/^@([^ ]+) :([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.+)/)
           if (!match) continue
           const tags     = Object.fromEntries(match[1].split(';').map(kv => { const [k, ...v] = kv.split('='); return [k, v.join('=')] }))
