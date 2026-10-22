@@ -2302,7 +2302,7 @@ export default function DashHunt() {
       <div className={styles.hxHead}>
         <div>
           <div className={styles.hxTitleRow}>
-            <h1>Bonus Hunt {hunt ? `#${hunt.id}` : ''}</h1>
+            <h1>Bonus Hunt {hunt ? `#${huntNo(hunt)}` : ''}</h1>
             {hunt?.active && <span className={styles.hxLive}><i />Ativo</span>}
           </div>
         </div>

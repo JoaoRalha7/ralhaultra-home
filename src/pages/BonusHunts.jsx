@@ -702,7 +702,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
             const cur = h.id === hunt.id
             return (
               <button key={h.id} className={`${x.rib} ${cur ? x.ribOn : ''} ${st.hasResult ? (st.profit >= 0 ? x.ribWin : x.ribLoss) : ''}`} onClick={() => !cur && onNavigate(h)} aria-current={cur ? 'true' : undefined}>
-                <small>#{h.id}{st.live && <i className={x.liveDot} />}</small>
+                <small>#{huntNo(h)}{st.live && <i className={x.liveDot} />}</small>
                 <b>{st.hasResult ? money(st.profit) : '—'}</b>
                 <em>{st.total} bonuses</em>
               </button>
