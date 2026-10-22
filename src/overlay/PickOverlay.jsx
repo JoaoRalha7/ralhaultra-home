@@ -248,7 +248,9 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 }
 .wc-prize { text-align: right; flex-shrink: 0; font-size: 18px; font-weight: 800; color: var(--gold); line-height: 1; }
 .wc-prize small { display: block; font-size: 10px; font-weight: 700; color: var(--green); margin-top: 3px; }
-.wc-chips { display: flex; gap: 6px; margin-top: 10px; }
+.wc-chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.wc-big { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 24px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.wc-sub { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted2); margin-top: 3px; }
 .wc-chip {
   display: flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 8px;
   background: rgba(0,0,0,.28); font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted2);
@@ -590,6 +592,28 @@ function WinnerCard({ name, avatar, game, chips = [] }) {
   )
 }
 
+function GroupWinnerCard({ bucket, winners, game }) {
+  const each = winners[0]?.points_awarded || 0
+  const shown = winners.slice(0, 8)
+  return (
+    <div className="winner-card">
+      <div className="wc-tag"><CrownIcon size={13} />WINNING RANGE</div>
+      <div className="wc-row">
+        <div className="wc-big" style={{ background: bucket?.color || '#3b82f6' }}>{bucket?.id || '?'}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="wc-name">{bucket?.label || '—'}</div>
+          <div className="wc-sub">{game?.result_avg ? `RESULT ${game.result_avg}X · ` : ''}{winners.length} {winners.length === 1 ? 'WINNER' : 'WINNERS'}</div>
+        </div>
+        {each > 0 && <div className="wc-prize">+{each.toLocaleString('en-GB')} PTS<small style={{ color: 'var(--muted2)' }}>EACH</small></div>}
+      </div>
+      <div className="wc-chips">
+        {shown.map(w => <div key={w.id} className="wc-chip"><b>{w.twitch_username}</b></div>)}
+        {winners.length > shown.length && <div className="wc-chip">+<b>{winners.length - shown.length}</b> MORE</div>}
+      </div>
+    </div>
+  )
+}
+
 // ── ScrollList ─────────────────────────────────────────────────────────────────
 function ScrollList({ children, count }) {
   const wrapRef  = useRef(null)
@@ -889,9 +913,8 @@ export default function PickOverlay() {
   const gtbWinner  = gtbGame?.status  === 'finished'
     ? [...gtbEntries].sort((a,b) => parseBet(a.gap ?? 999999) - parseBet(b.gap ?? 999999))[0]
     : null
-  const avgWinner  = avgGame?.status  === 'finished'
-    ? [...avgEntries].sort((a,b) => parseBet(a.gap ?? 999999) - parseBet(b.gap ?? 999999))[0]
-    : null
+  const avgWinners = avgGame?.status === 'finished' ? avgEntries.filter(e => e.rank === 1) : []
+  const avgWinBucket = avgWinners.length ? BUCKETS.find(b => b.id === avgWinners[0].bucket) : null
   const pickWinner = pickGame?.status === 'finished'
     ? picks.find(p => p.rank === 1)
     : null
@@ -1084,12 +1107,14 @@ export default function PickOverlay() {
               </span>
             </div>
 
-            <PrizeBar game={avgGame} />
+            <div className="prizes" style={{ gridTemplateColumns: '1fr' }}>
+              <div className="prize prize-gold">
+                <div className="p-rank gold">PRIZE POOL · SPLIT BETWEEN WINNERS</div>
+                <div className="p-pts"><PtsIcon color="#fbbf24" size={11} />{((avgGame?.points_1st || 0) + avgEntries.length * 100).toLocaleString('en-GB')}</div>
+              </div>
+            </div>
 
-            {avgWinner && (
-              <WinnerCard name={avgWinner.twitch_username} avatar={avatarMap[avgWinner.twitch_username?.toLowerCase()]} game={avgGame}
-                chips={[['GUESS', parseBet(avgWinner.guess).toFixed(1) + 'x'], ['OFF BY', parseBet(avgWinner.gap).toFixed(1) + 'x']]} />
-            )}
+            {avgWinners.length > 0 && <GroupWinnerCard bucket={avgWinBucket} winners={avgWinners} game={avgGame} />}
 
             <div className="col-subhd">
               <div className="col-subhd-name">
@@ -1105,7 +1130,7 @@ export default function PickOverlay() {
               {[...BUCKETS].reverse().map(b => {
                 const count = bucketCounts[b.id] || 0
                 const pct   = avgEntries.length > 0 ? Math.round((count / avgEntries.length) * 100) : 0
-                const lead  = count > 0 && count === Math.max(...Object.values(bucketCounts))
+                const lead  = avgWinBucket ? avgWinBucket.id === b.id : (count > 0 && count === Math.max(...Object.values(bucketCounts)))
                 return (
                   <div key={b.id} className={`bucket${lead ? ' b-lead' : ''}`} style={{
                     background:  b.color + '12',
