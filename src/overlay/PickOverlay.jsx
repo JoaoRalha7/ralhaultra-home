@@ -76,20 +76,16 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   width: 1500px; height: 900px;
   font-family: var(--ff); text-transform: uppercase;
   display: flex; flex-direction: column;
-  background: radial-gradient(ellipse at 50% 0%, #111827 0%, var(--bg) 70%);
-  border-radius: 20px;
+  background: transparent;
   overflow: hidden;
-  border: 1px solid var(--b2);
-  box-shadow: 0 40px 100px rgba(0,0,0,.9);
 }
 
 /* ── HEADER ── */
 .hd {
   height: 64px; flex-shrink: 0;
-  background: linear-gradient(90deg, #090614 0%, #130c28 50%, #090614 100%);
-  border-bottom: 1px solid rgba(124,111,255,.2);
+  background: transparent;
   display: flex; align-items: center;
-  padding: 0 28px; gap: 16px;
+  padding: 12px 20px 0; gap: 12px; height: 64px;
 }
 .hd-dot {
   width: 9px; height: 9px; border-radius: 50%;
@@ -101,8 +97,8 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 .hd-sep { width: 1px; height: 24px; background: rgba(255,255,255,.1); flex-shrink: 0; }
 .hd-title {
-  font-size: 15px; font-weight: 900; color: var(--text);
-  letter-spacing: .12em; text-transform: uppercase;
+  font-size: 26px; font-weight: 800; color: var(--text);
+  letter-spacing: -.01em; text-shadow: 0 2px 12px rgba(0,0,0,.6); text-transform: uppercase;
 }
 .hd-timer {
   font-family: var(--mono); font-size: 22px; font-weight: 800;
@@ -123,14 +119,14 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 .hd-pill {
   display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
-  border-radius: 99px; border: 1px solid var(--b2); background: var(--s2);
+  border-radius: 99px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.58);
   font-size: 12px; font-weight: 800; letter-spacing: .08em;
 }
 .hd-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
 .hd-pill.off i { background: var(--muted); box-shadow: none; }
 .hd-chip {
   display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
-  border-radius: 10px; border: 1px solid var(--border); background: var(--s2);
+  border-radius: 10px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.58);
   font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted2);
 }
 .hd-chip b { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: 0; }
@@ -151,8 +147,9 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 /* ── COLUMN CARD ── */
 .col {
-  background: var(--s1);
-  border: 1px solid var(--border);
+  background: rgba(9,14,36,.58);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(130,165,255,.18);
   border-radius: var(--r);
   display: flex; flex-direction: column;
   overflow: hidden;
@@ -264,8 +261,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 /* ── ENTRY ROW ── */
 .entry {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 16px;
-  border-bottom: 1px solid rgba(255,255,255,.03);
+  padding: 9px 16px; margin: 0 10px 5px; border-radius: 10px; background: rgba(255,255,255,.05);
   position: relative;
 }
 .entry:last-child { border-bottom: none; }
@@ -401,7 +397,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 /* ── LIVE RANKING TABLE ── */
 .rank-row {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,.03);
+  padding: 8px 14px; margin: 0 10px 5px; border-radius: 10px; background: rgba(255,255,255,.05);
   position: relative; transition: background .3s;
 }
 .rank-row:last-child { border-bottom: none; }
@@ -857,15 +853,6 @@ export default function PickOverlay() {
     ? picks.find(p => p.rank === 1)
     : null
 
-  // ── Ticker items ──────────────────────────────────────────────────────────
-  const tickerItems = [
-    ['JOIN AT', 'JRALHA.COM'],
-    ['PICK & WIN', '100 PTS ENTRY'],
-    ['GUESS THE BALANCE', '100 PTS ENTRY'],
-    ['AVG MULTI', '100 PTS ENTRY'],
-    ['BONUS HUNT', 'LIVE'],
-  ]
-
   return (
     <div className="wrap">
       <style>{CSS}</style>
@@ -1231,22 +1218,6 @@ export default function PickOverlay() {
             </ScrollList>
           </div>
 
-        </div>
-
-        {/* ── TICKER ── */}
-        <div className="ticker">
-          <div className="ticker-track">
-            {[0, 1].map(ri => (
-              <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 64 }}>
-                {tickerItems.map(([lbl, val], ti) => (
-                  <div key={ti} style={{ display: 'flex', alignItems: 'center', gap: 64 }}>
-                    <div className="tick-item">{lbl} <span>{val}</span></div>
-                    <div className="tick-dot" />
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
         </div>
 
       </div>
