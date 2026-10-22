@@ -12,11 +12,7 @@ update public.vip_levels set min_chat_messages = 800  where level = 3;
 update public.vip_levels set min_chat_messages = 1500 where level = 4;
 update public.vip_levels set min_chat_messages = 3000 where level = 5;
 
--- Whoever already has a level keeps it: they are credited with the messages that level asks for.
-update public.point_balances b
-   set chat_messages = l.min_chat_messages
-  from public.vip_levels l
- where l.level = b.level and b.level > 0 and b.chat_messages < l.min_chat_messages;
+-- Everybody starts at 0 messages (no credit for the current level). To reset the counters later: supabase/vip_chat_reset.sql
 
 -- Settings (only created when missing, so your own edits are never overwritten)
 insert into public.economy_config (key, value, note) values
