@@ -221,25 +221,34 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 /* ── WINNER CARD ── */
 .winner-card {
-  margin: 10px 12px 0;
-  border-radius: 10px; padding: 10px 14px;
-  border: 1px solid rgba(251,191,36,.3);
-  background: rgba(251,191,36,.05);
-  flex-shrink: 0;
+  margin: 10px 12px 0; flex-shrink: 0; position: relative; overflow: hidden;
+  border-radius: 14px; padding: 12px 14px;
+  border: 1px solid rgba(251,191,36,.55);
+  background: linear-gradient(135deg, rgba(251,191,36,.22), rgba(251,191,36,.05) 60%, rgba(9,14,36,.4));
+  box-shadow: 0 0 24px -8px rgba(251,191,36,.6);
   animation: winPulse 2.4s ease-in-out infinite;
 }
 @keyframes winPulse {
-  0%,100% { border-color: rgba(251,191,36,.3); }
-  50%     { border-color: rgba(251,191,36,.65); box-shadow: 0 0 18px rgba(251,191,36,.1); }
+  0%,100% { border-color: rgba(251,191,36,.4); }
+  50%     { border-color: rgba(251,191,36,.9); }
 }
-.wc-row { display: flex; align-items: center; gap: 9px; }
-.wc-crown { font-size: 20px; flex-shrink: 0; animation: crownFloat 2s ease-in-out infinite; }
-@keyframes crownFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+.wc-tag {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  font-size: 10px; font-weight: 800; letter-spacing: .2em; color: var(--gold);
+}
+.wc-row { display: flex; align-items: center; gap: 10px; }
 .wc-name {
-  font-size: 16px; font-weight: 900; color: var(--gold);
+  flex: 1; min-width: 0; font-size: 20px; font-weight: 800; color: #fff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.wc-detail { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+.wc-prize { text-align: right; flex-shrink: 0; font-size: 18px; font-weight: 800; color: var(--gold); line-height: 1; }
+.wc-prize small { display: block; font-size: 10px; font-weight: 700; color: var(--green); margin-top: 3px; }
+.wc-chips { display: flex; gap: 6px; margin-top: 10px; }
+.wc-chip {
+  display: flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 8px;
+  background: rgba(0,0,0,.28); font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted2);
+}
+.wc-chip b { font-size: 13px; font-weight: 800; color: var(--text); letter-spacing: 0; }
 
 /* ── COL SUBHEAD ── */
 .col-subhd {
@@ -545,6 +554,35 @@ function Avatar({ username, size = 32, avatarUrl }) {
 
 function PtsIcon({ size = 11, color = '#fbbf24' }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg>
+}
+
+function CrownIcon({ size = 14, color = '#fbbf24' }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5L3 7z"/></svg>
+}
+
+function WinnerCard({ name, avatar, game, chips = [] }) {
+  const pts  = game?.points_1st || 0
+  const cash = game?.prize_cash_1st || 0
+  return (
+    <div className="winner-card">
+      <div className="wc-tag"><CrownIcon size={13} />WINNER</div>
+      <div className="wc-row">
+        <Avatar username={name} size={40} avatarUrl={avatar} />
+        <div className="wc-name">{name}</div>
+        {pts > 0 && (
+          <div className="wc-prize">
+            +{pts.toLocaleString('en-GB')} PTS
+            {cash > 0 && <small>+€{cash}</small>}
+          </div>
+        )}
+      </div>
+      {chips.length > 0 && (
+        <div className="wc-chips">
+          {chips.map(([l, v]) => <div key={l} className="wc-chip">{l} <b>{v}</b></div>)}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ── ScrollList ─────────────────────────────────────────────────────────────────
@@ -902,19 +940,14 @@ export default function PickOverlay() {
             {/* Winner card (only when finished) */}
             {pickWinner && (() => {
               const slot = entriesMap[pickWinner.entry_id]?.slot
-              const av   = avatarMap[pickWinner.twitch_username?.toLowerCase()]
-              return (
-                <div className="winner-card">
-                  <div className="wc-row">
-                    <div className="wc-crown">👑</div>
-                    <Avatar username={pickWinner.twitch_username} size={36} avatarUrl={av}/>
-                    <div>
-                      <div className="wc-name">{pickWinner.twitch_username}</div>
-                      {slot && <div className="wc-detail">{slot.name}</div>}
-                    </div>
-                  </div>
-                </div>
-              )
+              const e    = entriesMap[pickWinner.entry_id]
+              const pay  = e?.payment != null ? parseBet(e.payment) : null
+              const bet  = e?.bet != null ? parseBet(e.bet) : 0
+              const chips = []
+              if (slot) chips.push(['SLOT', slot.name])
+              if (pay != null && bet > 0) chips.push(['MULTI', (pay / bet).toFixed(1) + 'x'])
+              if (pay != null) chips.push(['WIN', fmtEur(pay)])
+              return <WinnerCard name={pickWinner.twitch_username} avatar={avatarMap[pickWinner.twitch_username?.toLowerCase()]} game={pickGame} chips={chips} />
             })()}
 
             {/* Progress bar — slots abertos */}
@@ -966,7 +999,7 @@ export default function PickOverlay() {
                   >
                     {/* Position */}
                     <div className={`rank-pos ${posClass}`}>
-                      {isFinished && p.rank === 1 ? '👑' : `#${i+1}`}
+                      {isFinished && p.rank === 1 ? <CrownIcon size={15} /> : `#${i+1}`}
                     </div>
 
                     {/* Slot image */}
@@ -1049,17 +1082,8 @@ export default function PickOverlay() {
             <PrizeBar game={avgGame} />
 
             {avgWinner && (
-              <div className="winner-card">
-                <div className="wc-row">
-                  <div className="wc-crown">👑</div>
-                  <div>
-                    <div className="wc-name">{avgWinner.twitch_username}</div>
-                    <div className="wc-detail">
-                      Guess: {parseBet(avgWinner.guess).toFixed(1)}x · ±{parseBet(avgWinner.gap).toFixed(1)}x
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <WinnerCard name={avgWinner.twitch_username} avatar={avatarMap[avgWinner.twitch_username?.toLowerCase()]} game={avgGame}
+                chips={[['GUESS', parseBet(avgWinner.guess).toFixed(1) + 'x'], ['OFF BY', parseBet(avgWinner.gap).toFixed(1) + 'x']]} />
             )}
 
             <div className="col-subhd">
@@ -1113,7 +1137,7 @@ export default function PickOverlay() {
                 return (
                   <div key={e.id} className={`entry entry-new${isWin ? ' winner' : ''}`}
                     style={{ animationDelay: `${i * 0.04}s` }}>
-                    <div className={`e-rank ${i < 3 ? 'r'+(i+1) : ''}`}>{isWin ? '👑' : `#${i+1}`}</div>
+                    <div className={`e-rank ${i < 3 ? 'r'+(i+1) : ''}`}>{isWin ? <CrownIcon size={15} /> : `#${i+1}`}</div>
                     <Avatar username={e.twitch_username} avatarUrl={av}/>
                     <div className="e-info">
                       <div className="e-user">{e.twitch_username}</div>
@@ -1166,17 +1190,8 @@ export default function PickOverlay() {
             <PrizeBar game={gtbGame} />
 
             {gtbWinner && (
-              <div className="winner-card">
-                <div className="wc-row">
-                  <div className="wc-crown">👑</div>
-                  <div>
-                    <div className="wc-name">{gtbWinner.twitch_username}</div>
-                    <div className="wc-detail">
-                      Guess: {fmtEur(gtbWinner.guess)} · ±€{parseBet(gtbWinner.gap).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <WinnerCard name={gtbWinner.twitch_username} avatar={avatarMap[gtbWinner.twitch_username?.toLowerCase()]} game={gtbGame}
+                chips={[['GUESS', fmtEur(gtbWinner.guess)], ['OFF BY', '€' + parseBet(gtbWinner.gap).toFixed(2)]]} />
             )}
 
             <div className="col-subhd">
@@ -1205,7 +1220,7 @@ export default function PickOverlay() {
                 return (
                   <div key={e.id} className={`entry entry-new${isWin ? ' winner' : ''}`}
                     style={{ animationDelay: `${i * 0.04}s` }}>
-                    <div className={`e-rank ${rc}`}>{isWin ? '👑' : `#${i+1}`}</div>
+                    <div className={`e-rank ${rc}`}>{isWin ? <CrownIcon size={15} /> : `#${i+1}`}</div>
                     <Avatar username={e.twitch_username} avatarUrl={av}/>
                     <div className="e-info">
                       <div className="e-user">{e.twitch_username}</div>
