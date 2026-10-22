@@ -98,7 +98,8 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 .hd-sep { width: 1px; height: 24px; background: rgba(255,255,255,.1); flex-shrink: 0; }
 .hd-title {
   font-size: 26px; font-weight: 800; color: var(--text);
-  letter-spacing: -.01em; text-shadow: 0 2px 12px rgba(0,0,0,.6); text-transform: uppercase;
+  letter-spacing: -.01em; padding: 4px 14px; border-radius: 12px;
+  background: rgba(9,14,36,.9); border: 1px solid rgba(130,165,255,.18); text-transform: uppercase;
 }
 .hd-timer {
   font-family: var(--mono); font-size: 22px; font-weight: 800;
@@ -119,14 +120,14 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 .hd-pill {
   display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
-  border-radius: 99px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.58);
+  border-radius: 99px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.9);
   font-size: 12px; font-weight: 800; letter-spacing: .08em;
 }
 .hd-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
 .hd-pill.off i { background: var(--muted); box-shadow: none; }
 .hd-chip {
   display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
-  border-radius: 10px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.58);
+  border-radius: 10px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.9);
   font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted2);
 }
 .hd-chip b { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: 0; }
@@ -147,7 +148,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 /* ── COLUMN CARD ── */
 .col {
-  background: rgba(9,14,36,.58);
+  background: rgba(9,14,36,.9);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(130,165,255,.18);
   border-radius: var(--r);
@@ -224,7 +225,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   margin: 10px 12px 0; flex-shrink: 0; position: relative; overflow: hidden;
   border-radius: 14px; padding: 12px 14px;
   border: 1px solid rgba(251,191,36,.55);
-  background: linear-gradient(135deg, rgba(251,191,36,.22), rgba(251,191,36,.05) 60%, rgba(9,14,36,.4));
+  background: linear-gradient(135deg, rgba(251,191,36,.22), rgba(251,191,36,.06) 60%, rgba(9,14,36,.7));
   box-shadow: 0 0 24px -8px rgba(251,191,36,.6);
   animation: winPulse 2.4s ease-in-out infinite;
 }
@@ -270,7 +271,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 /* ── ENTRY ROW ── */
 .entry {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 16px; margin: 0 10px 5px; border-radius: 10px; background: rgba(255,255,255,.05);
+  padding: 9px 16px; margin: 0 10px 5px; border-radius: 10px; background: rgba(255,255,255,.07);
   position: relative;
 }
 .entry:last-child { border-bottom: none; }
