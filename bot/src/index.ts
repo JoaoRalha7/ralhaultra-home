@@ -171,7 +171,7 @@ async function main() {
         await chat.say(channel, error ? `@${user} erro: ${error.message}` : `${target}: ${n > 0 ? '+' : ''}${fmt(n)} pontos (saldo ${fmt(Number(data ?? 0))}).`)
       }
     } else if (cmd === 'top') {
-      const { data } = await sb.from('point_balances').select('username,balance').order('balance', { ascending: false }).limit(5)
+      const { data } = await sb.from('point_balances').select('username,balance').gt('balance', 0).order('balance', { ascending: false }).limit(5)
       const line = (data ?? []).map((r, i) => `${i + 1}. ${r.username} (${fmt(Number(r.balance))})`).join(' | ')
       await chat.say(channel, `Top pontos: ${line}`)
     }

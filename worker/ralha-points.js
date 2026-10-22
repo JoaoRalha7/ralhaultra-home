@@ -58,7 +58,7 @@ async function econPoints(env, rest, init) {
       const mk = `top:${limit}:${offset}`
       const hit = memoGet(mk)
       if (hit) return econJson(hit)
-      const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?select=username,balance&order=balance.desc,username.asc&limit=${limit}&offset=${offset}`, { headers: sb })
+      const r = await _fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?select=username,balance&balance=gt.0&order=balance.desc,username.asc&limit=${limit}&offset=${offset}`, { headers: sb })
       if (!r.ok) return econJson({ error: 'db error' }, 502)
       const rows = await r.json()
       const out = { users: rows.map((x) => ({ username: x.username, points: Number(x.balance) })) }
@@ -1904,16 +1904,14 @@ export default {
           const since = encodeURIComponent(wk.toISOString())
           const un = encodeURIComponent(u)
           // the five reads are independent: run them together (usernames are stored lowercase, so eq can use the index)
-          const [br, g, c, cfg] = await Promise.all([
+          const [br, up, cfg] = await Promise.all([
             fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${un}&select=balance,watch_minutes,vip_watch_base,wagered_total,level,chat_messages`, { headers: sbHeaders }),
-            fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?username=eq.${un}&status=eq.done&created_at=gte.${since}&select=bet,payout&limit=5000`, { headers: sbHeaders }),
-            fetch(`${env.SUPABASE_URL}/rest/v1/crash_bets?username=eq.${un}&created_at=gte.${since}&select=bet,cashed_at&limit=5000`, { headers: sbHeaders }),
+            fetch(`${env.SUPABASE_URL}/rest/v1/rpc/user_period`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_user: u, p_from: wk.toISOString() }) }),
             fetch(`${env.SUPABASE_URL}/rest/v1/economy_config?key=eq.cashback_cap_week&select=value`, { headers: sbHeaders }),
           ])
           const row = (await br.json())?.[0] || {}
           let wagered = 0, paid = 0
-          if (g.ok) for (const x of await g.json()) { wagered += Number(x.bet) || 0; paid += Number(x.payout) || 0 }
-          if (c.ok) for (const x of await c.json()) { wagered += Number(x.bet) || 0; paid += Math.floor((Number(x.bet) || 0) * (Number(x.cashed_at) || 0)) }
+          if (up.ok) { const x = (await up.json())?.[0]; wagered = Number(x?.wagered) || 0; paid = Number(x?.paid) || 0 }
           const lvl = Number(row.level) || 0
           const pct = Number(levels.find((l) => l.level === lvl)?.cashback_pct) || 0
           const cap = Number((await cfg.json())?.[0]?.value) || 50000

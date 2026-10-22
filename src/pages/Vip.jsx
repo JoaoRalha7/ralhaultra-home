@@ -8,7 +8,7 @@ import styles from './Vip.module.css'
 
 
 function useVip() {
-  const [data, setData] = useState(null)
+  const [data, setData] = useState(() => { try { return JSON.parse(sessionStorage.getItem('ru-vip')) } catch { return null } }) // last result first, refreshed right after
   const [error, setError] = useState(false)
   const load = useCallback(async () => {
     try {
@@ -16,7 +16,8 @@ function useVip() {
       const token = s?.session?.access_token
       const r = await fetch(`${WORKER}/vip`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       if (!r.ok) throw new Error('vip')
-      setData(await r.json()); setError(false)
+      const j = await r.json(); setData(j); setError(false)
+      try { sessionStorage.setItem('ru-vip', JSON.stringify(j)) } catch { /* ignore */ }
     } catch { setError(true) }
   }, [])
   useEffect(() => {

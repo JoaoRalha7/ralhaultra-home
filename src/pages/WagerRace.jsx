@@ -47,14 +47,22 @@ export default function WagerRace() {
 
   useEffect(() => {
     let off = false
-    setData(null); setError(false); setPage(1); setAct(null); setAgo(0); setPast(null); setHasPrev(false)
+    // show the last result at once (same tab, this session) and refresh it in the background
+    const ck = `ru-wr:${period}:${me || ''}`
+    let cached = null
+    try { cached = JSON.parse(sessionStorage.getItem(ck)) } catch { /* no cache */ }
+    setData(cached?.d || null); setError(false); setPage(1); setAct(cached?.a || null); setAgo(0); setPast(null); setHasPrev(false)
     const load = async () => {
-      const { data: d, error: e } = await supabase.rpc('wager_race', { p_period: period, p_limit: MAX_ROWS, p_user: me })
+      const [{ data: d, error: e }, { data: a }] = await Promise.all([
+        supabase.rpc('wager_race', { p_period: period, p_limit: MAX_ROWS, p_user: me }),
+        supabase.rpc('wager_race_activity', { p_period: period }),
+      ])
       if (off) return
       if (e || !d) { setError(true); return }
       setError(false); setData(d)
-      const { data: a } = await supabase.rpc('wager_race_activity', { p_period: period })
-      if (!off && a && Array.isArray(a.values)) setAct(a)
+      const act2 = a && Array.isArray(a.values) ? a : null
+      if (act2) setAct(act2)
+      try { sessionStorage.setItem(ck, JSON.stringify({ d, a: act2 })) } catch { /* ignore */ }
     }
     load()
     const id = setInterval(load, 60000)
