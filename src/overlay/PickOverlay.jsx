@@ -76,7 +76,11 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   width: 1500px; height: 900px;
   font-family: var(--ff); text-transform: uppercase;
   display: flex; flex-direction: column;
-  background: transparent;
+  background: rgba(8,14,40,.42);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(140,175,255,.3);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
   overflow: hidden;
 }
 
