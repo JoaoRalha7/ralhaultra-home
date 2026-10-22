@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { huntNo } from '../lib/huntNo'
 import { useNavigate } from 'react-router-dom'
 import { supabaseDash } from '../lib/supabase'
 import { adminPoints } from '../lib/points'
@@ -52,11 +53,12 @@ function NewHuntModal({ onClose, onCreated }) {
     if (!val || val <= 0) { setError('Enter a valid starting balance.'); return }
     setSaving(true)
     try {
-      const { count } = await supabaseDash.from('bonus_hunts').select('*', { count: 'exact', head: true })
+      const { data: allH } = await supabaseDash.from('bonus_hunts').select('id, title')
+      const nextNo = Math.max(0, ...(allH || []).map(h => huntNo(h) || 0)) + 1
       const today = new Date().toISOString().split('T')[0]
       const { data, error: err } = await supabaseDash
         .from('bonus_hunts')
-        .insert([{ title: `Bonus Hunt #${(count || 0) + 1}`, date: today, balance_start: val, active: true, mode: 'hunting' }])
+        .insert([{ title: `Bonus Hunt #${nextNo}`, date: today, balance_start: val, active: true, mode: 'hunting' }])
         .select().single()
       if (err || !data) { setError('Error creating hunt.'); return }
       await supabaseDash.from('bonus_hunts').update({ active: false }).neq('id', data.id)

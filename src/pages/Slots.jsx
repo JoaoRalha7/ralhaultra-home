@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { huntNo } from '../lib/huntNo'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabaseDash } from '../lib/supabase'
 import styles from './Slots.module.css'
@@ -67,7 +68,7 @@ function SlotDetail({ slot, onBack, navigate }) {
         rows.forEach(e => {
           if (e.hunt_id && !seen.has(e.hunt_id)) {
             seen.add(e.hunt_id)
-            hs.push({ id: e.hunt_id, date: e.bonus_hunts?.date })
+            hs.push({ id: e.hunt_id, date: e.bonus_hunts?.date, title: e.bonus_hunts?.title })
           }
         })
         setHunts(hs)
@@ -183,7 +184,7 @@ function SlotDetail({ slot, onBack, navigate }) {
                   <option value="all">All bonus</option>
                   {hunts.map(h => (
                     <option key={h.id} value={h.id}>
-                      Bonus Hunt #{h.id}{h.date ? ` — ${h.date}` : ''}
+                      Bonus Hunt #{huntNo(h)}{h.date ? ` — ${h.date}` : ''}
                     </option>
                   ))}
                 </select>

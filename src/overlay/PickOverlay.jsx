@@ -1,3 +1,4 @@
+import { huntNo } from '../lib/huntNo.js'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabaseDash as supabase, supabase as supabasePublic } from '../lib/supabase.js'
 
@@ -736,9 +737,8 @@ export default function PickOverlay() {
 
     // ── Hunt info (header) ──
     const gameHuntId = pgData?.[0]?.hunt_id || gtbData?.[0]?.hunt_id || avgData?.[0]?.hunt_id || null
-    let hq = supabase.from('bonus_hunts').select('*')
-    hq = gameHuntId ? hq.eq('id', gameHuntId) : hq.eq('active', true)
-    const { data: hRows } = await hq.limit(1)
+    let { data: hRows } = await supabase.from('bonus_hunts').select('*').eq('active', true).limit(1)
+    if (!hRows?.length && gameHuntId) ({ data: hRows } = await supabase.from('bonus_hunts').select('*').eq('id', gameHuntId).limit(1))
     const h = hRows?.[0] || null
     setHunt(h)
     if (h) {
@@ -870,8 +870,7 @@ export default function PickOverlay() {
 
   const anyOf = st => [pickGame, gtbGame, avgGame].some(g => g?.status === st)
   const phase = isLive ? 'VOTING' : anyOf('closed') ? 'CLOSED' : anyOf('finished') ? 'FINISHED' : 'IDLE'
-  const hMatch   = (hunt?.title || '').match(/#?(\d+)/)
-  const huntNum  = hMatch ? '#' + hMatch[1] : '#—'
+  const huntNum  = hunt ? '#' + huntNo(hunt) : '#—'
   const balStart = parseFloat(hunt?.balance_start) || 0
   const beInit   = huntBets.sum > 0 ? balStart / huntBets.sum : 0
 

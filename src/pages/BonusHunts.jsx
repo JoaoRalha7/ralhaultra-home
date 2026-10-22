@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { huntNo } from '../lib/huntNo'
 import TwitchAvatar from '../components/TwitchAvatar'
 import { useAvatars } from '../lib/avatars'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -204,7 +205,7 @@ function FeaturedHunt({ hunt, entries, onClick }) {
             : <span className={x.pillOff}>{st.finished ? 'FINISHED' : 'Latest hunt'}</span>}
           <span className={x.fDate}>{fmtDate(hunt.date)}</span>
         </div>
-        <h2 className={x.fTitle}>Bonus Hunt #{hunt.id}</h2>
+        <h2 className={x.fTitle}>Bonus Hunt #{huntNo(hunt)}</h2>
         <div className={x.fSeg} aria-hidden="true">
           {Array.from({ length: Math.min(st.total, 24) }, (_, i) => <i key={i} className={i < Math.round((st.opened.length / Math.max(st.total, 1)) * Math.min(st.total, 24)) ? x.segOn : ''} />)}
         </div>
@@ -233,7 +234,7 @@ function HuntCard({ hunt, entries, onClick }) {
   return (
     <button type="button" className={`${x.hCard} ${st.live ? x.hCardLive : ''}`} onClick={onClick}>
       <div className={x.hcTop}>
-        <span className={x.hcId}>#{hunt.id}{st.live && <span className={x.liveDot} />}</span>
+        <span className={x.hcId}>#{huntNo(hunt)}{st.live && <span className={x.liveDot} />}</span>
         <span className={x.hcDate}>{fmtDate(hunt.date)}</span>
       </div>
       <b className={`${x.hcProfit} ${st.hasResult ? (st.profit >= 0 ? x.pos : x.neg) : ''}`}>{st.hasResult ? money(st.profit) : '—'}</b>
@@ -547,7 +548,7 @@ function HuntDetail({ hunt, hunts, byHunt, onNavigate, onBack }) {
               : <span className={x.pillLive}><span className={x.liveDot} />LIVE</span>}
             <span className={x.fDate}>{fmtDate(hunt.date)}</span>
           </div>
-          <h1 className={x.dTitle}>Bonus Hunt #{hunt.id}</h1>
+          <h1 className={x.dTitle}>Bonus Hunt #{huntNo(hunt)}</h1>
           <div className={x.fProgress}>
             <div className={x.strip} aria-hidden="true">
               {entries.map(e => {
