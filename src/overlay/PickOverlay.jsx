@@ -38,7 +38,7 @@ function fmtTime(s) {
 
 // ── CSS ────────────────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap');
 
 html, body { background: transparent !important; margin: 0; padding: 0; overflow: hidden; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
@@ -60,7 +60,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   --green:  #22c55e;
   --red:    #ef4444;
   --accent: #7c6fff;
-  --ff: 'Rubik', system-ui, sans-serif;
+  --ff: 'JetBrains Mono', monospace;
   --mono: 'JetBrains Mono', monospace;
   --r: 16px;
 }
@@ -74,7 +74,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   transform-origin: center;
   transform: scale(var(--scale, 1));
   width: 1500px; height: 900px;
-  font-family: var(--ff);
+  font-family: var(--ff); text-transform: uppercase;
   display: flex; flex-direction: column;
   background: radial-gradient(ellipse at 50% 0%, #111827 0%, var(--bg) 70%);
   border-radius: 20px;
@@ -120,6 +120,27 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   font-size: 13px; font-weight: 800; letter-spacing: .14em;
   text-transform: uppercase; color: rgba(255,255,255,.15);
 }
+
+.hd-pill {
+  display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
+  border-radius: 99px; border: 1px solid var(--b2); background: var(--s2);
+  font-size: 12px; font-weight: 800; letter-spacing: .08em;
+}
+.hd-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+.hd-pill.off i { background: var(--muted); box-shadow: none; }
+.hd-chip {
+  display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--s2);
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted2);
+}
+.hd-chip b { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: 0; }
+.hd-cd {
+  display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 14px;
+  border-radius: 12px; border: 1px solid rgba(124,111,255,.4);
+  background: linear-gradient(90deg, rgba(79,124,255,.22), rgba(34,211,238,.14));
+}
+.hd-cd small { font-size: 10px; letter-spacing: .12em; font-weight: 800; color: #bcd0ff; }
+.hd-cd .hd-timer { font-size: 20px; }
 
 /* ── COLUMNS ── */
 .cols {
@@ -342,7 +363,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 /* ── BUCKETS ── */
 .buckets {
-  display: grid; grid-template-columns: 1fr 1fr;
+  display: flex; flex-direction: column;
   gap: 6px; padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -352,9 +373,14 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   display: flex; align-items: center; justify-content: space-between;
   border: 1px solid transparent;
 }
-.b-left { display: flex; flex-direction: column; gap: 1px; }
-.b-id    { font-size: 14px; font-weight: 900; }
-.b-lbl   { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.45); }
+.b-left { display: flex; align-items: center; gap: 10px; position: relative; }
+.bucket { position: relative; overflow: hidden; height: 42px; }
+.b-fill { position: absolute; inset: 0 auto 0 0; opacity: .35; transition: width .6s cubic-bezier(.2,.9,.2,1); }
+.b-right { position: relative; text-align: right; }
+.b-votes { display: block; font-size: 9px; font-weight: 700; color: var(--muted2); letter-spacing: .08em; margin-top: 2px; }
+.b-lead { box-shadow: 0 0 16px -6px currentColor; }
+.b-id    { font-size: 13px; font-weight: 900; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; color: #fff; }
+.b-lbl   { font-size: 14px; font-weight: 700; color: var(--text); }
 .b-pct   { font-family: var(--mono); font-size: 16px; font-weight: 900; }
 
 /* ── PROGRESS BAR ── */
@@ -616,6 +642,9 @@ export default function PickOverlay() {
   const [avgGame,    setAvgGame]    = useState(null)
   const [avgEntries, setAvgEntries] = useState([])
 
+  const [hunt,       setHunt]       = useState(null)
+  const [huntBets,   setHuntBets]   = useState({ n: 0, sum: 0 })
+
   const [avatarMap,  setAvatarMap]  = useState({})
   const [newPickIds, setNewPickIds] = useState(new Set())
   const prevPickIds = useRef(new Set())
@@ -641,6 +670,19 @@ export default function PickOverlay() {
         .in('status', ['open', 'closed', 'finished'])
         .order('created_at', { ascending: false }).limit(1),
     ])
+
+    // ── Hunt info (header) ──
+    const gameHuntId = pgData?.[0]?.hunt_id || gtbData?.[0]?.hunt_id || avgData?.[0]?.hunt_id || null
+    let hq = supabase.from('bonus_hunts').select('*')
+    hq = gameHuntId ? hq.eq('id', gameHuntId) : hq.eq('active', true)
+    const { data: hRows } = await hq.limit(1)
+    const h = hRows?.[0] || null
+    setHunt(h)
+    if (h) {
+      const { data: hb } = await supabase.from('bonus_entries').select('bet').eq('hunt_id', h.id)
+      const sum = (hb || []).reduce((a, e) => a + parseBet(e.bet), 0)
+      setHuntBets({ n: (hb || []).length, sum })
+    }
 
     // ── Pick & Win ──
     const pg = pgData?.[0] || null
@@ -712,6 +754,7 @@ export default function PickOverlay() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'picks' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pick_games' }, load)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bonus_entries' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bonus_hunts' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'gtb_entries' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'gtb_games' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'avg_multi_entries' }, load)
@@ -762,7 +805,12 @@ export default function PickOverlay() {
   const secs      = useCountdown(closesAt)
   const isLive    = openGames.length > 0
 
-  const totalEntries = picks.length + gtbEntries.length + avgEntries.length
+  const anyOf = st => [pickGame, gtbGame, avgGame].some(g => g?.status === st)
+  const phase = isLive ? 'VOTING' : anyOf('closed') ? 'CLOSED' : anyOf('finished') ? 'FINISHED' : 'IDLE'
+  const hMatch   = (hunt?.title || '').match(/#?(\d+)/)
+  const huntNum  = hMatch ? '#' + hMatch[1] : '#—'
+  const balStart = parseFloat(hunt?.balance_start) || 0
+  const beInit   = huntBets.sum > 0 ? balStart / huntBets.sum : 0
 
   const bucketCounts = {}
   for (const e of avgEntries) {
@@ -815,7 +863,7 @@ export default function PickOverlay() {
     ['PICK & WIN', '100 PTS ENTRY'],
     ['GUESS THE BALANCE', '100 PTS ENTRY'],
     ['AVG MULTI', '100 PTS ENTRY'],
-    ['BONUS HUNT', 'AO VIVO'],
+    ['BONUS HUNT', 'LIVE'],
   ]
 
   return (
@@ -825,28 +873,23 @@ export default function PickOverlay() {
 
         {/* ── HEADER ── */}
         <div className="hd">
-          <div className="hd-dot" />
-          <div className="hd-sep" />
           <div className="hd-title">Mini-Games</div>
-          <div className="hd-sep" />
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" style={{ opacity:.6 }}>
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <div className={`hd-timer${isLive && secs < 30 ? ' urgent' : ''}`}>
-            {isLive ? fmtTime(secs) : '—:——'}
-          </div>
-          <div className="hd-sep" />
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: 'rgba(255,255,255,.4)' }}>
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          <div className="hd-entries">
-            <span className="hd-entries-n">{totalEntries}</span>
-            entradas
-          </div>
+          <div className={`hd-pill${isLive ? '' : ' off'}`}><i />{phase}</div>
           <div className="hd-spacer" />
-          <div className="hd-site">jralha.com</div>
+          {hunt && (
+            <>
+              <div className="hd-chip">HUNT <b>{huntNum}</b></div>
+              <div className="hd-chip">START <b>${balStart.toLocaleString('en-US', { maximumFractionDigits: 0 })}</b></div>
+              <div className="hd-chip">BONUSES <b>{huntBets.n}</b></div>
+              <div className="hd-chip">BE <b>{beInit > 0 ? beInit.toFixed(2) + 'x' : '—'}</b></div>
+            </>
+          )}
+          <div className="hd-cd">
+            <small>CLOSES IN</small>
+            <div className={`hd-timer${isLive && secs < 30 ? ' urgent' : ''}`}>
+              {isLive ? fmtTime(secs) : '—:——'}
+            </div>
+          </div>
         </div>
 
         {/* ── COLUMNS ── */}
@@ -893,7 +936,7 @@ export default function PickOverlay() {
                 <div className="prog-track">
                   <div className="prog-fill" style={{ width: `${picks.length > 0 ? Math.round((openedCount / picks.length) * 100) : 0}%` }}/>
                 </div>
-                <span className="prog-lbl">{openedCount}/{picks.length} abertos</span>
+                <span className="prog-lbl">{openedCount}/{picks.length} opened</span>
               </div>
             )}
 
@@ -913,7 +956,7 @@ export default function PickOverlay() {
                     <rect x="2" y="3" width="20" height="14" rx="2"/>
                     <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
                   </svg>
-                  <div className="empty-txt">Sem picks ainda</div>
+                  <div className="empty-txt">No picks yet</div>
                 </div>
               ) : liveRanking.map((r, i) => {
                 const { pick: p, entry, payment, bet, multi, opened } = r
@@ -980,9 +1023,126 @@ export default function PickOverlay() {
                           {awarded && <div className="rank-pts">+{p.points_awarded.toLocaleString('en-GB')} PTS</div>}
                         </>
                       ) : (
-                        <div className="rank-waiting">aguarda</div>
+                        <div className="rank-waiting">WAITING</div>
                       )}
                     </div>
+                  </div>
+                )
+              })}
+            </ScrollList>
+          </div>
+
+          {/* ── AVG MULTI ── */}
+          <div className="col col-avg">
+            <div className="col-hd">
+              <div className="col-hd-left">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+                <span className="col-name">Avg Multi</span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="col-count" style={{ color: '#3b82f6' }}>{avgEntries.length}</div>
+                <span className="col-count-lbl">entries</span>
+              </div>
+            </div>
+
+            {/* Result stat */}
+            <div style={{
+              padding: '8px 16px', borderBottom: '1px solid var(--border)',
+              display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0
+            }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Result</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 900, color: '#3b82f6' }}>
+                {avgResult ? `${avgResult}x` : '—'}
+              </span>
+            </div>
+
+            <PrizeBar game={avgGame} />
+
+            {avgWinner && (
+              <div className="winner-card">
+                <div className="wc-row">
+                  <div className="wc-crown">👑</div>
+                  <div>
+                    <div className="wc-name">{avgWinner.twitch_username}</div>
+                    <div className="wc-detail">
+                      Guess: {parseBet(avgWinner.guess).toFixed(1)}x · ±{parseBet(avgWinner.gap).toFixed(1)}x
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="col-subhd">
+              <div className="col-subhd-name">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+                Ranges
+              </div>
+            </div>
+
+            <div className="buckets">
+              {[...BUCKETS].reverse().map(b => {
+                const count = bucketCounts[b.id] || 0
+                const pct   = avgEntries.length > 0 ? Math.round((count / avgEntries.length) * 100) : 0
+                const lead  = count > 0 && count === Math.max(...Object.values(bucketCounts))
+                return (
+                  <div key={b.id} className={`bucket${lead ? ' b-lead' : ''}`} style={{
+                    background:  b.color + '12',
+                    borderColor: lead ? b.color : 'transparent',
+                    color: b.color,
+                  }}>
+                    <div className="b-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${b.color}, transparent)` }} />
+                    <div className="b-left">
+                      <div className="b-id" style={{ background: b.color }}>{b.id}</div>
+                      <div className="b-lbl">{b.label}</div>
+                    </div>
+                    <div className="b-right">
+                      <div className="b-pct" style={{ color: count > 0 ? '#fff' : 'rgba(255,255,255,.25)' }}>{pct}%</div>
+                      <span className="b-votes">{count} {count === 1 ? 'VOTE' : 'VOTES'}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <ScrollList count={avgEntries.length}>
+              {avgEntries.length === 0 ? (
+                <div className="pk-empty">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                    <polyline points="17 6 23 6 23 12"/>
+                  </svg>
+                  <div className="empty-txt">No entries yet</div>
+                </div>
+              ) : avgEntries.map((e, i) => {
+                const bucket = BUCKETS.find(b => b.id === e.bucket)
+                const isWin  = e.rank === 1 && avgGame?.status === 'finished'
+                const av     = avatarMap[e.twitch_username?.toLowerCase()]
+                return (
+                  <div key={e.id} className={`entry entry-new${isWin ? ' winner' : ''}`}
+                    style={{ animationDelay: `${i * 0.04}s` }}>
+                    <div className={`e-rank ${i < 3 ? 'r'+(i+1) : ''}`}>{isWin ? '👑' : `#${i+1}`}</div>
+                    <Avatar username={e.twitch_username} avatarUrl={av}/>
+                    <div className="e-info">
+                      <div className="e-user">{e.twitch_username}</div>
+                      {e.gap != null && <div className="e-sub">±{parseBet(e.gap).toFixed(1)}x</div>}
+                    </div>
+                    {bucket && (
+                      <div style={{
+                        fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 800,
+                        color: bucket.color,
+                        background: bucket.color + '18',
+                        border: `1px solid ${bucket.color}44`,
+                        borderRadius: 6, padding: '2px 8px', flexShrink: 0,
+                      }}>
+                        {bucket.id}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -1038,7 +1198,7 @@ export default function PickOverlay() {
                   <line x1="12" y1="1" x2="12" y2="23"/>
                   <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                 </svg>
-                Guesses (maior → menor)
+                Guesses (high → low)
               </div>
             </div>
 
@@ -1049,7 +1209,7 @@ export default function PickOverlay() {
                     <line x1="12" y1="1" x2="12" y2="23"/>
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                   </svg>
-                  <div className="empty-txt">Sem guesses ainda</div>
+                  <div className="empty-txt">No guesses yet</div>
                 </div>
               ) : [...gtbEntries].sort((a,b) => parseBet(b.guess) - parseBet(a.guess)).map((e, i) => {
                 const rc    = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : ''
@@ -1065,119 +1225,6 @@ export default function PickOverlay() {
                       {e.gap != null && <div className="e-sub">±€{parseBet(e.gap).toFixed(2)}</div>}
                     </div>
                     <div className={`e-val ${rc}`}>{fmtEur(e.guess)}</div>
-                  </div>
-                )
-              })}
-            </ScrollList>
-          </div>
-
-          {/* ── AVG MULTI ── */}
-          <div className="col col-avg">
-            <div className="col-hd">
-              <div className="col-hd-left">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                  <polyline points="17 6 23 6 23 12"/>
-                </svg>
-                <span className="col-name">Avg Multi</span>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="col-count" style={{ color: '#3b82f6' }}>{avgEntries.length}</div>
-                <span className="col-count-lbl">entries</span>
-              </div>
-            </div>
-
-            {/* Result stat */}
-            <div style={{
-              padding: '8px 16px', borderBottom: '1px solid var(--border)',
-              display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0
-            }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Resultado</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 900, color: '#3b82f6' }}>
-                {avgResult ? `${avgResult}x` : '—'}
-              </span>
-            </div>
-
-            <PrizeBar game={avgGame} />
-
-            {avgWinner && (
-              <div className="winner-card">
-                <div className="wc-row">
-                  <div className="wc-crown">👑</div>
-                  <div>
-                    <div className="wc-name">{avgWinner.twitch_username}</div>
-                    <div className="wc-detail">
-                      Guess: {parseBet(avgWinner.guess).toFixed(1)}x · ±{parseBet(avgWinner.gap).toFixed(1)}x
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="col-subhd">
-              <div className="col-subhd-name">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                  <polyline points="17 6 23 6 23 12"/>
-                </svg>
-                Grupos
-              </div>
-            </div>
-
-            <div className="buckets">
-              {BUCKETS.map(b => {
-                const count = bucketCounts[b.id] || 0
-                const pct   = avgEntries.length > 0 ? Math.round((count / avgEntries.length) * 100) : 0
-                return (
-                  <div key={b.id} className="bucket" style={{
-                    background:  b.color + '12',
-                    borderColor: count > 0 ? b.color + '50' : 'transparent',
-                  }}>
-                    <div className="b-left">
-                      <div className="b-id" style={{ color: b.color }}>{b.id}</div>
-                      <div className="b-lbl">{b.label}</div>
-                    </div>
-                    <div className="b-pct" style={{ color: count > 0 ? b.color : 'rgba(255,255,255,.15)' }}>
-                      {pct}%
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            <ScrollList count={avgEntries.length}>
-              {avgEntries.length === 0 ? (
-                <div className="pk-empty">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                    <polyline points="17 6 23 6 23 12"/>
-                  </svg>
-                  <div className="empty-txt">Sem entradas ainda</div>
-                </div>
-              ) : avgEntries.map((e, i) => {
-                const bucket = BUCKETS.find(b => b.id === e.bucket)
-                const isWin  = e.rank === 1 && avgGame?.status === 'finished'
-                const av     = avatarMap[e.twitch_username?.toLowerCase()]
-                return (
-                  <div key={e.id} className={`entry entry-new${isWin ? ' winner' : ''}`}
-                    style={{ animationDelay: `${i * 0.04}s` }}>
-                    <div className={`e-rank ${i < 3 ? 'r'+(i+1) : ''}`}>{isWin ? '👑' : `#${i+1}`}</div>
-                    <Avatar username={e.twitch_username} avatarUrl={av}/>
-                    <div className="e-info">
-                      <div className="e-user">{e.twitch_username}</div>
-                      {e.gap != null && <div className="e-sub">±{parseBet(e.gap).toFixed(1)}x</div>}
-                    </div>
-                    {bucket && (
-                      <div style={{
-                        fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 800,
-                        color: bucket.color,
-                        background: bucket.color + '18',
-                        border: `1px solid ${bucket.color}44`,
-                        borderRadius: 6, padding: '2px 8px', flexShrink: 0,
-                      }}>
-                        {bucket.id}
-                      </div>
-                    )}
                   </div>
                 )
               })}
