@@ -85,9 +85,24 @@ async function main() {
   // ---- commands ----
   const BUILTIN = new Set(['points', 'pontos', 'watchtime', 'level', 'nivel', 'addpoints', 'addpontos', 'top'])
   const cooldown = new Map<string, number>()
+  // chat activity: a "real" message is not a command and has at least 4 characters.
+  // lastMsg decides who earns watch points; pendingChat is what VIP counts (max 1 message per minute per person).
+  const lastMsg = new Map<string, number>()
+  const lastCounted = new Map<string, number>()
+  const pendingChat = new Map<string, { id: string; n: number }>()
   chat.onMessage(async (channel, user, text, msg) => {
     if (msg.userInfo.userId === botId) return
     for (const t of customTimers) timerLines.set(t.id, (timerLines.get(t.id) ?? 0) + 1)
+    if (isLive && !text.startsWith('!') && text.trim().length >= 4) {
+      const who = user.toLowerCase()
+      const nowMs = Date.now()
+      lastMsg.set(who, nowMs)
+      if (nowMs - (lastCounted.get(who) ?? 0) >= 60_000) {
+        lastCounted.set(who, nowMs)
+        const p = pendingChat.get(who)
+        if (p) p.n += 1; else pendingChat.set(who, { id: msg.userInfo.userId, n: 1 })
+      }
+    }
     if (!text.startsWith('!')) return
     const cmd = text.slice(1).split(/\s+/)[0].toLowerCase()
     const name = user.toLowerCase()
@@ -125,15 +140,15 @@ async function main() {
     } else if (cmd === 'level' || cmd === 'nivel') {
       await sb.rpc('refresh_vip_user', { p_user: name })
       const [{ data: me }, { data: lv }] = await Promise.all([
-        sb.from('point_balances').select('level,wagered_total,watch_minutes,vip_watch_base').eq('username', name).maybeSingle(),
+        sb.from('point_balances').select('level,wagered_total,watch_minutes,vip_watch_base,chat_messages').eq('username', name).maybeSingle(),
         sb.from('vip_levels').select('*').order('level'),
       ])
       const levels = lv ?? []
       const cur = levels.find((l) => l.level === (me?.level ?? 0))
       const next = levels.find((l) => l.level === (me?.level ?? 0) + 1)
       const hrs = Math.floor(Math.max(0, Number(me?.watch_minutes ?? 0) - Number(me?.vip_watch_base ?? 0)) / 60)
-      let msg = `@${user} nível ${cur?.name ?? 'Member'} | ${fmt(Number(me?.wagered_total ?? 0))} apostados | ${hrs}h de stream`
-      if (next) msg += ` | próximo: ${next.name} (${fmt(Number(next.min_wagered))} apostados e ${next.min_watch_hours}h)`
+      let msg = `@${user} nível ${cur?.name ?? 'Member'} | ${fmt(Number(me?.wagered_total ?? 0))} apostados | ${hrs}h de stream | ${fmt(Number(me?.chat_messages ?? 0))} mensagens`
+      if (next) msg += ` | próximo: ${next.name} (${fmt(Number(next.min_wagered))} apostados, ${next.min_watch_hours}h e ${fmt(Number(next.min_chat_messages ?? 0))} mensagens)`
       await chat.say(channel, msg)
     } else if (cmd === 'addpoints' || cmd === 'addpontos') {
       // mods and broadcaster only:  !addpoints all 500 [motivo]   |   !addpoints nome 500 [motivo]  (negative takes away)
@@ -212,20 +227,40 @@ async function main() {
 
   // ---- watchtime tick: every minute while live ----
   let ticking = false
+  const session = new Map<string, { min: number; gone: number }>() // minutes watched in a row this stream
   setInterval(async () => {
     if (ticking) return
     ticking = true
     try {
       const stream = await api.streams.getStreamByUserName(CHANNEL)
-      if (!stream) return
+      if (!stream) { session.clear(); lastMsg.clear(); pendingChat.clear(); return }
       const chatters = await getChatters()
       const eligible = await isEligible(chatters.map((c) => c.userId))
-      const rows = chatters.map((c) => ({ username: c.userName, twitch_id: c.userId, sub_tier: subTier.get(c.userId) ?? 0, eligible: eligible.has(c.userId) }))
+      // active = wrote in chat in the last N minutes (setting chat_active_minutes, 0 = off)
+      const activeMs = Number(await cfg('chat_active_minutes', 20)) * 60_000
+      const nowMs = Date.now()
+      const present = new Set(chatters.map((c) => c.userName.toLowerCase()))
+      for (const [n, v] of session) { if (!present.has(n)) { if (++v.gone > 5) session.delete(n) } }
+      const rows = chatters.map((c) => {
+        const n = c.userName.toLowerCase()
+        const v = session.get(n) ?? { min: 0, gone: 0 }
+        v.min += 1; v.gone = 0; session.set(n, v)
+        const active = activeMs <= 0 || nowMs - (lastMsg.get(n) ?? 0) <= activeMs || c.userId === broadcaster.id
+        return { username: c.userName, twitch_id: c.userId, sub_tier: subTier.get(c.userId) ?? 0, eligible: eligible.has(c.userId) && active, session_min: v.min }
+      })
       for (let i = 0; i < rows.length; i += 500) {
         const { error } = await sb.rpc('watch_tick', { p_rows: rows.slice(i, i + 500) })
         if (error) console.error('watch_tick failed', error.message)
       }
-      console.log(`tick: ${rows.length} viewers, ${eligible.size} eligible, ${rows.filter((r) => r.sub_tier > 0).length} subs`)
+      if (pendingChat.size) {
+        const batch = [...pendingChat.entries()].map(([username, v]) => ({ username, twitch_id: v.id, n: v.n }))
+        pendingChat.clear()
+        for (let i = 0; i < batch.length; i += 500) {
+          const { error } = await sb.rpc('chat_tick', { p_rows: batch.slice(i, i + 500) })
+          if (error) console.error('chat_tick failed', error.message)
+        }
+      }
+      console.log(`tick: ${rows.length} viewers, ${eligible.size} eligible, ${rows.filter((r) => r.eligible).length} paid, ${rows.filter((r) => r.sub_tier > 0).length} subs`)
     } catch (e) {
       console.error('tick error', e)
     } finally {

@@ -1890,7 +1890,7 @@ export default {
       }
 
       if (pathname === '/vip' && request.method === 'GET') {
-        const lv = await fetch(`${env.SUPABASE_URL}/rest/v1/vip_levels?select=level,name,min_wagered,min_watch_hours,bonus_mult,cashback_pct,levelup_reward,daily_boost_pct&order=level.asc`, { headers: sbHeaders })
+        const lv = await fetch(`${env.SUPABASE_URL}/rest/v1/vip_levels?select=level,name,min_wagered,min_watch_hours,min_chat_messages,bonus_mult,cashback_pct,levelup_reward,daily_boost_pct&order=level.asc`, { headers: sbHeaders })
         const levels = lv.ok ? await lv.json() : []
         let me = null
         const who = await getUser(request, env, sbHeaders)
@@ -1905,7 +1905,7 @@ export default {
           const un = encodeURIComponent(u)
           // the five reads are independent: run them together (usernames are stored lowercase, so eq can use the index)
           const [br, g, c, cfg] = await Promise.all([
-            fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${un}&select=balance,watch_minutes,vip_watch_base,wagered_total,level`, { headers: sbHeaders }),
+            fetch(`${env.SUPABASE_URL}/rest/v1/point_balances?username=eq.${un}&select=balance,watch_minutes,vip_watch_base,wagered_total,level,chat_messages`, { headers: sbHeaders }),
             fetch(`${env.SUPABASE_URL}/rest/v1/casino_games?username=eq.${un}&status=eq.done&created_at=gte.${since}&select=bet,payout&limit=5000`, { headers: sbHeaders }),
             fetch(`${env.SUPABASE_URL}/rest/v1/crash_bets?username=eq.${un}&created_at=gte.${since}&select=bet,cashed_at&limit=5000`, { headers: sbHeaders }),
             fetch(`${env.SUPABASE_URL}/rest/v1/economy_config?key=eq.cashback_cap_week&select=value`, { headers: sbHeaders }),
@@ -1920,7 +1920,7 @@ export default {
           const loss = Math.max(0, wagered - paid)
           me = {
             username: u, level: lvl, balance: Number(row.balance) || 0,
-            wagered: Number(row.wagered_total) || 0, minutes: Number(row.watch_minutes) || 0, vipMinutes: Math.max(0, (Number(row.watch_minutes) || 0) - (Number(row.vip_watch_base) || 0)),
+            wagered: Number(row.wagered_total) || 0, chat: Number(row.chat_messages) || 0, minutes: Number(row.watch_minutes) || 0, vipMinutes: Math.max(0, (Number(row.watch_minutes) || 0) - (Number(row.vip_watch_base) || 0)),
             weekLoss: loss, cashbackPct: pct, cashbackCap: cap,
             cashbackEst: Math.min(Math.floor(loss * pct / 100), cap),
             nextPayoutMs: next.getTime() - now.getTime(),

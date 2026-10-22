@@ -43,6 +43,7 @@ function ProgressCard({ levels, me, onOpen }) {
         <>
           <Bar label="Points wagered" value={me.wagered} max={Number(next.min_wagered)} />
           <Bar label="Hours watched" value={hours} max={next.min_watch_hours} suffix="h" gold />
+          {Number(next.min_chat_messages) > 0 && <Bar label="Chat messages" value={me.chat || 0} max={Number(next.min_chat_messages)} />}
         </>
       ) : <p className={styles.muted}>You are at the highest rank. Thank you for being here.</p>}
       <button className={styles.btn} onClick={() => onOpen('progress')}>View my rewards</button>
@@ -59,6 +60,7 @@ function RankCard({ l, me }) {
       <ul>
         <li>{Number(l.min_wagered) ? `${fmt(l.min_wagered)} wagered` : 'Free for everyone'}</li>
         <li>{l.min_watch_hours ? `${l.min_watch_hours}h watched` : 'Join the chat'}</li>
+        {Number(l.min_chat_messages) > 0 && <li>{fmt(l.min_chat_messages)} chat messages</li>}
         <li>{Number(l.bonus_mult) ? `+${Number(l.bonus_mult)}x watch bonus` : 'Base watch rate'}</li>
         <li>{Number(l.cashback_pct)}% weekly cashback</li>
         {Number(l.daily_boost_pct) > 0 && <li>+{l.daily_boost_pct}% daily reward</li>}
@@ -76,8 +78,9 @@ function Faq({ levels }) {
   const [open, setOpen] = useState(null)
   const top = levels[levels.length - 1]
   const items = [
-    ['How do I rank up?', 'Watch the stream and play the Originals. You need enough hours watched and enough points wagered.'],
-    ['Do I need both hours and wager?', 'Yes. Both bars have to be full to reach the next rank.'],
+    ['How do I rank up?', 'Watch the stream, talk in the chat and play the Originals. You need enough hours watched, chat messages and points wagered.'],
+    ['Do I need all of them?', 'Yes. Every bar has to be full to reach the next rank. Only real messages count (not commands, at least 4 characters, one per minute, while the stream is live).'],
+    ['Why am I not earning points?', 'Watch points are paid while you are active in chat: write something at least every 20 minutes. Staying hour after hour in one stream adds a growing bonus.'],
     ['Does my wager go down if I win?', 'No. Every bet counts, win or lose.'],
     ['What do I get when I rank up?', 'A one-time reward for each new rank. Open your rewards and press Claim.'],
     ['What is the daily boost?', 'A bonus on your daily reward that grows with your rank, up to +' + (top?.daily_boost_pct ?? 25) + '% at ' + (top?.name || 'Diamond') + '.'],

@@ -36,7 +36,9 @@ export function progressOf(levels, me) {
   const cur = levels.find((l) => l.level === me.level) || levels[0]
   const next = levels.find((l) => l.level === me.level + 1) || null
   const hours = (me.vipMinutes ?? me.minutes) / 60
-  const pct = next ? Math.round(((Math.min(1, me.wagered / next.min_wagered) + Math.min(1, hours / next.min_watch_hours)) / 2) * 100) : 100
+  const needChat = Number(next?.min_chat_messages) || 0
+  const parts = next ? [Math.min(1, me.wagered / next.min_wagered), Math.min(1, hours / next.min_watch_hours), ...(needChat ? [Math.min(1, (me.chat || 0) / needChat)] : [])] : []
+  const pct = next ? Math.round((parts.reduce((x, y) => x + y, 0) / parts.length) * 100) : 100
   return { cur, next, hours: Math.floor(hours), pct }
 }
 
@@ -82,7 +84,7 @@ export function RewardsModal({ levels, me, tab, setTab, onClose }) {
                   <div className={styles.cardName}><b>{cur.name}</b><small>{next ? `Next: ${next.name}` : 'Top rank reached'}</small></div>
                   <div className={styles.pct}>{pct}%</div>
                 </div>
-                {next && <><Bar label="Points wagered" value={me.wagered} max={Number(next.min_wagered)} /><Bar label="Hours watched" value={hours} max={next.min_watch_hours} suffix="h" gold /></>}
+                {next && <><Bar label="Points wagered" value={me.wagered} max={Number(next.min_wagered)} /><Bar label="Hours watched" value={hours} max={next.min_watch_hours} suffix="h" gold />{Number(next.min_chat_messages) > 0 && <Bar label="Chat messages" value={me.chat || 0} max={Number(next.min_chat_messages)} />}</>}
               </div>
               {msg && <p className={styles.note}>{msg}</p>}
               <div className={styles.listHead}>Ranks and level-up rewards</div>
@@ -137,7 +139,7 @@ export function RewardsModal({ levels, me, tab, setTab, onClose }) {
             </div>
           )}
         </div>
-        <div className={styles.mFoot}>Both wagered points and hours watched are needed to rank up.</div>
+        <div className={styles.mFoot}>Wagered points, hours watched and chat messages are all needed to rank up.</div>
       </div>
     </div>
   )
