@@ -318,7 +318,7 @@ function HistoryView({ onBack, onReopen }) {
 
 // ── Stats Panel ────────────────────────────────────────────
 // ── Pick Panel ─────────────────────────────────────────────
-function PickPanel({ hunt, entries }) {
+function PickPanel({ hunt, entries, bump, cfg }) {
   const [pickGame,       setPickGame]      = useState(null)
   const [picks,          setPicks]         = useState([])
   const [pickLoading,    setPickLoading]   = useState(false)
@@ -356,6 +356,8 @@ function PickPanel({ hunt, entries }) {
   }, [hunt?.id])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (bump) load() }, [bump]) // "Start all" / "Close all" from the Mini-Games bar
+  useEffect(() => { if (!cfg) return; setPts1(cfg.pick[0]); setPts2(cfg.pick[1]); setPts3(cfg.pick[2]); setPickDuration(cfg.dur) }, [cfg?.pick?.join(), cfg?.dur])
 
   // Auto-close when closes_at expires
   useEffect(() => {
@@ -984,7 +986,7 @@ function SlotRow({ entry, index, mode, current, allSlots, usedIds, onChangeSlot,
 
 
 // ── GTB Panel ───────────────────────────────────────────────
-function GtbPanel({ hunt }) {
+function GtbPanel({ hunt, bump, cfg }) {
   const [game,         setGame]         = useState(null)
   const [entries,      setEntries]      = useState([])
   const [loading,      setLoading]      = useState(false)
@@ -1031,6 +1033,8 @@ function GtbPanel({ hunt }) {
   }, [hunt?.id])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (bump) load() }, [bump])
+  useEffect(() => { if (!cfg) return; setPts1(cfg.gtb[0]); setPts2(cfg.gtb[1]); setPts3(cfg.gtb[2]); setCashPrize(cfg.cash); setDuration(cfg.dur) }, [cfg?.gtb?.join(), cfg?.cash, cfg?.dur])
 
   // Auto-close when closes_at expires
   useEffect(() => {
@@ -1379,7 +1383,7 @@ function GtbPanel({ hunt }) {
 
 
 // ── Avg Multi Panel ──────────────────────────────────────────────────────────
-function AvgMultiPanel({ hunt, entries: huntEntries }) {
+function AvgMultiPanel({ hunt, entries: huntEntries, bump, cfg }) {
   const [game,        setGame]        = useState(null)
   const [entries,     setEntries]     = useState([])
   const [loading,     setLoading]     = useState(false)
@@ -1420,6 +1424,8 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
   }, [hunt?.id])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (bump) load() }, [bump])
+  useEffect(() => { if (!cfg) return; setPts1(cfg.avg); setDuration(cfg.dur) }, [cfg?.avg, cfg?.dur])
 
   // Auto-close when closes_at expires
   useEffect(() => {
@@ -1778,7 +1784,88 @@ function AvgMultiPanel({ hunt, entries: huntEntries }) {
 // ── Mini-Games Modal ───────────────────────────────────────
 
 
+const MG_TABLES = { pick: 'pick_games', gtb: 'gtb_games', avg: 'avg_multi_games' }
+const MG_DURS = [60, 120, 180, 300]
+const MG_PLACES = [['1st', '#fbbf24'], ['2nd', '#94a3b8'], ['3rd', '#cd7c54']]
+
+function MgSwitch({ on, disabled, onChange, label }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled}
+      className={`${styles.mgSw} ${on ? styles.mgSwOn : ''}`} onClick={() => onChange(!on)} />
+  )
+}
+
 function MiniGamesModal({ hunt, entries, onClose }) {
+  const [cfg, setCfg] = useState({ dur: 180, on: { pick: true, gtb: true, avg: true }, pick: [500, 300, 100], gtb: [500, 300, 100], cash: 0, avg: 500 })
+  const [st, setSt] = useState({ pick: null, gtb: null, avg: null })
+  const [bump, setBump] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const [now, setNow] = useState(Date.now())
+
+  const loadSt = useCallback(async () => {
+    if (!hunt?.id) return
+    const out = {}
+    await Promise.all(Object.entries(MG_TABLES).map(async ([k, t]) => {
+      const { data } = await supabaseDash.from(t).select('id,status,closes_at').eq('hunt_id', hunt.id).order('created_at', { ascending: false }).limit(1)
+      out[k] = data?.[0] || null
+    }))
+    setSt(out)
+  }, [hunt?.id])
+  useEffect(() => { loadSt(); const id = setInterval(loadSt, 3000); return () => clearInterval(id) }, [loadSt])
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id) }, [])
+
+  const isOpenK = (k) => st[k]?.status === 'open'
+  const keys = ['pick', 'gtb', 'avg']
+  const toStart = keys.filter(k => cfg.on[k] && !isOpenK(k))
+  const openKeys = keys.filter(isOpenK)
+  const closes = openKeys.map(k => st[k].closes_at).filter(Boolean).map(x => new Date(x).getTime())
+  const left = closes.length ? Math.max(0, Math.ceil((Math.min(...closes) - now) / 1000)) : null
+  const mmss = left == null ? '' : `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`
+  const set = (patch) => setCfg(c => ({ ...c, ...patch }))
+  const setArr = (k, i, v) => setCfg(c => ({ ...c, [k]: c[k].map((x, n) => (n === i ? Math.max(0, Number(v) || 0) : x)) }))
+
+  const startAll = async () => {
+    if (!toStart.length || busy) return
+    setBusy(true)
+    const stamp = new Date().toISOString()
+    const base = { status: 'open', closes_at: new Date(Date.now() + cfg.dur * 1000).toISOString(), duration_secs: cfg.dur }
+    const fields = {
+      pick: { ...base, opened_at: stamp, points_1st: cfg.pick[0], points_2nd: cfg.pick[1], points_3rd: cfg.pick[2] },
+      gtb:  { ...base, points_1st: cfg.gtb[0], points_2nd: cfg.gtb[1], points_3rd: cfg.gtb[2], prize_cash_1st: parseFloat(cfg.cash) || 0 },
+      avg:  { ...base, points_1st: cfg.avg, points_2nd: 0, points_3rd: 0 },
+    }
+    const res = await Promise.all(toStart.map(k => {
+      const g = st[k]
+      return g
+        ? supabaseDash.from(MG_TABLES[k]).update(fields[k]).eq('id', g.id)
+        : supabaseDash.from(MG_TABLES[k]).insert({ hunt_id: hunt.id, ...fields[k] })
+    }))
+    const err = res.find(r => r?.error)
+    if (err) alert(`Start all: ${err.error.message}`)
+    await loadSt(); setBump(b => b + 1); setBusy(false)
+  }
+
+  const closeAll = async () => {
+    if (!openKeys.length || busy) return
+    setBusy(true)
+    await Promise.all(openKeys.map(k => supabaseDash.from(MG_TABLES[k]).update({ status: 'closed' }).eq('id', st[k].id)))
+    await loadSt(); setBump(b => b + 1); setBusy(false)
+  }
+
+  const prizeRows = (k) => MG_PLACES.map(([label, color], i) => (
+    <div key={label} className={styles.mgPrzRow}>
+      <span><i style={{ background: color }} />{label} place</span>
+      <input className={styles.mgPrzIn} type="number" min="0" step="50" value={cfg[k][i]} onChange={e => setArr(k, i, e.target.value)} />
+    </div>
+  ))
+  const colHead = (k, name, icon) => (
+    <div className={styles.mgColHeader}>
+      {icon}
+      {name}
+      <MgSwitch on={cfg.on[k]} disabled={isOpenK(k)} label={`Include ${name}`} onChange={(v) => set({ on: { ...cfg.on, [k]: v } })} />
+    </div>
+  )
+
   return (
     <div className={styles.mgOverlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={styles.mgModal}>
@@ -1792,16 +1879,40 @@ function MiniGamesModal({ hunt, entries, onClose }) {
           <button className={styles.mgClose} onClick={onClose}><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round'><line x1='18' y1='6' x2='6' y2='18'/><line x1='6' y1='6' x2='18' y2='18'/></svg></button>
         </div>
 
+        {/* Start / close everything at once */}
+        <div className={styles.mgBar}>
+          {openKeys.length > 0 && <span className={styles.mgLive}>OPEN</span>}
+          <span className={styles.mgBarSp} />
+          {openKeys.length > 0 && left != null && <span className={styles.mgCd}>{mmss}</span>}
+          {openKeys.length === 0 && (
+            <div className={styles.mgSeg} role="group" aria-label="Duration">
+              {MG_DURS.map(d => (
+                <button key={d} type="button" className={cfg.dur === d ? styles.mgSegOn : ''} onClick={() => set({ dur: d })}>{d / 60} min</button>
+              ))}
+            </div>
+          )}
+          {toStart.length > 0 && (
+            <button type="button" className={styles.mgStart} onClick={startAll} disabled={busy}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              {busy ? '...' : `Start all${toStart.length < 3 ? ` (${toStart.length})` : ''}`}
+            </button>
+          )}
+          {openKeys.length > 0 && (
+            <button type="button" className={styles.mgStop} onClick={closeAll} disabled={busy}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+              {busy ? '...' : 'Close all'}
+            </button>
+          )}
+        </div>
+
         {/* Três painéis lado a lado */}
         <div className={styles.mgBody}>
           {/* Pick & Win */}
           <div className={styles.mgCol}>
-            <div className={styles.mgColHeader}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg>
-              Pick & Win
-            </div>
+            {colHead('pick', 'Pick & Win', <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg>)}
             <div className={styles.mgColContent}>
-              <PickPanel hunt={hunt} entries={entries} />
+              {!isOpenK('pick') && <div className={styles.mgPrz}>{prizeRows('pick')}</div>}
+              <PickPanel hunt={hunt} entries={entries} bump={bump} cfg={cfg} />
             </div>
           </div>
 
@@ -1809,14 +1920,18 @@ function MiniGamesModal({ hunt, entries, onClose }) {
 
           {/* Guess the Balance */}
           <div className={styles.mgCol}>
-            <div className={styles.mgColHeader}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              Guess the Balance
-            </div>
+            {colHead('gtb', 'Guess the Balance', <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>)}
             <div className={styles.mgColContent}>
-              <GtbPanel hunt={hunt} />
+              {!isOpenK('gtb') && (
+                <div className={styles.mgPrz}>
+                  {prizeRows('gtb')}
+                  <div className={styles.mgPrzRow}>
+                    <span>Cash (1st), €</span>
+                    <input className={styles.mgPrzIn} type="number" min="0" step="5" value={cfg.cash} onChange={e => set({ cash: Math.max(0, Number(e.target.value) || 0) })} />
+                  </div>
+                </div>
+              )}
+              <GtbPanel hunt={hunt} bump={bump} cfg={cfg} />
             </div>
           </div>
 
@@ -1824,14 +1939,18 @@ function MiniGamesModal({ hunt, entries, onClose }) {
 
           {/* Avg Multi */}
           <div className={styles.mgCol}>
-            <div className={styles.mgColHeader}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
-              </svg>
-              Avg Multi
-            </div>
+            {colHead('avg', 'Avg Multi', <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>)}
             <div className={styles.mgColContent}>
-              <AvgMultiPanel hunt={hunt} entries={entries} />
+              {!isOpenK('avg') && (
+                <div className={styles.mgPrz}>
+                  <div className={styles.mgPrzRow}>
+                    <span>Bonus added to the pool</span>
+                    <input className={styles.mgPrzIn} type="number" min="0" step="100" value={cfg.avg} onChange={e => set({ avg: Math.max(0, Number(e.target.value) || 0) })} />
+                  </div>
+                  <div className={styles.mgPoolHint}>Pool = {cfg.avg} bonus + 100 pts per entry, split equally by the players in the winning range.</div>
+                </div>
+              )}
+              <AvgMultiPanel hunt={hunt} entries={entries} bump={bump} cfg={cfg} />
             </div>
           </div>
         </div>

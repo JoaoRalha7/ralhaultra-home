@@ -1331,3 +1331,30 @@
 .hxCopyOk, .hxCopyOk:hover { color: #22e07a; border-color: rgba(34,224,122,.4); }
 .rxNameLine .hxCopy { width: 30px; height: 30px; border-radius: 9px; }
 .rxNameLine .hxCopy svg { width: 15px; height: 15px; }
+
+/* Mini-Games: start/close all bar + prizes inside each column */
+.mgBar { display: flex; align-items: center; gap: 12px; padding: 6px 24px 0; flex-shrink: 0; }
+.mgBarSp { flex: 1; }
+.mgLive { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 3px 10px; border-radius: 99px; color: #21d16e; border: 1px solid rgba(33,209,110,.4); background: rgba(33,209,110,.08); }
+.mgCd { font: 800 24px "Bricolage Grotesque", sans-serif; color: #fbbf24; font-variant-numeric: tabular-nums; }
+.mgSeg { display: flex; border: 1px solid #2a2e38; border-radius: 11px; overflow: hidden; background: #0e131c; }
+.mgSeg button { padding: 8px 14px; font: 700 13px "DM Sans", sans-serif; color: #8d96ab; background: transparent; border: 0; border-right: 1px solid #2a2e38; cursor: pointer; }
+.mgSeg button:last-child { border-right: 0; }
+.mgSeg button.mgSegOn { background: rgba(33,209,110,.12); color: #21d16e; }
+.mgStart, .mgStop { height: 40px; padding: 0 20px; border-radius: 12px; font: 800 14px "DM Sans", sans-serif; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: .15s; }
+.mgStart { border: 0; background: #21d16e; color: #05210f; box-shadow: 0 8px 24px -12px #21d16e; }
+.mgStart:hover:not(:disabled) { filter: brightness(1.08); }
+.mgStop { border: 1px solid rgba(248,113,113,.4); background: rgba(248,113,113,.12); color: #f87171; }
+.mgStart:disabled, .mgStop:disabled { opacity: .55; cursor: default; }
+.mgSw { margin-left: auto; width: 34px; height: 19px; border-radius: 99px; background: #2a2e38; border: 0; position: relative; cursor: pointer; flex: none; padding: 0; transition: .15s; }
+.mgSw:after { content: ""; position: absolute; left: 2px; top: 2px; width: 15px; height: 15px; border-radius: 50%; background: #8d96ab; transition: .15s; }
+.mgSw.mgSwOn { background: #21d16e; }
+.mgSw.mgSwOn:after { left: 17px; background: #05210f; }
+.mgSw:disabled { opacity: .45; cursor: default; }
+.mgPrz { margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #1c1f27; }
+.mgPrzRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; font-size: 13px; color: #8d96ab; }
+.mgPrzRow > span { display: flex; align-items: center; gap: 9px; }
+.mgPrzRow i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.mgPrzIn { width: 100px; height: 34px; border-radius: 9px; border: 1px solid #2a2e38; background: #0e131c; color: #eef1f7; font: 700 14px "DM Sans", sans-serif; text-align: right; padding: 0 10px; outline: none; }
+.mgPrzIn:focus { border-color: #3b82f6; }
+.mgPoolHint { font-size: 12px; color: #8d96ab; line-height: 1.5; padding: 4px 0 8px; }
