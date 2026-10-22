@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabaseDash } from '../lib/supabase'
 import styles from './Stats.module.css'
+import { huntNo } from '../lib/huntNo'
 
 function parseBet(v) { return parseFloat(v) || 0 }
 function fmt(n) {
@@ -185,7 +186,7 @@ export default function Stats({ navigate }) {
     const [{ data }, { data: statsData }, { data: slotsData }] = await Promise.all([
       supabaseDash
         .from('bonus_entries')
-        .select('id, slot_id, bet, payment, is_super, hunt_id, tournament_id, paid_at, created_at, game_type, slot:slots(id, name, image_url, rtp, max_win, volatility, provider), bonus_hunts(id, date)')
+        .select('id, slot_id, bet, payment, is_super, hunt_id, tournament_id, paid_at, created_at, game_type, slot:slots(id, name, image_url, rtp, max_win, volatility, provider), bonus_hunts(id, title, date)')
         .eq('opened', true)
         .not('payment', 'is', null)
         .gt('payment', 0),
@@ -404,7 +405,7 @@ export default function Stats({ navigate }) {
                       <td>
                         {type === 'bonus_hunt' && e.hunt_id ? (
                           <button className={styles.huntLink} onClick={() => navigate('/bonus-hunts', { state: { huntId: e.hunt_id } })}>
-                            BONUS HUNT #{e.hunt_id}
+                            BONUS HUNT #{e.bonus_hunts ? huntNo(e.bonus_hunts) : e.hunt_id}
                           </button>
                         ) : type === 'tournament' && e.tournament_id ? (
                           <button className={styles.huntLink} onClick={() => navigate('/torneios', { state: { tournamentId: e.tournament_id } })}>
