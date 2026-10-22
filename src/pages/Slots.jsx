@@ -231,7 +231,7 @@ function SlotDetail({ slot, onBack, navigate }) {
                                     className={`${styles.gameTag} ${styles.gameTagHunt} ${styles.gameTagBtn}`}
                                     onClick={() => navigate('/bonus-hunts', { state: { huntId: e.hunt_id } })}
                                   >
-                                    BONUS HUNT #{e.hunt_id}
+                                    BONUS HUNT #{e.bonus_hunts ? huntNo(e.bonus_hunts) : e.hunt_id}
                                   </button>
                                 )
                               }
@@ -250,7 +250,7 @@ function SlotDetail({ slot, onBack, navigate }) {
                                   className={`${styles.gameTag} ${styles.gameTagHunt} ${styles.gameTagBtn}`}
                                   onClick={() => navigate('/bonus-hunts', { state: { huntId: e.hunt_id } })}
                                 >
-                                  BONUS HUNT #{e.hunt_id}
+                                  BONUS HUNT #{e.bonus_hunts ? huntNo(e.bonus_hunts) : e.hunt_id}
                                 </button>
                               )
                             })()}
