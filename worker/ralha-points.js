@@ -675,7 +675,7 @@ export default {
 
         const body = await request.json()
         const q = parseInt(body.tickets, 10)
-        if (!body.giveaway_id || !Number.isInteger(q) || q < 1 || q > 1000)
+        if (!body.giveaway_id || !Number.isInteger(q) || q < 1 || q > 10000)
           return json({ error: 'invalid request' }, 400)
 
         const gRes = await fetch(`${env.SUPABASE_URL}/rest/v1/giveaways?id=eq.${encodeURIComponent(body.giveaway_id)}&select=id,status,ends_at,ticket_cost,max_tickets`, { headers: sbHeaders })
@@ -685,7 +685,6 @@ export default {
 
         const unit = g.ticket_cost || 0
         const cap = unit > 0 ? (g.max_tickets || null) : 1
-        if (cap == null && q > 100) return json({ error: 'invalid request' }, 400)
 
         const eRes = await fetch(`${env.SUPABASE_URL}/rest/v1/giveaway_entries?giveaway_id=eq.${g.id}&user_id=eq.${who.id}&select=tickets`, { headers: sbHeaders })
         const have = ((await eRes.json()) || []).reduce((n, r) => n + (r.tickets || 1), 0)

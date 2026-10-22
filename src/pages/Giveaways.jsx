@@ -94,7 +94,7 @@ function Card({ g, tickets, mine, now, onEnter, loggedIn, people }) {
 
 function TicketModal({ g, balance, mine, busy, onClose, onConfirm }) {
   const cap = capOf(g)
-  const room = cap == null ? 99 : Math.max(0, cap - mine)
+  const room = cap == null ? 10000 : Math.max(0, cap - mine)
   const afford = g.ticket_cost > 0 && balance != null ? Math.floor(balance / g.ticket_cost) : room
   const max = Math.max(1, Math.min(room, afford || 1))
   const [txt, setTxt] = useState('1')
@@ -116,7 +116,7 @@ function TicketModal({ g, balance, mine, busy, onClose, onConfirm }) {
               inputMode="numeric"
               aria-label="Number of tickets"
               value={txt}
-              onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 6); setTxt(v !== '' && parseInt(v, 10) > max ? String(max) : v) }}
+              onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setTxt(v !== '' && parseInt(v, 10) > max ? String(max) : v) }}
               onBlur={() => setTxt(String(q))}
               onFocus={(e) => e.target.select()}
               onKeyDown={(e) => { if (e.key === 'Enter' && !busy && !short) onConfirm(q) }}
