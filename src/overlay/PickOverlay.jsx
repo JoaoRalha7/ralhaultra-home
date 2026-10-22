@@ -51,8 +51,8 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   --border: rgba(255,255,255,.06);
   --b2:     rgba(255,255,255,.11);
   --text:   #e8ecf5;
-  --muted:  #6b7280;
-  --muted2: #8892b0;
+  --muted:  #9aa6cc;
+  --muted2: #c2cdf0;
   --gold:   #fbbf24;
   --silver: #94a3c0;
   --bronze: #c07a4a;
@@ -99,7 +99,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 .hd-title {
   font-size: 26px; font-weight: 800; color: var(--text);
   letter-spacing: -.01em; padding: 4px 14px; border-radius: 12px;
-  background: rgba(9,14,36,.9); border: 1px solid rgba(130,165,255,.18); text-transform: uppercase;
+  background: rgba(16,28,70,.96); border: 1px solid rgba(130,165,255,.18); text-transform: uppercase;
 }
 .hd-timer {
   font-family: var(--mono); font-size: 22px; font-weight: 800;
@@ -120,23 +120,23 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 .hd-pill {
   display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
-  border-radius: 99px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.9);
+  border-radius: 99px; border: 1px solid rgba(130,165,255,.18); background: rgba(16,28,70,.96);
   font-size: 12px; font-weight: 800; letter-spacing: .08em;
 }
 .hd-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
 .hd-pill.off i { background: var(--muted); box-shadow: none; }
 .hd-chip {
   display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
-  border-radius: 10px; border: 1px solid rgba(130,165,255,.18); background: rgba(9,14,36,.9);
-  font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted2);
+  border-radius: 10px; border: 1px solid rgba(130,165,255,.18); background: rgba(16,28,70,.96);
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--muted2);
 }
-.hd-chip b { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: 0; }
+.hd-chip b { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: 0; }
 .hd-cd {
   display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 14px;
   border-radius: 12px; border: 1px solid rgba(124,111,255,.4);
-  background: linear-gradient(90deg, rgba(79,124,255,.22), rgba(34,211,238,.14));
+  background: linear-gradient(90deg, #1f3a8f, #134e6f);
 }
-.hd-cd small { font-size: 10px; letter-spacing: .12em; font-weight: 800; color: #bcd0ff; }
+.hd-cd small { font-size: 11px; letter-spacing: .12em; font-weight: 800; color: #fff; }
 .hd-cd .hd-timer { font-size: 20px; }
 
 /* ── COLUMNS ── */
@@ -148,9 +148,9 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 /* ── COLUMN CARD ── */
 .col {
-  background: rgba(9,14,36,.9);
+  background: linear-gradient(180deg, rgba(24,40,96,.96), rgba(10,17,46,.96));
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(130,165,255,.18);
+  border: 1px solid rgba(140,175,255,.4);
   border-radius: var(--r);
   display: flex; flex-direction: column;
   overflow: hidden;
@@ -176,8 +176,8 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 }
 .col-hd-left { display: flex; align-items: center; gap: 8px; }
 .col-name {
-  font-size: 12px; font-weight: 900; letter-spacing: .12em;
-  text-transform: uppercase; color: rgba(255,255,255,.5);
+  font-size: 14px; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: #fff;
 }
 .col-stat-val {
   font-family: var(--mono); font-size: 18px; font-weight: 800;
@@ -189,7 +189,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   border-radius: 10px; padding: 4px 12px; line-height: 1;
 }
 .col-count-lbl {
-  font-size: 9px; font-weight: 700; color: var(--muted2);
+  font-size: 11px; font-weight: 700; color: var(--muted2);
   letter-spacing: .1em; text-transform: uppercase;
   display: block; text-align: center; margin-top: 2px;
 }
@@ -209,13 +209,13 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 .prize:last-child { border-right: none; }
 .prize-gold { background: rgba(251,191,36,.04); }
 .p-rank {
-  font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
 }
 .p-rank.gold   { color: var(--gold); }
 .p-rank.silver { color: var(--silver); }
 .p-rank.bronze { color: var(--bronze); }
 .p-pts {
-  font-family: var(--mono); font-size: 13px; font-weight: 800;
+  font-family: var(--mono); font-size: 15px; font-weight: 800;
   color: var(--text); display: flex; align-items: center; gap: 3px;
 }
 .p-cash { font-size: 10px; font-weight: 700; color: var(--green); }
@@ -259,8 +259,8 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   flex-shrink: 0;
 }
 .col-subhd-name {
-  font-size: 11px; font-weight: 800; letter-spacing: .06em;
-  text-transform: uppercase; color: rgba(255,255,255,.3);
+  font-size: 12px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; color: rgba(255,255,255,.7);
   display: flex; align-items: center; gap: 6px;
 }
 
@@ -271,7 +271,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 /* ── ENTRY ROW ── */
 .entry {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 16px; margin: 0 10px 5px; border-radius: 10px; background: rgba(255,255,255,.07);
+  padding: 9px 16px; margin: 0 10px 5px; border-radius: 10px; background: rgba(255,255,255,.09);
   position: relative;
 }
 .entry:last-child { border-bottom: none; }
@@ -304,10 +304,10 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 }
 .e-info { flex: 1; min-width: 0; }
 .e-user {
-  font-size: 14px; font-weight: 600; color: var(--text);
+  font-size: 15px; font-weight: 600; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.e-sub { font-size: 11px; color: var(--muted2); margin-top: 1px; }
+.e-sub { font-size: 12px; color: var(--muted2); margin-top: 1px; }
 .e-val {
   font-family: var(--mono); font-size: 16px; font-weight: 800;
   color: var(--text); flex-shrink: 0;
@@ -383,11 +383,11 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 .bucket { position: relative; overflow: hidden; height: 42px; }
 .b-fill { position: absolute; inset: 0 auto 0 0; opacity: .35; transition: width .6s cubic-bezier(.2,.9,.2,1); }
 .b-right { position: relative; text-align: right; }
-.b-votes { display: block; font-size: 9px; font-weight: 700; color: var(--muted2); letter-spacing: .08em; margin-top: 2px; }
+.b-votes { display: block; font-size: 11px; font-weight: 700; color: var(--muted2); letter-spacing: .08em; margin-top: 2px; }
 .b-lead { box-shadow: 0 0 16px -6px currentColor; }
 .b-id    { font-size: 13px; font-weight: 900; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; color: #fff; }
-.b-lbl   { font-size: 14px; font-weight: 700; color: var(--text); }
-.b-pct   { font-family: var(--mono); font-size: 16px; font-weight: 900; }
+.b-lbl   { font-size: 16px; font-weight: 700; color: var(--text); }
+.b-pct   { font-family: var(--mono); font-size: 18px; font-weight: 900; }
 
 /* ── PROGRESS BAR ── */
 .prog-wrap {
@@ -402,7 +402,7 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
   height: 100%; background: var(--gold); border-radius: 3px;
   transition: width .6s cubic-bezier(.2,.9,.2,1);
 }
-.prog-lbl { font-size: 10px; font-weight: 700; color: var(--muted2); white-space: nowrap; }
+.prog-lbl { font-size: 11px; font-weight: 700; color: var(--muted2); white-space: nowrap; }
 
 /* ── LIVE RANKING TABLE ── */
 .rank-row {
@@ -449,12 +449,12 @@ html, body { background: transparent !important; margin: 0; padding: 0; overflow
 
 .rank-info { flex: 1; min-width: 0; }
 .rank-slot-name {
-  font-size: 13px; font-weight: 700; color: var(--text);
+  font-size: 14px; font-weight: 700; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .rank-user-row { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
 .rank-username {
-  font-size: 11px; font-weight: 700; color: #60a5fa;
+  font-size: 12px; font-weight: 700; color: #60a5fa;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .rank-username.leader-name { color: var(--gold); }
@@ -1074,7 +1074,7 @@ export default function PickOverlay() {
               padding: '8px 16px', borderBottom: '1px solid var(--border)',
               display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0
             }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Result</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Result</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 900, color: '#3b82f6' }}>
                 {avgResult ? `${avgResult}x` : '—'}
               </span>
@@ -1182,7 +1182,7 @@ export default function PickOverlay() {
               padding: '8px 16px', borderBottom: '1px solid var(--border)',
               display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0
             }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Avg guess</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Avg guess</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 900, color: '#22c55e' }}>
                 {gtbAvg ? `€${gtbAvg.toLocaleString('pt-PT', { maximumFractionDigits: 0 })}` : '—'}
               </span>
