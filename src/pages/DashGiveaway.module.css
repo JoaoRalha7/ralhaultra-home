@@ -61,3 +61,5 @@
 .idx { width: 16px; text-align: center; font-size: 11px; font-weight: 800; color: #4a4f5c; }
 @media (max-width: 900px) { .cols2 { grid-template-columns: 1fr; } .cols > .panel { flex-basis: 100%; } }
 @media (max-width: 760px) { .page { padding: 20px 16px 40px; } }
+.closeBtn { height: 44px; border-radius: 12px; border: 1px solid #f5c54255; background: #f5c5420d; color: var(--c-gold); font: 800 13px "DM Sans", sans-serif; cursor: pointer; }
+.closeBtn:hover { background: #f5c5421a; }

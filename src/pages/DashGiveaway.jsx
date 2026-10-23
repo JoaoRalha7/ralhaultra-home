@@ -276,6 +276,13 @@ export default function DashGiveaway() {
     dbSave({ ends_at: ends })
   }
 
+  // close entries now (the giveaway stays open so winners can still be drawn)
+  const closeEntries = () => {
+    const now = new Date().toISOString()
+    setEndsAt(now); setTimerDone(true)
+    dbSave({ ends_at: now })
+  }
+
   // reroll: discard the current winner and draw again from whoever is left
   const reroll = async () => {
     if (winner) removeWinner(winner)
@@ -362,6 +369,9 @@ export default function DashGiveaway() {
                   {[60, 120, 300, 600].map(v => <button key={v} onClick={() => addTime(v)}>+{v / 60} min</button>)}
                 </div>
               </div>
+              {!timerDone && (
+                <button className={styles.closeBtn} onClick={closeEntries}>Fechar participações já</button>
+              )}
               {warn && <p className={styles.warn}>{warn}</p>}
 
               {winner && !sorting && (
