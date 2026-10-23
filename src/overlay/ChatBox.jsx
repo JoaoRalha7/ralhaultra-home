@@ -315,21 +315,16 @@ function Roulette({ participants, prize, prizeImage, replySecs, onDone, onClose,
 
       {phase === 'winner' && winner && (
         <div className="gw-win">
-          <div className="gw-polaroid">
+          <div className="gw-avatar">
             {pic ? <img src={pic} alt="" /> : <div className="gw-initial">{winner.username[0]?.toUpperCase()}</div>}
-            <span className="gw-stamp">WINNER</span>
           </div>
-          <div className="gw-winfo">
-            <div className="gw-state gold">WINNER</div>
-            <div className="gw-wname">{winner.username}</div>
-            {prize && <div className="gw-prizepill">{prize}</div>}
-            {replySecs > 0 && (
-              <div className={`gw-wait${replied ? ' ok' : noReply ? ' late' : ''}`}>
-                {replied ? 'REPLIED' : noReply ? 'NO REPLY' : 'REPLY'}
-                {!replied && !noReply && <b>{fmt(left)}</b>}
-              </div>
-            )}
-          </div>
+          <div className="gw-wname">{winner.username}</div>
+          {replySecs > 0 && (
+            <div className={`gw-wait${replied ? ' ok' : noReply ? ' late' : ''}`}>
+              {replied ? 'REPLIED' : noReply ? 'NO REPLY' : 'REPLY'}
+              {!replied && !noReply && <b>{fmt(left)}</b>}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -420,13 +415,13 @@ html, body { background: transparent !important; overflow: hidden; width: 100%; 
 .gw-frame.win { border-color: #fff; box-shadow: 0 0 22px rgba(255,255,255,.65); }
 .gw-row { display: flex; align-items: center; gap: 11px; padding: 0 16px; }
 .gw-rname { font-size: 18px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gw-win { position: relative; z-index: 3; display: flex; align-items: center; gap: 12px; width: 100%; animation: winPop .5s cubic-bezier(.34,1.56,.64,1); }
-.gw-polaroid { position: relative; flex-shrink: 0; width: 122px; height: 142px; background: #fff; padding: 7px 7px 26px; border-radius: 5px; transform: rotate(-5deg); box-shadow: 0 10px 26px rgba(0,0,0,.55); }
-.gw-polaroid img, .gw-initial { width: 100%; height: 100%; object-fit: cover; display: block; }
-.gw-initial { background: linear-gradient(135deg, #14b8a6, #0ea5a0); display: grid; place-items: center; font-size: 48px; font-weight: 900; color: #052e2b; }
+.gw-win { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; animation: winPop .5s cubic-bezier(.34,1.56,.64,1); }
+.gw-avatar { width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid #fbbf24; box-shadow: 0 0 30px rgba(251,191,36,.5), 0 10px 26px rgba(0,0,0,.55); }
+.gw-avatar img, .gw-initial { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gw-initial { background: linear-gradient(135deg, #14b8a6, #0ea5a0); display: grid; place-items: center; font-size: 64px; font-weight: 900; color: #052e2b; }
 .gw-stamp { position: absolute; left: -6px; right: -6px; top: 44px; text-align: center; font-size: 17px; font-weight: 900; letter-spacing: .14em; color: #ef4444; border: 2.5px solid #ef4444; border-radius: 5px; transform: rotate(-14deg); background: rgba(255,255,255,.22); }
 .gw-winfo { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
-.gw-wname { font-size: 21px; font-weight: 900; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; }
+.gw-wname { font-size: 26px; text-align: center; font-weight: 900; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; }
 .gw-prizepill { padding: 3px 11px; border-radius: 99px; background: #fbbf24; color: #2a1a00; font-size: 12px; font-weight: 900; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gw-wait { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px; border-radius: 99px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.18); font-size: 10px; font-weight: 800; letter-spacing: .12em; color: #fff; }
 .gw-wait b { font-size: 15px; color: #34d399; font-variant-numeric: tabular-nums; letter-spacing: 0; }
