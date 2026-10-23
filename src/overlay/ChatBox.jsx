@@ -626,7 +626,7 @@ export default function Sidebar() {
                 <div className="gw-spacer" />
                 <div className="gw-pill">
                   <IconUsers />
-                  <span className="gw-pill-n">{partCount}</span>
+                  <span className="gw-pill-n">{participants.length}</span>
                   <div className="gw-pill-sep" />
                   <IconClock />
                   <span className={`gw-pill-t${isEnding ? ' ending' : isDone ? ' done' : ''}`}>

@@ -21,6 +21,13 @@ function fmtTimer(s) {
   return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`
 }
 
+const BOTS = new Set(['nightbot','streamelements','streamlabs','moobot','fossabot','wizebot','sery_bot','commanderroot','ralha_bot'])
+// Twitch/7TV add invisible characters when a message is repeated; strip them before comparing
+const clean = (t) => String(t || '').replace(/[\u034f\u200b-\u200f\u2060\ufeff\u{e0000}-\u{e007f}]/gu, '').trim()
+const WIN_KEY = 'ru-gw-winners'
+const loadWinners = () => { try { return JSON.parse(localStorage.getItem(WIN_KEY) || '[]') } catch { return [] } }
+const saveWinners = (w) => { try { localStorage.setItem(WIN_KEY, JSON.stringify(w)) } catch { /* ignore */ } }
+
 // ─── Twitch IRC ────────────────────────────────────────────────────────────
 function useTwitchChat(onMsg) {
   const cbRef   = useRef(onMsg)
@@ -106,12 +113,41 @@ export default function DashGiveaway() {
   const [winner,    setWinner]    = useState(null)
   const [sorting,   setSorting]   = useState(false)
   const [timerDone, setTimerDone] = useState(false)
+  const [warn,      setWarn]      = useState('')
+  const [ready,     setReady]     = useState(false)
 
   const partSet   = useRef(new Set())
   const activeRef = useRef(active)
   const kwRef     = useRef(keyword)
+  const endsRef   = useRef(null)
   activeRef.current = active
   kwRef.current     = keyword
+  endsRef.current   = endsAt
+
+  // ── Restore after a refresh: the participants live in giveaway_state, not only in this tab ──
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('giveaway_state').select('active,keyword,ends_at,participants,spinning').eq('id', GIVEAWAY_ID).maybeSingle()
+      if (data?.active) {
+        const list = Array.isArray(data.participants) ? data.participants : []
+        partSet.current = new Set(list.map(p => String(p.username).toLowerCase()))
+        setParts(list)
+        setLog(list.slice().reverse().slice(0, 60).map(p => ({ username: p.username, color: p.color, ts: '' })))
+        if (data.keyword) setKeyword(data.keyword)
+        setEndsAt(data.ends_at)
+        setActive(true)
+        setWinners(loadWinners())
+      }
+      setReady(true)
+    })()
+  }, [])
+
+  // keep the participants saved while the giveaway is running (the overlay shows this number)
+  useEffect(() => {
+    if (!ready || !active || sorting) return
+    const t = setTimeout(() => { dbSave({ participants: parts }) }, 1200)
+    return () => clearTimeout(t)
+  }, [parts, active, sorting, ready])
 
   // ── Countdown ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -135,9 +171,10 @@ export default function DashGiveaway() {
     const timeout = setTimeout(() => {
       if (!done) {
         console.warn('[giveaway] timeout a aguardar resultado da overlay')
+        setWarn('A overlay não respondeu. Confirma que a overlay do chat está aberta no OBS e tenta outra vez.')
         setSorting(false)
       }
-    }, 15000)
+    }, 60000)
 
     const t = setInterval(async () => {
       const { data } = await supabase
@@ -153,7 +190,8 @@ export default function DashGiveaway() {
         setWinner(winnerName)
         setSorting(false)
         setParts(prev => prev.filter(p => p.username.toLowerCase() !== winnerName.toLowerCase()))
-        setWinners(prev => [...prev, { username: winnerName, ts: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) }])
+        setWarn('')
+        setWinners(prev => { const n = [...prev, { username: winnerName, ts: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) }]; saveWinners(n); return n })
       }
     }, 1000)
     return () => { clearInterval(t); clearTimeout(timeout) }
@@ -162,8 +200,10 @@ export default function DashGiveaway() {
   // ── Twitch IRC ────────────────────────────────────────────────────────
   useTwitchChat(({ username, text, color }) => {
     if (!activeRef.current) return
-    if (text.toLowerCase() !== kwRef.current.toLowerCase()) return
+    if (endsRef.current && Date.now() > new Date(endsRef.current).getTime()) return   // closed: late entries do not count
+    if (clean(text).toLowerCase() !== kwRef.current.toLowerCase()) return
     const key = username.toLowerCase()
+    if (key === CHANNEL.toLowerCase() || BOTS.has(key)) return                          // streamer and bots do not enter
     if (partSet.current.has(key)) return
     partSet.current.add(key)
     setParts(prev => [...prev, { username, color }])
@@ -181,7 +221,8 @@ export default function DashGiveaway() {
     setParts([])
     setLog([])
     setWinner(null)
-    setWinners([])
+    setWinners([]); saveWinners([])
+    setWarn('')
     setSorting(false)
     setTimerDone(false)
     setEndsAt(ends)
@@ -220,7 +261,7 @@ export default function DashGiveaway() {
   }
 
   const removeWinner = (username) => {
-    setWinners(prev => prev.filter(w => w.username !== username))
+    setWinners(prev => { const n = prev.filter(w => w.username !== username); saveWinners(n); return n })
     if (winner === username) setWinner(null)
   }
 
@@ -343,6 +384,7 @@ export default function DashGiveaway() {
             </div>
           )}
 
+          {warn && <div style={{ margin: '12px 15px 0', padding: '9px 12px', borderRadius: 10, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.3)', color: '#fca5a5', fontSize: '.76em', lineHeight: 1.5 }}>{warn}</div>}
           {/* Botões */}
           <div style={s.cta}>
             {!active ? (
