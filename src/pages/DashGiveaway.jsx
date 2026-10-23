@@ -8,8 +8,18 @@ async function dbSave(payload) {
   const { error } = await supabase
     .from('giveaway_state')
     .upsert({ id: GIVEAWAY_ID, ...payload }, { onConflict: 'id' })
+  if (error && /prize|reply_secs/.test(error.message)) {
+    // columns not created yet: retry without the prize fields
+    const { prize, prize_image, reply_secs, ...rest } = payload
+    const r = await supabase.from('giveaway_state').upsert({ id: GIVEAWAY_ID, ...rest }, { onConflict: 'id' })
+    if (r.error) console.error('[giveaway]', r.error.message)
+    return
+  }
   if (error) console.error('[giveaway]', error.message)
 }
+
+const lsGet = (k, d) => { try { return localStorage.getItem(k) ?? d } catch { return d } }
+const lsSet = (k, v) => { try { localStorage.setItem(k, v) } catch {} }
 
 function hslFromName(name) {
   let h = 0
@@ -115,6 +125,9 @@ export default function DashGiveaway() {
   const [timerDone, setTimerDone] = useState(false)
   const [warn,      setWarn]      = useState('')
   const [ready,     setReady]     = useState(false)
+  const [prize,     setPrize]     = useState(() => lsGet('ru-gw-prize', ''))
+  const [prizeImg,  setPrizeImg]  = useState(() => lsGet('ru-gw-prizeimg', ''))
+  const [replySecs, setReplySecs] = useState(() => Number(lsGet('ru-gw-reply', '30')))
 
   const partSet   = useRef(new Set())
   const activeRef = useRef(active)
@@ -127,13 +140,16 @@ export default function DashGiveaway() {
   // ── Restore after a refresh: the participants live in giveaway_state, not only in this tab ──
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('giveaway_state').select('active,keyword,ends_at,participants,spinning').eq('id', GIVEAWAY_ID).maybeSingle()
+      const { data } = await supabase.from('giveaway_state').select('*').eq('id', GIVEAWAY_ID).maybeSingle()
       if (data?.active) {
         const list = Array.isArray(data.participants) ? data.participants : []
         partSet.current = new Set(list.map(p => String(p.username).toLowerCase()))
         setParts(list)
         setLog(list.slice().reverse().slice(0, 60).map(p => ({ username: p.username, color: p.color, ts: '' })))
         if (data.keyword) setKeyword(data.keyword)
+        if (data.prize != null) setPrize(data.prize)
+        if (data.prize_image != null) setPrizeImg(data.prize_image)
+        if (data.reply_secs != null) setReplySecs(data.reply_secs)
         setEndsAt(data.ends_at)
         setActive(true)
         setWinners(loadWinners())
@@ -227,7 +243,8 @@ export default function DashGiveaway() {
     setTimerDone(false)
     setEndsAt(ends)
     setActive(true)
-    dbSave({ active: true, keyword, ends_at: ends, spinning: false, winner: null, participants: [] })
+    lsSet('ru-gw-prize', prize); lsSet('ru-gw-prizeimg', prizeImg); lsSet('ru-gw-reply', String(replySecs))
+    dbSave({ active: true, keyword, ends_at: ends, spinning: false, winner: null, participants: [], prize: prize.trim() || null, prize_image: prizeImg.trim() || null, reply_secs: replySecs })
   }
 
   const stop = () => {
@@ -284,6 +301,7 @@ export default function DashGiveaway() {
     kwBadge:   { flex: 1, fontSize: '.9em', fontWeight: 800, color: '#a78bfa', background: 'rgba(124,111,255,.1)', border: '1px solid rgba(124,111,255,.2)', borderRadius: 9, padding: '6px 12px' },
     kwEditRow: { display: 'flex', gap: 7 },
     kwInput:   { flex: 1, background: 'rgba(255,255,255,.07)', border: '1px solid rgba(124,111,255,.5)', borderRadius: 9, padding: '6px 10px', color: '#fff', fontSize: '.88em', fontFamily: 'Rubik, sans-serif', fontWeight: 700, outline: 'none' },
+    pInput:    { width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 9, padding: '8px 12px', color: '#fff', fontSize: '.82em', outline: 'none' },
     hint:      { fontSize: '.71em', color: 'rgba(255,255,255,.26)', lineHeight: 1.55, marginTop: 7 },
     presets:   { display: 'flex', flexWrap: 'wrap', gap: 6 },
     preset:    (sel) => ({ padding: '5px 12px', borderRadius: 8, border: `1px solid ${sel ? 'rgba(124,111,255,.4)' : 'rgba(255,255,255,.1)'}`, background: sel ? 'rgba(124,111,255,.18)' : 'rgba(255,255,255,.04)', color: sel ? '#a78bfa' : 'rgba(255,255,255,.5)', fontSize: '.76em', fontWeight: 700, cursor: 'pointer', fontFamily: 'Rubik, sans-serif' }),
@@ -353,6 +371,21 @@ export default function DashGiveaway() {
             )}
             <p style={s.hint}>Quem escrever <strong style={{ color: 'rgba(255,255,255,.5)' }}>{keyword}</strong> no chat entra automaticamente.</p>
           </div>
+
+          {/* Prize */}
+          {!active && (
+            <div style={s.section}>
+              <span style={s.label}>Prémio</span>
+              <input style={s.pInput} value={prize} maxLength={40} placeholder="Ex: 200 FS · 50€ · Bonus Buy" onChange={e => setPrize(e.target.value)} />
+              <input style={{ ...s.pInput, marginTop: 7 }} value={prizeImg} placeholder="URL da imagem do prémio (opcional)" onChange={e => setPrizeImg(e.target.value)} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
+                <span style={{ fontSize: '.74em', color: 'rgba(255,255,255,.4)' }}>Tempo p/ vencedor responder</span>
+                {[0, 30, 60, 120].map(v => (
+                  <button key={v} style={s.preset(replySecs === v)} onClick={() => setReplySecs(v)}>{v === 0 ? 'Off' : v + 's'}</button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Duration */}
           {!active && (

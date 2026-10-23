@@ -186,86 +186,149 @@ function RouletteAvatar({ username, color, size = 52 }) {
   return <div style={{ ...style, background: `${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: size * 0.38, color }}>{username?.[0]?.toUpperCase() || '?'}</div>
 }
 
-// ─── Roulette ─────────────────────────────────────────────────────────────────
-function Roulette({ participants, onDone }) {
-  const [offset, setOffset] = useState(0)
+// ─── Prize card (image or auto-fit text) ─────────────────────────────────────
+function PrizeCard({ prize, image, size = 92 }) {
+  const txt = String(prize || '').trim()
+  const fs = txt.length <= 6 ? 0.24 : txt.length <= 10 ? 0.19 : txt.length <= 16 ? 0.15 : 0.12
+  return (
+    <div style={{ width: size, height: size, borderRadius: size * 0.26, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,.45)', overflow: 'hidden', flexShrink: 0, position: 'relative', zIndex: 2 }}>
+      {image
+        ? <img src={image} alt="" style={{ width: '82%', height: '82%', objectFit: 'contain' }} />
+        : txt
+          ? <div style={{ padding: 6, textAlign: 'center', fontWeight: 900, fontSize: size * fs, lineHeight: 1.08, color: '#052e1c', textTransform: 'uppercase', wordBreak: 'break-word' }}>{txt}</div>
+          : <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>}
+    </div>
+  )
+}
+
+function Rays({ size = 220, style }) {
+  return (
+    <svg className="gw-rays" width={size} height={size} viewBox="-100 -100 200 200" style={style}>
+      <g fill="#34d399" fillOpacity=".16">{Array.from({ length: 12 }, (_, i) => <path key={i} transform={`rotate(${i * 30})`} d="M0 0L-13 -100L13 -100z" />)}</g>
+    </svg>
+  )
+}
+
+function Confetti() {
+  const cols = ['#fbbf24', '#34d399', '#f472b6', '#60a5fa', '#fff']
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
+      {Array.from({ length: 26 }, (_, i) => (
+        <i key={i} style={{ position: 'absolute', top: -16, left: `${(i * 37) % 100}%`, width: 7, height: 12, borderRadius: 2, background: cols[i % 5], animation: `confFall 3s linear ${-(i % 9) * 0.35}s infinite` }} />
+      ))}
+    </div>
+  )
+}
+
+// ─── Roulette (vertical reel, fits the narrow sidebar) ───────────────────────
+function Roulette({ participants, prize, prizeImage, replySecs, onDone, onClose, lastMsgOf }) {
+  const [phase, setPhase]   = useState('loading')   // loading | spinning | picked | winner
   const [winner, setWinner] = useState(null)
-  const [phase,  setPhase]  = useState('loading')
-  const [items,  setItems]  = useState([])
-  const animRef = useRef(null)
-  const ITEM_W = 160, VISIBLE = 5, CENTER = 2
+  const [items, setItems]   = useState([])
+  const [left, setLeft]     = useState(replySecs)
+  const [replied, setReplied] = useState(false)
+  const listRef = useRef(null)
+  const rafRef  = useRef(null)
+  const ROW_H = 64, VISIBLE = 5, CENTER = 2
 
   useEffect(() => {
-    preloadProfilePics(participants).then(() => {
-      const minItems = Math.max(120, participants.length * 10)
+    let dead = false
+    Promise.race([preloadProfilePics(participants), new Promise(r => setTimeout(r, 3000))]).then(() => {
+      if (dead) return
+      const n = participants.length
+      const len = Math.max(60, n * 8)
       const rep = []
-      for (let i = 0; i < minItems; i++) rep.push(participants[i % participants.length])
-      setItems(rep); setPhase('idle')
-      setTimeout(() => doSpin(rep, participants), 600)
+      for (let i = 0; i < len; i++) rep.push(participants[i % n])
+      setItems(rep); setPhase('spinning')
+      setTimeout(() => !dead && doSpin(rep, participants), 700)
     })
+    return () => { dead = true; cancelAnimationFrame(rafRef.current) }
   }, [])
 
-  const doSpin = (itemList, parts) => {
-    setPhase('spinning')
-    const winIdx    = Math.floor(Math.random() * parts.length)
-    const anchorIdx = Math.floor(itemList.length * 0.72) - (Math.floor(itemList.length * 0.72) % parts.length) + winIdx
-    const finalOff  = anchorIdx * ITEM_W - CENTER * ITEM_W
-    const start     = performance.now()
-    const ease      = t => 1 - Math.pow(1 - t, 4)
-    const step      = now => {
-      const p = Math.min((now - start) / 5500, 1)
-      setOffset(finalOff * ease(p))
-      if (p < 1) { animRef.current = requestAnimationFrame(step); return }
-      setOffset(finalOff); setWinner(parts[winIdx]); setPhase('done')
-      setTimeout(() => onDone(parts[winIdx]), 7000)
+  const doSpin = (list, parts) => {
+    const rnd = new Uint32Array(1); crypto.getRandomValues(rnd)
+    const winIdx = rnd[0] % parts.length
+    const base = Math.floor(list.length * 0.75)
+    const anchor = base - (base % parts.length) + winIdx
+    const finalY = -(anchor - CENTER) * ROW_H
+    const start = performance.now(), D = 5500
+    const step = now => {
+      const p = Math.min((now - start) / D, 1)
+      const e = 1 - Math.pow(1 - p, 4)
+      const el = listRef.current
+      if (el) { el.style.transform = `translateY(${finalY * e}px)`; el.style.filter = p < 0.8 ? `blur(${(1 - e) * 1.8}px)` : 'none' }
+      if (p < 1) { rafRef.current = requestAnimationFrame(step); return }
+      setWinner(parts[winIdx]); setPhase('picked')
+      onDone(parts[winIdx])
+      setTimeout(() => setPhase('winner'), 2200)
     }
-    animRef.current = requestAnimationFrame(step)
+    rafRef.current = requestAnimationFrame(step)
   }
-  useEffect(() => () => cancelAnimationFrame(animRef.current), [])
+
+  // winner screen: waits for the winner to reply in chat
+  useEffect(() => {
+    if (phase !== 'winner' || !winner) return
+    const t0 = Date.now()
+    let closeT
+    const tick = setInterval(() => {
+      if (replySecs > 0) {
+        const r = Math.max(0, replySecs - Math.floor((Date.now() - t0) / 1000))
+        setLeft(r)
+        if (lastMsgOf(winner.username) > t0 && !replied) { setReplied(true); clearInterval(tick); closeT = setTimeout(onClose, 7000) }
+        else if (r === 0) { clearInterval(tick); closeT = setTimeout(onClose, 9000) }
+      }
+    }, 400)
+    const hard = replySecs > 0 ? null : setTimeout(onClose, 12000)
+    return () => { clearInterval(tick); clearTimeout(closeT); if (hard) clearTimeout(hard) }
+  }, [phase])
+
+  const noReply = phase === 'winner' && replySecs > 0 && left === 0 && !replied
+  const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  const pic = winner ? profileCache[winner.username] : null
 
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(4,6,12,.97)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, fontFamily: 'Rubik,sans-serif', animation: 'fadeIn .3s ease' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-          <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '.07em', textTransform: 'uppercase', animation: phase === 'spinning' ? 'textPulse 1s ease-in-out infinite' : 'none' }}>
-            {phase === 'loading' ? 'Preparing...' : phase === 'done' ? 'Winner!' : 'Drawing...'}
-          </span>
-        </div>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,.3)', fontWeight: 500 }}>{participants.length} participants</span>
-      </div>
+    <div className="gw-draw">
+      <Rays size={420} style={{ position: 'absolute', left: '50%', top: 0, marginLeft: -210, opacity: phase === 'winner' ? 0.5 : 0.9 }} />
+      {phase === 'winner' && <Confetti />}
 
-      {phase === 'loading' && (
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[0,1,2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: '#34d399', animation: `dotPulse 1s ease-in-out ${i*.2}s infinite` }} />)}
-        </div>
+      {phase !== 'winner' && (
+        <>
+          <div className={`gw-state${phase === 'picked' ? ' gold' : ''}`}>
+            {phase === 'picked' ? 'WINNER!' : phase === 'loading' ? 'PREPARING' : 'DRAWING'}
+          </div>
+          <PrizeCard prize={prize} image={prizeImage} size={104} />
+          <div className="gw-count"><IconUsers /> {participants.length} IN</div>
+
+          <div className="gw-reel" style={{ height: ROW_H * VISIBLE }}>
+            <div className={`gw-frame${phase === 'picked' ? ' win' : ''}`} style={{ top: CENTER * ROW_H + 4, height: ROW_H - 8 }} />
+            <div className="gw-fade" />
+            <div ref={listRef} style={{ willChange: 'transform' }}>
+              {items.map((p, i) => (
+                <div key={i} className="gw-row" style={{ height: ROW_H }}>
+                  <RouletteAvatar username={p.username} color={p.color} size={40} />
+                  <span style={{ color: p.color }} className="gw-rname">{p.username}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
-      {phase !== 'loading' && (
-        <div style={{ position: 'relative', width: ITEM_W * VISIBLE, height: 110, borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.05)' }}>
-          <div style={{ position: 'absolute', top: 0, bottom: 0, left: CENTER * ITEM_W, width: ITEM_W, background: 'rgba(52,211,153,.06)', border: '2px solid rgba(52,211,153,.28)', borderRadius: 10, zIndex: 2 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(4,6,12,1) 0%,transparent 20%,transparent 80%,rgba(4,6,12,1) 100%)', zIndex: 3, pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', top: -1, left: CENTER * ITEM_W + ITEM_W/2 - 7, zIndex: 4, width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '10px solid #34d399' }} />
-          <div style={{ position: 'absolute', bottom: -1, left: CENTER * ITEM_W + ITEM_W/2 - 7, zIndex: 4, width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderBottom: '10px solid #34d399' }} />
-          <div style={{ display: 'flex', alignItems: 'center', height: '100%', transform: `translateX(${-offset}px)`, willChange: 'transform' }}>
-            {items.map((p, i) => (
-              <div key={i} style={{ width: ITEM_W, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '0 4px' }}>
-                <RouletteAvatar username={p.username} color={p.color} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: ITEM_W - 8, textAlign: 'center' }}>{p.username}</span>
-              </div>
-            ))}
+      {phase === 'winner' && winner && (
+        <div className="gw-win">
+          <div className="gw-state gold">WINNER</div>
+          <div className="gw-polaroid">
+            {pic ? <img src={pic} alt="" /> : <div className="gw-initial">{winner.username[0]?.toUpperCase()}</div>}
+            <span className="gw-stamp">WINNER</span>
           </div>
-        </div>
-      )}
-
-      {winner && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '16px 32px', borderRadius: 18, background: 'rgba(52,211,153,.08)', border: '1px solid rgba(52,211,153,.25)', animation: 'winPop .5s cubic-bezier(.34,1.56,.64,1)' }}>
-          <TwitchAvatar username={winner.username} color={winner.color} size={64} />
-          <div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' }}>Vencedor</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginTop: 2 }}>{winner.username}</div>
-          </div>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <div className="gw-wname">{winner.username}</div>
+          {(prize || prizeImage) && <div className="gw-prizepill">{prize || 'PRIZE'}</div>}
+          {replySecs > 0 && (
+            <div className={`gw-wait${replied ? ' ok' : noReply ? ' late' : ''}`}>
+              {replied ? 'REPLIED' : noReply ? 'NO REPLY' : 'WAITING REPLY'}
+              {!replied && !noReply && <b>{fmt(left)}</b>}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -327,25 +390,53 @@ html, body { background: transparent !important; overflow: hidden; width: 100%; 
 .msg-text  { color: #e2e8f0; font-weight: 500; }
 .emote     { width: 20px; height: 20px; display: inline; vertical-align: middle; margin: 0 2px; }
 
-/* ── giveaway bar — idêntico ao ChatBox.jsx ── */
+/* ── giveaway banner ── */
 .gw {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 10;
-  background: linear-gradient(90deg, #031a0f 0%, #052b18 50%, #031a0f 100%);
-  border-bottom: 1px solid rgba(52,211,153,.15);
-  padding: 8px 14px;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 10; height: 112px;
+  background: linear-gradient(120deg, #03160e 0%, #07311d 60%, #0a3f28 100%);
+  border-bottom: 1px solid rgba(52,211,153,.3);
+  padding: 14px 16px; display: flex; align-items: center; gap: 14px; overflow: hidden;
 }
 .gw.entering { animation: gwIn .45s cubic-bezier(.34,1.4,.64,1); }
 .gw.leaving  { animation: gwOut .35s ease forwards; }
-.gw-inner { display: flex; align-items: center; gap: 7px; }
-.gw-text    { font-size: 11px; color: rgba(255,255,255,.35); font-weight: 500; }
-.gw-keyword { background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.3); border-radius: 8px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: #34d399; letter-spacing: .04em; }
-.gw-spacer  { flex: 1; }
-.gw-pill    { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; padding: 3px 8px; flex-shrink: 0; }
-.gw-pill-n  { font-size: 12px; font-weight: 800; color: #fff; }
-.gw-pill-sep{ width: 1px; height: 10px; background: rgba(255,255,255,.15); }
-.gw-pill-t  { font-size: 12px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+.gw-rays { animation: raySpin 16s linear infinite; pointer-events: none; }
+@keyframes raySpin { to { transform: rotate(360deg); } }
+.gw-info { flex: 1; min-width: 0; position: relative; z-index: 2; }
+.gw-lbl { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 800; letter-spacing: .16em; color: #a7f3d0; }
+.gw-live { width: 6px; height: 6px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399; animation: blink 1.4s ease-in-out infinite; }
+.gw-keyword { display: inline-block; margin: 4px 0 5px; padding: 2px 10px; border-radius: 10px; font-size: 20px; font-weight: 900; color: #6ee7b7; background: rgba(52,211,153,.14); border: 1.5px solid rgba(52,211,153,.55); letter-spacing: .02em; animation: kwGlow 2s ease-in-out infinite; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes kwGlow { 50% { box-shadow: 0 0 18px rgba(52,211,153,.5); } }
+.gw-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 800; color: #fff; }
+.gw-meta span { display: inline-flex; align-items: center; gap: 5px; }
 .gw-pill-t.ending { color: #f87171; animation: blink .6s ease-in-out infinite; }
-.gw-pill-t.done   { color: rgba(255,255,255,.3); }
+.gw-pill-t.done   { color: rgba(255,255,255,.45); }
+.gw-prog { height: 4px; border-radius: 9px; background: rgba(255,255,255,.12); margin-top: 6px; overflow: hidden; }
+.gw-prog i { display: block; height: 100%; background: linear-gradient(90deg, #34d399, #22d3ee); transition: width .6s linear; }
+
+/* ── draw overlay (vertical reel + winner) ── */
+.gw-draw { position: absolute; inset: 0; z-index: 50; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px 16px; background: radial-gradient(120% 80% at 50% 0%, #0b3a26 0%, #04120c 70%); animation: fadeIn .3s ease; font-family: 'Rubik', sans-serif; }
+.gw-draw .gw-rays { animation: raySpin 18s linear infinite; }
+.gw-state { position: relative; z-index: 3; padding: 4px 14px; border-radius: 99px; font-size: 11px; font-weight: 900; letter-spacing: .18em; color: #fff; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.25); }
+.gw-state.gold { background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #2a1a00; border-color: #fde68a; }
+.gw-count { position: relative; z-index: 3; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #d1fae5; letter-spacing: .08em; }
+.gw-reel { position: relative; z-index: 3; width: 100%; border-radius: 16px; overflow: hidden; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.08); }
+.gw-fade { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(180deg, rgba(4,18,12,.95) 0%, transparent 28%, transparent 72%, rgba(4,18,12,.95) 100%); }
+.gw-frame { position: absolute; left: 5px; right: 5px; z-index: 4; border-radius: 14px; border: 2.5px solid #fbbf24; box-shadow: 0 0 18px rgba(251,191,36,.55), inset 0 0 12px rgba(251,191,36,.15); transition: .3s; }
+.gw-frame.win { border-color: #fff; box-shadow: 0 0 24px rgba(255,255,255,.65); }
+.gw-row { display: flex; align-items: center; gap: 12px; padding: 0 18px; }
+.gw-rname { font-size: 19px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gw-win { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; animation: winPop .5s cubic-bezier(.34,1.56,.64,1); }
+.gw-polaroid { position: relative; width: 168px; height: 188px; background: #fff; padding: 10px 10px 34px; border-radius: 6px; transform: rotate(-5deg); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+.gw-polaroid img, .gw-initial { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gw-initial { background: linear-gradient(135deg, #14b8a6, #0ea5a0); display: grid; place-items: center; font-size: 64px; font-weight: 900; color: #052e2b; }
+.gw-stamp { position: absolute; left: -8px; right: -8px; top: 62px; text-align: center; font-size: 22px; font-weight: 900; letter-spacing: .16em; color: #ef4444; border: 3px solid #ef4444; border-radius: 6px; transform: rotate(-14deg); padding: 1px 0; background: rgba(255,255,255,.22); }
+.gw-wname { font-size: 30px; font-weight: 900; line-height: 1.1; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; text-shadow: 0 3px 14px rgba(0,0,0,.5); }
+.gw-prizepill { padding: 5px 16px; border-radius: 99px; background: #fbbf24; color: #2a1a00; font-size: 14px; font-weight: 900; letter-spacing: .06em; }
+.gw-wait { display: inline-flex; align-items: center; gap: 9px; height: 30px; padding: 0 16px; border-radius: 99px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.18); font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #fff; }
+.gw-wait b { font-size: 17px; color: #34d399; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.gw-wait.ok { border-color: rgba(52,211,153,.6); color: #34d399; }
+.gw-wait.late { border-color: rgba(248,113,113,.6); color: #f87171; }
+@keyframes confFall { to { transform: translateY(820px) rotate(540deg); opacity: .25; } }
 
 /* ── events ── */
 .events-section { height: 180px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,.15); display: flex; flex-direction: column; }
@@ -381,6 +472,12 @@ export default function Sidebar() {
   // ── giveaway state (igual ao ChatBox.jsx) ─────────────────────────────────
   const [gw,        setGw]        = useState({ active: false, keyword: '', ends_at: null, spinning: false, participants: [] })
   const [gwLeaving, setGwLeaving] = useState(false)
+  const [drawing,   setDrawing]   = useState(false)
+  const [drawKey,   setDrawKey]   = useState(0)
+  const [drawParts, setDrawParts] = useState([])
+  const prevSpin    = useRef(false)
+  const lastMsgRef  = useRef(new Map())
+  const maxCd       = useRef(0)
   const [partCount, setPartCount] = useState(0)
   const [countdown, setCountdown] = useState(0)
 
@@ -400,7 +497,7 @@ export default function Sidebar() {
     const load = async () => {
       const { data } = await supabase
         .from('giveaway_state')
-        .select('active,keyword,ends_at,spinning,participants,winner')
+        .select('*')
         .eq('id', GIVEAWAY_ID).single()
       if (!data) return
 
@@ -429,6 +526,15 @@ export default function Sidebar() {
     return () => clearInterval(t)
   }, [])
 
+  // ── start of a draw: freeze the participants and mount a fresh roulette ──
+  useEffect(() => {
+    const list = Array.isArray(gw.participants) ? gw.participants : []
+    if (gw.spinning && !prevSpin.current && list.length > 0) {
+      setDrawParts(list); setDrawKey(k => k + 1); setDrawing(true)
+    }
+    prevSpin.current = !!gw.spinning
+  }, [gw.spinning])
+
   // ── Countdown ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!gw.active || !gw.ends_at) { setCountdown(0); return }
@@ -436,6 +542,7 @@ export default function Sidebar() {
     tick(); const t = setInterval(tick, 500)
     return () => clearInterval(t)
   }, [gw.active, gw.ends_at])
+  useEffect(() => { if (countdown > maxCd.current) maxCd.current = countdown; if (!gw.active) maxCd.current = 0 }, [countdown, gw.active])
 
   // ── Roulette done ─────────────────────────────────────────────────────────
   const handleRouletteDone = async (winnerObj) => {
@@ -492,6 +599,7 @@ export default function Sidebar() {
           const msgId    = tags['id'] || null
           const username = match[2]
           const text     = match[3].trim()
+          lastMsgRef.current.set(username.toLowerCase(), Date.now())
 
           // ── contagem de participantes do giveaway ──
           const cur = gwRef.current
@@ -584,7 +692,7 @@ export default function Sidebar() {
   const isDone      = gw.active && countdown === 0
   const participants = Array.isArray(gw.participants) ? gw.participants : []
   const showGw      = gw.active || gwLeaving
-  const GW_H        = 44 // altura da barra para o paddingTop do chat
+  const GW_H        = 112 // altura da barra para o paddingTop do chat
 
   return (
     <>
@@ -615,31 +723,29 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* ── GIVEAWAY BAR ── */}
+          {/* ── GIVEAWAY BANNER ── */}
           {showGw && (
             <div className={`gw${gwLeaving ? ' leaving' : ' entering'}`}>
-              <div className="gw-inner">
-                <IconGift />
-                <span className="gw-text">type</span>
-                <span className="gw-keyword">{gw.keyword}</span>
-                <span className="gw-text">to join!</span>
-                <div className="gw-spacer" />
-                <div className="gw-pill">
-                  <IconUsers />
-                  <span className="gw-pill-n">{participants.length}</span>
-                  <div className="gw-pill-sep" />
-                  <IconClock />
-                  <span className={`gw-pill-t${isEnding ? ' ending' : isDone ? ' done' : ''}`}>
-                    {fmtTimer(countdown)}
-                  </span>
+              <Rays size={190} style={{ position: 'absolute', left: -50, top: -40, opacity: .9 }} />
+              <PrizeCard prize={gw.prize} image={gw.prize_image} size={76} />
+              <div className="gw-info">
+                <div className="gw-lbl"><span className="gw-live" />TYPE IN CHAT TO JOIN</div>
+                <div className="gw-keyword">{gw.keyword}</div>
+                <div className="gw-meta">
+                  <span><IconUsers /> {participants.length}</span>
+                  <span className={`gw-pill-t${isEnding ? ' ending' : isDone ? ' done' : ''}`}><IconClock /> {isDone ? 'CLOSED' : fmtTimer(countdown)}</span>
                 </div>
+                <div className="gw-prog"><i style={{ width: `${maxCd.current > 0 ? Math.min(100, ((maxCd.current - countdown) / maxCd.current) * 100) : 0}%` }} /></div>
               </div>
             </div>
           )}
 
           {/* ── ROLETA ── */}
-          {gw.spinning && participants.length > 0 && (
-            <Roulette participants={participants} onDone={handleRouletteDone} />
+          {drawing && drawParts.length > 0 && (
+            <Roulette key={drawKey} participants={drawParts} prize={gw.prize} prizeImage={gw.prize_image}
+              replySecs={Number.isFinite(Number(gw.reply_secs)) ? Number(gw.reply_secs) : 30}
+              onDone={handleRouletteDone} onClose={() => setDrawing(false)}
+              lastMsgOf={(u) => lastMsgRef.current.get(String(u).toLowerCase()) || 0} />
           )}
 
           {/* ── EVENTS ── */}
