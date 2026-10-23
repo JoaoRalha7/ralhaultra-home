@@ -732,7 +732,7 @@ export default function Sidebar() {
           {/* ── ROLETA ── */}
           {drawing && drawParts.length > 0 && (
             <Roulette key={drawKey} participants={drawParts} prize={gw.prize} prizeImage={gw.prize_image}
-              replySecs={Number.isFinite(Number(gw.reply_secs)) ? Number(gw.reply_secs) : 30}
+              replySecs={Number.isFinite(Number(gw.reply_secs)) ? Number(gw.reply_secs) : 45}
               onDone={handleRouletteDone} onClose={() => setDrawing(false)}
               lastMsgOf={(u) => lastMsgRef.current.get(String(u).toLowerCase()) || 0} />
           )}
