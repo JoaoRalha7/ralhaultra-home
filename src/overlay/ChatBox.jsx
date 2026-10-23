@@ -229,7 +229,7 @@ function Roulette({ participants, prize, prizeImage, replySecs, onDone, onClose,
   const [replied, setReplied] = useState(false)
   const listRef = useRef(null)
   const rafRef  = useRef(null)
-  const ROW_H = 64, VISIBLE = 5, CENTER = 2
+  const ROW_H = 58, VISIBLE = 3, CENTER = 1
 
   useEffect(() => {
     let dead = false
@@ -288,24 +288,23 @@ function Roulette({ participants, prize, prizeImage, replySecs, onDone, onClose,
 
   return (
     <div className="gw-draw">
-      <Rays size={420} style={{ position: 'absolute', left: '50%', top: 0, marginLeft: -210, opacity: phase === 'winner' ? 0.5 : 0.9 }} />
+      <Rays size={420} style={{ position: 'absolute', left: '50%', top: -40, marginLeft: -210, opacity: 0.55 }} />
       {phase === 'winner' && <Confetti />}
 
       {phase !== 'winner' && (
         <>
-          <div className={`gw-state${phase === 'picked' ? ' gold' : ''}`}>
-            {phase === 'picked' ? 'WINNER!' : phase === 'loading' ? 'PREPARING' : 'DRAWING'}
+          <div className="gw-toprow">
+            <div className={`gw-state${phase === 'picked' ? ' gold' : ''}`}>{phase === 'picked' ? 'WINNER!' : phase === 'loading' ? 'PREPARING' : 'DRAWING'}</div>
+            <div className="gw-count"><IconUsers /> {participants.length}</div>
           </div>
-          <PrizeCard prize={prize} image={prizeImage} size={104} />
-          <div className="gw-count"><IconUsers /> {participants.length} IN</div>
-
+          {prize && <div className="gw-prizetxt">{prize}</div>}
           <div className="gw-reel" style={{ height: ROW_H * VISIBLE }}>
             <div className={`gw-frame${phase === 'picked' ? ' win' : ''}`} style={{ top: CENTER * ROW_H + 4, height: ROW_H - 8 }} />
             <div className="gw-fade" />
             <div ref={listRef} style={{ willChange: 'transform' }}>
               {items.map((p, i) => (
                 <div key={i} className="gw-row" style={{ height: ROW_H }}>
-                  <RouletteAvatar username={p.username} color={p.color} size={40} />
+                  <RouletteAvatar username={p.username} color={p.color} size={38} />
                   <span style={{ color: p.color }} className="gw-rname">{p.username}</span>
                 </div>
               ))}
@@ -316,19 +315,21 @@ function Roulette({ participants, prize, prizeImage, replySecs, onDone, onClose,
 
       {phase === 'winner' && winner && (
         <div className="gw-win">
-          <div className="gw-state gold">WINNER</div>
           <div className="gw-polaroid">
             {pic ? <img src={pic} alt="" /> : <div className="gw-initial">{winner.username[0]?.toUpperCase()}</div>}
             <span className="gw-stamp">WINNER</span>
           </div>
-          <div className="gw-wname">{winner.username}</div>
-          {(prize || prizeImage) && <div className="gw-prizepill">{prize || 'PRIZE'}</div>}
-          {replySecs > 0 && (
-            <div className={`gw-wait${replied ? ' ok' : noReply ? ' late' : ''}`}>
-              {replied ? 'REPLIED' : noReply ? 'NO REPLY' : 'WAITING REPLY'}
-              {!replied && !noReply && <b>{fmt(left)}</b>}
-            </div>
-          )}
+          <div className="gw-winfo">
+            <div className="gw-state gold">WINNER</div>
+            <div className="gw-wname">{winner.username}</div>
+            {prize && <div className="gw-prizepill">{prize}</div>}
+            {replySecs > 0 && (
+              <div className={`gw-wait${replied ? ' ok' : noReply ? ' late' : ''}`}>
+                {replied ? 'REPLIED' : noReply ? 'NO REPLY' : 'REPLY'}
+                {!replied && !noReply && <b>{fmt(left)}</b>}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -391,52 +392,47 @@ html, body { background: transparent !important; overflow: hidden; width: 100%; 
 .emote     { width: 20px; height: 20px; display: inline; vertical-align: middle; margin: 0 2px; }
 
 /* ── giveaway banner ── */
-.gw {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 10; height: 112px;
-  background: linear-gradient(120deg, #03160e 0%, #07311d 60%, #0a3f28 100%);
-  border-bottom: 1px solid rgba(52,211,153,.3);
-  padding: 14px 16px; display: flex; align-items: center; gap: 14px; overflow: hidden;
-}
+.gw { position: absolute; top: 8px; left: 8px; right: 8px; z-index: 10; padding: 9px 12px 10px; border-radius: 16px; text-align: center; background: linear-gradient(160deg, #0b1f17, #0d2e20); border: 1px solid rgba(52,211,153,.35); box-shadow: 0 6px 20px rgba(0,0,0,.4); }
 .gw.entering { animation: gwIn .45s cubic-bezier(.34,1.4,.64,1); }
 .gw.leaving  { animation: gwOut .35s ease forwards; }
-.gw-rays { animation: raySpin 16s linear infinite; pointer-events: none; }
-@keyframes raySpin { to { transform: rotate(360deg); } }
-.gw-info { flex: 1; min-width: 0; position: relative; z-index: 2; }
-.gw-lbl { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 800; letter-spacing: .16em; color: #a7f3d0; }
-.gw-live { width: 6px; height: 6px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399; animation: blink 1.4s ease-in-out infinite; }
-.gw-keyword { display: inline-block; margin: 4px 0 5px; padding: 2px 10px; border-radius: 10px; font-size: 20px; font-weight: 900; color: #6ee7b7; background: rgba(52,211,153,.14); border: 1.5px solid rgba(52,211,153,.55); letter-spacing: .02em; animation: kwGlow 2s ease-in-out infinite; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@keyframes kwGlow { 50% { box-shadow: 0 0 18px rgba(52,211,153,.5); } }
-.gw-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 800; color: #fff; }
-.gw-meta span { display: inline-flex; align-items: center; gap: 5px; }
-.gw-pill-t.ending { color: #f87171; animation: blink .6s ease-in-out infinite; }
-.gw-pill-t.done   { color: rgba(255,255,255,.45); }
-.gw-prog { height: 4px; border-radius: 9px; background: rgba(255,255,255,.12); margin-top: 6px; overflow: hidden; }
-.gw-prog i { display: block; height: 100%; background: linear-gradient(90deg, #34d399, #22d3ee); transition: width .6s linear; }
+.gw-top { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 17px; font-weight: 900; color: #fff; }
+.gw-n, .gw-t { display: inline-flex; align-items: center; gap: 6px; }
+.gw-t { color: #fbbf24; }
+.gw-t.ending { color: #f87171; animation: blink .6s ease-in-out infinite; }
+.gw-t.done { color: rgba(255,255,255,.45); }
+.gw-type { margin-top: 5px; font-size: 12px; font-weight: 700; color: #d1fae5; }
+.gw-keyword { display: inline-block; padding: 0 8px; border-radius: 8px; font-weight: 900; color: #fbbf24; background: rgba(251,191,36,.14); border: 1px solid rgba(251,191,36,.5); animation: kwGlow 2s ease-in-out infinite; }
+@keyframes kwGlow { 50% { box-shadow: 0 0 14px rgba(251,191,36,.45); } }
+.gw-prize { margin-top: 4px; font-size: 22px; font-weight: 900; color: #fff; text-transform: uppercase; line-height: 1.1; text-shadow: 0 2px 10px rgba(52,211,153,.4); word-break: break-word; }
 
-/* ── draw overlay (vertical reel + winner) ── */
-.gw-draw { position: absolute; inset: 0; z-index: 50; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px 16px; background: radial-gradient(120% 80% at 50% 0%, #0b3a26 0%, #04120c 70%); animation: fadeIn .3s ease; font-family: 'Rubik', sans-serif; }
-.gw-draw .gw-rays { animation: raySpin 18s linear infinite; }
-.gw-state { position: relative; z-index: 3; padding: 4px 14px; border-radius: 99px; font-size: 11px; font-weight: 900; letter-spacing: .18em; color: #fff; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.25); }
+/* ── draw panel (top of the sidebar, chat stays visible below) ── */
+@keyframes raySpin { to { transform: rotate(360deg); } }
+.gw-draw { position: absolute; top: 8px; left: 8px; right: 8px; height: 322px; z-index: 50; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; padding: 12px; border-radius: 18px; background: radial-gradient(120% 90% at 50% 0%, #0b3a26 0%, #04120c 75%); border: 1px solid rgba(52,211,153,.4); box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: fadeIn .3s ease; font-family: 'Rubik', sans-serif; }
+.gw-rays { animation: raySpin 18s linear infinite; pointer-events: none; }
+.gw-toprow { position: relative; z-index: 3; display: flex; align-items: center; gap: 12px; }
+.gw-state { position: relative; z-index: 3; padding: 3px 12px; border-radius: 99px; font-size: 10px; font-weight: 900; letter-spacing: .18em; color: #fff; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.25); }
 .gw-state.gold { background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #2a1a00; border-color: #fde68a; }
-.gw-count { position: relative; z-index: 3; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #d1fae5; letter-spacing: .08em; }
-.gw-reel { position: relative; z-index: 3; width: 100%; border-radius: 16px; overflow: hidden; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.08); }
-.gw-fade { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(180deg, rgba(4,18,12,.95) 0%, transparent 28%, transparent 72%, rgba(4,18,12,.95) 100%); }
-.gw-frame { position: absolute; left: 5px; right: 5px; z-index: 4; border-radius: 14px; border: 2.5px solid #fbbf24; box-shadow: 0 0 18px rgba(251,191,36,.55), inset 0 0 12px rgba(251,191,36,.15); transition: .3s; }
-.gw-frame.win { border-color: #fff; box-shadow: 0 0 24px rgba(255,255,255,.65); }
-.gw-row { display: flex; align-items: center; gap: 12px; padding: 0 18px; }
-.gw-rname { font-size: 19px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gw-win { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; animation: winPop .5s cubic-bezier(.34,1.56,.64,1); }
-.gw-polaroid { position: relative; width: 168px; height: 188px; background: #fff; padding: 10px 10px 34px; border-radius: 6px; transform: rotate(-5deg); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+.gw-count { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; color: #d1fae5; }
+.gw-prizetxt { position: relative; z-index: 3; font-size: 22px; font-weight: 900; color: #fff; text-transform: uppercase; text-align: center; line-height: 1.1; }
+.gw-reel { position: relative; z-index: 3; width: 100%; border-radius: 14px; overflow: hidden; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.08); }
+.gw-fade { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(180deg, rgba(4,18,12,.92) 0%, transparent 30%, transparent 70%, rgba(4,18,12,.92) 100%); }
+.gw-frame { position: absolute; left: 5px; right: 5px; z-index: 4; border-radius: 12px; border: 2.5px solid #fbbf24; box-shadow: 0 0 16px rgba(251,191,36,.55), inset 0 0 10px rgba(251,191,36,.15); transition: .3s; }
+.gw-frame.win { border-color: #fff; box-shadow: 0 0 22px rgba(255,255,255,.65); }
+.gw-row { display: flex; align-items: center; gap: 11px; padding: 0 16px; }
+.gw-rname { font-size: 18px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gw-win { position: relative; z-index: 3; display: flex; align-items: center; gap: 12px; width: 100%; animation: winPop .5s cubic-bezier(.34,1.56,.64,1); }
+.gw-polaroid { position: relative; flex-shrink: 0; width: 122px; height: 142px; background: #fff; padding: 7px 7px 26px; border-radius: 5px; transform: rotate(-5deg); box-shadow: 0 10px 26px rgba(0,0,0,.55); }
 .gw-polaroid img, .gw-initial { width: 100%; height: 100%; object-fit: cover; display: block; }
-.gw-initial { background: linear-gradient(135deg, #14b8a6, #0ea5a0); display: grid; place-items: center; font-size: 64px; font-weight: 900; color: #052e2b; }
-.gw-stamp { position: absolute; left: -8px; right: -8px; top: 62px; text-align: center; font-size: 22px; font-weight: 900; letter-spacing: .16em; color: #ef4444; border: 3px solid #ef4444; border-radius: 6px; transform: rotate(-14deg); padding: 1px 0; background: rgba(255,255,255,.22); }
-.gw-wname { font-size: 30px; font-weight: 900; line-height: 1.1; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; text-shadow: 0 3px 14px rgba(0,0,0,.5); }
-.gw-prizepill { padding: 5px 16px; border-radius: 99px; background: #fbbf24; color: #2a1a00; font-size: 14px; font-weight: 900; letter-spacing: .06em; }
-.gw-wait { display: inline-flex; align-items: center; gap: 9px; height: 30px; padding: 0 16px; border-radius: 99px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.18); font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #fff; }
-.gw-wait b { font-size: 17px; color: #34d399; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.gw-initial { background: linear-gradient(135deg, #14b8a6, #0ea5a0); display: grid; place-items: center; font-size: 48px; font-weight: 900; color: #052e2b; }
+.gw-stamp { position: absolute; left: -6px; right: -6px; top: 44px; text-align: center; font-size: 17px; font-weight: 900; letter-spacing: .14em; color: #ef4444; border: 2.5px solid #ef4444; border-radius: 5px; transform: rotate(-14deg); background: rgba(255,255,255,.22); }
+.gw-winfo { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+.gw-wname { font-size: 21px; font-weight: 900; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; }
+.gw-prizepill { padding: 3px 11px; border-radius: 99px; background: #fbbf24; color: #2a1a00; font-size: 12px; font-weight: 900; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gw-wait { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px; border-radius: 99px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.18); font-size: 10px; font-weight: 800; letter-spacing: .12em; color: #fff; }
+.gw-wait b { font-size: 15px; color: #34d399; font-variant-numeric: tabular-nums; letter-spacing: 0; }
 .gw-wait.ok { border-color: rgba(52,211,153,.6); color: #34d399; }
 .gw-wait.late { border-color: rgba(248,113,113,.6); color: #f87171; }
-@keyframes confFall { to { transform: translateY(820px) rotate(540deg); opacity: .25; } }
+@keyframes confFall { to { transform: translateY(340px) rotate(540deg); opacity: .25; } }
 
 /* ── events ── */
 .events-section { height: 180px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,.15); display: flex; flex-direction: column; }
@@ -692,7 +688,7 @@ export default function Sidebar() {
   const isDone      = gw.active && countdown === 0
   const participants = Array.isArray(gw.participants) ? gw.participants : []
   const showGw      = gw.active || gwLeaving
-  const GW_H        = 112 // altura da barra para o paddingTop do chat
+  const GW_H        = 104 // altura da barra para o paddingTop do chat
 
   return (
     <>
@@ -705,7 +701,7 @@ export default function Sidebar() {
             <div className="section-header chat-header">
               <IconChat /> CHAT
             </div>
-            <div className="chat-msgs" style={{ paddingTop: showGw ? GW_H + 8 : 8 }}>
+            <div className="chat-msgs" style={{ paddingTop: drawing ? 338 : showGw ? GW_H + 8 : 8 }}>
               {[...chatMsgs].reverse().map(item => (
                 <div className="msg" key={item.id}>
                   {item.badges?.map(b => <img key={b.key} className="msg-badge" src={b.url} alt="" />)}
@@ -726,17 +722,15 @@ export default function Sidebar() {
           {/* ── GIVEAWAY BANNER ── */}
           {showGw && (
             <div className={`gw${gwLeaving ? ' leaving' : ' entering'}`}>
-              <Rays size={190} style={{ position: 'absolute', left: -50, top: -40, opacity: .9 }} />
-              <PrizeCard prize={gw.prize} image={gw.prize_image} size={76} />
-              <div className="gw-info">
-                <div className="gw-lbl"><span className="gw-live" />TYPE IN CHAT TO JOIN</div>
-                <div className="gw-keyword">{gw.keyword}</div>
-                <div className="gw-meta">
-                  <span><IconUsers /> {participants.length}</span>
-                  <span className={`gw-pill-t${isEnding ? ' ending' : isDone ? ' done' : ''}`}><IconClock /> {isDone ? 'CLOSED' : fmtTimer(countdown)}</span>
-                </div>
-                <div className="gw-prog"><i style={{ width: `${maxCd.current > 0 ? Math.min(100, ((maxCd.current - countdown) / maxCd.current) * 100) : 0}%` }} /></div>
+              <div className="gw-top">
+                <span className="gw-n"><IconUsers /> {participants.length}</span>
+                <span className={`gw-t${isEnding ? ' ending' : isDone ? ' done' : ''}`}>
+                  <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke="rgba(255,255,255,.15)" strokeWidth="3"/><circle cx="11" cy="11" r="8.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="53.4" strokeDashoffset={53.4 * (maxCd.current > 0 ? 1 - Math.min(1, countdown / maxCd.current) : 1)} transform="rotate(-90 11 11)" style={{ transition: 'stroke-dashoffset .6s linear' }}/></svg>
+                  {isDone ? 'CLOSED' : fmtTimer(countdown)}
+                </span>
               </div>
+              <div className="gw-type">Type <span className="gw-keyword">{gw.keyword}</span> in chat to win!</div>
+              {gw.prize && <div className="gw-prize">{gw.prize}</div>}
             </div>
           )}
 
